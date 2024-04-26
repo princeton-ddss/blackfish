@@ -1,0 +1,61 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app"]
+
+[project]
+name = "blackfish"
+version = "0.1.0"
+description = "An open-source MLaaS platform."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Colin Swaney" },
+    { email = "colinswaney@princeton.edu" },
+]
+requires-python = ">=3.7"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+  "click",
+  "colorlog",
+  "jinja2",
+  "nox",
+  "pre-commit",
+  "prettytable",
+  "psutil",
+  "litestar",
+  "advanced-alchemy",
+  "alembic",
+  "pytest",
+  "requests",
+]
+[project.scripts]
+blackfish = "app.cli.__main__:main"
+
+[tool.mypy]
+files = "blackfish"
+python_version = "3.10"
+strict = true
+show_error_codes = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = [
+  "celery.*",
+  "click.*",
+  "colorlog.*",
+  "prettytable.*",
+  "pydantic.*",
+  "tasks.*",
+]
+ignore_missing_imports = true

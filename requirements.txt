@@ -1,0 +1,11 @@
+click
+colorlog
+jinja2
+nox
+pre-commit
+prettytable
+psutil
+litestar
+advanced-alchemy
+pytest
+requests

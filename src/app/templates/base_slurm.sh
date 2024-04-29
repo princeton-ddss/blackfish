@@ -15,13 +15,13 @@
 {% endif %}
 {%- endblock %}
 {% block prelude %}
-export APPTAINER_CACHEDIR={{ app_config.apptainer_cache }}
-export APPTAINER_TMPDIR={{ app_config.apptainer_tmpdir }}
+export APPTAINER_CACHEDIR={{ container_config.apptainer_cache }}
+export APPTAINER_TMPDIR={{ container_config.apptainer_tmpdir }}
 {% raw %}
 port=$(comm -23 <(seq 8080 8899 | sort) <(ss -Htan | awk '{{print $4}}' | cut -d':' -f2 | sort -u) | shuf | head -n 1)
 {% endraw %}
-mkdir {{ app_config.remote }}/$SLURM_JOB_ID
-mkdir {{ app_config.remote }}/$SLURM_JOB_ID/$port
+mkdir {{ job_config.home_dir }}/$SLURM_JOB_ID
+mkdir {{ job_config.home_dir }}/$SLURM_JOB_ID/$port
 {% endblock %}
 {%- block command %}
 {% endblock %}

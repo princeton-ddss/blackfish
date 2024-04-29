@@ -11,22 +11,18 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.ext.asyncio import AsyncSession
 from advanced_alchemy.base import UUIDAuditBase
 
+from litestar.datastructures import State
+
 from app.job import Job, JobState
 from app.logger import logger
 from app.utils import find_port
-from app.config import default_config as config
-
-
-BLACKFISH_HOME = config.BLACKFISH_HOME
-BLACKFISH_REMOTE = config.BLACKFISH_REMOTE
-BLACKFISH_ENV = config.BLACKFISH_ENV
-BLACKFISH_CACHE = config.BLACKFISH_CACHE
-APPTAINER_CACHE = config.APPTAINER_CACHE
-APPTAINER_TMPDIR = config.APPTAINER_TMPDIR
 
 
 @dataclass
 class ContainerConfig:
+
+    apptainer_cache: Optional[str]
+    apptainer_tmpdir: Optional[str]
 
     def data(self) -> dict:
         return {
@@ -46,9 +42,9 @@ class Service(UUIDAuditBase):
     image: Mapped[str]
     model: Mapped[str]
     status: Mapped[Optional[str]]
-    user: Mapped[str]
+    user: Mapped[Optional[str]]
     host: Mapped[str]
-    port: Mapped[int]
+    port: Mapped[Optional[int]]
     job_type: Mapped[str]
     job_id: Mapped[Optional[str]]
     grace_period: Mapped[Optional[int]] = 180
@@ -64,6 +60,7 @@ class Service(UUIDAuditBase):
     async def start(
         self,
         session: AsyncSession,
+        state: State,
         container_options: dict,
         job_options: dict,
     ):
@@ -80,8 +77,8 @@ class Service(UUIDAuditBase):
             None.
         """
 
-        logger.debug(f"Generating job script and writing to {BLACKFISH_HOME}.")
-        with open(os.path.join(BLACKFISH_HOME, "start.sh"), "w") as f:
+        logger.debug(f"Generating job script and writing to {state.BLACKFISH_HOME}.")
+        with open(os.path.join(state.BLACKFISH_HOME, "start.sh"), "w") as f:
             try:
                 script = self.launch_script(container_options, job_options)
                 f.write(script)
@@ -90,23 +87,23 @@ class Service(UUIDAuditBase):
 
         logger.info("Starting service")
         if self.job_type == "local":
-            if BLACKFISH_ENV == "local":
-                raise NotImplementedError
-            else:
-                raise Exception(
-                    "Local jobs should only be run in the local environment."
-                )
+            raise NotImplementedError
         elif self.job_type == "slurm":
-            if (
-                BLACKFISH_ENV == "local"
-            ):  # blackfish running locally; services running remotely
-                logger.debug("copying job script to BLACKFISH_REMOTE.")
+            if self.host == "localhost":
+                logger.debug("submitting batch job on login node.")
+                res = subprocess.check_output(
+                    ["sbatch", os.path.join(state.BLACKFISH_HOME, "start.sh")]
+                )
+            else:
+                logger.debug(
+                    f"copying job script to {self.host}:{job_options.remote_home}."
+                )
                 _ = subprocess.check_output(
                     [
                         "scp",
-                        os.path.join(BLACKFISH_HOME, "model.sh"),
+                        os.path.join(state.BLACKFISH_HOME, "start.sh"),
                         (
-                            f"{self.user}@{self.host}:{os.path.join(BLACKFISH_REMOTE, 'start.sh')}"
+                            f"{self.user}@{self.host}:{os.path.join(job_options.remote_home, 'start.sh')}"
                         ),
                     ]
                 )
@@ -117,14 +114,9 @@ class Service(UUIDAuditBase):
                         f"{self.user}@{self.host}",
                         "sbatch",
                         "--chdir",
-                        f"{BLACKFISH_REMOTE}",
-                        f"{BLACKFISH_REMOTE}/start.sh",
+                        f"{job_options.remote_home}",
+                        f"{job_options.remote_home}/start.sh",
                     ]
-                )
-            else:  # blackfish and services running remotely
-                logger.debug("submitting batch job on login node.")
-                res = subprocess.check_output(
-                    ["sbatch", os.path.join(BLACKFISH_REMOTE, "start.sh")]
                 )
 
             job_id = res.decode("utf-8").strip().split()[-1]
@@ -134,18 +126,16 @@ class Service(UUIDAuditBase):
         elif self.job_type == "ec2":
             raise NotImplementedError
         elif self.job_type == "test":
-            if (
-                BLACKFISH_ENV == "local"
-            ):  # blackfish running locally; services running remotely
-                logger.debug("[TEST] copying job script to BLACKFISH_REMOTE.")
-                logger.debug(f"[TEST] submitting batch job to {self.user}@{self.host}.")
-            else:  # blackfish and services running remotely
+            if self.host == "localhost":
                 logger.debug("[TEST] submitting batch job on login node.")
- 
+            else:
+                logger.debug(f"[TEST] copying job script to {job_options.home_dir}.")
+                logger.debug(f"[TEST] submitting batch job to {self.user}@{self.host}.")
+
             self.status = "SUBMITTED"
             self.job_id = f"test-{random.randint(10_000, 11_000)}"
         else:
-            raise Exception("Job type should be one of: local, slurm, ec2")
+            raise Exception("Job type should be one of: local, slurm, ec2, test.")
 
         logger.info("Adding service to database")
         session.add(self)
@@ -177,8 +167,7 @@ class Service(UUIDAuditBase):
         logger.info(f"stopping service {self.id}")
 
         if self.job_type == "local":
-            # TODO: _ = subprocess.check_output([])
-            pass
+            raise NotImplementedError
         elif self.job_type == "slurm":
             if self.job_id is None:
                 raise Exception(
@@ -189,6 +178,8 @@ class Service(UUIDAuditBase):
             job.cancel()
             self.close_tunnel(session)
         elif self.job_type == "ec2":
+            raise NotImplementedError
+        elif self.job_type == "test":
             raise NotImplementedError
         else:
             raise Exception  # TODO: JobTypeError
@@ -248,8 +239,7 @@ class Service(UUIDAuditBase):
             return self.state
 
         if self.job_type == "local":
-            # TODO
-            pass
+            raise NotImplementedError
         elif self.job_type == "slurm":
             if self.job_id is None:
                 logger.debug(
@@ -343,6 +333,8 @@ class Service(UUIDAuditBase):
                 return "FAILED"
         elif self.job_type == "ec2":
             raise NotImplementedError
+        elif self.job_type == "test":
+            raise NotImplementedError
         else:
             raise Exception  # TODO: JobTypeError
 
@@ -373,33 +365,37 @@ class Service(UUIDAuditBase):
         if self.port is None:
             raise Exception(f"Unable to find an available port for service {self.id}.")
 
-        if BLACKFISH_ENV == "local":
-            _ = subprocess.check_output(
-                [
-                    "ssh",
-                    "-N",
-                    "-f",
-                    "-L",
-                    f"{self.port}:{job.node}:{job.port}",
-                    f"{self.user}@{self.host}",
-                ]
-            )
-            logger.info(
-                f"established tunnel from {self.port} (local) ->"
-                f" {job.port} (compute)"
-            )  # noqa: E501
+        if self.job_type == "slurm":
+            if self.host != "localhost":
+                _ = subprocess.check_output(
+                    [
+                        "ssh",
+                        "-N",
+                        "-f",
+                        "-L",
+                        f"{self.port}:{job.node}:{job.port}",
+                        f"{self.user}@{job.node}",
+                    ]
+                )
+                logger.info(
+                    f"established tunnel localhost:{self.port} -> localhost:{job.port}"
+                )
+            else:
+                _ = subprocess.check_output(
+                    [
+                        "ssh",
+                        "-N",
+                        "-f",
+                        "-L",
+                        f"{self.port}:{job.node}:{job.port}",
+                        f"{self.user}@{self.host}",
+                    ]
+                )
+                logger.info(
+                    f"established tunnel localhost:{self.port} -> {self.host}:{job.port}"
+                )  # noqa: E501
         else:
-            _ = subprocess.check_output(
-                [
-                    "ssh",
-                    "-N",
-                    "-f",
-                    "-L",
-                    f"{self.port}:{job.node}:{job.port}",
-                    f"{self.user}@{job.node}",
-                ]
-            )
-            logger.info(f"established new ssh tunnel {self.port} -> {job.port}")
+            raise NotImplementedError
 
     async def close_tunnel(self, session: AsyncSession) -> None:
         """Kill the ssh tunnel connecting to the API. Assumes attached to session.
@@ -435,10 +431,10 @@ class Service(UUIDAuditBase):
         job.update()
         return job
 
-    def launch_script(
-        self, container_options: dict, job_options: dict
-    ) -> str:
-        raise NotImplementedError("`launch_script` should only be called on subtypes of Service")
+    def launch_script(self, container_options: dict, job_options: dict) -> str:
+        raise NotImplementedError(
+            "`launch_script` should only be called on subtypes of Service"
+        )
 
     def call(self, inputs, **kwargs) -> Response:
         raise NotImplementedError("`call` should only be called on subtypes of Service")

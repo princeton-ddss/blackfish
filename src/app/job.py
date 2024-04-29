@@ -56,6 +56,8 @@ class SlurmJobConfig(JobConfig):
     gres: Optional[int] = 0  # i.e., gpu:<gres>
     partition: Optional[str] = None  # e.g., mig
     constraint: Optional[str] = None  # e.g., gpu80
+    home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
+    cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
 
 
 @dataclass

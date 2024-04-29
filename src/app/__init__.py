@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional
@@ -9,6 +8,7 @@ from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from litestar import Litestar, get, post, put, delete
+from litestar.datastructures import State
 from litestar.dto import DTOConfig, DataclassDTO
 from advanced_alchemy.extensions.litestar import (
     AsyncSessionConfig,
@@ -23,7 +23,10 @@ from litestar.status_codes import HTTP_409_CONFLICT
 from app.logger import logger
 from app.models.base import Service
 from app.models.nlp.text_generation import TextGeneration
+from app.config import default_config as blackfish_config
 
+
+JOB_TYPES = ["text_generation"]
 
 # -------------------------------------------------------------------------------------------- #
 # API                                                                                          #
@@ -41,15 +44,15 @@ from app.models.nlp.text_generation import TextGeneration
 
 @dataclass
 class ServiceRequest:
-    name: str
+    name: str  # TODO: optional w/ default by name generator
     image: str
     model: str
-    user: str
-    host: str
-    port: str
     job_type: str
     container_options: dict
     job_options: dict
+    user: Optional[str] = None
+    host: Optional[str] = "localhost"
+    port: Optional[str] = None
 
 
 class ServiceRequestDTO(DataclassDTO[ServiceRequest]):
@@ -61,11 +64,6 @@ class StopServiceRequest:
     delay: int = 0
     timeout: bool = False
     failed: bool = False
-
-
-@get("/")
-async def greeting() -> dict:
-    return "Welcome to Blackfish!"
 
 
 async def get_service(service_id: str, session: AsyncSession) -> Service:
@@ -80,19 +78,30 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
 def build_service(data: ServiceRequest):
     if data.image == "text_generation":
         return TextGeneration(
-            name=data.name,
+            name=data.name,  # optional
             image=data.image,
             model=data.model,
-            user=data.user,
-            host=data.host,
-            port=data.port,
+            user=data.user,  # optional (required to run remote services)
+            host=data.host,  # optional (required to run remote services)
             job_type=data.job_type,            
         )
     else:
-        raise Exception(f"Service image should be one of: {['text_generation']}")
+        raise Exception(f"Service image should be one of: {JOB_TYPES}")
+
+
+@get("/")
+async def index(state: State) -> dict:
+    return f"""Welcome to Blackfish!
+    
+BLACKFISH_USER: {state.BLACKFISH_USER}
+BLACKFISH_HOST: {state.BLACKFISH_HOST}
+BLACKFISH_HOME: {state.BLACKFISH_HOME}
+BLACKFISH_CACHE: {state.BLACKFISH_CACHE}
+"""
+
 
 @post("/services", dto=ServiceRequestDTO)
-async def run_service(data: ServiceRequest, session: AsyncSession) -> Service:
+async def run_service(data: ServiceRequest, session: AsyncSession, state: State) -> Service:
     try:
         service = build_service(data)
     except Exception as e:
@@ -100,6 +109,7 @@ async def run_service(data: ServiceRequest, session: AsyncSession) -> Service:
     try:
         await service.start(
             session,
+            state,
             container_options=data.container_options,
             job_options=data.job_options
         )
@@ -206,7 +216,7 @@ async def session_provider(
 
 app = Litestar(
     route_handlers=[
-        greeting,
+        index,
         run_service,
         stop_service,
         refresh_service,
@@ -215,5 +225,6 @@ app = Litestar(
     ],
     dependencies={"session": session_provider},
     plugins=[SQLAlchemyPlugin(db_config)],
-    logging_config=None  # disable Litestar logger (we're using our own)
+    logging_config=None,  # disable Litestar logger (we're using our own)
+    state=State(blackfish_config.as_dict()),
 )

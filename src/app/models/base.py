@@ -21,9 +21,6 @@ from app.utils import find_port
 @dataclass
 class ContainerConfig:
 
-    apptainer_cache: Optional[str]
-    apptainer_tmpdir: Optional[str]
-
     def data(self) -> dict:
         return {
             k: v
@@ -96,14 +93,14 @@ class Service(UUIDAuditBase):
                 )
             else:
                 logger.debug(
-                    f"copying job script to {self.host}:{job_options.remote_home}."
+                    f"copying job script to {self.host}:{job_options.home_dir}."
                 )
                 _ = subprocess.check_output(
                     [
                         "scp",
                         os.path.join(state.BLACKFISH_HOME, "start.sh"),
                         (
-                            f"{self.user}@{self.host}:{os.path.join(job_options.remote_home, 'start.sh')}"
+                            f"{self.user}@{self.host}:{os.path.join(job_options.home_dir, 'start.sh')}"
                         ),
                     ]
                 )
@@ -114,8 +111,8 @@ class Service(UUIDAuditBase):
                         f"{self.user}@{self.host}",
                         "sbatch",
                         "--chdir",
-                        f"{job_options.remote_home}",
-                        f"{job_options.remote_home}/start.sh",
+                        f"{job_options.home_dir}",
+                        f"{job_options.home_dir}/start.sh",
                     ]
                 )
 

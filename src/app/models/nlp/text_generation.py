@@ -14,26 +14,29 @@ from app.logger import logger
 # was built to run on GPU and will not reliably work wihtout GPU support.
 
 
-TextGenerationModels = [
-    "bigscience/bloom",
-    "google/flan",
-    "facebook/galactica",
-    "EleutherAI/gpt-neox",
-    "facebook/opt",
-    "bigcode/santacoder",
-    "bigcode/starcoder",
-    "tiiuae/falcon",
-    "mosaicml/mpt",
-    "meta-llama/Meta-Llama-3",
-    "meta-llama/Meta-Llama-2",
-    "meta-llama/CodeLlama",
-    "mistralai/Mistral",
-    "microsoft/phi-2",
-]
+TextGenerationModels = {
+    "bigscience/bloom-560m": {
+        "quantizations": [],
+    },
+    "google/flan": {},
+    "facebook/galactica": {},
+    "EleutherAI/gpt-neox": {},
+    "facebook/opt": {},
+    "bigcode/santacoder": {},
+    "bigcode/starcoder": {},
+    "tiiuae/falcon": {},
+    "mosaicml/mpt": {},
+    "meta-llama/Meta-Llama-3": {},
+    "meta-llama/Meta-Llama-2": {},
+    "meta-llama/CodeLlama": {},
+    "mistralai/Mistral": {},
+    "microsoft/phi-2": {},
+}
 
 
 @dataclass
 class TextGenerationConfig(ContainerConfig):
+    model: str
     quantize: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None

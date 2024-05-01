@@ -93,10 +93,11 @@ def build_service(data: ServiceRequest):
 async def index(state: State) -> dict:
     return f"""Welcome to Blackfish!
     
-BLACKFISH_USER: {state.BLACKFISH_USER}
 BLACKFISH_HOST: {state.BLACKFISH_HOST}
-BLACKFISH_HOME: {state.BLACKFISH_HOME}
-BLACKFISH_CACHE: {state.BLACKFISH_CACHE}
+BLACKFISH_PORT: {state.BLACKFISH_PORT}
+BLACKFISH_HOME_DIR: {state.BLACKFISH_HOME_DIR}
+BLACKFISH_CACHE_DIR: {state.BLACKFISH_CACHE_DIR}
+BLACKFISH_DEBUG: {state.BLACKFISH_DEBUG}
 """
 
 

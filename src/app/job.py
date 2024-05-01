@@ -48,6 +48,7 @@ class LocalJobConfig(JobConfig):
 @dataclass
 class SlurmJobConfig(JobConfig):
     host: Optional[str] = None
+    user: Optional[str] = None
     name: Optional[str] = "blackfish"
     time: Optional[str] = "00:15:00"
     nodes: Optional[int] = 1

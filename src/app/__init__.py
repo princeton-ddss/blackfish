@@ -23,7 +23,7 @@ from litestar.status_codes import HTTP_409_CONFLICT
 from app.logger import logger
 from app.models.base import Service
 from app.models.nlp.text_generation import TextGeneration
-from app.config import default_config as blackfish_config
+from app.config import config as blackfish_config
 
 
 JOB_TYPES = ["text_generation"]

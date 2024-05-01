@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import copy
 import logging
 import colorlog
-from app.config import default_config as config
+from app.config import config as app_config
 import os
 
 class CustomFormatter(colorlog.ColoredFormatter):
@@ -13,7 +13,7 @@ class CustomFormatter(colorlog.ColoredFormatter):
         recordcopy.__dict__["seperator"] = seperator
         return super().formatMessage(recordcopy)
 
-if config.BLACKFISH_DEBUG:
+if app_config.BLACKFISH_DEBUG:
     handler = colorlog.StreamHandler()
     formatter = CustomFormatter(
         "%(log_color)s%(levelname)s%(white)s:%(seperator)s%(message)s %(thin)s[%(asctime)s.%(msecs)03d]",
@@ -32,7 +32,7 @@ if config.BLACKFISH_DEBUG:
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 else:
-    handler = logging.FileHandler(f"{os.path.join(config.BLACKFISH_HOME, 'logs')}")
+    handler = logging.FileHandler(f"{os.path.join(app_config.BLACKFISH_HOME, 'logs')}")
     formatter = logging.Formatter(
         "[%(asctime)s.%(msecs)03d] %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",

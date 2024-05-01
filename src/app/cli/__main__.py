@@ -6,6 +6,7 @@ import subprocess
 from prettytable import PrettyTable, PLAIN_COLUMNS
 import uvicorn
 
+import app
 from app.models.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
 from app.config import config as app_config
@@ -59,32 +60,44 @@ def start(reload: bool, profile: str) -> None:
         return
 
     if profile is None:
-        # Running Blackfish locally
-        # migrate_db()
-        # uvicorn.run(
-        #     "app.asgi:app",
-        #     host=app_config.BLACKFISH_HOST,
-        #     port=app_config.BLACKFISH_PORT,
-        #     log_level="info",
-        #     reload=reload,
-        # )
-        _ = subprocess.check_output(
-            [
-                sys.executable,
-                "-m",
-                "uvicorn",
-                "--host",
-                app_config.BLACKFISH_HOST,
-                "--port",
-                str(app_config.BLACKFISH_PORT),
-                "--log-level",
-                "info",
-                "--reload",
-                str(reload),
-            ]
+        # TODO: migrate_db()
+        uvicorn.run(
+            "app:app",
+            host=app_config.BLACKFISH_HOST,
+            port=app_config.BLACKFISH_PORT,
+            log_level="info",
+            app_dir=os.path.abspath(os.path.join(app.__file__, "..", "..")),
+            reload_dirs=os.path.abspath(os.path.join(app.__file__, "..", "..")),
+            reload=reload,
         )
+        # _ = subprocess.check_output(
+        #     [
+        #         sys.executable,
+        #         "-m",
+        #         "uvicorn",
+        #         "--host",
+        #         app_config.BLACKFISH_HOST,
+        #         "--port",
+        #         str(app_config.BLACKFISH_PORT),
+        #         "--log-level",
+        #         "info",
+        #         "--reload",
+        #         "--app-dir",
+        #         os.path.abspath(os.path.join(app.__file__, "..", "..")),
+        #         "app:app",
+        #     ]
+        # )
+        # _ = subprocess.check_output(
+        #     [
+        #         "litestar",
+        #         "--app-dir",
+        #         os.path.abspath(os.path.join(app.__file__, "..", "..")),
+        #         "run",
+        #         "--reload"
+        #     ]
+        # )
     else:
-        # Running Blackfish remotely
+        # TODO: running Blackfish remotely
         profile = profiles[profile]
         if profile["type"] == "slurm":
             raise NotImplementedError

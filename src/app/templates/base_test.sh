@@ -15,8 +15,8 @@
 {% endif %}
 {%- endblock %}
 {% block prelude %}
-export APPTAINER_CACHEDIR={{ container_config.apptainer_cache }}
-export APPTAINER_TMPDIR={{ container_config.apptainer_tmpdir }}
+export APPTAINER_CACHEDIR=/scratch/gpfs/{{ job_config.user }}/APPTAINER_CACHE
+export APPTAINER_TMPDIR=/tmp
 {% raw %}
 port=$(comm -23 <(seq 8080 8899 | sort) <(ss -Htan | awk '{{print $4}}' | cut -d':' -f2 | sort -u) | shuf | head -n 1)
 {% endraw %}

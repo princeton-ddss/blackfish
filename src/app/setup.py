@@ -2,22 +2,23 @@ import os
 import configparser
 import subprocess
 
-from app.config import BlackfishConfig, base_config
+from app.config import BlackfishConfig
 from app.logger import logger
 
 
-def setup():
-    """Setup up the blackfish CLI. Called by CLI command `blackfish setup`."""
-    make_local_dir()
-    migrate_db()
-    create_or_modify_config()
+# def setup():
+#     """Setup up the blackfish CLI. Called by CLI command `blackfish setup`."""
+#     make_local_dir()
+#     migrate_db()
+#     create_or_modify_config()
 
 
-def make_local_dir():
-    if not os.path.isdir(base_config.BLACKFISH_HOME):
-        logger.info(f"making blackfish home directory {base_config.BLACKFISH_HOME}")
+def make_local_dir(home_dir: str) -> None:
+    if not os.path.isdir(home_dir):
+        logger.info(f"setting up blackfish home directory {home_dir}")
         try:
-            os.mkdir(base_config.BLACKFISH_HOME)
+            os.mkdir(home_dir)
+            os.mkdir(os.path.join(home_dir, "cache"))
         except OSError as e:
             logger.error("unable to make blackfish home directory: ", e)
     else:
@@ -85,53 +86,65 @@ def migrate_db():
     pass
 
 
-def create_or_modify_config(modify=False):
-    created = os.path.isfile(os.path.join(base_config.BLACKFISH_HOME, "config"))
-    if not created or modify:
-        if created:
-            print("Create a new profile:")
-        else:
-            print("Modify a profile:")
+def create_or_modify_config(home_dir: str, modify=False) -> None:
+    config_exists = os.path.isfile(os.path.join(home_dir, "config"))
+    
+    if modify or not config_exists:
+
         name = input("> name [default]: ")
         name = "default" if name == "" else name
-        user = input("> user: ")
-        host = input("> host [della.princeton.edu]: ")
-        host = "della.princeton.edu" if host == "" else host
-        cache = input(f"> cache [/scratch/gpfs/{user}]: ")
-        cache = f"/scratch/gpfs/{user}" if cache == "" else cache
 
-        if name == "base":
-            raise Exception("Profile name 'base' is not allowed.")
-        if user == "":
-            raise Exception("User is required.")
-        if host != "della.princeton.edu" or "della-gpu.princeton.edu":
-            raise Exception("Host is unknown.")
-        if cache == "":
-            raise Exception("Cache is required.")
+        if config_exists:
+            config = configparser.ConfigParser()
+            config.read(f"{home_dir}/config")
+            if name in config:
+                # Modifying an existing profile
+                profile = config[name]
+                profile_type = profile['type']
+            else:
+                # Creating a new profile
+                profile_type = input("> type [slurm]: ")
+                profile_type = "slurm" if profile_type == "" else profile_type
+        else:
+            # Creating a config
+            profile_type = input("> type [slurm]: ")
+            profile_type = "slurm" if profile_type == "" else profile_type
+        
 
-        config = configparser.ConfigParser()
-        config.read(f"{base_config.BLACKFISH_HOME}/config")
-        profile_exists = name in config
+        if profile_type == 'slurm':
+            if name in config:
+                user = input(f"> user [{profile['user']}]: ")
+                user = profile['user'] if user == "" else user
+                host = input(f"> host [{profile['host']}]: ")
+                host = profile['host'] if host == "" else host
+                home_dir = input(f"> home [{profile['home_dir']}]: ")
+                home_dir = profile['home_dir'] if home_dir == "" else home_dir
+                cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
+                cache_dir = profile['cache_dir'] if cache_dir == "" else cache_dir
+            else:
+                user = input("> user: ")
+                while user == "":
+                    print("User is required.")
+                    user = input("> user: ")
+                host = input("> host [della.princeton.edu]: ")
+                host = "della.princeton.edu" if host == "" else host
+                home_dir = input(f"> home [/home/{user}/.blackfish]: ")
+                home_dir = f"/home/{user}/.blackfish" if home_dir == "" else home_dir
+                cache_dir = input(f"> cache [/scratch/gpfs/{user}]: ")
+                cache_dir = f"/scratch/gpfs/{user}" if cache_dir == "" else cache_dir
+        
+                config[name] = {
+                    "type": profile_type,
+                    "user": user,
+                    "host": host,
+                    "home_dir": home_dir,
+                    "cache_dir": cache_dir,
+                }
+        else:
+            raise NotImplementedError
 
-        config[name] = {
-            "user": user,
-            "host": host,
-            "cache": cache,
-        }
-        with open(os.path.join(base_config.BLACKFISH_HOME, "config"), "w") as f:
+        with open(os.path.join(home_dir, "config"), "w") as f:
             config.write(f)
-
-        if not profile_exists:
-            try:
-                make_remote_dir(user, host, cache)
-            except Exception as e:
-                logger.error(e)
-                logger.info("rolling back changes to blackfish config.")
-                config = configparser.ConfigParser()
-                # TODO: need to write a copy of original config!!
-                with open(os.path.join(base_config.BLACKFISH_HOME, "config"), "w") as f:
-                    config.write(f)
-
     else:
         logger.info("blackfish config already exists. Skipping.")
     print("\n🎉 All done--let's fish! 🎉")

@@ -1,11 +1,15 @@
 import click
 import requests
+import os
+import sys
+import subprocess
 from prettytable import PrettyTable, PLAIN_COLUMNS
 import uvicorn
 
 from app.models.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
-from app.config import default_config as app_config
+from app.config import config as app_config
+from app.config import profiles
 from app.setup import make_local_dir, migrate_db, create_or_modify_config
 
 
@@ -23,11 +27,12 @@ def main() -> None:
 
 
 @main.command()
-def init() -> None:
+@click.option("--home_dir", type=str, default=None)
+def init(home_dir: str) -> None:
     "Initialize the blackfish service."
-    make_local_dir()
-    migrate_db()
-    create_or_modify_config()
+    home_dir = home_dir if home_dir is not None else app_config.BLACKFISH_HOME_DIR
+    make_local_dir(home_dir)
+    create_or_modify_config(home_dir)
 
 
 @main.command()
@@ -38,14 +43,67 @@ def init() -> None:
     default=False,
     help="Automatically reload changes to the application",
 )
-def start(reload) -> None:
+@click.option(
+    "--profile",
+    type=str,
+    default=None,
+)
+def start(reload: bool, profile: str) -> None:
     "Start the blackfish app."
-    # make_local_dir()
-    # migrate_db()
-    # create_or_modify_config()
-    uvicorn.run(
-        "app.asgi:app", port=8000, log_level="info", reload=reload
-    )  # TODO: see run_uvicorn_in_subprocess
+
+    if not os.path.isdir(app_config.BLACKFISH_HOME_DIR):
+        print("Home directory not found. Have you run `blackfish init`?")
+        return
+    if not os.path.isdir(app_config.BLACKFISH_CACHE_DIR):
+        print("Cache directory not found. Have you run `blackfish init`?")
+        return
+
+    if profile is None:
+        # Running Blackfish locally
+        # migrate_db()
+        # uvicorn.run(
+        #     "app.asgi:app",
+        #     host=app_config.BLACKFISH_HOST,
+        #     port=app_config.BLACKFISH_PORT,
+        #     log_level="info",
+        #     reload=reload,
+        # )
+        _ = subprocess.check_output(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "--host",
+                app_config.BLACKFISH_HOST,
+                "--port",
+                str(app_config.BLACKFISH_PORT),
+                "--log-level",
+                "info",
+                "--reload",
+                str(reload),
+            ]
+        )
+    else:
+        # Running Blackfish remotely
+        profile = profiles[profile]
+        if profile["type"] == "slurm":
+            raise NotImplementedError
+            # _ = subprocess.check_output(
+            #     [
+            #         "ssh",
+            #         f"{profile['user']}@{profile['host']}",
+            #         "uvicorn",
+            #         "--port",
+            #         profile['port'],
+            #         "--log-level",
+            #         "info",
+            #         "--reload",
+            #         reload,
+            #     ]
+            # )
+        else:
+            raise NotImplementedError
+        raise NotImplementedError
 
 
 # blackfish run [OPTIONS] COMMAND
@@ -56,12 +114,22 @@ def start(reload) -> None:
 @click.option("--gres", type=int, default=None)
 @click.option("--partition", type=str, default=None)
 @click.option("--constraint", type=str, default=None)
+@click.option("--profile", type=str, default="default")
 @click.pass_context
-def run(ctx, time, wait, ntasks_per_node, mem, gres, partition, constraint):
+def run(
+    ctx,
+    time,
+    ntasks_per_node,
+    mem,
+    gres,
+    partition,
+    constraint,
+    profile,
+):
     """Run an inference service"""
     ctx.obj = {
+        "profile": profile,
         "time": time,
-        "wait": wait,
         "ntasks_per_node": ntasks_per_node,
         "mem": mem,
         "gres": gres,
@@ -70,7 +138,7 @@ def run(ctx, time, wait, ntasks_per_node, mem, gres, partition, constraint):
     }
 
 
-run.add_command(run_text_generate, "run_text_generate")
+run.add_command(run_text_generate, "text-generate")
 
 
 # blackfish stop [OPTIONS] SERVICE [SERVICE...]
@@ -87,7 +155,7 @@ def stop(service_id, delay) -> None:
     """Stop one or more services"""
 
     res = requests.put(
-        f"http://127.0.0.1:{app_config.BLACKFISH_HOST}/services/{service_id}/stop"
+        f"http://{app_config.BLACKFISH_PORT}:{app_config.BLACKFISH_PORT}/services/{service_id}/stop"
     )
 
     if not res.okay is not None:
@@ -112,7 +180,7 @@ def rm(service_id, force) -> None:
     """Remove one or more services"""
 
     res = requests.delete(
-        f"http://127.0.0.1:{app_config.BLACKFISH_HOST}/services/{service_id}"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}"
     )
 
     if not res.okay is not None:
@@ -126,7 +194,7 @@ def details(service_id):
     """Show detailed service information"""
 
     res = requests.get(
-        f"http://127.0.0.1:{app_config.BLACKFISH_HOST}/services/{service_id}"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}"
     )  # fresh data 🥬
     service = Service(res)  # TODO: convert to proper type based on `type` property!
 
@@ -174,7 +242,7 @@ def ls(filters):
         filters = ""
 
     res = requests.get(
-        f"{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services{filters}"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services{filters}"
     )  # fresh data 🥬
 
     tab = PrettyTable(

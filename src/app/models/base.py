@@ -73,9 +73,8 @@ class Service(UUIDAuditBase):
         Returns:
             None.
         """
-
-        logger.debug(f"Generating job script and writing to {state.BLACKFISH_HOME}.")
-        with open(os.path.join(state.BLACKFISH_HOME, "start.sh"), "w") as f:
+        logger.debug(f"Generating job script and writing to {state.BLACKFISH_HOME_DIR}.")
+        with open(os.path.join(state.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
             try:
                 script = self.launch_script(container_options, job_options)
                 f.write(script)
@@ -89,7 +88,7 @@ class Service(UUIDAuditBase):
             if self.host == "localhost":
                 logger.debug("submitting batch job on login node.")
                 res = subprocess.check_output(
-                    ["sbatch", os.path.join(state.BLACKFISH_HOME, "start.sh")]
+                    ["sbatch", os.path.join(state.BLACKFISH_HOME_DIR, "start.sh")]
                 )
             else:
                 logger.debug(
@@ -98,7 +97,7 @@ class Service(UUIDAuditBase):
                 _ = subprocess.check_output(
                     [
                         "scp",
-                        os.path.join(state.BLACKFISH_HOME, "start.sh"),
+                        os.path.join(state.BLACKFISH_HOME_DIR, "start.sh"),
                         (
                             f"{self.user}@{self.host}:{os.path.join(job_options.home_dir, 'start.sh')}"
                         ),

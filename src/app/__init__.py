@@ -115,7 +115,7 @@ async def run_service(data: ServiceRequest, session: AsyncSession, state: State)
             job_options=data.job_options
         )
     except Exception as e:
-        print(e)
+        logger.error(f"Unable to start service. Error: {e}")
 
     return service
 

@@ -1,5 +1,6 @@
 import click
 import requests
+from random import randint
 
 from app.models.nlp.text_generation import (
     TextGeneration,
@@ -88,7 +89,10 @@ def run_text_generate(
 
     profile = profiles[ctx.obj.get("profile", "default")]
 
-    container_options = {"model": model}
+    if name is None:
+        name = f"blackfish-{randint(10_000, 20_000)}"
+
+    container_options = {}
     if revision is not None:
         container_options["revision"] = revision
     if disable_custom_kernels is not None:
@@ -163,7 +167,7 @@ def run_text_generate(
             res = requests.post(
                 f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services",
                 json={
-                    "name": "test",
+                    "name": name,
                     "image": "text_generation",
                     "model": model,
                     "job_type": profile["type"],

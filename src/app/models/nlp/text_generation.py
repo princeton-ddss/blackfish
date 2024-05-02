@@ -36,7 +36,6 @@ TextGenerationModels = {
 
 @dataclass
 class TextGenerationConfig(ContainerConfig):
-    model: str
     quantize: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None

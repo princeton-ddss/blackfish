@@ -53,10 +53,10 @@ def start(reload: bool, profile: str) -> None:
     "Start the blackfish app."
 
     if not os.path.isdir(app_config.BLACKFISH_HOME_DIR):
-        print("Home directory not found. Have you run `blackfish init`?")
+        click.echo("Home directory not found. Have you run `blackfish init`?")
         return
     if not os.path.isdir(app_config.BLACKFISH_CACHE_DIR):
-        print("Cache directory not found. Have you run `blackfish init`?")
+        click.echo("Cache directory not found. Have you run `blackfish init`?")
         return
 
     if profile is None:
@@ -171,8 +171,8 @@ def stop(service_id, delay) -> None:
         f"http://{app_config.BLACKFISH_PORT}:{app_config.BLACKFISH_PORT}/services/{service_id}/stop"
     )
 
-    if not res.okay is not None:
-        print(f"Failed to stop service {service_id}.")
+    if not res.ok is not None:
+        click.echo(f"Failed to stop service {service_id}.")
 
 
 # blackfish rm [OPTIONS] SERVICE [SERVICE...]
@@ -196,8 +196,10 @@ def rm(service_id, force) -> None:
         f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}"
     )
 
-    if not res.okay is not None:
-        print(f"Failed to stop service {service_id}.")
+    if not res.ok is not None:
+        click.echo(f"Failed to stop service {service_id}.")
+    else:
+        click.echo(f"Removed service {service_id}")
 
 
 # blackfish details [OPTIONS] SERVICE
@@ -209,7 +211,7 @@ def details(service_id):
     res = requests.get(
         f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}"
     )  # fresh data 🥬
-    service = Service(res)  # TODO: convert to proper type based on `type` property!
+    service = Service(**res.json())
 
     if service is not None:
         job = service.get_job()
@@ -218,25 +220,33 @@ def details(service_id):
             "model": service.model,
             "created_at": service.created_at.isoformat(),
             "name": service.name,
-            "job_id": {
-                "job_id": job["job_id"],
-                "user": job["user"],
-                "cluster": job["host"],
-                "node": job["node"],
-            },
             "state": {
                 "value": service.state,
                 "updated_at": service.updated_at.isoformat(),
             },
             "connection": {
-                "host": service["host"],
-                "port": service["port"],
-                "remote_port": service["remote_port"],
+                "host": service.host,
+                "port": service.port,
+                # "remote_port": service.remote_port,
             },
         }
+        if service.job_type == "slurm":
+            data["job"] = {
+                "job_id": job["job_id"],
+                "host": job["host"],  # or service["host"]
+                "user": job["user"],  # or service["user"]
+                "node": job["node"],
+                "port": job["port"],
+                "name": job["name"],
+                "state": job["state"],
+            }
+        elif service.job_type == "test":
+            data["job"] = {}
+        else:
+            raise NotImplementedError
         click.echo(data)
     else:
-        print(f"Service {service} not found.")
+        click.echo(f"Service {service} not found.")
 
 
 # blackfish ls [OPTIONS]
@@ -273,8 +283,7 @@ def ls(filters):
     tab.set_style(PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
-    for item in res:
-        service = Service(item)
+    for service in res.json():
         ports = (
             f"""localhost:{service["port"]}->{service["host"]}:{service["remote_port"]}"""
             if (

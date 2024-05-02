@@ -67,7 +67,7 @@ def start(reload: bool, profile: str) -> None:
             port=app_config.BLACKFISH_PORT,
             log_level="info",
             app_dir=os.path.abspath(os.path.join(app.__file__, "..", "..")),
-            reload_dirs=os.path.abspath(os.path.join(app.__file__, "..", "..")),
+            reload_dirs=os.path.abspath(os.path.join(app.__file__, "..")),
             reload=reload,
         )
         # _ = subprocess.check_output(

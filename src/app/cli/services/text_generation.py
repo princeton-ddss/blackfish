@@ -145,6 +145,33 @@ def run_text_generate(
                 }
             )
             print(res)
+    elif profile["type"] == "test":
+        if dry_run:
+            service = TextGeneration(
+                name=name,
+                model=model,
+                job_type="test",
+            )
+            click.echo("-" * 80)
+            click.echo(f"Service type: {profile['type']}")
+            click.echo(f"Name: {name}")
+            click.echo(f"Container options: {container_options}")
+            click.echo(f"Job options: {job_options}")
+            click.echo("-" * 80)
+            click.echo(service.launch_script(container_options, job_options))
+        else:
+            res = requests.post(
+                f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services",
+                json={
+                    "name": "test",
+                    "image": "text_generation",
+                    "model": model,
+                    "job_type": profile["type"],
+                    "container_options": container_options,
+                    "job_options": job_options,
+                },
+            )
+            click.echo(f"Started service: {res.json()['id']}")
     else:
         raise NotImplementedError
 

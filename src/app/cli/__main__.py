@@ -168,7 +168,10 @@ def stop(service_id, delay) -> None:
     """Stop one or more services"""
 
     res = requests.put(
-        f"http://{app_config.BLACKFISH_PORT}:{app_config.BLACKFISH_PORT}/services/{service_id}/stop"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}/stop",
+        json={
+            "delay": delay,
+        }
     )
 
     if not res.ok is not None:
@@ -211,6 +214,7 @@ def details(service_id):
     res = requests.get(
         f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}"
     )  # fresh data 🥬
+
     service = Service(**res.json())
 
     if service is not None:
@@ -218,11 +222,11 @@ def details(service_id):
         data = {
             "image": service.image,
             "model": service.model,
-            "created_at": service.created_at.isoformat(),
+            "created_at": service.created_at,  # .isoformat(),
             "name": service.name,
-            "state": {
-                "value": service.state,
-                "updated_at": service.updated_at.isoformat(),
+            "status": {
+                "value": service.status,
+                "updated_at": service.updated_at,  # .isoformat(),
             },
             "connection": {
                 "host": service.host,
@@ -232,13 +236,13 @@ def details(service_id):
         }
         if service.job_type == "slurm":
             data["job"] = {
-                "job_id": job["job_id"],
-                "host": job["host"],  # or service["host"]
-                "user": job["user"],  # or service["user"]
-                "node": job["node"],
-                "port": job["port"],
-                "name": job["name"],
-                "state": job["state"],
+                "job_id": job.job_id,
+                "host": job.host,  # or service["host"]
+                "user": job.user,  # or service["user"]
+                "node": job.node,
+                "port": job.port,
+                "name": job.name,
+                "state": job.state,
             }
         elif service.job_type == "test":
             data["job"] = {}

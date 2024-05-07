@@ -1,12 +1,14 @@
-{% block sbatch %}
+{% block sbatch -%}
 #!/bin/bash
 
-#SBATCH --job-name={{ job_config.name }}
+#SBATCH --job-name={{ name }}
 #SBATCH --nodes={{ job_config.nodes }}
 #SBATCH --ntasks-per-node={{ job_config.ntasks_per_node }}
 #SBATCH --mem={{ job_config.mem }}G
 #SBATCH --time={{ job_config.time }}
+{%- if job_config.gres > 0 %}
 #SBATCH --gres=gpu:{{ job_config.gres }}
+{% endif %}
 {%- if 'constraint' in job_config %}
 #SBATCH --constraint={{ job_config.constraint }}
 {% endif %}

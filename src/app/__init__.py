@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional
-
+import asyncio
 
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -83,7 +83,7 @@ def build_service(data: ServiceRequest):
             model=data.model,
             user=data.user,  # optional (required to run remote services)
             host=data.host,  # optional (required to run remote services)
-            job_type=data.job_type,            
+            job_type=data.job_type,
         )
     else:
         raise Exception(f"Service image should be one of: {JOB_TYPES}")
@@ -102,7 +102,9 @@ BLACKFISH_DEBUG: {state.BLACKFISH_DEBUG}
 
 
 @post("/services", dto=ServiceRequestDTO)
-async def run_service(data: ServiceRequest, session: AsyncSession, state: State) -> Service:
+async def run_service(
+    data: ServiceRequest, session: AsyncSession, state: State
+) -> Service:
     try:
         service = build_service(data)
     except Exception as e:
@@ -112,7 +114,7 @@ async def run_service(data: ServiceRequest, session: AsyncSession, state: State)
             session,
             state,
             container_options=data.container_options,
-            job_options=data.job_options
+            job_options=data.job_options,
         )
     except Exception as e:
         logger.error(f"Unable to start service. Error: {e}")
@@ -125,8 +127,9 @@ async def stop_service(
     service_id: str, data: StopServiceRequest, session: AsyncSession
 ) -> Service:
     service = await get_service(service_id, session)
-    logger.error("Hello!")
-    # await service.stop(session, delay=data.delay, timeout=data.timeout, failed=data.failed)
+    await service.stop(
+        session, delay=data.delay, timeout=data.timeout, failed=data.failed
+    )
 
     return service
 
@@ -134,7 +137,10 @@ async def stop_service(
 @get("/services/{service_id:str}")
 async def refresh_service(service_id: str, session: AsyncSession) -> Service:
     service = await get_service(service_id, session)
-    # await service.refresh(session)
+    try:
+        await service.refresh(session)
+    except Exception as e:
+        logger.error(f"Failed to refresh service: {e}")
 
     return service
 
@@ -162,15 +168,27 @@ async def fetch_services(
     res = await session.execute(query)
     services = res.scalars().all()
 
-    # await asyncio.gather(*[s.refresh() for s in services])
+    await asyncio.gather(*[s.refresh(session) for s in services])
 
     return services
 
 
 @delete("/services/{service_id:str}")
 async def delete_service(service_id: str, session: AsyncSession) -> None:
-    query = sa.delete(Service).where(Service.id == service_id)
-    await session.execute(query)
+    service = await get_service(service_id, session)
+    await service.refresh(session)
+    if service.status in ["STOPPED", "TIMEOUT", "FAILED"]:
+        query = sa.delete(Service).where(Service.id == service_id)
+        await session.execute(query)
+        # TODO: return success message
+    else:
+        logger.warn(
+            f"Service is still running (status={service.status}). Aborting delete."
+        )
+        # await service.stop(
+        #     session, delay=data.delay, timeout=data.timeout, failed=data.failed
+        # )
+        # TODO: return failure status code and message
 
 
 @get("/models")

@@ -2,6 +2,7 @@ import os
 import configparser
 import subprocess
 
+import app
 from app.config import BlackfishConfig
 from app.logger import logger
 
@@ -80,10 +81,16 @@ def make_remote_dir(user, host, cache):
 
 def migrate_db():
     logger.info("running database migration")
-    # TODO: run database migrations
-    # in command-line, this is just:
-    # litestar database upgrade
-    pass
+    _ = subprocess.check_output(
+        [
+            "litestar",
+            "--app-dir",
+            os.path.abspath(os.path.join(app.__file__, "..", "..")),
+            "database",
+            "upgrade",
+            "--no-prompt",
+        ]
+    )
 
 
 def create_or_modify_config(home_dir: str, modify=False) -> None:

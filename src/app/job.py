@@ -52,8 +52,8 @@ class SlurmJobConfig(JobConfig):
     name: Optional[str] = "blackfish"
     time: Optional[str] = "00:15:00"
     nodes: Optional[int] = 1
-    ntasks_per_node: Optional[int] = 4
-    mem: Optional[int] = 8
+    ntasks_per_node: Optional[int] = 8
+    mem: Optional[int] = 16
     gres: Optional[int] = 0  # i.e., gpu:<gres>
     partition: Optional[str] = None  # e.g., mig
     constraint: Optional[str] = None  # e.g., gpu80
@@ -65,6 +65,7 @@ class SlurmJobConfig(JobConfig):
 class EC2JobConfig(JobConfig): ...
 
 
+@dataclass
 class Job:
     """A light-weight Slurm job dataclass."""
 
@@ -74,10 +75,11 @@ class Job:
     name: Optional[str] = None
     node: Optional[str] = None
     port: Optional[int] = None
-    state: Optional[JobState] = None
+    state: Optional[str] = None
     options: Optional[JobConfig] = None
 
-    def update_state(self):
+    def update(self):
+        logger.debug("Updating job state.")
         try:
             res = subprocess.check_output(
                 [
@@ -97,19 +99,19 @@ class Job:
             )
 
             new_state = "MISSING" if res == b"" else res.decode("utf-8").strip()
-            logger.debug(f"current job state: {self.state}, new job state: {new_state}")
+            logger.debug(f"The current job state is: {new_state}")
             if self.state in [None, "MISSING", "PENDING"] and new_state == "RUNNING":
                 logger.debug(
-                    "job state switched from PENDING to RUNNING"
+                    "Job state switched from PENDING to RUNNING"
                     f" (job_id={self.job_id})."
                 )
                 self.update_node()
                 self.update_port()
             self.state = new_state
-            logger.debug(f"job {self.job_id} state set to {self.state}")
+            logger.debug(f"Job {self.job_id} state set to {self.state}")
         except subprocess.CalledProcessError as e:
             logger.warning(
-                f"failed to update job state (job_id={self.job_id},"
+                f"Failed to update job state (job_id={self.job_id},"
                 f" code={e.returncode})."
             )
 
@@ -181,7 +183,7 @@ class Job:
             time.sleep(period)
 
     def cancel(self) -> None:
-        logger.debug(f"canceling job {self.job_id}.")
+        logger.debug(f"Canceling job {self.job_id}.")
         subprocess.check_output(
             ["ssh", f"{self.user}@{self.host}", "scancel", str(self.job_id)]
         )

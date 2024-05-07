@@ -1,14 +1,14 @@
-import asyncio
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional
-
+import asyncio
 
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from litestar import Litestar, get, post, put, delete
+from litestar.datastructures import State
 from litestar.dto import DTOConfig, DataclassDTO
 from advanced_alchemy.extensions.litestar import (
     AsyncSessionConfig,
@@ -23,7 +23,10 @@ from litestar.status_codes import HTTP_409_CONFLICT
 from app.logger import logger
 from app.models.base import Service
 from app.models.nlp.text_generation import TextGeneration
+from app.config import config as blackfish_config
 
+
+JOB_TYPES = ["text_generation"]
 
 # -------------------------------------------------------------------------------------------- #
 # API                                                                                          #
@@ -41,15 +44,15 @@ from app.models.nlp.text_generation import TextGeneration
 
 @dataclass
 class ServiceRequest:
-    name: str
+    name: str  # TODO: optional w/ default by name generator
     image: str
     model: str
-    user: str
-    host: str
-    port: str
     job_type: str
     container_options: dict
     job_options: dict
+    user: Optional[str] = None
+    host: Optional[str] = "localhost"
+    port: Optional[str] = None
 
 
 class ServiceRequestDTO(DataclassDTO[ServiceRequest]):
@@ -61,11 +64,6 @@ class StopServiceRequest:
     delay: int = 0
     timeout: bool = False
     failed: bool = False
-
-
-@get("/")
-async def greeting() -> dict:
-    return "Welcome to Blackfish!"
 
 
 async def get_service(service_id: str, session: AsyncSession) -> Service:
@@ -80,19 +78,33 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
 def build_service(data: ServiceRequest):
     if data.image == "text_generation":
         return TextGeneration(
-            name=data.name,
+            name=data.name,  # optional
             image=data.image,
             model=data.model,
-            user=data.user,
-            host=data.host,
-            port=data.port,
-            job_type=data.job_type,            
+            user=data.user,  # optional (required to run remote services)
+            host=data.host,  # optional (required to run remote services)
+            job_type=data.job_type,
         )
     else:
-        raise Exception(f"Service image should be one of: {['text_generation']}")
+        raise Exception(f"Service image should be one of: {JOB_TYPES}")
+
+
+@get("/")
+async def index(state: State) -> dict:
+    return f"""Welcome to Blackfish!
+    
+BLACKFISH_HOST: {state.BLACKFISH_HOST}
+BLACKFISH_PORT: {state.BLACKFISH_PORT}
+BLACKFISH_HOME_DIR: {state.BLACKFISH_HOME_DIR}
+BLACKFISH_CACHE_DIR: {state.BLACKFISH_CACHE_DIR}
+BLACKFISH_DEBUG: {state.BLACKFISH_DEBUG}
+"""
+
 
 @post("/services", dto=ServiceRequestDTO)
-async def run_service(data: ServiceRequest, session: AsyncSession) -> Service:
+async def run_service(
+    data: ServiceRequest, session: AsyncSession, state: State
+) -> Service:
     try:
         service = build_service(data)
     except Exception as e:
@@ -100,11 +112,12 @@ async def run_service(data: ServiceRequest, session: AsyncSession) -> Service:
     try:
         await service.start(
             session,
+            state,
             container_options=data.container_options,
-            job_options=data.job_options
+            job_options=data.job_options,
         )
     except Exception as e:
-        print(e)
+        logger.error(f"Unable to start service. Error: {e}")
 
     return service
 
@@ -114,8 +127,9 @@ async def stop_service(
     service_id: str, data: StopServiceRequest, session: AsyncSession
 ) -> Service:
     service = await get_service(service_id, session)
-    logger.error("Hello!")
-    # await service.stop(session, delay=data.delay, timeout=data.timeout, failed=data.failed)
+    await service.stop(
+        session, delay=data.delay, timeout=data.timeout, failed=data.failed
+    )
 
     return service
 
@@ -123,7 +137,10 @@ async def stop_service(
 @get("/services/{service_id:str}")
 async def refresh_service(service_id: str, session: AsyncSession) -> Service:
     service = await get_service(service_id, session)
-    # await service.refresh(session)
+    try:
+        await service.refresh(session)
+    except Exception as e:
+        logger.error(f"Failed to refresh service: {e}")
 
     return service
 
@@ -151,15 +168,27 @@ async def fetch_services(
     res = await session.execute(query)
     services = res.scalars().all()
 
-    # await asyncio.gather(*[s.refresh() for s in services])
+    await asyncio.gather(*[s.refresh(session) for s in services])
 
     return services
 
 
 @delete("/services/{service_id:str}")
 async def delete_service(service_id: str, session: AsyncSession) -> None:
-    query = sa.delete(Service).where(Service.id == service_id)
-    await session.execute(query)
+    service = await get_service(service_id, session)
+    await service.refresh(session)
+    if service.status in ["STOPPED", "TIMEOUT", "FAILED"]:
+        query = sa.delete(Service).where(Service.id == service_id)
+        await session.execute(query)
+        # TODO: return success message
+    else:
+        logger.warn(
+            f"Service is still running (status={service.status}). Aborting delete."
+        )
+        # await service.stop(
+        #     session, delay=data.delay, timeout=data.timeout, failed=data.failed
+        # )
+        # TODO: return failure status code and message
 
 
 @get("/models")
@@ -206,7 +235,7 @@ async def session_provider(
 
 app = Litestar(
     route_handlers=[
-        greeting,
+        index,
         run_service,
         stop_service,
         refresh_service,
@@ -215,5 +244,6 @@ app = Litestar(
     ],
     dependencies={"session": session_provider},
     plugins=[SQLAlchemyPlugin(db_config)],
-    logging_config=None  # disable Litestar logger (we're using our own)
+    logging_config=None,  # disable Litestar logger (we're using our own)
+    state=State(blackfish_config.as_dict()),
 )

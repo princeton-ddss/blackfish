@@ -6,15 +6,7 @@ from jinja2 import Environment, PackageLoader
 
 from app.models.base import Service, ContainerConfig
 from app.job import LocalJobConfig, SlurmJobConfig, EC2JobConfig
-from app.config import default_config as app_config
 from app.logger import logger
-
-BLACKFISH_HOME = app_config.BLACKFISH_HOME
-BLACKFISH_REMOTE = app_config.BLACKFISH_REMOTE
-BLACKFISH_ENV = app_config.BLACKFISH_ENV
-BLACKFISH_CACHE = app_config.BLACKFISH_CACHE
-APPTAINER_CACHE = app_config.APPTAINER_CACHE
-APPTAINER_TMPDIR = app_config.APPTAINER_TMPDIR
 
 
 # NOTE: TextGeneration container is optimized for NVIDIA A100, A10G and T4 GPUs with
@@ -22,22 +14,24 @@ APPTAINER_TMPDIR = app_config.APPTAINER_TMPDIR
 # was built to run on GPU and will not reliably work wihtout GPU support.
 
 
-TextGenerationModels = [
-    "bigscience/bloom",
-    "google/flan",
-    "facebook/galactica",
-    "EleutherAI/gpt-neox",
-    "facebook/opt",
-    "bigcode/santacoder",
-    "bigcode/starcoder",
-    "tiiuae/falcon",
-    "mosaicml/mpt",
-    "meta-llama/Meta-Llama-3",
-    "meta-llama/Meta-Llama-2",
-    "meta-llama/CodeLlama",
-    "mistralai/Mistral",
-    "microsoft/phi-2",
-]
+TextGenerationModels = {
+    "bigscience/bloom-560m": {
+        "quantizations": [],
+    },
+    "google/flan": {},
+    "facebook/galactica": {},
+    "EleutherAI/gpt-neox": {},
+    "facebook/opt": {},
+    "bigcode/santacoder": {},
+    "bigcode/starcoder": {},
+    "tiiuae/falcon": {},
+    "mosaicml/mpt": {},
+    "meta-llama/Meta-Llama-3": {},
+    "meta-llama/Meta-Llama-2": {},
+    "meta-llama/CodeLlama": {},
+    "mistralai/Mistral": {},
+    "microsoft/phi-2": {},
+}
 
 
 @dataclass
@@ -99,18 +93,13 @@ class TextGeneration(Service):
         elif self.job_type == "test":
             job_config = SlurmJobConfig().replace(job_options)
 
-        container_config = TextGenerationConfig().replace(container_options)
+        container_config = TextGenerationConfig(**container_options)
 
         env = Environment(loader=PackageLoader("app", "templates"))
         template = env.get_template(f"text_generation_{self.job_type}.sh")
         job_script = template.render(
             model=self.model,
-            app_config={
-                "model_cache": BLACKFISH_CACHE,
-                "remote": BLACKFISH_REMOTE,
-                "apptainer_cache": APPTAINER_CACHE,
-                "apptainer_tmpdir": APPTAINER_TMPDIR,
-            },
+            name=self.name,
             job_config=job_config.data(),
             container_config=container_config.data(),
         )

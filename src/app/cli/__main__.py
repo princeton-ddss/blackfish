@@ -1,11 +1,16 @@
 import click
 import requests
+import os
+import sys
+import subprocess
 from prettytable import PrettyTable, PLAIN_COLUMNS
 import uvicorn
 
+import app
 from app.models.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
-from app.config import default_config as app_config
+from app.config import config as app_config
+from app.config import profiles
 from app.setup import make_local_dir, migrate_db, create_or_modify_config
 
 
@@ -23,11 +28,12 @@ def main() -> None:
 
 
 @main.command()
-def init() -> None:
+@click.option("--home_dir", type=str, default=None)
+def init(home_dir: str) -> None:
     "Initialize the blackfish service."
-    make_local_dir()
-    migrate_db()
-    create_or_modify_config()
+    home_dir = home_dir if home_dir is not None else app_config.BLACKFISH_HOME_DIR
+    make_local_dir(home_dir)
+    create_or_modify_config(home_dir)
 
 
 @main.command()
@@ -38,14 +44,79 @@ def init() -> None:
     default=False,
     help="Automatically reload changes to the application",
 )
-def start(reload) -> None:
+@click.option(
+    "--profile",
+    type=str,
+    default=None,
+)
+def start(reload: bool, profile: str) -> None:
     "Start the blackfish app."
-    # make_local_dir()
-    # migrate_db()
-    # create_or_modify_config()
-    uvicorn.run(
-        "app.asgi:app", port=8000, log_level="info", reload=reload
-    )  # TODO: see run_uvicorn_in_subprocess
+
+    if not os.path.isdir(app_config.BLACKFISH_HOME_DIR):
+        click.echo("Home directory not found. Have you run `blackfish init`?")
+        return
+    if not os.path.isdir(app_config.BLACKFISH_CACHE_DIR):
+        click.echo("Cache directory not found. Have you run `blackfish init`?")
+        return
+
+    if profile is None:
+        # TODO: migrate_db()
+        uvicorn.run(
+            "app:app",
+            host=app_config.BLACKFISH_HOST,
+            port=app_config.BLACKFISH_PORT,
+            log_level="info",
+            app_dir=os.path.abspath(os.path.join(app.__file__, "..", "..")),
+            reload_dirs=os.path.abspath(os.path.join(app.__file__, "..")),
+            reload=reload,
+        )
+        # _ = subprocess.check_output(
+        #     [
+        #         sys.executable,
+        #         "-m",
+        #         "uvicorn",
+        #         "--host",
+        #         app_config.BLACKFISH_HOST,
+        #         "--port",
+        #         str(app_config.BLACKFISH_PORT),
+        #         "--log-level",
+        #         "info",
+        #         "--reload",
+        #         "--app-dir",
+        #         os.path.abspath(os.path.join(app.__file__, "..", "..")),
+        #         "app:app",
+        #     ]
+        # )
+        # _ = subprocess.check_output(
+        #     [
+        #         "litestar",
+        #         "--app-dir",
+        #         os.path.abspath(os.path.join(app.__file__, "..", "..")),
+        #         "run",
+        #         "--reload"
+        #     ]
+        # )
+    else:
+        # TODO: running Blackfish remotely
+        profile = profiles[profile]
+        if profile["type"] == "slurm":
+            raise NotImplementedError
+            # _ = subprocess.check_output(
+            #     [
+            #         "ssh",
+            #         f"{profile['user']}@{profile['host']}",
+            #         "uvicorn",
+            #         "--port",
+            #         profile['port'],
+            #         "--log-level",
+            #         "info",
+            #         "--reload",
+            #         reload,
+            #     ]
+            # )
+        else:
+            raise NotImplementedError
+        raise NotImplementedError
 
 
 # blackfish run [OPTIONS] COMMAND
@@ -56,12 +127,22 @@ def start(reload) -> None:
 @click.option("--gres", type=int, default=None)
 @click.option("--partition", type=str, default=None)
 @click.option("--constraint", type=str, default=None)
+@click.option("--profile", type=str, default="default")
 @click.pass_context
-def run(ctx, time, wait, ntasks_per_node, mem, gres, partition, constraint):
+def run(
+    ctx,
+    time,
+    ntasks_per_node,
+    mem,
+    gres,
+    partition,
+    constraint,
+    profile,
+):
     """Run an inference service"""
     ctx.obj = {
+        "profile": profile,
         "time": time,
-        "wait": wait,
         "ntasks_per_node": ntasks_per_node,
         "mem": mem,
         "gres": gres,
@@ -70,7 +151,7 @@ def run(ctx, time, wait, ntasks_per_node, mem, gres, partition, constraint):
     }
 
 
-run.add_command(run_text_generate, "run_text_generate")
+run.add_command(run_text_generate, "text-generate")
 
 
 # blackfish stop [OPTIONS] SERVICE [SERVICE...]
@@ -87,11 +168,14 @@ def stop(service_id, delay) -> None:
     """Stop one or more services"""
 
     res = requests.put(
-        f"http://127.0.0.1:{app_config.BLACKFISH_HOST}/services/{service_id}/stop"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}/stop",
+        json={
+            "delay": delay,
+        }
     )
 
-    if not res.okay is not None:
-        print(f"Failed to stop service {service_id}.")
+    if not res.ok is not None:
+        click.echo(f"Failed to stop service {service_id}.")
 
 
 # blackfish rm [OPTIONS] SERVICE [SERVICE...]
@@ -112,11 +196,13 @@ def rm(service_id, force) -> None:
     """Remove one or more services"""
 
     res = requests.delete(
-        f"http://127.0.0.1:{app_config.BLACKFISH_HOST}/services/{service_id}"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}"
     )
 
-    if not res.okay is not None:
-        print(f"Failed to stop service {service_id}.")
+    if not res.ok is not None:
+        click.echo(f"Failed to stop service {service_id}.")
+    else:
+        click.echo(f"Removed service {service_id}")
 
 
 # blackfish details [OPTIONS] SERVICE
@@ -126,36 +212,45 @@ def details(service_id):
     """Show detailed service information"""
 
     res = requests.get(
-        f"http://127.0.0.1:{app_config.BLACKFISH_HOST}/services/{service_id}"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}"
     )  # fresh data 🥬
-    service = Service(res)  # TODO: convert to proper type based on `type` property!
+
+    service = Service(**res.json())
 
     if service is not None:
         job = service.get_job()
         data = {
             "image": service.image,
             "model": service.model,
-            "created_at": service.created_at.isoformat(),
+            "created_at": service.created_at,  # .isoformat(),
             "name": service.name,
-            "job_id": {
-                "job_id": job["job_id"],
-                "user": job["user"],
-                "cluster": job["host"],
-                "node": job["node"],
-            },
-            "state": {
-                "value": service.state,
-                "updated_at": service.updated_at.isoformat(),
+            "status": {
+                "value": service.status,
+                "updated_at": service.updated_at,  # .isoformat(),
             },
             "connection": {
-                "host": service["host"],
-                "port": service["port"],
-                "remote_port": service["remote_port"],
+                "host": service.host,
+                "port": service.port,
+                # "remote_port": service.remote_port,
             },
         }
+        if service.job_type == "slurm":
+            data["job"] = {
+                "job_id": job.job_id,
+                "host": job.host,  # or service["host"]
+                "user": job.user,  # or service["user"]
+                "node": job.node,
+                "port": job.port,
+                "name": job.name,
+                "state": job.state,
+            }
+        elif service.job_type == "test":
+            data["job"] = {}
+        else:
+            raise NotImplementedError
         click.echo(data)
     else:
-        print(f"Service {service} not found.")
+        click.echo(f"Service {service} not found.")
 
 
 # blackfish ls [OPTIONS]
@@ -174,7 +269,7 @@ def ls(filters):
         filters = ""
 
     res = requests.get(
-        f"{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services{filters}"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services{filters}"
     )  # fresh data 🥬
 
     tab = PrettyTable(
@@ -192,8 +287,7 @@ def ls(filters):
     tab.set_style(PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
-    for item in res:
-        service = Service(item)
+    for service in res.json():
         ports = (
             f"""localhost:{service["port"]}->{service["host"]}:{service["remote_port"]}"""
             if (

@@ -1,16 +1,18 @@
 import click
 import requests
+from random import randint
 
 from app.models.nlp.text_generation import (
     TextGeneration,
     TextGenerationModels,
-    TextGenerationConfig,
 )
-from app.config import default_config as app_config
+from app.config import config as app_config
+from app.config import profiles
 
 
 # blackfish run [OPTIONS] text-generation [OPTIONS]
-@click.option("--model", default="bloom-560m", help="Model to serve.")
+@click.command()
+@click.option("--model", default="bigscience/bloom-560m", help="Model to serve.")
 @click.option(
     "--name",
     type=str,
@@ -19,17 +21,17 @@ from app.config import default_config as app_config
 @click.option(
     "--revision",
     "-r",
-    default=None,
-    type=int,
+    type=str,
     required=False,
+    default=None,
     help="Use a specific model revision (commit id or branch)",
 )
 @click.option(
     "--quantize",
     "-q",
-    default=None,
     type=str,
     required=False,
+    default=None,
     help=(
         "Quantize the model. Supported values: awq (4bit), gptq (4-bit), bitsandbytes"
         " (8-bit)."
@@ -37,25 +39,30 @@ from app.config import default_config as app_config
 )
 @click.option(
     "--disable-custom-kernels",
-    "-d",
     is_flag=True,
-    default=None,
-    type=str,
     required=False,
+    default=True,
     help="Disable custom CUDA kernels.",
 )
 @click.option(
+    "--sharded",
+    is_flag=True,
+    required=False,
+    default=False,
+    # TODO: help
+)
+@click.option(
     "--max-input-length",
-    default=1024,
     type=int,
     required=False,
+    default=None,  # 1024,
     help="The maximum allowed input length (in tokens).",
 )
 @click.option(
     "--max-total-tokens",
-    default=2048,
     type=int,
     required=False,
+    default=None,  # 2048,
     help="The maximum allowed total length of input and output (in tokens).",
 )
 @click.option("--dry-run", is_flag=True, default=False, help="Print Slurm script only.")
@@ -67,6 +74,7 @@ def run_text_generate(
     revision,
     quantize,
     disable_custom_kernels,
+    sharded,
     max_input_length,
     max_total_tokens,
     dry_run,
@@ -74,7 +82,7 @@ def run_text_generate(
     """Start service MODEL."""
 
     if model not in TextGenerationModels:
-        print(
+        click.echo(
             f"❌ {model} is not a supported model. Supported models:"
             f" {[x for x in TextGenerationModels.keys()]}."
         )
@@ -82,64 +90,127 @@ def run_text_generate(
 
     quantizations = TextGenerationModels[model]["quantizations"]
     if quantize is not None and quantize not in quantizations:
-        print(
+        click.echo(
             f"❌ {quantize} is not supported for model {model}. Supported quantizations:"
             f" {quantizations}."
         )
         return
 
-    user = ctx.obj.get("user", app_config.BLACKFISH_USER)
-    host = ctx.obj.get("host", app_config.BLACKFISH_HOST)
-    port = ctx.obj.get("port", app_config.BLACKFISH_PORT)
+    profile = profiles[ctx.obj.get("profile", "default")]
 
-    if (
-        ctx.obj["gres"] is not None
-        and ctx.obj.get("gres") > 0
-        and host == "della.princeton.edu"
-    ):
-        print(
-            "⭐️ della.princeton.edu does not support GPUs. Switching host to"
-            " della-gpu.princeton.edu."
-        )
-        host = "della-gpu.princeton.edu"
+    if name is None:
+        name = f"blackfish-{randint(10_000, 20_000)}"
 
-
-    container_kwargs = {"model": model}
+    container_options = {}
     if revision is not None:
-        container_kwargs["revision"] = revision
+        container_options["revision"] = revision
     if disable_custom_kernels is not None:
-        container_kwargs["disable_custom_kernels"] = disable_custom_kernels
+        container_options["disable_custom_kernels"] = disable_custom_kernels
+    if sharded is not None:
+        container_options["sharded"] = sharded
     if quantize is not None:
-        container_kwargs["quantize"] = quantize
+        container_options["quantize"] = quantize
     if max_input_length is not None:
-        container_kwargs["max_input_length"] = max_input_length
+        container_options["max_input_length"] = max_input_length
     if max_total_tokens is not None:
-        container_kwargs["max_total_tokens"] = max_total_tokens
-    container_config = TextGenerationConfig(**container_kwargs)
+        container_options["max_total_tokens"] = max_total_tokens
 
-    job_config = {k: v for k, v in ctx.obj.items() if v is not None}
+    job_options = {k: v for k, v in ctx.obj.items() if v is not None}
+    del job_options["profile"]
 
-    if dry_run:
-        service = TextGeneration(
-            name=name,
-            image=container_config.image,
-            model=container_config.model,
-            host=host,
-            port=port,
-        )
-        click.echo(service.launch_script(container_config, job_config))
+    if profile["type"] == "slurm":
+        if (
+            ctx.obj.get("gres") is not None
+            and ctx.obj.get("gres") > 0
+            and profile["host"] == "della.princeton.edu"
+        ):
+            click.echo(
+                "⭐️ della.princeton.edu does not support GPUs. Switching host to"
+                " della-gpu.princeton.edu."
+            )
+            profile["host"] = "della-gpu.princeton.edu"
+
+        job_options["user"] = profile["user"]
+        job_options["home_dir"] = profile["home_dir"]
+        job_options["cache_dir"] = profile["cache_dir"]
+
+        if dry_run:
+            service = TextGeneration(
+                name=name,
+                model=model,
+                job_type=profile["type"],
+                host=profile["host"],
+                user=profile["user"],
+            )
+            click.echo("-" * 80)
+            click.echo("Service: text-generate")
+            click.echo(f"Model: {model}")
+            click.echo(f"Name: {name}")
+            click.echo(f"Type: {profile['type']}")
+            click.echo(f"Host: {profile['host']}")
+            click.echo(f"User: {profile['user']}")
+            click.echo("-" * 80)
+            click.echo(service.launch_script(container_options, job_options))
+        else:
+            data = (
+                {
+                    "name": name,
+                    "image": "text_generation",
+                    "model": model,
+                    "job_type": profile["type"],
+                    "host": profile["host"],
+                    "user": profile["user"],
+                    "container_config": container_options,
+                    "job_config": job_options,
+                },
+            )
+            click.echo(data)
+            res = requests.post(
+                f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services",
+                json={
+                    "name": name,
+                    "image": "text_generation",
+                    "model": model,
+                    "job_type": profile["type"],
+                    "host": profile["host"],
+                    "user": profile["user"],
+                    "container_options": container_options,
+                    "job_options": job_options,
+                },
+            )
+            if res.ok:
+                click.echo(f"Started service: {res.json()['id']}")
+            else:
+                click.echo(f"Failed to start service: {res.status_code} - {res.reason}")
+    elif profile["type"] == "test":
+        if dry_run:
+            service = TextGeneration(
+                name=name,
+                model=model,
+                job_type="test",
+            )
+            click.echo("-" * 80)
+            click.echo(f"Service type: {profile['type']}")
+            click.echo(f"Name: {name}")
+            click.echo(f"Container options: {container_options}")
+            click.echo(f"Job options: {job_options}")
+            click.echo("-" * 80)
+            click.echo(service.launch_script(container_options, job_options))
+        else:
+            res = requests.post(
+                f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services",
+                json={
+                    "name": name,
+                    "image": "text_generation",
+                    "model": model,
+                    "job_type": profile["type"],
+                    "container_options": container_options,
+                    "job_options": job_options,
+                },
+            )
+            click.echo(f"Started service: {res.json()['id']}")
     else:
-        res = requests.post(
-            f"{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services",
-            data={
-                "name": name,
-                "host": host,
-                "port": port,
-                "container_config": container_config.as_dict(),
-                "job_config": job_config.as_dict(),
-            }
-        )
-        print(res)
+        raise NotImplementedError
 
 
 # blackfish fetch text-generation [OPTIONS] SERVICE INPUT
@@ -198,4 +269,4 @@ def fetch_text_generate(
     #     resp = service.call(input, max_new_tokens=max_new_tokens)
     #     click.echo(resp.json())
     # else:
-    #     print(f"Service {service} not found")
+    #     click.echo(f"Service {service} not found")

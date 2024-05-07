@@ -13,7 +13,7 @@ from advanced_alchemy.base import UUIDAuditBase
 
 from litestar.datastructures import State
 
-from app.job import Job, JobState
+from app.job import Job
 from app.logger import logger
 from app.utils import find_port
 
@@ -42,6 +42,7 @@ class Service(UUIDAuditBase):
     user: Mapped[Optional[str]]
     host: Mapped[str]
     port: Mapped[Optional[int]]
+    # TODO: remote_port: Mapped[Optional[int]]
     job_type: Mapped[str]
     job_id: Mapped[Optional[str]]
     grace_period: Mapped[Optional[int]] = 180
@@ -92,26 +93,26 @@ class Service(UUIDAuditBase):
                 )
             else:
                 logger.debug(
-                    f"copying job script to {self.host}:{job_options.home_dir}."
+                    f"Copying job script to {self.host}:{job_options['home_dir']}."
                 )
                 _ = subprocess.check_output(
                     [
                         "scp",
                         os.path.join(state.BLACKFISH_HOME_DIR, "start.sh"),
                         (
-                            f"{self.user}@{self.host}:{os.path.join(job_options.home_dir, 'start.sh')}"
+                            f"{self.user}@{self.host}:{os.path.join(job_options['home_dir'], 'start.sh')}"
                         ),
                     ]
                 )
-                logger.debug(f"submitting batch job to {self.user}@{self.host}.")
+                logger.debug(f"Submitting batch job to {self.user}@{self.host}.")
                 res = subprocess.check_output(
                     [
                         "ssh",
                         f"{self.user}@{self.host}",
                         "sbatch",
                         "--chdir",
-                        f"{job_options.home_dir}",
-                        f"{job_options.home_dir}/start.sh",
+                        f"{job_options['home_dir']}",
+                        f"{job_options['home_dir']}/start.sh",
                     ]
                 )
 
@@ -125,7 +126,7 @@ class Service(UUIDAuditBase):
             if self.host == "localhost":
                 logger.debug("[TEST] submitting batch job on login node.")
             else:
-                logger.debug(f"[TEST] copying job script to {job_options.home_dir}.")
+                logger.debug(f"[TEST] copying job script to {job_options['home_dir']}.")
                 logger.debug(f"[TEST] submitting batch job to {self.user}@{self.host}.")
 
             self.status = "SUBMITTED"
@@ -160,7 +161,11 @@ class Service(UUIDAuditBase):
             failed: A flag indicating the service Slurm job failed.
         """
 
-        logger.info(f"stopping service {self.id}")
+        logger.info(f"Stopping service {self.id}")
+
+        if self.status in ["STOPPED", "TIMEOUT", "FAILED"]:
+            logger.warn(f"Service is already stopped (status={self.status}). Aborting stop.")
+            return
 
         if self.job_type == "local":
             raise NotImplementedError
@@ -172,7 +177,7 @@ class Service(UUIDAuditBase):
 
             job = self.get_job()
             job.cancel()
-            self.close_tunnel(session)
+            await self.close_tunnel(session)
         elif self.job_type == "ec2":
             raise NotImplementedError
         elif self.job_type == "test":
@@ -181,21 +186,21 @@ class Service(UUIDAuditBase):
             raise Exception  # TODO: JobTypeError
 
         if timeout:
-            self.state = "TIMEOUT"
+            self.status = "TIMEOUT"
         elif failed:
-            self.state = "FAILED"
+            self.status = "FAILED"
         else:
-            self.state = "STOPPED"
+            self.status = "STOPPED"
 
     async def refresh(self, session: AsyncSession):
-        """Update the service state. Assumes running in an attached state.
+        """Update the service status. Assumes running in an attached state.
 
-        Determines the service state by pinging the service and then checking
+        Determines the service status by pinging the service and then checking
         the Slurm job state if the ping in unsuccessful. Updates the service
-        database and returns the state.
+        database and returns the status.
 
-        The state returned depends on the starting state because services in a
-        "STARTING" state cannot transitionto an "UNHEALTHY" state. The state
+        The status returned depends on the starting status because services in a
+        "STARTING" status cannot transitionto an "UNHEALTHY" status. The status
         life-cycle is as follows:
 
             Slurm job submitted -> SUBMITTED
@@ -207,91 +212,91 @@ class Service(UUIDAuditBase):
                     Slurm job switches to failed -> FAILED
                 Slurm job switches to failed -> FAILED
 
-        A service that successfully starts will be in a HEALTHY state. The state
+        A service that successfully starts will be in a HEALTHY status. The status
         remains HEALTHY as long as subsequent updates ping successfully.
-        Unsuccessful pings will transition the service state to FAILED if the
+        Unsuccessful pings will transition the service status to FAILED if the
         Slurm job has failed; TIMEOUT if the Slurm job times out; and
         UNHEALTHY otherwise.
 
         An UNHEALTHY service becomes HEALTHY if the update pings successfully.
-        Otherwise, the service state changes to FAILED if the Slurm job has
+        Otherwise, the service status changes to FAILED if the Slurm job has
         failed or TIMEOUT if the Slurm job times out.
 
-        Services that enter a terminal state (FAILED, TIMEOUT or STOPPED)
+        Services that enter a terminal status (FAILED, TIMEOUT or STOPPED)
         *cannot* be re-started.
         """
 
         logger.debug(
-            f"checking state of service {self.id}. Current state is" f" {self.state}."
+            f"Checking status of service {self.id}. Current status is" f" {self.status}."
         )
-        if self.state in [
+        if self.status in [
             "STOPPED",
             "TIMEOUT",
             "FAILED",
         ]:
             logger.debug(
-                f"service {self.id} is no longer running. Aborting state refresh."
+                f"Service {self.id} is no longer running. Aborting status refresh."
             )
-            return self.state
+            return self.status
 
         if self.job_type == "local":
             raise NotImplementedError
         elif self.job_type == "slurm":
             if self.job_id is None:
                 logger.debug(
-                    f"service {self.id} has no associated job. Aborting state refresh."
+                    f"service {self.id} has no associated job. Aborting status refresh."
                 )
-                return self.state
+                return self.status
 
             job = self.get_job()  # or job_status = self.get_job_state()
 
-            if job.state == JobState.PENDING:
+            if job.state == "PENDING":
                 logger.debug(
-                    f"service {self.id} has not started. Setting state to PENDING."
+                    f"Service {self.id} has not started. Setting status to PENDING."
                 )
-                self.state = "PENDING"
+                self.status = "PENDING"
                 return "PENDING"
-            elif job.state == JobState.MISSING:
+            elif job.state == "MISSING":
                 logger.warning(
                     f"service {self.id} has no job state (this service is likely"
-                    " new or has expired). Aborting state update."
+                    " new or has expired). Aborting status update."
                 )
-                return self.state
-            elif job.state is not None and "CANCELLED" in job.state.name:
+                return self.status
+            elif job.state is not None and "CANCELLED" in job.state:
                 logger.debug(
-                    f"service {self.id} has a cancelled job. Setting state to"
+                    f"Service {self.id} has a cancelled job. Setting status to"
                     " STOPPED and stopping the service."
                 )
                 await self.stop(session)
                 # if push:
                 #     self.push(session, updated=datetime.now())
                 return "STOPPED"
-            elif job.state == JobState.TIMEOUT:
+            elif job.state == "TIMEOUT":
                 logger.debug(
-                    f"service {self.id} has a timed out job. Setting state to"
+                    f"Service {self.id} has a timed out job. Setting status to"
                     " TIMEOUT and stopping the service."
                 )
                 await self.stop(session, timeout=True)
                 # if push:
                 #     self.push(session, updated=datetime.now())
                 return "TIMEOUT"
-            elif job.state == JobState.RUNNING:
+            elif job.state == "RUNNING":
                 if self.port is None:
                     self.open_tunnel(session)
                 res = self.ping()
                 if res["ok"]:
                     logger.debug(
-                        f"service {self.id} responded normally. Setting state to"
+                        f"service {self.id} responded normally. Setting status to"
                         " HEALTHY."
                     )
-                    self.state = "HEALTHY"
+                    self.status = "HEALTHY"
                     return "HEALTHY"
                 else:
                     logger.debug(
                         f"service {self.id} did not respond normally. Determining"
-                        " state."
+                        " status."
                     )
-                    if self.state in [
+                    if self.status in [
                         "SUBMITTED",
                         "PENDING",
                         "STARTING",
@@ -302,35 +307,35 @@ class Service(UUIDAuditBase):
                         if dt.seconds > self.start_period:
                             logger.debug(
                                 f"service {self.id} grace period exceeded. Setting"
-                                "state to UNHEALTHY."
+                                "status to UNHEALTHY."
                             )
-                            self.state = "UNHEALTHY"
+                            self.status = "UNHEALTHY"
                             return "UNHEALTHY"
                         else:
                             logger.debug(
                                 f"service {self.id} is still starting. Setting"
-                                " state to STARTING."
+                                " status to STARTING."
                             )
-                            self.state = "STARTING"
+                            self.status = "STARTING"
                             return "STARTING"
                     else:
                         logger.debug(
                             f"service {self.id} is no longer starting. Setting"
-                            " state to UNHEALTHY."
+                            " status to UNHEALTHY."
                         )
-                        self.state = "UNHEALTHY"
+                        self.status = "UNHEALTHY"
                         return "UNHEALTHY"
             else:
                 logger.debug(
                     f"service {self.id} has a failed job"
-                    f" (job.state={job.state}). Setting state to FAILED."
+                    f" (job.state={job.state}). Setting status to FAILED."
                 )
                 await self.stop(session, failed=True)  # stop will push to database
                 return "FAILED"
         elif self.job_type == "ec2":
             raise NotImplementedError
         elif self.job_type == "test":
-            raise NotImplementedError
+            logger.warn("Refresh not implemented for job type 'test'. Skipping.")
         else:
             raise Exception  # TODO: JobTypeError
 
@@ -362,7 +367,7 @@ class Service(UUIDAuditBase):
             raise Exception(f"Unable to find an available port for service {self.id}.")
 
         if self.job_type == "slurm":
-            if self.host != "localhost":
+            if self.host == "localhost":
                 _ = subprocess.check_output(
                     [
                         "ssh",
@@ -374,7 +379,7 @@ class Service(UUIDAuditBase):
                     ]
                 )
                 logger.info(
-                    f"established tunnel localhost:{self.port} -> localhost:{job.port}"
+                    f"established tunnel localhost:{self.port} -> {job.node}:{job.port}"
                 )
             else:
                 _ = subprocess.check_output(

@@ -99,6 +99,7 @@ class TextGeneration(Service):
         template = env.get_template(f"text_generation_{self.job_type}.sh")
         job_script = template.render(
             model=self.model,
+            name=self.name,
             job_config=job_config.data(),
             container_config=container_config.data(),
         )

@@ -95,7 +95,7 @@ def migrate_db():
 
 def create_or_modify_config(home_dir: str, modify=False) -> None:
     config_exists = os.path.isfile(os.path.join(home_dir, "config"))
-    
+
     if modify or not config_exists:
 
         name = input("> name [default]: ")
@@ -107,7 +107,7 @@ def create_or_modify_config(home_dir: str, modify=False) -> None:
             if name in config:
                 # Modifying an existing profile
                 profile = config[name]
-                profile_type = profile['type']
+                profile_type = profile["type"]
             else:
                 # Creating a new profile
                 profile_type = input("> type [slurm]: ")
@@ -116,18 +116,17 @@ def create_or_modify_config(home_dir: str, modify=False) -> None:
             # Creating a config
             profile_type = input("> type [slurm]: ")
             profile_type = "slurm" if profile_type == "" else profile_type
-        
 
-        if profile_type == 'slurm':
+        if profile_type == "slurm":
             if name in config:
                 user = input(f"> user [{profile['user']}]: ")
-                user = profile['user'] if user == "" else user
+                user = profile["user"] if user == "" else user
                 host = input(f"> host [{profile['host']}]: ")
-                host = profile['host'] if host == "" else host
+                host = profile["host"] if host == "" else host
                 home_dir = input(f"> home [{profile['home_dir']}]: ")
-                home_dir = profile['home_dir'] if home_dir == "" else home_dir
+                home_dir = profile["home_dir"] if home_dir == "" else home_dir
                 cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
-                cache_dir = profile['cache_dir'] if cache_dir == "" else cache_dir
+                cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
             else:
                 user = input("> user: ")
                 while user == "":
@@ -139,7 +138,7 @@ def create_or_modify_config(home_dir: str, modify=False) -> None:
                 home_dir = f"/home/{user}/.blackfish" if home_dir == "" else home_dir
                 cache_dir = input(f"> cache [/scratch/gpfs/{user}]: ")
                 cache_dir = f"/scratch/gpfs/{user}" if cache_dir == "" else cache_dir
-        
+
                 config[name] = {
                     "type": profile_type,
                     "user": user,

@@ -83,63 +83,61 @@ def migrate_db() -> None:
 
 
 def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
+    """Create a new profile."""
+
     profiles_exists = os.path.isfile(os.path.join(home_dir, "profiles"))
 
-    if modify or not profiles_exists:
+    profiles = configparser.ConfigParser()
+    profiles.read(f"{home_dir}/profiles")
 
-        name = input("> name [default]: ")
-        name = "default" if name == "" else name
+    name = input("> name [default]: ")
+    name = "default" if name == "" else name
 
-        if profiles_exists:
-            profiles = configparser.ConfigParser()
-            profiles.read(f"{home_dir}/profiles")
-            if name in profiles:
-                profile = profiles[name]
-                profile_type = profile["type"]
-            else:
-                profile_type = input("> type [slurm]: ")
-                profile_type = "slurm" if profile_type == "" else profile_type
-        else:
-            profile_type = input("> type [slurm]: ")
-            profile_type = "slurm" if profile_type == "" else profile_type
-
+    if name in profiles:
+        logger.debug(f"Modifying existing profile {name}")
+        profile = profiles[name]
+        profile_type = profile["type"]
         if profile_type == "slurm":
-            if name in profiles:
-                host = input(f"> host [{profile['host']}]: ")
-                host = profile["host"] if host == "" else host
-                user = input(f"> user [{profile['user']}]: ")
-                user = profile["user"] if user == "" else user
-                home_dir = input(f"> home [{profile['home_dir']}]: ")
-                home_dir = profile["home_dir"] if home_dir == "" else home_dir
-                cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
-                cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
-            else:
+            host = input(f"> host [{profile['host']}]: ")
+            host = profile["host"] if host == "" else host
+            user = input(f"> user [{profile['user']}]: ")
+            user = profile["user"] if user == "" else user
+            remote_dir = input(f"> home [{profile['home_dir']}]: ")
+            remote_dir = profile["home_dir"] if remote_dir == "" else remote_dir
+            cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
+            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
+        else:
+            raise NotImplementedError
+    else:
+        logger.debug(f"Creating new profile {name}")
+        profile_type = input("> type [slurm]: ")
+        profile_type = "slurm" if profile_type == "" else profile_type
+        if profile_type == "slurm":
+            host = input("> host: ")
+            while host == "":
+                print("Host is required.")
                 host = input("> host: ")
-                while host == "":
-                    print("Host is required.")
-                    host = input("> host: ")
+            user = input("> user: ")
+            while user == "":
+                print("User is required.")
                 user = input("> user: ")
-                while user == "":
-                    print("User is required.")
-                    user = input("> user: ")
-                home_dir = input(f"> home [/home/{user}/.blackfish]: ")
-                home_dir = f"/home/{user}/.blackfish" if home_dir == "" else home_dir
-                cache_dir = input(f"> cache [/scratch/gpfs/{user}]: ")
-                cache_dir = f"/scratch/gpfs/{user}" if cache_dir == "" else cache_dir
-
-                profiles[name] = {
-                    "type": profile_type,
-                    "user": user,
-                    "host": host,
-                    "home_dir": home_dir,
-                    "cache_dir": cache_dir,
-                }
+            remote_dir = input(f"> home [/home/{user}/.blackfish]: ")
+            remote_dir = f"/home/{user}/.blackfish" if remote_dir == "" else remote_dir
+            cache_dir = input(f"> cache [/scratch/gpfs/{user}/.cache]: ")
+            cache_dir = f"/scratch/gpfs/{user}/.cache" if cache_dir == "" else cache_dir
+            profiles[name] = {
+                "type": profile_type,
+                "user": user,
+                "host": host,
+                "home_dir": remote_dir,
+                "cache_dir": cache_dir,
+            }
         else:
             raise NotImplementedError
 
-        with open(os.path.join(home_dir, "proflies"), "w") as f:
-            profiles.write(f)
-    else:
-        logger.info(
-            "blackfish profiles already exists (set modify=True to modify profiles). Skipping."
-        )
+    with open(os.path.join(home_dir, "profiles"), "w") as f:
+        profiles.write(f)
+        if not profiles_exists:
+            logger.info(f"Created {home_dir}/profiles")
+        else:
+            logger.info(f"Updated {home_dir}/profiles")

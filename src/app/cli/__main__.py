@@ -8,7 +8,7 @@ import app
 from app.services.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
 from app.config import config, SlurmRemote
-from app.setup import create_local_home_dir, create_or_modify_profile
+from app.setup import create_local_home_dir, create_remote_home_dir, create_or_modify_profile
 
 
 """
@@ -26,11 +26,25 @@ def main() -> None:
 
 @main.command()
 @click.option("--home_dir", type=str, default=None)
-def init(home_dir: str) -> None:
+@click.option("--cache_dir", type=str, default=".cache")
+@click.option("--remote", type=str, default=None)
+@click.option("--host", type=str)
+@click.option("--user", type=str)
+def init(home_dir: str, cache_dir: str, remote: str, host: str, user: str) -> None:
     "Initialize the blackfish service."
-    home_dir = home_dir if home_dir is not None else config.BLACKFISH_HOME_DIR
-    create_local_home_dir(home_dir)
-    create_or_modify_profile(home_dir)
+    if remote is not None:
+        if remote == "slurm":
+            home_dir = home_dir if home_dir is not None else f"/home/{user}/.blackfish"
+            create_remote_home_dir("slurm", host, user, home_dir, cache_dir)
+        else:
+            raise NotImplementedError
+    else:
+        print("Initializing local application")
+        home_dir = home_dir if home_dir is not None else config.BLACKFISH_HOME_DIR
+        create_local_home_dir(home_dir)
+        create_or_modify_profile(home_dir)
+
+    print("\n🎉 All done--let's fish! 🎉")
 
 
 @main.command()

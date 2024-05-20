@@ -2,7 +2,7 @@ import click
 import requests
 from random import randint
 
-from app.models.nlp.text_generation import (
+from app.services.nlp.text_generation import (
     TextGeneration,
     TextGenerationModels,
 )

@@ -7,7 +7,7 @@ from prettytable import PrettyTable, PLAIN_COLUMNS
 import uvicorn
 
 import app
-from app.models.base import Service
+from app.services.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
 from app.config import config as app_config
 from app.config import profiles, SlurmRemote

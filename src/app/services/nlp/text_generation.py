@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from jinja2 import Environment, PackageLoader
 
-from app.models.base import Service, ContainerConfig
+from app.services.base import Service, ContainerConfig
 from app.job import LocalJobConfig, SlurmJobConfig, EC2JobConfig
 from app.logger import logger
 

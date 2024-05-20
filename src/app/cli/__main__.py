@@ -39,7 +39,6 @@ def init(home_dir: str, cache_dir: str, remote: str, host: str, user: str) -> No
         else:
             raise NotImplementedError
     else:
-        print("Initializing local application")
         home_dir = home_dir if home_dir is not None else config.BLACKFISH_HOME_DIR
         create_local_home_dir(home_dir)
         create_or_modify_profile(home_dir)

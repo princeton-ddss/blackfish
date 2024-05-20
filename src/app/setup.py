@@ -141,6 +141,6 @@ def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
             profiles.write(f)
     else:
         logger.info(
-            "blackfish profiles already exists (set modify=True to modify profiles)."
+            "blackfish profiles already exists (set modify=True to modify profiles). Skipping."
         )
     print("\n🎉 All done--let's fish! 🎉")

@@ -38,6 +38,7 @@ dependencies = [
   "alembic",
   "pytest",
   "requests",
+  "tqdm",
 ]
 [project.scripts]
 blackfish = "app.cli.__main__:main"

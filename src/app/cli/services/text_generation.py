@@ -7,7 +7,6 @@ from app.services.nlp.text_generation import (
     TextGenerationModels,
 )
 from app.config import config as app_config
-from app.config import profiles
 
 
 # blackfish run [OPTIONS] text-generation [OPTIONS]
@@ -96,7 +95,7 @@ def run_text_generate(
         )
         return
 
-    profile = profiles[ctx.obj.get("profile", "default")]
+    profile = app_config.BLACKFISH_PROFILES[ctx.obj.get("profile", "default")]
 
     if name is None:
         name = f"blackfish-{randint(10_000, 20_000)}"

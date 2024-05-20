@@ -1,8 +1,6 @@
 import click
 import requests
 import os
-import sys
-import subprocess
 from prettytable import PrettyTable, PLAIN_COLUMNS
 import uvicorn
 
@@ -10,8 +8,8 @@ import app
 from app.services.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
 from app.config import config as app_config
-from app.config import profiles, SlurmRemote
-from app.setup import make_local_dir, migrate_db, create_or_modify_config
+from app.config import config, SlurmRemote
+from app.setup import make_local_dir, create_or_modify_config
 
 
 """
@@ -99,7 +97,7 @@ def start(reload: bool, profile: str) -> None:
         # )
     else:
         # TODO: running Blackfish remotely
-        profile = profiles[profile]
+        profile = config.BLACKFISH_PROFILES[profile]
         if isinstance(profile, SlurmRemote):
             raise NotImplementedError
             # _ = subprocess.check_output(
@@ -352,7 +350,7 @@ def models():
     pass
 
 
-# blackfish models ls [IMAGE] [OPTIONS]
+# blackfish models ls [OPTIONS]
 @models.command(name="ls")
 @click.option(
     "-p",
@@ -371,18 +369,14 @@ def models():
 )
 def models_ls(profile, refresh):
     """Show available (downloaded) models for a given image and (optional) profile."""
-    # res = requests.get(
-    #     f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/models?image={image}&profile={profile}&refresh={refresh}"
-    # )
     res = requests.get(
-        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/models?refresh={refresh}"
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/models?refresh={refresh}&profile={profile}"
     )
     tab = PrettyTable(
         field_names=[
             "ID",
             "REPO",
             "REVISION",
-            "IMAGE",
             "PROFILE",
         ]
     )
@@ -395,7 +389,6 @@ def models_ls(profile, refresh):
                 model["id"],
                 model["repo"],
                 model["revision"],
-                model["image"],
                 model["profile"],
             ]
         )

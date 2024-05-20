@@ -35,7 +35,6 @@ from app.config import BlackfishProfile, SlurmRemote
 class Model(UUIDAuditBase):
     __tablename__ = "model"
     repo: Mapped[str]  # e.g., bigscience/bloom-560m
-    image: Mapped[str]  # e.g., text-generate
     profile: Mapped[str]  # e.g.,  hpc
     revision: Mapped[str]
 
@@ -110,7 +109,6 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
                         models.append(
                             Model(
                                 repo=repo,
-                                image="",
                                 profile=profile.name,
                                 revision=revision,
                             )
@@ -270,14 +268,11 @@ async def delete_service(service_id: str, session: AsyncSession) -> None:
 async def get_models(
     session: AsyncSession,
     state: State,
-    # image: Optional[str] = None,
     profile: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
 
     query_filter = {}
-    # if image is not None:
-    #     query_filter["image"] = image
     if profile is not None:
         query_filter["profile"] = profile
 

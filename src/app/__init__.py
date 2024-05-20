@@ -1,9 +1,14 @@
+import os
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional
 import asyncio
+import itertools
+
+from fabric.connection import Connection
 
 import sqlalchemy as sa
+from sqlalchemy.orm import Mapped
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,9 +26,17 @@ from litestar.exceptions import ClientException, NotFoundException
 from litestar.status_codes import HTTP_409_CONFLICT
 
 from app.logger import logger
-from app.models.base import Service
-from app.models.nlp.text_generation import TextGeneration
+from app.services.base import Service
+from app.services.nlp.text_generation import TextGeneration
 from app.config import config as blackfish_config
+from app.config import BlackfishProfile, SlurmRemote
+
+
+class Model(UUIDAuditBase):
+    __tablename__ = "model"
+    repo: Mapped[str]  # e.g., bigscience/bloom-560m
+    profile: Mapped[str]  # e.g.,  hpc
+    revision: Mapped[str]
 
 
 JOB_TYPES = ["text_generation"]
@@ -75,6 +88,63 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
         raise NotFoundException(detail=f"Service {service_id} not found") from e
 
 
+async def find_models(profile: BlackfishProfile) -> list[Model]:
+    models = []
+    logger.debug("Establishing SFTP connection...")
+    if isinstance(profile, SlurmRemote):
+        with Connection(
+            host=profile.host, user=profile.user
+        ) as conn, conn.sftp() as sftp:
+            logger.debug(f"Checking shared cache directory: {profile.cache_dir}")
+            try:
+                model_dirs = sftp.listdir(profile.cache_dir)
+                logger.debug(f"Found model directories: {model_dirs}")
+                for model_dir in model_dirs:
+                    _, namespace, model = model_dir.split("--")
+                    repo = f"{namespace}/{model}"
+                    revisions = sftp.listdir(
+                        os.path.join(profile.cache_dir, model_dir, "snapshots")
+                    )
+                    for revision in revisions:
+                        models.append(
+                            Model(
+                                repo=repo,
+                                profile=profile.name,
+                                revision=revision,
+                            )
+                        )
+            except FileNotFoundError as e:
+                logger.error(f"Unable to fetch model directories: {e}")
+
+            logger.debug(f"Checking user cache directory: {profile.home_dir}")
+            try:
+                model_dirs = sftp.listdir(
+                    os.path.join(profile.home_dir, ".cache", "huggingface", "hub")
+                )
+                logger.debug(f"Found model directories: {model_dirs}")
+                for model_dir in model_dirs:
+                    _, namespace, model = model_dir.split("--")
+                    repo = f"{namespace}/{model}"
+                    revisions = sftp.listdir(
+                        os.path.join(profile.cache_dir, model_dir, "snapshots")
+                    )
+                    for revision in revisions:
+                        models.append(
+                            Model(
+                                repo=repo,
+                                image="",
+                                profile=profile.name,
+                                revision=revision,
+                            )
+                        )
+            except FileNotFoundError as e:
+                logger.error(f"Unable to fetch model directories: {e}")
+
+            return models
+    else:
+        raise NotImplementedError
+
+
 def build_service(data: ServiceRequest):
     if data.image == "text_generation":
         return TextGeneration(
@@ -98,6 +168,9 @@ BLACKFISH_PORT: {state.BLACKFISH_PORT}
 BLACKFISH_HOME_DIR: {state.BLACKFISH_HOME_DIR}
 BLACKFISH_CACHE_DIR: {state.BLACKFISH_CACHE_DIR}
 BLACKFISH_DEBUG: {state.BLACKFISH_DEBUG}
+
+PROFILES:
+{state.BLACKFISH_PROFILES}
 """
 
 
@@ -112,7 +185,7 @@ async def run_service(
     try:
         await service.start(
             session,
-            state,
+            state["config"],
             container_options=data.container_options,
             job_options=data.job_options,
         )
@@ -192,8 +265,63 @@ async def delete_service(service_id: str, session: AsyncSession) -> None:
 
 
 @get("/models")
-async def get_models():
-    pass
+async def get_models(
+    session: AsyncSession,
+    state: State,
+    profile: Optional[str] = None,
+    refresh: Optional[bool] = False,
+) -> list[Model]:
+
+    query_filter = {}
+    if profile is not None:
+        query_filter["profile"] = profile
+
+    if refresh:
+        # TODO: combine delete and add into single transaction?
+        if profile is not None:
+            logger.debug(state.BLACKFISH_PROFILES[profile])
+            models = await find_models(state.BLACKFISH_PROFILES[profile])
+            logger.debug("Deleting existing models...")
+            query = sa.delete(Model).where(Model.profile == profile)
+            await session.execute(query)
+        else:
+            aws = [find_models(profile) for profile in state.BLACKFISH_PROFILES.values()]
+            res = await asyncio.gather(*aws)
+            models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
+            logger.debug("Deleting existing models")
+            query = sa.delete(Model)
+            await session.execute(query)
+        logger.debug("Inserting refreshed models")
+        session.add_all(models)
+        await session.flush()
+        return models
+    else:
+        query = sa.select(Model).filter_by(**query_filter)
+        res = await session.execute(query)
+        return res.scalars().all()  # list[Model]
+
+
+@get("/models/{model_id:str}")
+async def get_model(model_id: str, session: AsyncSession) -> Model:
+    logger.info(f"Model={model_id}")
+    query = sa.select(Model).where(Model.id == model_id)
+    res = await session.execute(query)
+    try:
+        return res.scalar_one()
+    except NoResultFound as e:
+        raise NotFoundException(detail=f"Model {model_id} not found") from e
+
+
+@post("/models")
+async def create_model(data: Model, session: AsyncSession) -> Model:
+    session.add(data)
+    return data
+
+
+@delete("/models/{model_id:str}")
+async def delete_model(model_id: str, session: AsyncSession) -> None:
+    query = sa.delete(Model).where(Model.id == model_id)
+    await session.execute(query)
 
 
 @get("/images")
@@ -241,6 +369,10 @@ app = Litestar(
         refresh_service,
         fetch_services,
         delete_service,
+        create_model,
+        get_model,
+        get_models,
+        delete_model,
     ],
     dependencies={"session": session_provider},
     plugins=[SQLAlchemyPlugin(db_config)],

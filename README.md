@@ -122,6 +122,51 @@ blackfish rm <service_id>
 ### Configuration
 *TODO*: Section showing how to setup a profile (and access key) for an HPC cluster.
 
+
+### Model Selection
+Every service should specify at least one "recommended" model. Admins will
+download these models to a directory that users assign as `profile.cache_dir` and
+which is public read-only.
+
+Available models are stored in the application database. The availability of a model
+is based on whether the model has at least one snapshot directory on a given remote.
+To find available models, we look for snapshots in `profile.cache_dir`, then `profile.home_dir`.
+On application startup, we compare the application database with the files found
+on each remote and update accordingly.
+
+| model                  | revision     | profile | ... |
+| ---------------------- | ------------ | ------- | --- |
+| bigscience/bloom-560m  | e32fr9l...   | della   | ... |
+
+When a user requests a service, we first check if the model is available. If not, then we 
+warn the user that it will require downloading the model files to their `profile.home_dir`
+and make sure that the job uses `profile.home_dir` instead of `profile.cache_dir` for
+model storage. After a service launches, we check whether the model is present in the database and,
+if not, update the database.
+
+From the CLI, you can list available (downloaded) models for a given profile with
+```
+blackfish models ls --profile della --refresh
+```
+
+Behind the scenes, this command calls the API endpoint:
+```
+GET /models/?profile=della&refresh=true
+```
+
+The `refresh` option tells Blackfish to confirm availability by directly accessing the remote's cache directories; omitting the refresh option tells Blackfish to return the list of models found in its database, which might differ if a model was added since the last time the database was refreshed.
+
+#### Snapshot Storage
+Users can only download new snapshots to `profile.home_dir`. Thus, if a model if found
+before running a service, then the image should look for model data in whichever cache directory
+the snapshot is found. Otherwise, the service should bind to `profile.home_dir` so that
+model files are stored there. **Users should not be given write access to `profile.cache_dir`.**
+If a user does *not* specify a revision, then we need to make sure that the image
+doesn't try to download a different revision in the case that a version of the requested model
+already exists in `profile.cache_dir` because this directory is assumed to be read-only and
+the Docker image might try to download a different revision.
+
+
 ## Management
 Blackfish is Litestar application that is managed using the `litestar` CLI. You
 can get help with `litestar` by running `litestar --help` at the command line

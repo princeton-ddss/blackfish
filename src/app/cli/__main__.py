@@ -1,17 +1,15 @@
 import click
 import requests
 import os
-import sys
-import subprocess
 from prettytable import PrettyTable, PLAIN_COLUMNS
 import uvicorn
 
 import app
-from app.models.base import Service
+from app.services.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
 from app.config import config as app_config
-from app.config import profiles
-from app.setup import make_local_dir, migrate_db, create_or_modify_config
+from app.config import config, SlurmRemote
+from app.setup import make_local_dir, create_or_modify_config
 
 
 """
@@ -61,6 +59,7 @@ def start(reload: bool, profile: str) -> None:
 
     if profile is None:
         # TODO: migrate_db()
+        # TODO: update models table
         uvicorn.run(
             "app:app",
             host=app_config.BLACKFISH_HOST,
@@ -98,8 +97,8 @@ def start(reload: bool, profile: str) -> None:
         # )
     else:
         # TODO: running Blackfish remotely
-        profile = profiles[profile]
-        if profile["type"] == "slurm":
+        profile = config.BLACKFISH_PROFILES[profile]
+        if isinstance(profile, SlurmRemote):
             raise NotImplementedError
             # _ = subprocess.check_output(
             #     [
@@ -171,7 +170,7 @@ def stop(service_id, delay) -> None:
         f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/services/{service_id}/stop",
         json={
             "delay": delay,
-        }
+        },
     )
 
     if not res.ok is not None:
@@ -343,6 +342,57 @@ def image_ls(filter):
 def image_details(image):
     """Show detailed image information"""
     pass
+
+
+@main.group()
+def models():
+    """View information about available models."""
+    pass
+
+
+# blackfish models ls [OPTIONS]
+@models.command(name="ls")
+@click.option(
+    "-p",
+    "--profile",
+    type=str,
+    required=False,
+    default="default",
+    help="List models available for the given profile.",
+)
+@click.option(
+    "-r",
+    "--refresh",
+    is_flag=True,
+    default=False,
+    help="Refresh the list of available models.",
+)
+def models_ls(profile, refresh):
+    """Show available (downloaded) models for a given image and (optional) profile."""
+    res = requests.get(
+        f"http://{app_config.BLACKFISH_HOST}:{app_config.BLACKFISH_PORT}/models?refresh={refresh}&profile={profile}"
+    )
+    tab = PrettyTable(
+        field_names=[
+            "ID",
+            "REPO",
+            "REVISION",
+            "PROFILE",
+        ]
+    )
+    tab.set_style(PLAIN_COLUMNS)
+    tab.align = "l"
+    tab.right_padding_width = 3
+    for model in res.json():
+        tab.add_row(
+            [
+                model["id"],
+                model["repo"],
+                model["revision"],
+                model["profile"],
+            ]
+        )
+    click.echo(tab)
 
 
 if __name__ == "__main__":

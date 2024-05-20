@@ -1,14 +1,10 @@
 import click
 import requests
 import os
-from prettytable import PrettyTable, PLAIN_COLUMNS
-import uvicorn
 
-import app
-from app.services.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
 from app.config import config, SlurmRemote
-from app.setup import create_local_home_dir, create_remote_home_dir, create_or_modify_profile
+
 
 
 """
@@ -32,6 +28,9 @@ def main() -> None:
 @click.option("--user", type=str)
 def init(home_dir: str, cache_dir: str, remote: str, host: str, user: str) -> None:
     "Initialize the blackfish service."
+
+    from app.setup import create_local_home_dir, create_remote_home_dir, create_or_modify_profile
+    
     if remote is not None:
         if remote == "slurm":
             home_dir = home_dir if home_dir is not None else f"/home/{user}/.blackfish"
@@ -62,6 +61,9 @@ def init(home_dir: str, cache_dir: str, remote: str, host: str, user: str) -> No
 def start(reload: bool, profile: str) -> None:
     "Start the blackfish app."
 
+    import uvicorn
+    from app import __file__
+
     if not os.path.isdir(config.BLACKFISH_HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
         return
@@ -77,8 +79,8 @@ def start(reload: bool, profile: str) -> None:
             host=config.BLACKFISH_HOST,
             port=config.BLACKFISH_PORT,
             log_level="info",
-            app_dir=os.path.abspath(os.path.join(app.__file__, "..", "..")),
-            reload_dirs=os.path.abspath(os.path.join(app.__file__, "..")),
+            app_dir=os.path.abspath(os.path.join(__file__, "..", "..")),
+            reload_dirs=os.path.abspath(os.path.join(__file__, "..")),
             reload=reload,
         )
         # _ = subprocess.check_output(
@@ -222,6 +224,8 @@ def rm(service_id, force) -> None:
 def details(service_id):
     """Show detailed service information"""
 
+    from app.services.base import Service
+
     res = requests.get(
         f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services/{service_id}"
     )  # fresh data 🥬
@@ -273,6 +277,8 @@ def details(service_id):
 )
 def ls(filters):
     """List services"""
+
+    from prettytable import PrettyTable, PLAIN_COLUMNS
 
     if filters is not None:
         filters = "/?" + filters.replace(",", "&")
@@ -381,6 +387,9 @@ def models():
 )
 def models_ls(profile, refresh):
     """Show available (downloaded) models for a given image and (optional) profile."""
+
+    from prettytable import PrettyTable, PLAIN_COLUMNS
+
     res = requests.get(
         f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models?refresh={refresh}&profile={profile}"
     )

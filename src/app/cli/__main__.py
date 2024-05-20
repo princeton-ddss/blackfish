@@ -9,7 +9,7 @@ from app.services.base import Service
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
 from app.config import config as app_config
 from app.config import config, SlurmRemote
-from app.setup import make_local_dir, create_or_modify_config
+from app.setup import create_local_dir, create_or_modify_config
 
 
 """
@@ -30,7 +30,7 @@ def main() -> None:
 def init(home_dir: str) -> None:
     "Initialize the blackfish service."
     home_dir = home_dir if home_dir is not None else app_config.BLACKFISH_HOME_DIR
-    make_local_dir(home_dir)
+    create_local_dir(home_dir)
     create_or_modify_config(home_dir)
 
 

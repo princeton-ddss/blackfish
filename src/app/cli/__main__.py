@@ -354,7 +354,6 @@ def models():
 
 # blackfish models ls [IMAGE] [OPTIONS]
 @models.command(name="ls")
-# @click.argument("image", type=str, required=True)
 @click.option(
     "-p",
     "--profile",
@@ -370,7 +369,6 @@ def models():
     default=False,
     help="Refresh the list of available models.",
 )
-# def models_ls(image, profile, refresh):
 def models_ls(profile, refresh):
     """Show available (downloaded) models for a given image and (optional) profile."""
     # res = requests.get(

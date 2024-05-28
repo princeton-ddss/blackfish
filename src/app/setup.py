@@ -75,6 +75,29 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
         raise NotImplementedError
 
 
+def check_remote_cache_exists(remote_type, host, user, cache_dir):
+    with yaspin(text="Looking for remote cache") as spinner:
+        try:
+            res = subprocess.check_output(
+                [
+                    "ssh",
+                    f"{user}@{host}",
+                    f"""if [ -d {cache_dir} ]; then echo 1; fi""",
+                ]
+            )
+            remote_exists = res.decode("utf-8").strip()
+            spinner.text = ""
+            if remote_exists == "1":
+                spinner.ok(f"{LogSymbols.SUCCESS.value} Blackfish remote cache directory exists.")
+            else:
+                spinner.fail(f"{LogSymbols.ERROR.value} Unable to find remote cache dir {cache_dir}.")
+        except Exception as e:
+            spinner.text = ""
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote home: {e}."
+            )
+
+
 def migrate_db() -> None:
     logger.info("running database migration")
     _ = subprocess.check_output(
@@ -132,6 +155,7 @@ def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
             cache_dir = input(f"> cache [/scratch/gpfs/{user}/.cache]: ")
             cache_dir = f"/scratch/gpfs/{user}/.cache" if cache_dir == "" else cache_dir
             create_remote_home_dir("slurm", host=host, user=user, home_dir=remote_dir)
+            check_remote_cache_exists("slurm", host=host, user=user, cache_dir=cache_dir)
         else:
             raise NotImplementedError
 
@@ -149,5 +173,3 @@ def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
             print(f"{LogSymbols.SUCCESS.value} Created {home_dir}/profiles.")
         else:
             print(f"{LogSymbols.SUCCESS.value} Updated {home_dir}/profiles.")
-
-    

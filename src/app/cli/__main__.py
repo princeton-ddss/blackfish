@@ -1,10 +1,11 @@
 import click
 import requests
 import os
+from yaspin import yaspin
+from log_symbols.symbols import LogSymbols
 
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
 from app.config import config, SlurmRemote
-
 
 
 """
@@ -30,7 +31,7 @@ def init(home_dir: str, cache_dir: str, remote: str, host: str, user: str) -> No
     "Initialize the blackfish service."
 
     from app.setup import create_local_home_dir, create_remote_home_dir, create_or_modify_profile
-    
+
     if remote is not None:
         if remote == "slurm":
             home_dir = home_dir if home_dir is not None else f"/home/{user}/.blackfish"
@@ -42,7 +43,7 @@ def init(home_dir: str, cache_dir: str, remote: str, host: str, user: str) -> No
         create_local_home_dir(home_dir)
         create_or_modify_profile(home_dir)
 
-    print("\n🎉 All done--let's fish! 🎉")
+    print("\n🎉 All done—let's fish!")
 
 
 @main.command()
@@ -180,15 +181,18 @@ run.add_command(run_text_generate, "text-generate")
 def stop(service_id, delay) -> None:
     """Stop one or more services"""
 
-    res = requests.put(
-        f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services/{service_id}/stop",
-        json={
-            "delay": delay,
-        },
-    )
-
-    if not res.ok is not None:
-        click.echo(f"Failed to stop service {service_id}.")
+    with yaspin(text="Stopping service...") as spinner:
+        res = requests.put(
+            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services/{service_id}/stop",
+            json={
+                "delay": delay,
+            },
+        )
+        spinner.text = ""
+        if not res.ok is not None:
+            spinner.fail(f"{LogSymbols.ERROR.value} Failed to stop service {service_id}.")
+        else:
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Stopped service {service_id}")
 
 
 # blackfish rm [OPTIONS] SERVICE [SERVICE...]
@@ -208,14 +212,15 @@ def stop(service_id, delay) -> None:
 def rm(service_id, force) -> None:
     """Remove one or more services"""
 
-    res = requests.delete(
-        f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services/{service_id}"
-    )
-
-    if not res.ok is not None:
-        click.echo(f"Failed to stop service {service_id}.")
-    else:
-        click.echo(f"Removed service {service_id}")
+    with yaspin(text="Deleting service...") as spinner:
+        res = requests.delete(
+            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services/{service_id}"
+        )
+        spinner.text = ""
+        if not res.ok:
+            spinner.fail(f"{LogSymbols.ERROR.value} Failed to stop service {service_id}.")
+        else:
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Removed service {service_id}")
 
 
 # blackfish details [OPTIONS] SERVICE
@@ -280,15 +285,6 @@ def ls(filters):
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
 
-    if filters is not None:
-        filters = "/?" + filters.replace(",", "&")
-    else:
-        filters = ""
-
-    res = requests.get(
-        f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}"
-    )  # fresh data 🥬
-
     tab = PrettyTable(
         field_names=[
             "SERVICE ID",
@@ -304,7 +300,23 @@ def ls(filters):
     tab.set_style(PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
-    for service in res.json():
+
+    if filters is not None:
+        filters = "/?" + filters.replace(",", "&")
+    else:
+        filters = ""
+
+    with yaspin(text="Fetching services...") as spinner:
+        res = requests.get(
+            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}"
+        )  # fresh data 🥬
+        spinner.text = ""
+        if not res.ok:
+            spinner.fail(f"{LogSymbols.ERROR.value} Failed to fetch services. Status code: {res.status_code}.")
+            return
+
+    services = res.json()
+    for service in services:
         ports = (
             f"""localhost:{service["port"]}->{service["host"]}:{service["remote_port"]}"""
             if (
@@ -322,7 +334,8 @@ def ls(filters):
                 service["created_at"],  # TODO: format (e.g., 5 min ago)
                 service["updated_at"],  # TODO: format (e.g., 5 min ago)
                 service["status"],
-                ports,
+                # ports,
+                service["port"],
                 service["name"],
             ]
         )
@@ -390,9 +403,15 @@ def models_ls(profile, refresh):
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
 
-    res = requests.get(
-        f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models?refresh={refresh}&profile={profile}"
-    )
+    with yaspin(text=f"Fetching models") as spinner:
+        res = requests.get(
+            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models?refresh={refresh}&profile={profile}"
+        )
+        spinner.text = ""
+        if not res.ok:
+            spinner.fail(f"{LogSymbols.ERROR.value} Error: {res.status_code}")
+            return
+
     tab = PrettyTable(
         field_names=[
             "ID",

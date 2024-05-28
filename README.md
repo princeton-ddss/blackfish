@@ -157,7 +157,7 @@ GET /models/?profile=della&refresh=true
 The `refresh` option tells Blackfish to confirm availability by directly accessing the remote's cache directories; omitting the refresh option tells Blackfish to return the list of models found in its database, which might differ if a model was added since the last time the database was refreshed.
 
 #### Snapshot Storage
-Users can only download new snapshots to `profile.home_dir`. Thus, if a model if found
+Users can only download new snapshots to `profile.home_dir`. Thus, if a model is found
 before running a service, then the image should look for model data in whichever cache directory
 the snapshot is found. Otherwise, the service should bind to `profile.home_dir` so that
 model files are stored there. **Users should not be given write access to `profile.cache_dir`.**
@@ -188,6 +188,47 @@ litestar make-migration "a new migration"  # create a new migration
 litestar database upgrade
 ```
 
+### Obtaining Apptainer images
+Services deployed on high-performance computing systems need to be run by Apptainer
+instead of Docker. Apptainer will not run Docker images directly. Instead, you need to
+convert Docker images to SIF files. For images hosted on Docker Hub, running `apptainer
+pull` will do this automatically. For example,
+
+```bash
+apptainer pull docker://ghcr.io/huggingface/text-generation-inference:latest
+```
+
+This command generates a file `text-generation-inference_latest.sif`. In order for
+users of the remote to access the image, it should be moved to a shared cache directory,
+e.g., `/scratch/gpfs/.blackfish/images`.
+
+### Obtaining models
+Models should generally be pulled from the Hugging Face model hub. This can be done
+by either visitng the web page for the model card or using of one Hugging Face's Python
+packages. The latter is preferred as it stores files in a consistent manner in the
+cache directory. E.g.,
+```python
+from transformers import pipeline
+pipeline(
+    task='text-generation',
+    model='meta-llama/Meta-Llama-3-8B',
+    token=<token>,
+    revision=<revision>,
+
+)
+# or
+from transformers import AutoTokenizer, AutoModelForCausalLM
+tokenizer = AutoTokenizer.from_pretrained('meta-llama/Meta-Llama-3-8B')
+model = AutoModelForCausalLM('meta-llama/Meta-Llama-3-8b')
+# or
+from huggingface_hub import shapshot_download
+snapshot_download(repo_id="meta-llama/Meta-Llama-3-8B")
+```
+These commands store models files to `~/.cache/huggingface/hub/` by default. You can
+modify the directory by setting `HF_HOME` in the local environment or providing a
+`cache_dir` argument (where applicable). After the model files are downloaded, they
+should be moved to a shared cache directory, e.g., `/scratch/gpfs/blackfish/models`.
+
 ### Configuration
 The application and command-line interface (CLI) pull their settings from environment
 variables and/or (for the application) arguments provided at start-up. The most important
@@ -196,7 +237,7 @@ environment variables are:
 BLACKFISH_HOST = '127.0.0.1' # host for local instance of the Blackfish app
 BLACKFISH_PORT = 8000 # port for local instance of the Blackfish app
 BLACKFISH_HOME_DIR = '~/.blackfish' # location to store application data
-BLACKFISH_CACHE_DIR = '~/.blackfish/cache' # location to store image and model files
+BLACKFISH_CACHE_DIR = '~/.blackfish/.cache' # location to store image and model files
 ```
 
 ### Profiles

@@ -7,7 +7,7 @@ from copy import deepcopy
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
-DEFAULT_CACHE_DIR = os.path.expanduser("~/.blackfish/cache")
+DEFAULT_CACHE_DIR = os.path.expanduser("~/.blackfish/.cache")
 DEFAULT_DEBUG = True
 
 

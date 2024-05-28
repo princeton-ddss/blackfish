@@ -106,7 +106,7 @@ class TextGeneration(Service):
 
         return job_script
 
-    def call(self, inputs: str, **kwargs) -> requests.Response:
+    async def call(self, inputs: str, **kwargs) -> requests.Response:
         logger.info(f"calling service {self.service_id}")
         try:
             headers = {
@@ -127,8 +127,8 @@ class TextGeneration(Service):
 
         return res
 
-    def ping(self) -> dict:
-        logger.debug(f"pinging service {self.service_id}")
+    async def ping(self) -> dict:
+        logger.debug(f"Pinging service {self.id}")
         try:
             res = requests.get(f"http://127.0.0.1:{self.port}/health")
             logger.debug(f"response state {res.status_code}")

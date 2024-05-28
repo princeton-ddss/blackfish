@@ -59,6 +59,7 @@ class SlurmJobConfig(JobConfig):
     constraint: Optional[str] = None  # e.g., gpu80
     home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
     cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
+    model_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
 
 
 @dataclass
@@ -102,7 +103,7 @@ class Job:
             logger.debug(f"The current job state is: {new_state}")
             if self.state in [None, "MISSING", "PENDING"] and new_state == "RUNNING":
                 logger.debug(
-                    "Job state switched from PENDING to RUNNING"
+                    f"Job state switched from {self.state} to RUNNING"
                     f" (job_id={self.job_id})."
                 )
                 self.update_node()
@@ -118,7 +119,7 @@ class Job:
         return self.state
 
     def update_node(self) -> Optional[str]:
-        logger.debug(f"updating node for job {self.job_id}.")
+        logger.debug(f"Updating node for job {self.job_id}.")
         res = subprocess.check_output(
             [
                 "ssh",
@@ -136,12 +137,12 @@ class Job:
             ]
         )
         self.node = None if res == b"" else res.decode("utf-8").strip()
-        logger.debug(f"job {self.job_id} node set to {self.node}.")
+        logger.debug(f"Job {self.job_id} node set to {self.node}.")
 
         return self.node
 
     def update_port(self) -> Optional[int]:
-        logger.debug(f"updating port for job {self.job_id}.")
+        logger.debug(f"Updating port for job {self.job_id}.")
         res = subprocess.check_output(
             [
                 "ssh",
@@ -151,7 +152,7 @@ class Job:
             ]
         )
         self.port = None if res == b"" else int(res.decode("utf-8").strip())
-        logger.debug(f"job {self.job_id} port set to {self.port}")
+        logger.debug(f"Job {self.job_id} port set to {self.port}")
 
         return self.port
 

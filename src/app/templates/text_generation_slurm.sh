@@ -1,9 +1,9 @@
 {% extends "base_slurm.sh" %}
 {% block command %}
-apptainer{{ ' --nv' if job_config.gres > 0 else '' }} run \
-  --bind {{ job_config.cache_dir }}/huggingface/data:/data \
-  {{ job_config.cache_dir }}/huggingface/images/text-generation-inference_latest.sif \
-  --model-id /data/{{ model }} \
+apptainer run {{ ' --nv' if job_config.gres > 0 else '' }}\
+  --bind {{ job_config.model_dir }}:/data \
+  {{ job_config.cache_dir }}/images/text-generation-inference_latest.sif \
+  --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port $port \
 {%- if 'revision' in container_config %}
   --revision {{ container_config['revision'] }} \

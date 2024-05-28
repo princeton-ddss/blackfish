@@ -2,9 +2,9 @@ import random
 import subprocess
 import os
 import psutil
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
-from requests import Response
+import requests
 from dataclasses import dataclass, asdict, replace
 
 from sqlalchemy.orm import Mapped
@@ -58,7 +58,7 @@ class Service(UUIDAuditBase):
     async def start(
         self,
         session: AsyncSession,
-        state: State,
+        config: State,
         container_options: dict,
         job_options: dict,
     ):
@@ -74,8 +74,8 @@ class Service(UUIDAuditBase):
         Returns:
             None.
         """
-        logger.debug(f"Generating job script and writing to {state.BLACKFISH_HOME_DIR}.")
-        with open(os.path.join(state.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
+        logger.debug(f"Generating job script and writing to {config.BLACKFISH_HOME_DIR}.")
+        with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
             try:
                 script = self.launch_script(container_options, job_options)
                 f.write(script)
@@ -89,7 +89,7 @@ class Service(UUIDAuditBase):
             if self.host == "localhost":
                 logger.debug("submitting batch job on login node.")
                 res = subprocess.check_output(
-                    ["sbatch", os.path.join(state.BLACKFISH_HOME_DIR, "start.sh")]
+                    ["sbatch", os.path.join(config.BLACKFISH_HOME_DIR, "start.sh")]
                 )
             else:
                 logger.debug(
@@ -98,7 +98,7 @@ class Service(UUIDAuditBase):
                 _ = subprocess.check_output(
                     [
                         "scp",
-                        os.path.join(state.BLACKFISH_HOME_DIR, "start.sh"),
+                        os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"),
                         (
                             f"{self.user}@{self.host}:{os.path.join(job_options['home_dir'], 'start.sh')}"
                         ),
@@ -174,14 +174,13 @@ class Service(UUIDAuditBase):
                 raise Exception(
                     f"Unable to stop service {self.id} because `job` is missing."
                 )
-
             job = self.get_job()
             job.cancel()
             await self.close_tunnel(session)
         elif self.job_type == "ec2":
             raise NotImplementedError
         elif self.job_type == "test":
-            raise NotImplementedError
+            pass
         else:
             raise Exception  # TODO: JobTypeError
 
@@ -258,7 +257,7 @@ class Service(UUIDAuditBase):
                 return "PENDING"
             elif job.state == "MISSING":
                 logger.warning(
-                    f"service {self.id} has no job state (this service is likely"
+                    f"Service {self.id} has no job state (this service is likely"
                     " new or has expired). Aborting status update."
                 )
                 return self.status
@@ -268,8 +267,6 @@ class Service(UUIDAuditBase):
                     " STOPPED and stopping the service."
                 )
                 await self.stop(session)
-                # if push:
-                #     self.push(session, updated=datetime.now())
                 return "STOPPED"
             elif job.state == "TIMEOUT":
                 logger.debug(
@@ -277,23 +274,21 @@ class Service(UUIDAuditBase):
                     " TIMEOUT and stopping the service."
                 )
                 await self.stop(session, timeout=True)
-                # if push:
-                #     self.push(session, updated=datetime.now())
                 return "TIMEOUT"
             elif job.state == "RUNNING":
                 if self.port is None:
-                    self.open_tunnel(session)
-                res = self.ping()
+                    await self.open_tunnel(session)
+                res = await self.ping()
                 if res["ok"]:
                     logger.debug(
-                        f"service {self.id} responded normally. Setting status to"
+                        f"Service {self.id} responded normally. Setting status to"
                         " HEALTHY."
                     )
                     self.status = "HEALTHY"
                     return "HEALTHY"
                 else:
                     logger.debug(
-                        f"service {self.id} did not respond normally. Determining"
+                        f"Service {self.id} did not respond normally. Determining"
                         " status."
                     )
                     if self.status in [
@@ -301,33 +296,34 @@ class Service(UUIDAuditBase):
                         "PENDING",
                         "STARTING",
                     ]:
-                        if self.created is None:
-                            raise Exception("Service is missing value `created`.")
-                        dt = datetime.now() - self.created
-                        if dt.seconds > self.start_period:
+                        if self.created_at is None:
+                            raise Exception("Service is missing value `created_at`.")
+                        dt = datetime.now(timezone.utc) - self.created_at
+                        logger.debug(f"Service created {dt.seconds} seconds ago.")
+                        if dt.seconds > self.grace_period:
                             logger.debug(
-                                f"service {self.id} grace period exceeded. Setting"
+                                f"Service {self.id} grace period exceeded. Setting"
                                 "status to UNHEALTHY."
                             )
                             self.status = "UNHEALTHY"
                             return "UNHEALTHY"
                         else:
                             logger.debug(
-                                f"service {self.id} is still starting. Setting"
+                                f"Service {self.id} is still starting. Setting"
                                 " status to STARTING."
                             )
                             self.status = "STARTING"
                             return "STARTING"
                     else:
                         logger.debug(
-                            f"service {self.id} is no longer starting. Setting"
+                            f"Service {self.id} is no longer starting. Setting"
                             " status to UNHEALTHY."
                         )
                         self.status = "UNHEALTHY"
                         return "UNHEALTHY"
             else:
                 logger.debug(
-                    f"service {self.id} has a failed job"
+                    f"Service {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
                 await self.stop(session, failed=True)  # stop will push to database
@@ -378,8 +374,8 @@ class Service(UUIDAuditBase):
                         f"{self.user}@{job.node}",
                     ]
                 )
-                logger.info(
-                    f"established tunnel localhost:{self.port} -> {job.node}:{job.port}"
+                logger.debug(
+                    f"Established tunnel localhost:{self.port} -> {job.node}:{job.port}"
                 )
             else:
                 _ = subprocess.check_output(
@@ -392,8 +388,8 @@ class Service(UUIDAuditBase):
                         f"{self.user}@{self.host}",
                     ]
                 )
-                logger.info(
-                    f"established tunnel localhost:{self.port} -> {self.host}:{job.port}"
+                logger.debug(
+                    f"Established tunnel localhost:{self.port} -> {self.host}:{job.port}"
                 )  # noqa: E501
         else:
             raise NotImplementedError
@@ -418,10 +414,10 @@ class Service(UUIDAuditBase):
                 if c.laddr.port == self.port:
                     try:
                         p.kill()
-                        logger.info(f"closed tunnel on port {self.port} (pid={pid})")
+                        logger.info(f"Closed tunnel on port {self.port} (pid={pid})")
                     except psutil.NoSuchProcess as e:
                         logger.warning(
-                            f"unable to kill process {pid} sqlite.Error({e})"
+                            f"Failed to kill process {pid} sqlite.Error({e})"
                         )
 
         self.port = None
@@ -437,5 +433,14 @@ class Service(UUIDAuditBase):
             "`launch_script` should only be called on subtypes of Service"
         )
 
-    def call(self, inputs, **kwargs) -> Response:
+    async def call(self, inputs, **kwargs) -> dict:
         raise NotImplementedError("`call` should only be called on subtypes of Service")
+
+    async def ping(self) -> dict:
+        logger.debug(f"Pinging service {self.id}")
+        try:
+            res = requests.get(f"http://127.0.0.1:{self.port}/health")
+            logger.debug(f"Response status code: {res.status_code}")
+            return {"ok": res.ok}
+        except Exception as e:
+            return {"ok": False, "error": e}

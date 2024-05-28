@@ -11,10 +11,7 @@ version = "0.1.0"
 description = "An open-source MLaaS platform."
 readme = "README.md"
 license = "MIT"
-authors = [
-    { name = "Colin Swaney" },
-    { email = "colinswaney@princeton.edu" },
-]
+authors = [{ name = "Colin Swaney" }, { email = "colinswaney@princeton.edu" }]
 requires-python = ">=3.7"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
@@ -25,18 +22,21 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
+  "advanced-alchemy",
+  "alembic",
   "click",
   "colorlog",
+  "fabric",
   "jinja2",
+  "litestar",
   "nox",
   "pre-commit",
   "prettytable",
   "psutil",
-  "litestar",
-  "advanced-alchemy",
-  "alembic",
   "pytest",
   "requests",
+  "tqdm",
+  "yaspin",
 ]
 [project.scripts]
 blackfish = "app.cli.__main__:main"

@@ -317,15 +317,6 @@ def ls(filters):
 
     services = res.json()
     for service in services:
-        ports = (
-            f"""localhost:{service["port"]}->{service["host"]}:{service["remote_port"]}"""
-            if (
-                service.get("port") is not None
-                and service.get("remote_port") is not None
-                and service.get("host") is not None
-            )
-            else "None"
-        )
         tab.add_row(
             [
                 service["id"],
@@ -334,7 +325,6 @@ def ls(filters):
                 service["created_at"],  # TODO: format (e.g., 5 min ago)
                 service["updated_at"],  # TODO: format (e.g., 5 min ago)
                 service["status"],
-                # ports,
                 service["port"],
                 service["name"],
             ]
@@ -403,7 +393,7 @@ def models_ls(profile, refresh):
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
 
-    with yaspin(text=f"Fetching models") as spinner:
+    with yaspin(text="Fetching models") as spinner:
         res = requests.get(
             f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models?refresh={refresh}&profile={profile}"
         )

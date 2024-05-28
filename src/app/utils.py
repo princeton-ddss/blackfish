@@ -18,7 +18,7 @@ def get_latest_commit(repo_id: str, revisions: list[str]):
     for commit in commits:
         if commit in revisions:
             return revisions[revisions.index(commit)]
-    raise Exception("List of revisions should be a subset of repo commits.")
+    raise Exception("List of revisions should be a (non-empty) subset of repo commits.")
 
 
 def get_models(profile: BlackfishProfile):

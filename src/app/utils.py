@@ -1,23 +1,133 @@
 import os
 import socket
-from typing import Optional, Tuple
-from huggingface_hub import ModelCard
+from typing import Optional
+from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from fabric.connection import Connection
-from paramiko.sftp_client import SFTPClient
 from app.config import BlackfishProfile, SlurmRemote
 from app.logger import logger
+from yaspin import yaspin
+from log_symbols.symbols import LogSymbols
 
 
-def model_available(
-    model_id: str,
+def get_latest_commit(repo_id: str, revisions: list[str]):
+    """Return the most recent revision for a model from a list of options."""
+    if len(revisions) == 0:
+        raise Exception("List of revisions should be non-empty.")
+    commits = map(lambda x: x.commit_id, list_repo_commits(repo_id))
+    for commit in commits:
+        if commit in revisions:
+            return revisions[revisions.index(commit)]
+    raise Exception("List of revisions should be a subset of repo commits.")
+
+
+def get_models(profile: BlackfishProfile):
+    if isinstance(profile, SlurmRemote):
+        models = []
+        with yaspin(text=f"Searching {profile.host} for available models") as spinner:
+            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+                default_dir = os.path.join(profile.cache_dir, "models")
+                spinner.text = f"Looking in default directory {default_dir}"
+                model_dirs = sftp.listdir(default_dir)
+                for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                    _, namespace, model = model_dir.split("--")
+                    models.append(f"{namespace}/{model}")
+                backup_dir = os.path.join(profile.home_dir, "models")
+                spinner.text = f"Looking in default directory {backup_dir}"
+                model_dirs = sftp.listdir(backup_dir)
+                for model_dir in model_dirs:
+                    _, namespace, model = model_dir.split("--")
+                    models.append(f"{namespace}/{model}")
+            spinner.text = ""
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
+        return models
+    else:
+        raise NotImplementedError
+
+
+def get_revisions(repo_id: str, profile: BlackfishProfile):
+    if isinstance(profile, SlurmRemote):
+        revisions = []
+        namespace, model = repo_id.split("/")
+        model_dir = f"models--{namespace}--{model}"
+        with yaspin(
+            text=f"Searching {profile.host} for model {repo_id} commits"
+        ) as spinner:
+            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+                default_dir = os.path.join(profile.cache_dir, "models")
+                spinner.text = f"Looking in default directory {default_dir}"
+                model_dirs = sftp.listdir(default_dir)
+                if model_dir in model_dirs:
+                    revisions.extend(
+                        sftp.listdir(os.path.join(default_dir, model_dir, "snapshots"))
+                    )
+                backup_dir = os.path.join(profile.home_dir, "models")
+                spinner.text = f"Looking in backup directory {backup_dir}"
+                models = sftp.listdir(backup_dir)
+                if model_dir in models:
+                    revisions.extend(
+                        sftp.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
+                    )
+            spinner.text = ""
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
+        return revisions
+    else:
+        raise NotImplementedError
+
+
+def get_model_dir(repo_id: str, revision: str, profile: BlackfishProfile):
+    """Find the directory of a specific model revision.
+
+    The job launcher needs to know where to find model files, but these can be split across
+    the managed cache and a user's private cache.
+    """
+    namespace, model = repo_id.split("/")
+    model_dir = f"models--{namespace}--{model}"
+    if isinstance(profile, SlurmRemote):
+        with yaspin(
+            text=f"Searching {profile.host} for {repo_id}[{revision}]"
+        ) as spinner:
+            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+                default_dir = os.path.join(profile.cache_dir, "models")
+                spinner.text = f"Looking in default directory {default_dir}"
+                if model_dir in sftp.listdir(default_dir):
+                    if revision in sftp.listdir(
+                        os.path.join(default_dir, model_dir, "snapshots")
+                    ):
+                        spinner.text = ""
+                        spinner.ok(
+                            f"{LogSymbols.SUCCESS.value} Found model {repo_id}[{revision}] in {default_dir}."
+                        )
+                        return os.path.join(default_dir, model_dir)
+                backup_dir = os.path.join(profile.home_dir, "models")
+                spinner.text = f"Looking in backup directory {backup_dir}"
+                if model_dir in sftp.listdir(backup_dir):
+                    if revision in sftp.listdir(
+                        os.path.join(backup_dir, model_dir, "snapshots")
+                    ):
+                        spinner.text = ""
+                        spinner.ok(
+                            f"{LogSymbols.SUCCESS.value} Found model {repo_id}[{revision}] in {backup_dir}."
+                        )
+                        return os.path.join(backup_dir, model_dir)
+            spinner.text = ""
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on {profile.host}."
+            )
+        return None
+    else:
+        raise NotImplementedError
+
+
+def has_model(
+    repo_id: str,
     profile: BlackfishProfile,
     revision: Optional[str] = None,
 ):
     """Look for model files in the specified environment.
 
     Args:
-        model_id:
+        repo_id:
             A namespace (user or organization name) and repo separated by a `/`.
         revision:
             An optional Git revision id, which can be a branch name (e.g., 'main'),
@@ -29,62 +139,20 @@ def model_available(
         bool
     """
     try:
-        ModelCard.load(model_id)
+        ModelCard.load(repo_id)
     except RepositoryNotFoundError:
         print(
-            f"Repository not found. Is this model hosted on Hugging Face? Check that https://huggingface.co/{model_id} is a valid url and that you are authenticated (if this is a private or gated repo)."
+            f"Repository not found. Is this model hosted on Hugging Face? Check that https://huggingface.co/{repo_id} is a valid url and that you are authenticated (if this is a private or gated repo)."
         )
         return False
 
-    if isinstance(profile, SlurmRemote):
-        remote = SlurmRemote(
-            profile["host"],
-            profile["user"],
-            profile["home_dir"],
-            profile["cache_dir"],
-        )
-        with Connection(remote.host, remote.user) as conn, conn.sftp() as sftp:
-            _, cache_dir = model_dir_exists(
-                model_id, remote.cache_dir, remote.home_dir, sftp
-            )
-            if cache_dir is not None:
-                if revision is not None:
-                    return revision_dir_exists(revision, cache_dir, sftp)
-                else:
-                    return True
+    if revision is None:
+        return repo_id in get_models(profile)
     else:
-        raise NotImplementedError
-
-
-def model_dir_exists(
-    model_id: str, cache_dir: str, home_dir: str, sftp: SFTPClient
-) -> Tuple[bool, Optional[str]]:
-    """Check if the expected model directory exists and return the location if found."""
-
-    namespace, repo = model_id.split("/")
-    model_dir = f"models--{'--'.join(model_id.split('/'))}"
-
-    models = sftp.listdir(cache_dir)
-    if f"models--{namespace}--{repo}" in models:
-        return True, os.path.join(cache_dir, model_dir)
-
-    backup_dir = os.path.join(home_dir, ".cache", "huggingface", "hub")
-    models = sftp.listdir(backup_dir)
-    if f"models--{namespace}--{repo}" in models:
-        return True, os.path.join(backup_dir, model_dir)
-
-    return False, None
-
-
-def revision_dir_exists(revision: str, cache_dir: str, sftp: SFTPClient):
-    """Check if the model revision directory exists."""
-
-    if revision in sftp.listdir(os.path.join(cache_dir, "refs")):
-        return True
-    elif revision in sftp.listdir(os.path.join(cache_dir, "snapshots")):
-        return True
-    else:
-        return False
+        if repo_id in get_models(profile):
+            return revision in get_revisions(repo_id, profile)
+        else:
+            return False
 
 
 def find_port(host="127.0.0.1", lower=8080, upper=8900) -> int:
@@ -95,5 +163,10 @@ def find_port(host="127.0.0.1", lower=8080, upper=8900) -> int:
             client.close()
             return int(port)
         except OSError:
-            logger.debug(f"OSError: failed to bind port {port} on host {host}")
+            if port == upper - 1:
+                logger.debug(f"Failed to bind port {port} on host {host}.")
+            else:
+                logger.debug(
+                    f"Failed to bind port {port} on host {host}. Trying next port."
+                )
     raise OSError(f"OSError: no ports available in range {lower}-{upper}")

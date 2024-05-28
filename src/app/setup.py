@@ -1,21 +1,30 @@
 import os
 import configparser
 import subprocess
+from yaspin import yaspin
+from log_symbols.symbols import LogSymbols
 
 import app
 from app.logger import logger
 
 
 def create_local_home_dir(home_dir: str) -> None:
-    if not os.path.isdir(home_dir):
-        logger.info(f"setting up blackfish home directory {home_dir}")
-        try:
-            os.mkdir(home_dir)
-            os.mkdir(os.path.join(home_dir, ".cache"))
-        except OSError as e:
-            logger.error("unable to setup blackfish home directory: ", e)
-    else:
-        logger.info("blackfish home directory already exists. Skipping.")
+    with yaspin(text=f"Setting up blackfish home directory {home_dir}") as spinner:
+        if not os.path.isdir(home_dir):
+            try:
+                os.mkdir(home_dir)
+                os.mkdir(os.path.join(home_dir, "models"))
+                os.mkdir(os.path.join(home_dir, "images"))
+                spinner.text = ""
+                spinner.ok(f"{LogSymbols.SUCCESS.value} Done!")
+            except OSError as e:
+                spinner.text = ""
+                spinner.fail(f"{LogSymbols.ERROR.value} Unable to setup blackfish home: {e}.")
+        else:
+            spinner.text = ""
+            spinner.ok(
+                f"{LogSymbols.SUCCESS.value} Blackfish home directory already exists."
+            )
 
 
 def create_remote_home_dir(
@@ -81,7 +90,6 @@ def migrate_db() -> None:
         ]
     )
 
-
 def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
     """Create a new profile."""
 
@@ -90,11 +98,11 @@ def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
     profiles = configparser.ConfigParser()
     profiles.read(f"{home_dir}/profiles")
 
+    print("  Create or modify an existing profile:")
     name = input("> name [default]: ")
     name = "default" if name == "" else name
 
     if name in profiles:
-        logger.debug(f"Modifying existing profile {name}")
         profile = profiles[name]
         profile_type = profile["type"]
         if profile_type == "slurm":
@@ -109,7 +117,6 @@ def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
         else:
             raise NotImplementedError
     else:
-        logger.debug(f"Creating new profile {name}")
         profile_type = input("> type [slurm]: ")
         profile_type = "slurm" if profile_type == "" else profile_type
         if profile_type == "slurm":
@@ -125,19 +132,20 @@ def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
             remote_dir = f"/home/{user}/.blackfish" if remote_dir == "" else remote_dir
             cache_dir = input(f"> cache [/scratch/gpfs/{user}/.cache]: ")
             cache_dir = f"/scratch/gpfs/{user}/.cache" if cache_dir == "" else cache_dir
-            profiles[name] = {
-                "type": profile_type,
-                "user": user,
-                "host": host,
-                "home_dir": remote_dir,
-                "cache_dir": cache_dir,
-            }
         else:
             raise NotImplementedError
+
+    profiles[name] = {
+        "type": profile_type,
+        "user": user,
+        "host": host,
+        "home_dir": remote_dir,
+        "cache_dir": cache_dir,
+    }
 
     with open(os.path.join(home_dir, "profiles"), "w") as f:
         profiles.write(f)
         if not profiles_exists:
-            logger.info(f"Created {home_dir}/profiles")
+            print(f"{LogSymbols.SUCCESS.value} Created {home_dir}/profiles")
         else:
-            logger.info(f"Updated {home_dir}/profiles")
+            print(f"{LogSymbols.SUCCESS.value} Updated {home_dir}/profiles")

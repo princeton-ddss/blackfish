@@ -2,10 +2,7 @@ import click
 import requests
 from random import randint
 
-from app.services.nlp.text_generation import (
-    TextGeneration,
-    TextGenerationModels,
-)
+from app.services.nlp.text_generation import TextGeneration
 from app.config import config, SlurmRemote
 from app.utils import get_models, get_revisions, get_latest_commit, get_model_dir
 from yaspin import yaspin

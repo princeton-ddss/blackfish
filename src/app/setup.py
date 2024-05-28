@@ -19,7 +19,9 @@ def create_local_home_dir(home_dir: str) -> None:
                 spinner.ok(f"{LogSymbols.SUCCESS.value} Done!")
             except OSError as e:
                 spinner.text = ""
-                spinner.fail(f"{LogSymbols.ERROR.value} Unable to setup blackfish home: {e}.")
+                spinner.fail(
+                    f"{LogSymbols.ERROR.value} Unable to setup blackfish home: {e}."
+                )
         else:
             spinner.text = ""
             spinner.ok(
@@ -89,6 +91,7 @@ def migrate_db() -> None:
             "--no-prompt",
         ]
     )
+
 
 def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
     """Create a new profile."""

@@ -23,11 +23,10 @@ def main() -> None:
 
 @main.command()
 @click.option("--home_dir", type=str, default=None)
-@click.option("--cache_dir", type=str, default=".cache")
 @click.option("--remote", type=str, default=None)
 @click.option("--host", type=str)
 @click.option("--user", type=str)
-def init(home_dir: str, cache_dir: str, remote: str, host: str, user: str) -> None:
+def init(home_dir: str, remote: str, host: str, user: str) -> None:
     "Initialize the blackfish service."
 
     from app.setup import create_local_home_dir, create_remote_home_dir, create_or_modify_profile
@@ -35,7 +34,7 @@ def init(home_dir: str, cache_dir: str, remote: str, host: str, user: str) -> No
     if remote is not None:
         if remote == "slurm":
             home_dir = home_dir if home_dir is not None else f"/home/{user}/.blackfish"
-            create_remote_home_dir("slurm", host, user, home_dir, cache_dir)
+            create_remote_home_dir("slurm", host, user, home_dir)
         else:
             raise NotImplementedError
     else:

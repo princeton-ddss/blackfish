@@ -100,7 +100,7 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
             try:
                 model_dirs = sftp.listdir(default_dir)
                 logger.debug(f"Found model directories: {model_dirs}")
-                for model_dir in model_dirs:
+                for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
                     revisions = sftp.listdir(
@@ -121,7 +121,7 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
             try:
                 model_dirs = sftp.listdir(backup_dir)
                 logger.debug(f"Found model directories: {model_dirs}")
-                for model_dir in model_dirs:
+                for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
                     revisions = sftp.listdir(

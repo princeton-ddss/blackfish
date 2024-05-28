@@ -22,7 +22,7 @@ from advanced_alchemy.extensions.litestar import (
     AlembicAsyncConfig,
 )
 from advanced_alchemy.base import UUIDAuditBase
-from litestar.exceptions import ClientException, NotFoundException
+from litestar.exceptions import ClientException, NotFoundException, InternalServerException
 from litestar.status_codes import HTTP_409_CONFLICT
 
 from app.logger import logger
@@ -90,20 +90,21 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
 
 async def find_models(profile: BlackfishProfile) -> list[Model]:
     models = []
-    logger.debug("Establishing SFTP connection...")
     if isinstance(profile, SlurmRemote):
+        logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
         with Connection(
             host=profile.host, user=profile.user
         ) as conn, conn.sftp() as sftp:
-            logger.debug(f"Checking shared cache directory: {profile.cache_dir}")
+            default_dir = os.path.join(profile.cache_dir, "models")
+            logger.debug(f"Searching default directory {default_dir}")
             try:
-                model_dirs = sftp.listdir(profile.cache_dir)
+                model_dirs = sftp.listdir(default_dir)
                 logger.debug(f"Found model directories: {model_dirs}")
                 for model_dir in model_dirs:
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
                     revisions = sftp.listdir(
-                        os.path.join(profile.cache_dir, model_dir, "snapshots")
+                        os.path.join(default_dir, model_dir, "snapshots")
                     )
                     for revision in revisions:
                         models.append(
@@ -114,19 +115,17 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
                             )
                         )
             except FileNotFoundError as e:
-                logger.error(f"Unable to fetch model directories: {e}")
-
-            logger.debug(f"Checking user cache directory: {profile.home_dir}")
+                logger.error(f"Failed to list directory: {e}")
+            backup_dir = os.path.join(profile.home_dir, "models")
+            logger.debug(f"Searching backup directory: {backup_dir}")
             try:
-                model_dirs = sftp.listdir(
-                    os.path.join(profile.home_dir, ".cache", "huggingface", "hub")
-                )
+                model_dirs = sftp.listdir(backup_dir)
                 logger.debug(f"Found model directories: {model_dirs}")
                 for model_dir in model_dirs:
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
                     revisions = sftp.listdir(
-                        os.path.join(profile.cache_dir, model_dir, "snapshots")
+                        os.path.join(backup_dir, model_dir, "snapshots")
                     )
                     for revision in revisions:
                         models.append(
@@ -138,8 +137,7 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
                             )
                         )
             except FileNotFoundError as e:
-                logger.error(f"Unable to fetch model directories: {e}")
-
+                logger.error(f"Failed to list directory: {e}")
             return models
     else:
         raise NotImplementedError
@@ -185,12 +183,13 @@ async def run_service(
     try:
         await service.start(
             session,
-            state["config"],
+            state,
             container_options=data.container_options,
             job_options=data.job_options,
         )
     except Exception as e:
         logger.error(f"Unable to start service. Error: {e}")
+        return InternalServerException()
 
     return service
 
@@ -253,14 +252,10 @@ async def delete_service(service_id: str, session: AsyncSession) -> None:
     if service.status in ["STOPPED", "TIMEOUT", "FAILED"]:
         query = sa.delete(Service).where(Service.id == service_id)
         await session.execute(query)
-        # TODO: return success message
     else:
         logger.warn(
             f"Service is still running (status={service.status}). Aborting delete."
         )
-        # await service.stop(
-        #     session, delay=data.delay, timeout=data.timeout, failed=data.failed
-        # )
         # TODO: return failure status code and message
 
 
@@ -279,7 +274,6 @@ async def get_models(
     if refresh:
         # TODO: combine delete and add into single transaction?
         if profile is not None:
-            logger.debug(state.BLACKFISH_PROFILES[profile])
             models = await find_models(state.BLACKFISH_PROFILES[profile])
             logger.debug("Deleting existing models...")
             query = sa.delete(Model).where(Model.profile == profile)
@@ -288,10 +282,10 @@ async def get_models(
             aws = [find_models(profile) for profile in state.BLACKFISH_PROFILES.values()]
             res = await asyncio.gather(*aws)
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
-            logger.debug("Deleting existing models")
+            logger.debug("Deleting existing models...")
             query = sa.delete(Model)
             await session.execute(query)
-        logger.debug("Inserting refreshed models")
+        logger.debug("Inserting refreshed models...")
         session.add_all(models)
         await session.flush()
         return models

@@ -6,17 +6,22 @@ import colorlog
 from app.config import config as app_config
 import os
 
+
 class CustomFormatter(colorlog.ColoredFormatter):
     def formatMessage(self, record: logging.LogRecord) -> str:
         recordcopy = copy(record)
-        seperator = " " * (9 - len(recordcopy.levelname))
-        recordcopy.__dict__["seperator"] = seperator
+        separator = " " * (9 - len(recordcopy.levelname))
+        recordcopy.__dict__["separator"] = separator
         return super().formatMessage(recordcopy)
+
 
 if app_config.BLACKFISH_DEBUG:
     handler = colorlog.StreamHandler()
     formatter = CustomFormatter(
-        "%(log_color)s%(levelname)s%(white)s:%(seperator)s%(message)s %(thin)s[%(asctime)s.%(msecs)03d]",
+        (
+            "%(log_color)s%(levelname)s%(white)s:%(separator)s%(message)s"
+            " %(thin)s[%(asctime)s.%(msecs)03d]"
+        ),
         log_colors={
             "DEBUG": "blue",
             "INFO": "green",

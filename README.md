@@ -3,7 +3,7 @@ An open source machine learning as a service ("MLaaS") platform.
 
 ## Description
 Blackfish provides a low-to-no-code solution for researchers to access and manage
-machine learning "services"—machine learning models that peform specific
+machine learning "services"—machine learning models that perform specific
 tasks, such as text generation, image classification, speech detection, etc. With
 Blackfish, a researcher that needs to perform an ML task can start a service to perform
 the task by choosing from a list of available models. Blackfish will start an API
@@ -14,11 +14,11 @@ another service or stop services as needed.
 
 ### HPC Clusters
 Blackfish is geared towards academic researchers with access to a High Performance
-Computing (HPC) cluster (or any cluster with a Slurm job scheduler). Below, we describe 
+Computing (HPC) cluster (or any cluster with a Slurm job scheduler). Below, we describe
 a few typical ways in which researchers might want to use it.
 
 #### Option 1: Local Mode
-Researchers can install Blackfish on thier laptop and interact with services running
+Researchers can install Blackfish on their laptop and interact with services running
 on a remote cluster. Under this setup, the researcher can pass data from their laptop to
 requests to services running on the cluster. This is convenient if the researcher hasn't
 transferred their data to the cluster and wants to collect results on their laptop. For tasks
@@ -27,7 +27,7 @@ the costs of transferring data across the network may be prohibitive for large d
 
 #### Option 2: Remote Mode
 In that case, researchers might want to consider running Blackfish on the same system as
-their services. There are two ways to accomplish this on an HPC cluster: either run 
+their services. There are two ways to accomplish this on an HPC cluster: either run
 Blackfish on a login node, or run it on a compute node. By starting the application on a
 login node, researchers can run as many *concurrent* services as they wish in separate
 compute jobs. If Blackfish is run within a compute job, then all services it manages
@@ -138,7 +138,7 @@ on each remote and update accordingly.
 | ---------------------- | ------------ | ------- | --- |
 | bigscience/bloom-560m  | e32fr9l...   | della   | ... |
 
-When a user requests a service, we first check if the model is available. If not, then we 
+When a user requests a service, we first check if the model is available. If not, then we
 warn the user that it will require downloading the model files to their `profile.home_dir`
 and make sure that the job uses `profile.home_dir` instead of `profile.cache_dir` for
 model storage. After a service launches, we check whether the model is present in the database and,
@@ -204,7 +204,7 @@ e.g., `/scratch/gpfs/.blackfish/images`.
 
 ### Obtaining models
 Models should generally be pulled from the Hugging Face model hub. This can be done
-by either visitng the web page for the model card or using of one Hugging Face's Python
+by either visiting the web page for the model card or using of one Hugging Face's Python
 packages. The latter is preferred as it stores files in a consistent manner in the
 cache directory. E.g.,
 ```python
@@ -241,9 +241,9 @@ BLACKFISH_CACHE_DIR = '~/.blackfish/.cache' # location to store image and model 
 ```
 
 ### Profiles
-The CLI uses "profiles" to store details of environments where Blackfish has been setup. 
-Generally, Blackfish will be setup up on a local environment, i.e., a laptop, as well 
-as a remote environment, e.g., an HPC cluster. When running commands, you can tell the 
+The CLI uses "profiles" to store details of environments where Blackfish has been setup.
+Generally, Blackfish will be setup up on a local environment, i.e., a laptop, as well
+as a remote environment, e.g., an HPC cluster. When running commands, you can tell the
 CLI which of these environments to use with the `--profile` option. For example, you might
 start a service on a remote HPC cluster like so:
 ```
@@ -262,7 +262,7 @@ cache_dir='/scratch/gpfs/<user>/'
 ```
 
 The `type` field indicates that this profile corresponds to an HPC cluster running the
-Slurm job manager. Services started with this profile will have their `job_type` set to 
+Slurm job manager. Services started with this profile will have their `job_type` set to
 `slurm` and use the `host`, `user`, 'home_dir' and 'cache_dir' specified in the profile.
 
 As another example, consider the command:
@@ -271,11 +271,11 @@ blackfish start --profile hpc
 ```
 
 This command tells Blackfish to start an application on the remote system specified by the
-`hpc` profile. Blackfish will pass the profile's `home_dir` and `cache_dir` values to the 
+`hpc` profile. Blackfish will pass the profile's `home_dir` and `cache_dir` values to the
 apps configuration.
 
 Profiles are stored in `~/.blackfish/profiles` and can be modified using the CLI commands
-`blackfish profile create`, `blackfish profile delete`, and `blackfish profile update`, 
+`blackfish profile create`, `blackfish profile delete`, and `blackfish profile update`,
 or by directly modifying the file.
 
 #### Remotes
@@ -284,4 +284,4 @@ the trick. Setting up SSH keys is as simple as running the following on your loc
 ```
 ssh-keygen -t rsa # generates ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa
 ssh-copy-id <user>@<host> # answer yes to transfer the public key
-``` 
+```

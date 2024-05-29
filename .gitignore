@@ -88,3 +88,4 @@ target/
 # Database
 *.sqlite
 *.sqlite3
+src/migrations

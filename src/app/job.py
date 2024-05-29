@@ -28,10 +28,9 @@ class JobState(Enum):
 
 @dataclass
 class JobConfig:
-
     def data(self) -> dict:
         return {
-            k:v
+            k: v
             for k, v in filter(lambda item: item[1] is not None, asdict(self).items())
         }
 
@@ -63,7 +62,8 @@ class SlurmJobConfig(JobConfig):
 
 
 @dataclass
-class EC2JobConfig(JobConfig): ...
+class EC2JobConfig(JobConfig):
+    ...
 
 
 @dataclass

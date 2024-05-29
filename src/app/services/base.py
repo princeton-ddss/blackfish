@@ -20,7 +20,6 @@ from app.utils import find_port
 
 @dataclass
 class ContainerConfig:
-
     def data(self) -> dict:
         return {
             k: v
@@ -53,7 +52,10 @@ class Service(UUIDAuditBase):
     }
 
     def __repr__(self) -> str:
-        return f"Service(id={self.id}, name={self.name}, status={self.status}, host={self.host}, image={self.image})"
+        return (
+            f"Service(id={self.id}, name={self.name}, status={self.status},"
+            f" host={self.host}, image={self.image})"
+        )
 
     async def start(
         self,
@@ -74,7 +76,9 @@ class Service(UUIDAuditBase):
         Returns:
             None.
         """
-        logger.debug(f"Generating job script and writing to {config.BLACKFISH_HOME_DIR}.")
+        logger.debug(
+            f"Generating job script and writing to {config.BLACKFISH_HOME_DIR}."
+        )
         with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
             try:
                 script = self.launch_script(container_options, job_options)
@@ -164,7 +168,9 @@ class Service(UUIDAuditBase):
         logger.info(f"Stopping service {self.id}")
 
         if self.status in ["STOPPED", "TIMEOUT", "FAILED"]:
-            logger.warn(f"Service is already stopped (status={self.status}). Aborting stop.")
+            logger.warning(
+                f"Service is already stopped (status={self.status}). Aborting stop."
+            )
             return
 
         if self.job_type == "local":
@@ -226,7 +232,7 @@ class Service(UUIDAuditBase):
         """
 
         logger.debug(
-            f"Checking status of service {self.id}. Current status is" f" {self.status}."
+            f"Checking status of service {self.id}. Current status is {self.status}."
         )
         if self.status in [
             "STOPPED",
@@ -331,20 +337,19 @@ class Service(UUIDAuditBase):
         elif self.job_type == "ec2":
             raise NotImplementedError
         elif self.job_type == "test":
-            logger.warn("Refresh not implemented for job type 'test'. Skipping.")
+            logger.warning("Refresh not implemented for job type 'test'. Skipping.")
         else:
             raise Exception  # TODO: JobTypeError
 
     async def open_tunnel(self, session: AsyncSession) -> None:
-        """Create an ssh tunnel to connect to the service. Assumes attched to session.
+        """Create an ssh tunnel to connect to the service. Assumes attached to session.
 
         After creation of the tunnel, the remote port is updated and recorded in the database.
         """
 
         if self.job_id is None:
             raise Exception(
-                f"Unable to open tunnel for service {self.id} because `job` is"
-                " missing."
+                f"Unable to open tunnel for service {self.id} because `job` is missing."
             )
         job = self.get_job()
         if job.port is None:
@@ -389,7 +394,8 @@ class Service(UUIDAuditBase):
                     ]
                 )
                 logger.debug(
-                    f"Established tunnel localhost:{self.port} -> {self.host}:{job.port}"
+                    f"Established tunnel localhost:{self.port} ->"
+                    f" {self.host}:{job.port}"
                 )  # noqa: E501
         else:
             raise NotImplementedError

@@ -22,7 +22,11 @@ from advanced_alchemy.extensions.litestar import (
     AlembicAsyncConfig,
 )
 from advanced_alchemy.base import UUIDAuditBase
-from litestar.exceptions import ClientException, NotFoundException, InternalServerException
+from litestar.exceptions import (
+    ClientException,
+    NotFoundException,
+    InternalServerException,
+)
 from litestar.status_codes import HTTP_409_CONFLICT
 
 from app.logger import logger
@@ -160,7 +164,7 @@ def build_service(data: ServiceRequest):
 @get("/")
 async def index(state: State) -> dict:
     return f"""Welcome to Blackfish!
-    
+
 BLACKFISH_HOST: {state.BLACKFISH_HOST}
 BLACKFISH_PORT: {state.BLACKFISH_PORT}
 BLACKFISH_HOME_DIR: {state.BLACKFISH_HOME_DIR}
@@ -225,7 +229,6 @@ async def fetch_services(
     host: Optional[str] = None,
     backend: Optional[str] = None,
 ) -> list[Service]:
-
     query_filter = {}
     if image is not None:
         query_filter["image"] = image
@@ -253,7 +256,7 @@ async def delete_service(service_id: str, session: AsyncSession) -> None:
         query = sa.delete(Service).where(Service.id == service_id)
         await session.execute(query)
     else:
-        logger.warn(
+        logger.warning(
             f"Service is still running (status={service.status}). Aborting delete."
         )
         # TODO: return failure status code and message
@@ -266,7 +269,6 @@ async def get_models(
     profile: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
-
     query_filter = {}
     if profile is not None:
         query_filter["profile"] = profile
@@ -279,7 +281,9 @@ async def get_models(
             query = sa.delete(Model).where(Model.profile == profile)
             await session.execute(query)
         else:
-            aws = [find_models(profile) for profile in state.BLACKFISH_PROFILES.values()]
+            aws = [
+                find_models(profile) for profile in state.BLACKFISH_PROFILES.values()
+            ]
             res = await asyncio.gather(*aws)
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
             logger.debug("Deleting existing models...")

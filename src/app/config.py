@@ -11,7 +11,8 @@ DEFAULT_CACHE_DIR = os.path.expanduser("~/.blackfish/.cache")
 DEFAULT_DEBUG = True
 
 
-class BlackfishProfile: ...
+class BlackfishProfile:
+    ...
 
 
 @dataclass

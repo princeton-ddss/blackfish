@@ -87,7 +87,8 @@ def run_text_generate(
             revision = get_latest_commit(model, get_revisions(model, profile))
             model_dir = get_model_dir(model, revision, profile)
             click.echo(
-                f"{LogSymbols.WARNING.value} No revision provided. Using latest available commit {revision}."
+                f"{LogSymbols.WARNING.value} No revision provided. Using latest"
+                f" available commit {revision}."
             )
         else:
             model_dir = get_model_dir(model, revision, profile)
@@ -95,7 +96,9 @@ def run_text_generate(
                 return
 
     else:
-        click.echo(f"{LogSymbols.ERROR.value} Unable to find {model} on {profile.host}.")
+        click.echo(
+            f"{LogSymbols.ERROR.value} Unable to find {model} on {profile.host}."
+        )
         return
 
     # if model not in TextGenerationModels:
@@ -173,9 +176,15 @@ def run_text_generate(
                 )
                 spinner.text = ""
                 if res.ok:
-                    spinner.ok(f"{LogSymbols.SUCCESS.value} Started service: {res.json()['id']}")
+                    spinner.ok(
+                        f"{LogSymbols.SUCCESS.value} Started service:"
+                        f" {res.json()['id']}"
+                    )
                 else:
-                    spinner.fail(f"{LogSymbols.ERROR.value} Failed to start service: {res.status_code} - {res.reason}")
+                    spinner.fail(
+                        f"{LogSymbols.ERROR.value} Failed to start service:"
+                        f" {res.status_code} - {res.reason}"
+                    )
     # elif isinstance(profile, TestRemote):
     #     if dry_run:
     #         service = TextGeneration(

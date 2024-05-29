@@ -29,7 +29,11 @@ def main() -> None:
 def init(home_dir: str, remote: str, host: str, user: str) -> None:
     "Initialize the blackfish service."
 
-    from app.setup import create_local_home_dir, create_remote_home_dir, create_or_modify_profile
+    from app.setup import (
+        create_local_home_dir,
+        create_remote_home_dir,
+        create_or_modify_profile,
+    )
 
     if remote is not None:
         if remote == "slurm":
@@ -189,7 +193,9 @@ def stop(service_id, delay) -> None:
         )
         spinner.text = ""
         if not res.ok is not None:
-            spinner.fail(f"{LogSymbols.ERROR.value} Failed to stop service {service_id}.")
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to stop service {service_id}."
+            )
         else:
             spinner.ok(f"{LogSymbols.SUCCESS.value} Stopped service {service_id}")
 
@@ -217,7 +223,9 @@ def rm(service_id, force) -> None:
         )
         spinner.text = ""
         if not res.ok:
-            spinner.fail(f"{LogSymbols.ERROR.value} Failed to stop service {service_id}.")
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to stop service {service_id}."
+            )
         else:
             spinner.ok(f"{LogSymbols.SUCCESS.value} Removed service {service_id}")
 
@@ -277,7 +285,10 @@ def details(service_id):
 @click.option(
     "--filters",
     type=str,
-    help="A list of comma-separated filtering criteria, e.g., image=text_generation,status=SUBMITTED",
+    help=(
+        "A list of comma-separated filtering criteria, e.g.,"
+        " image=text_generation,status=SUBMITTED"
+    ),
 )
 def ls(filters):
     """List services"""
@@ -311,7 +322,10 @@ def ls(filters):
         )  # fresh data 🥬
         spinner.text = ""
         if not res.ok:
-            spinner.fail(f"{LogSymbols.ERROR.value} Failed to fetch services. Status code: {res.status_code}.")
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to fetch services. Status code:"
+                f" {res.status_code}."
+            )
             return
 
     services = res.json()

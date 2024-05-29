@@ -96,7 +96,8 @@ def get_model_dir(repo_id: str, revision: str, profile: BlackfishProfile):
                     ):
                         spinner.text = ""
                         spinner.ok(
-                            f"{LogSymbols.SUCCESS.value} Found model {repo_id}[{revision}] in {default_dir}."
+                            f"{LogSymbols.SUCCESS.value} Found model"
+                            f" {repo_id}[{revision}] in {default_dir}."
                         )
                         return os.path.join(default_dir, model_dir)
                 backup_dir = os.path.join(profile.home_dir, "models")
@@ -107,12 +108,14 @@ def get_model_dir(repo_id: str, revision: str, profile: BlackfishProfile):
                     ):
                         spinner.text = ""
                         spinner.ok(
-                            f"{LogSymbols.SUCCESS.value} Found model {repo_id}[{revision}] in {backup_dir}."
+                            f"{LogSymbols.SUCCESS.value} Found model"
+                            f" {repo_id}[{revision}] in {backup_dir}."
                         )
                         return os.path.join(backup_dir, model_dir)
             spinner.text = ""
             spinner.fail(
-                f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on {profile.host}."
+                f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on"
+                f" {profile.host}."
             )
         return None
     else:
@@ -142,7 +145,9 @@ def has_model(
         ModelCard.load(repo_id)
     except RepositoryNotFoundError:
         print(
-            f"Repository not found. Is this model hosted on Hugging Face? Check that https://huggingface.co/{repo_id} is a valid url and that you are authenticated (if this is a private or gated repo)."
+            "Repository not found. Is this model hosted on Hugging Face? Check that"
+            f" https://huggingface.co/{repo_id} is a valid url and that you are"
+            " authenticated (if this is a private or gated repo)."
         )
         return False
 

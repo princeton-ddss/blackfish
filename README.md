@@ -277,3 +277,11 @@ apps configuration.
 Profiles are stored in `~/.blackfish/profiles` and can be modified using the CLI commands
 `blackfish profile create`, `blackfish profile delete`, and `blackfish profile update`, 
 or by directly modifying the file.
+
+#### Remotes
+Blackfish makes many calls to remote servers. You'll want to have a system setup to avoid entering your credentials for those servers each time. For HPC clusters, SSH keys should do
+the trick. Setting up SSH keys is as simple as running the following on your local (macOS or Linux) machine:
+```
+ssh-keygen -t rsa # generates ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa
+ssh-copy-id <user>@<host> # answer yes to transfer the public key
+``` 

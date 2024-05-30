@@ -4,8 +4,8 @@ import nox
 @nox.session(python=["3.9", "3.10", "3.11", "3.12"])
 def tests(session: nox.Session):
     session.install("pytest")
-    session.install("-e", ".[tox_to_nox]")
-    session.run("pytest", "tests")
+    session.install("-e", ".")
+    session.run("pytest", "-v", "tests")
 
 
 @nox.session

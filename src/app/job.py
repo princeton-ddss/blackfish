@@ -120,39 +120,51 @@ class Job:
 
     def update_node(self) -> Optional[str]:
         logger.debug(f"Updating node for job {self.job_id}.")
-        res = subprocess.check_output(
-            [
-                "ssh",
-                f"{self.user}@{self.host}",
-                "sacct",
-                "-n",
-                "-P",
-                "-X",
-                "-u",
-                self.user,
-                "-j",
-                str(self.job_id),
-                "-o",
-                "NodeList",
-            ]
-        )
-        self.node = None if res == b"" else res.decode("utf-8").strip()
-        logger.debug(f"Job {self.job_id} node set to {self.node}.")
+        try:
+            res = subprocess.check_output(
+                [
+                    "ssh",
+                    f"{self.user}@{self.host}",
+                    "sacct",
+                    "-n",
+                    "-P",
+                    "-X",
+                    "-u",
+                    self.user,
+                    "-j",
+                    str(self.job_id),
+                    "-o",
+                    "NodeList",
+                ]
+            )
+            self.node = None if res == b"" else res.decode("utf-8").strip()
+            logger.debug(f"Job {self.job_id} node set to {self.node}.")
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to update job node (job_id={self.job_id},"
+                f" code={e.returncode})."
+            )
 
         return self.node
 
     def update_port(self) -> Optional[int]:
         logger.debug(f"Updating port for job {self.job_id}.")
-        res = subprocess.check_output(
-            [
-                "ssh",
-                f"{self.user}@{self.host}",
-                "ls",
-                os.path.join(".blackfish", str(self.job_id)),
-            ]
-        )
-        self.port = None if res == b"" else int(res.decode("utf-8").strip())
-        logger.debug(f"Job {self.job_id} port set to {self.port}")
+        try:
+            res = subprocess.check_output(
+                [
+                    "ssh",
+                    f"{self.user}@{self.host}",
+                    "ls",
+                    os.path.join(".blackfish", str(self.job_id)),
+                ]
+            )
+            self.port = None if res == b"" else int(res.decode("utf-8").strip())
+            logger.debug(f"Job {self.job_id} port set to {self.port}")
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to update job port (job_id={self.job_id},"
+                f" code={e.returncode})."
+            )
 
         return self.port
 
@@ -184,7 +196,13 @@ class Job:
             time.sleep(period)
 
     def cancel(self) -> None:
-        logger.debug(f"Canceling job {self.job_id}.")
-        subprocess.check_output(
-            ["ssh", f"{self.user}@{self.host}", "scancel", str(self.job_id)]
-        )
+        try:
+            logger.debug(f"Canceling job {self.job_id}.")
+            subprocess.check_output(
+                ["ssh", f"{self.user}@{self.host}", "scancel", str(self.job_id)]
+            )
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to cancel job (job_id={self.job_id},"
+                f" code={e.returncode})."
+            )

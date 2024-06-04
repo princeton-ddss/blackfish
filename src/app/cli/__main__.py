@@ -138,7 +138,7 @@ def start(reload: bool, profile: str) -> None:
 
 # blackfish run [OPTIONS] COMMAND
 @main.group()
-@click.option("--time", type=str, default="00:30:00")
+@click.option("--time", type=str, default=None)
 @click.option("--ntasks_per_node", type=int, default=None)
 @click.option("--mem", type=int, default=None)
 @click.option("--gres", type=int, default=None)

@@ -1,7 +1,7 @@
 import click
 import requests
 from random import randint
-from subprocess import check_output, CalledProcessError
+import subprocess
 
 from app.services.nlp.text_generation import TextGeneration
 from app.config import config, SlurmRemote, LocalProfile
@@ -189,13 +189,13 @@ def run_text_generate(
     elif isinstance(profile, LocalProfile):
 
         try:
-            _ = check_output(['which', 'docker'])
+            _ = subprocess.run(['which', 'docker'], check=True, capture_output=True)
             container_options["platform"] = 'docker'
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             try:
-                _ = check_output(['which', 'apptainer'])
+                _ = subprocess.run(['which', 'apptainer'], check=True, capture_output=True)
                 container_options["platform"] = 'apptainer'
-            except CalledProcessError:
+            except subprocess.CalledProcessError:
                 print(f"{LogSymbols.ERROR.value} No supported container platforms available. Please install one of: docker, apptainer.")
                 return
         

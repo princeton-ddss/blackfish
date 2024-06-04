@@ -33,7 +33,7 @@ from app.logger import logger
 from app.services.base import Service
 from app.services.nlp.text_generation import TextGeneration
 from app.config import config as blackfish_config
-from app.config import BlackfishProfile, SlurmRemote
+from app.config import BlackfishProfile, SlurmRemote, LocalProfile
 
 
 class Model(UUIDAuditBase):
@@ -135,7 +135,6 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
                         models.append(
                             Model(
                                 repo=repo,
-                                image="",
                                 profile=profile.name,
                                 revision=revision,
                             )
@@ -143,6 +142,51 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
             return models
+    elif isinstance(profile, LocalProfile):
+        default_dir = os.path.join(profile.cache_dir, "models")
+        logger.debug(f"Searching default directory {default_dir}")
+        try:
+            model_dirs = os.listdir(default_dir)
+            logger.debug(f"Found model directories: {model_dirs}")
+            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                _, namespace, model = model_dir.split("--")
+                repo = f"{namespace}/{model}"
+                revisions = os.listdir(
+                    os.path.join(default_dir, model_dir, "snapshots")
+                )
+                for revision in revisions:
+                    models.append(
+                        Model(
+                            repo=repo,
+                            profile=profile.name,
+                            revision=revision,
+                        )
+                    )
+        except FileNotFoundError as e:
+            logger.error(f"Failed to list directory: {e}")
+
+        backup_dir = os.path.join(profile.home_dir, "models")
+        logger.debug(f"Searching backup directory: {backup_dir}")
+        try:
+            model_dirs = os.listdir(backup_dir)
+            logger.debug(f"Found model directories: {model_dirs}")
+            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                _, namespace, model = model_dir.split("--")
+                repo = f"{namespace}/{model}"
+                revisions = os.listdir(
+                    os.path.join(backup_dir, model_dir, "snapshots")
+                )
+                for revision in revisions:
+                    models.append(
+                        Model(
+                            repo=repo,
+                            profile=profile.name,
+                            revision=revision,
+                        )
+                    )
+        except FileNotFoundError as e:
+            logger.error(f"Failed to list directory: {e}")
+        return models
     else:
         raise NotImplementedError
 

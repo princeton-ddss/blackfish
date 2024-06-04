@@ -13,13 +13,15 @@ from advanced_alchemy.base import UUIDAuditBase
 
 from litestar.datastructures import State
 
-from app.job import Job
+from app.job import Job, LocalJob
 from app.logger import logger
 from app.utils import find_port
 
 
 @dataclass
 class ContainerConfig:
+    platform: Optional[str] = "apptainer"
+
     def data(self) -> dict:
         return {
             k: v
@@ -76,20 +78,37 @@ class Service(UUIDAuditBase):
         Returns:
             None.
         """
-        logger.debug(
-            f"Generating job script and writing to {config.BLACKFISH_HOME_DIR}."
-        )
-        with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
-            try:
-                script = self.launch_script(container_options, job_options)
-                f.write(script)
-            except Exception as e:
-                logger.error(e)
 
-        logger.info("Starting service")
         if self.job_type == "local":
-            raise NotImplementedError
+            logger.debug(
+                f"Generating launch script and writing to {config.BLACKFISH_HOME_DIR}."
+            )
+            with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
+                try:
+                    script = self.launch_script(container_options, job_options)
+                    f.write(script)
+                except Exception as e:
+                    logger.error(e)
+            logger.info("Starting local service")
+            res = subprocess.check_output(
+                ["bash", os.path.join(config.BLACKFISH_HOME_DIR, "start.sh")]
+            )
+            job_id = res.decode("utf-8").strip().split()[-1]
+            self.status = "SUBMITTED"
+            self.job_id = job_id
         elif self.job_type == "slurm":
+            logger.debug(
+                f"Generating job script and writing to {config.BLACKFISH_HOME_DIR}."
+            )
+            with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
+                try:
+                    script = self.launch_script(container_options, job_options)
+                    f.write(script)
+                except Exception as e:
+                    logger.error(e)
+
+            logger.info("Starting service")
+
             if self.host == "localhost":
                 logger.debug("submitting batch job on login node.")
                 res = subprocess.check_output(
@@ -173,13 +192,15 @@ class Service(UUIDAuditBase):
             )
             return
 
+        if self.job_id is None:
+            raise Exception(
+                f"Unable to stop service {self.id} because `job` is missing."
+            )
+
         if self.job_type == "local":
-            raise NotImplementedError
+            job = self.get_job()
+            job.cancel()
         elif self.job_type == "slurm":
-            if self.job_id is None:
-                raise Exception(
-                    f"Unable to stop service {self.id} because `job` is missing."
-                )
             job = self.get_job()
             job.cancel()
             await self.close_tunnel(session)
@@ -244,17 +265,77 @@ class Service(UUIDAuditBase):
             )
             return self.status
 
+        if self.job_id is None:
+            logger.debug(
+                f"service {self.id} has no associated job. Aborting status refresh."
+            )
+            return self.status
+
         if self.job_type == "local":
-            raise NotImplementedError
-        elif self.job_type == "slurm":
-            if self.job_id is None:
+            job = self.get_job()
+            if job.state == "CREATED":
                 logger.debug(
-                    f"service {self.id} has no associated job. Aborting status refresh."
+                    f"Service {self.id} has not started. Setting status to PENDING."
+                )
+                self.status = "PENDING"
+                return "PENDING"
+            elif job.state == "MISSING":
+                logger.warning(
+                    f"Service {self.id} has no job state (this service is likely"
+                    " new or has expired). Aborting status update."
                 )
                 return self.status
+            elif job.state == "EXITED":
+                logger.debug(
+                    f"Service {self.id} has a cancelled job. Setting status to"
+                    " STOPPED and stopping the service."
+                )
+                await self.stop(session)
+                return "STOPPED"
+            elif job.state == "RUNNING":
+                res = await self.ping()
+                if res["ok"]:
+                    logger.debug(
+                        f"Service {self.id} responded normally. Setting status to"
+                        " HEALTHY."
+                    )
+                    self.status = "HEALTHY"
+                    return "HEALTHY"
+                else:
+                    logger.debug(
+                        f"Service {self.id} did not respond normally. Determining"
+                        " status."
+                    )
 
-            job = self.get_job()  # or job_status = self.get_job_state()
-
+                    if self.created_at is None:
+                        raise Exception("Service is missing value `created_at`.")
+                    dt = datetime.now(timezone.utc) - self.created_at
+                    logger.debug(f"Service created {dt.seconds} seconds ago.")
+                    if dt.seconds > self.grace_period:
+                        logger.debug(
+                            f"Service {self.id} grace period exceeded. Setting"
+                            "status to UNHEALTHY."
+                        )
+                        self.status = "UNHEALTHY"
+                        return "UNHEALTHY"
+                    else:
+                        logger.debug(
+                            f"Service {self.id} is still starting. Setting"
+                            " status to STARTING."
+                        )
+                        self.status = "STARTING"
+                        return "STARTING"
+            elif job.state in ["RESTARTING", "PAUSED"]:
+                raise NotImplementedError
+            else:
+                logger.debug(
+                    f"Service {self.id} has a failed job"
+                    f" (job.state={job.state}). Setting status to FAILED."
+                )
+                await self.stop(session, failed=True)  # stop will push to database
+                return "FAILED"
+        elif self.job_type == "slurm":
+            job = self.get_job()
             if job.state == "PENDING":
                 logger.debug(
                     f"Service {self.id} has not started. Setting status to PENDING."
@@ -430,9 +511,17 @@ class Service(UUIDAuditBase):
 
     def get_job(self) -> Job:
         """Fetch the Slurm job backing the service."""
-        job = Job(self.job_id, self.user, self.host)
+        if self.job_type == "slurm":
+            job = Job(self.job_id, self.user, self.host)
+        elif self.job_type == "local":
+            job = LocalJob(self.job_id)
         job.update()
         return job
+
+    def launch_cmd(self, container_options: dict, job_options: dict) -> str:
+        raise NotImplementedError(
+            "`launch_cmd` should only be called on subtypes of Service"
+        )
 
     def launch_script(self, container_options: dict, job_options: dict) -> str:
         raise NotImplementedError(

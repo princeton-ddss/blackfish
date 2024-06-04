@@ -7,7 +7,7 @@ from copy import deepcopy
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
-DEFAULT_CACHE_DIR = os.path.expanduser("~/.blackfish/.cache")
+DEFAULT_CACHE_DIR = os.path.expanduser("~/.cache/.blackfish")
 DEFAULT_DEBUG = True
 
 
@@ -19,6 +19,13 @@ class BlackfishProfile:
 class SlurmRemote(BlackfishProfile):
     name: str
     host: str
+    user: str
+    home_dir: str
+    cache_dir: str
+
+@dataclass
+class LocalProfile(BlackfishProfile):
+    name: str
     user: str
     home_dir: str
     cache_dir: str
@@ -51,6 +58,13 @@ class BlackfishConfig:
                 self.BLACKFISH_PROFILES[section] = SlurmRemote(
                     name=section,
                     host=profile["host"],
+                    user=profile["user"],
+                    home_dir=profile["home_dir"],
+                    cache_dir=profile["cache_dir"],
+                )
+            elif profile["type"] == "local":
+                self.BLACKFISH_PROFILES[section] = LocalProfile(
+                    name=section,
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],

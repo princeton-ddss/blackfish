@@ -40,8 +40,11 @@ class JobConfig:
 
 @dataclass
 class LocalJobConfig(JobConfig):
-    name: str
-    gres: int  # i.e., gpu:<gres>
+    user: Optional[str] = None
+    home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
+    cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
+    model_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
+    gres: Optional[bool] = False
 
 
 @dataclass
@@ -62,8 +65,7 @@ class SlurmJobConfig(JobConfig):
 
 
 @dataclass
-class EC2JobConfig(JobConfig):
-    ...
+class EC2JobConfig(JobConfig): ...
 
 
 @dataclass
@@ -203,6 +205,66 @@ class Job:
             )
         except subprocess.CalledProcessError as e:
             logger.warning(
-                f"Failed to cancel job (job_id={self.job_id},"
+                f"Failed to cancel job (job_id={self.job_id}," f" code={e.returncode})."
+            )
+
+
+@dataclass
+class LocalJob:
+    """A light-weight local job dataclass."""
+
+    job_id: int
+    # container_type: str  # docker or apptainer
+    name: Optional[str] = None
+    state: Optional[str] = (
+        None  # "created", "running", "restarting", "exited", "paused", "dead",
+    )
+    options: Optional[JobConfig] = None
+
+    def update(self):
+        logger.debug("Updating job state.")
+        try:
+            if self.container_type == "docker":
+                res = subprocess.check_output(
+                    [
+                        "docker",
+                        "inspect",
+                        f"{self.id}",
+                        "--format='{{ .State.Status }}'",  # or {{ json .State }}
+                    ]
+                )
+                new_state = "MISSING" if res == b"" else res.decode("utf-8").strip().upper()
+                logger.debug(f"The current job state is: {new_state}")
+                if (
+                    self.state in [None, "MISSING", "CREATED", "RESTARTING"]
+                    and new_state == "RUNNING"
+                ):
+                    logger.debug(
+                        f"Job state switched from {self.state} to RUNNING"
+                        f" (job_id={self.job_id})."
+                    )
+                self.state = new_state
+                logger.debug(f"Job {self.job_id} state set to {self.state}")
+            elif self.container_type == "apptainer":
+                raise NotImplementedError
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to update job state (job_id={self.job_id},"
                 f" code={e.returncode})."
+            )
+
+        return self.state
+
+    def cancel(self) -> None:
+        try:
+            if self.container_type == "docker":
+                logger.debug(f"Canceling job {self.job_id}.")
+                subprocess.check_output(
+                    ["docker", "container", "stop", f"{self.job_id}"]
+                )
+            elif self.container_type == "apptainer":
+                raise NotImplementedError
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to cancel job (job_id={self.job_id}," f" code={e.returncode})."
             )

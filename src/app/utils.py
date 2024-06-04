@@ -4,7 +4,7 @@ from typing import Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from fabric.connection import Connection
-from app.config import BlackfishProfile, SlurmRemote
+from app.config import BlackfishProfile, SlurmRemote, LocalProfile
 from app.logger import logger
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -41,6 +41,24 @@ def get_models(profile: BlackfishProfile):
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
         return models
+    elif isinstance(profile, LocalProfile):
+        models = []
+        with yaspin(text="Searching localhost for available models") as spinner:
+            default_dir = os.path.join(profile.cache_dir, "models")
+            spinner.text = f"Looking in default directory {default_dir}"
+            model_dirs = os.listdir(default_dir)
+            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                _, namespace, model = model_dir.split("--")
+                models.append(f"{namespace}/{model}")
+            backup_dir = os.path.join(profile.home_dir, "models")
+            spinner.text = f"Looking in default directory {backup_dir}"
+            model_dirs = os.listdir(backup_dir)
+            for model_dir in model_dirs:
+                _, namespace, model = model_dir.split("--")
+                models.append(f"{namespace}/{model}")
+            spinner.text = ""
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
+        return models
     else:
         raise NotImplementedError
 
@@ -68,6 +86,30 @@ def get_revisions(repo_id: str, profile: BlackfishProfile):
                     revisions.extend(
                         sftp.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
                     )
+            spinner.text = ""
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
+        return revisions
+    elif isinstance(profile, LocalProfile):
+        revisions = []
+        namespace, model = repo_id.split("/")
+        model_dir = f"models--{namespace}--{model}"
+        with yaspin(
+            text=f"Searching localhost for model {repo_id} commits"
+        ) as spinner:                
+            default_dir = os.path.join(profile.cache_dir, "models")
+            spinner.text = f"Looking in default directory {default_dir}"
+            model_dirs = os.listdir(default_dir)
+            if model_dir in model_dirs:
+                revisions.extend(
+                    os.listdir(os.path.join(default_dir, model_dir, "snapshots"))
+                )
+            backup_dir = os.path.join(profile.home_dir, "models")
+            spinner.text = f"Looking in backup directory {backup_dir}"
+            models = os.listdir(backup_dir)
+            if model_dir in models:
+                revisions.extend(
+                    os.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
+                )
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
         return revisions
@@ -112,6 +154,40 @@ def get_model_dir(repo_id: str, revision: str, profile: BlackfishProfile):
                             f" {repo_id}[{revision}] in {backup_dir}."
                         )
                         return os.path.join(backup_dir, model_dir)
+            spinner.text = ""
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on"
+                f" {profile.host}."
+            )
+        return None
+    if isinstance(profile, LocalProfile):
+        with yaspin(
+            text=f"Searching localhost for {repo_id}[{revision}]"
+        ) as spinner:
+            default_dir = os.path.join(profile.cache_dir, "models")
+            spinner.text = f"Looking in default directory {default_dir}"
+            if model_dir in os.listdir(default_dir):
+                if revision in os.listdir(
+                    os.path.join(default_dir, model_dir, "snapshots")
+                ):
+                    spinner.text = ""
+                    spinner.ok(
+                        f"{LogSymbols.SUCCESS.value} Found model"
+                        f" {repo_id}[{revision}] in {default_dir}."
+                    )
+                    return os.path.join(default_dir, model_dir)
+            backup_dir = os.path.join(profile.home_dir, "models")
+            spinner.text = f"Looking in backup directory {backup_dir}"
+            if model_dir in os.listdir(backup_dir):
+                if revision in os.listdir(
+                    os.path.join(backup_dir, model_dir, "snapshots")
+                ):
+                    spinner.text = ""
+                    spinner.ok(
+                        f"{LogSymbols.SUCCESS.value} Found model"
+                        f" {repo_id}[{revision}] in {backup_dir}."
+                    )
+                    return os.path.join(backup_dir, model_dir)
             spinner.text = ""
             spinner.fail(
                 f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on"

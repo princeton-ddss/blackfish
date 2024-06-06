@@ -173,9 +173,7 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 repo = f"{namespace}/{model}"
-                revisions = os.listdir(
-                    os.path.join(backup_dir, model_dir, "snapshots")
-                )
+                revisions = os.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
                 for revision in revisions:
                     models.append(
                         Model(
@@ -244,21 +242,21 @@ async def run_service(
 
 @put("/services/{service_id:str}/stop")
 async def stop_service(
-    service_id: str, data: StopServiceRequest, session: AsyncSession
+    service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
     service = await get_service(service_id, session)
     await service.stop(
-        session, delay=data.delay, timeout=data.timeout, failed=data.failed
+        session, state, delay=data.delay, timeout=data.timeout, failed=data.failed
     )
 
     return service
 
 
 @get("/services/{service_id:str}")
-async def refresh_service(service_id: str, session: AsyncSession) -> Service:
+async def refresh_service(service_id: str, session: AsyncSession, state: State) -> Service:
     service = await get_service(service_id, session)
     try:
-        await service.refresh(session)
+        await service.refresh(session, state)
     except Exception as e:
         logger.error(f"Failed to refresh service: {e}")
 
@@ -268,6 +266,7 @@ async def refresh_service(service_id: str, session: AsyncSession) -> Service:
 @get("/services")
 async def fetch_services(
     session: AsyncSession,
+    state: State,
     image: Optional[str] = None,
     status: Optional[str] = None,
     host: Optional[str] = None,
@@ -287,15 +286,15 @@ async def fetch_services(
     res = await session.execute(query)
     services = res.scalars().all()
 
-    await asyncio.gather(*[s.refresh(session) for s in services])
+    await asyncio.gather(*[s.refresh(session, state) for s in services])
 
     return services
 
 
 @delete("/services/{service_id:str}")
-async def delete_service(service_id: str, session: AsyncSession) -> None:
+async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
     service = await get_service(service_id, session)
-    await service.refresh(session)
+    await service.refresh(session, state)
     if service.status in ["STOPPED", "TIMEOUT", "FAILED"]:
         query = sa.delete(Service).where(Service.id == service_id)
         await session.execute(query)

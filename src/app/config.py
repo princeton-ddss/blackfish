@@ -1,5 +1,6 @@
 import os
 import configparser
+import subprocess
 from dataclasses import dataclass
 from copy import deepcopy
 
@@ -11,8 +12,21 @@ DEFAULT_CACHE_DIR = os.path.expanduser("~/.cache/.blackfish")
 DEFAULT_DEBUG = True
 
 
-class BlackfishProfile:
-    ...
+def get_container_provider():
+    try:
+        _ = subprocess.run(["which", "docker"], check=True, capture_output=True)
+        return "docker"
+    except subprocess.CalledProcessError:
+        try:
+            _ = subprocess.run(["which", "apptainer"], check=True, capture_output=True)
+            return "apptainer"
+        except subprocess.CalledProcessError:
+            raise Exception(
+                "No supported container platforms available. Please install one of: docker, apptainer."
+            )
+
+
+class BlackfishProfile: ...
 
 
 @dataclass
@@ -22,6 +36,7 @@ class SlurmRemote(BlackfishProfile):
     user: str
     home_dir: str
     cache_dir: str
+
 
 @dataclass
 class LocalProfile(BlackfishProfile):
@@ -49,6 +64,9 @@ class BlackfishConfig:
         self.BLACKFISH_CACHE_DIR = os.getenv("BLACKFISH_CACHE", DEFAULT_CACHE_DIR)
         self.BLACKFISH_DEBUG = os.getenv("BLACKFISH_DEBUG", DEFAULT_DEBUG)
         self.BLACKFISH_PROFILES = {}
+        self.BLACKFISH_CONTAINER_PROVIDER = os.getenv(
+            "BLACKFISH_CONTAINER_PROVIER", get_container_provider()
+        )
 
         parser = configparser.ConfigParser()
         parser.read(os.path.join(self.BLACKFISH_HOME_DIR, "profiles"))

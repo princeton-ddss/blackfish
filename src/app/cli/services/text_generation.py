@@ -1,11 +1,16 @@
 import click
 import requests
 from random import randint
-import subprocess
 
 from app.services.nlp.text_generation import TextGeneration
 from app.config import config, SlurmRemote, LocalProfile
-from app.utils import get_models, get_revisions, get_latest_commit, get_model_dir
+from app.utils import (
+    find_port,
+    get_models,
+    get_revisions,
+    get_latest_commit,
+    get_model_dir,
+)
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
@@ -187,19 +192,8 @@ def run_text_generate(
                         f" {res.status_code} - {res.reason}"
                     )
     elif isinstance(profile, LocalProfile):
-
-        try:
-            _ = subprocess.run(['which', 'docker'], check=True, capture_output=True)
-            container_options["platform"] = 'docker'
-        except subprocess.CalledProcessError:
-            try:
-                _ = subprocess.run(['which', 'apptainer'], check=True, capture_output=True)
-                container_options["platform"] = 'apptainer'
-            except subprocess.CalledProcessError:
-                print(f"{LogSymbols.ERROR.value} No supported container platforms available. Please install one of: docker, apptainer.")
-                return
-        
-
+        container_options["port"] = find_port()
+        container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
@@ -220,9 +214,9 @@ def run_text_generate(
             click.echo("Type: local")
             click.echo("Host: localhost")
             click.echo(f"User: {profile.user}")
-            click.echo(f"Platform: {container_options['platform']}")
+            click.echo(f"Provider: {container_options['provider']}")
             click.echo("-" * 80)
-            click.echo(service.launch_script(container_options, job_options))
+            click.echo(service.launch_script(container_options, job_options, job_id="test"))
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(

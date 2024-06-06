@@ -1,15 +1,18 @@
-{%- if container_config.platform == "docker" %}
-docker run {{ ' --gpus all' if job_config.gres else '' }}\
+{% extends "base_local.sh" %}
+{% block command %}
+{%- if container_config.provider == "docker" %}
+docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
   --volume {{ job_config.model_dir }}:/data \
   ghcr.io/huggingface/text-generation-inference:latest \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
-  --port $port \
-{%- elif container_config.platform == 'apptainer' %}
-apptainer run {{ ' --nv' if job_config.gres > 0 else '' }}\
+  --port {{ container_config.port }} \
+{%- elif container_config.provider == 'apptainer' %}
+apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ job_config.model_dir }}:/data \
   {{ job_config.cache_dir }}/images/text-generation-inference_latest.sif \
+  {{ job_id }} \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
-  --port $port \
+  --port {{ container_config.port }} \
 {%- endif %}
 {%- if 'revision' in container_config %}
   --revision {{ container_config['revision'] }} \
@@ -53,3 +56,4 @@ apptainer run {{ ' --nv' if job_config.gres > 0 else '' }}\
 {%- if container_config.get('disable_custom_kernels') == True %}
   --disable-custom-kernels
 {%- endif %}
+{%- endblock %}

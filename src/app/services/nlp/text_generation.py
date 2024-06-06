@@ -36,6 +36,7 @@ TextGenerationModels = {
 
 @dataclass
 class TextGenerationConfig(ContainerConfig):
+    port: Optional[int] = None
     quantize: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None
@@ -82,7 +83,9 @@ class TextGeneration(Service):
         "polymorphic_identity": "text_generation",
     }
 
-    def launch_script(self, container_options: dict, job_options: dict) -> str:
+    def launch_script(
+        self, container_options: dict, job_options: dict, job_id: str = None
+    ) -> str:
         if self.job_type == "local":
             job_config = LocalJobConfig().replace(job_options)
         elif self.job_type == "slurm":
@@ -101,6 +104,7 @@ class TextGeneration(Service):
             name=self.name,
             job_config=job_config.data(),
             container_config=container_config.data(),
+            job_id=job_id,
         )
 
         return job_script

@@ -1,6 +1,7 @@
 import random
 import subprocess
 import os
+import uuid
 import psutil
 from datetime import datetime, timezone
 from typing import Optional
@@ -20,7 +21,7 @@ from app.utils import find_port
 
 @dataclass
 class ContainerConfig:
-    platform: Optional[str] = "apptainer"
+    provider: Optional[str] = "apptainer"
 
     def data(self) -> dict:
         return {
@@ -83,9 +84,14 @@ class Service(UUIDAuditBase):
             logger.debug(
                 f"Generating launch script and writing to {config.BLACKFISH_HOME_DIR}."
             )
+            provider = config.BLACKFISH_CONTAINER_PROVIDER
             with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
                 try:
-                    script = self.launch_script(container_options, job_options)
+                    if provider == "apptainer":
+                        job_id = uuid.uuid4()
+                        script = self.launch_script(container_options, job_options, job_id)
+                    elif provider == "docker":
+                        script = self.launch_script(container_options, job_options)
                     f.write(script)
                 except Exception as e:
                     logger.error(e)
@@ -93,7 +99,8 @@ class Service(UUIDAuditBase):
             res = subprocess.check_output(
                 ["bash", os.path.join(config.BLACKFISH_HOME_DIR, "start.sh")]
             )
-            job_id = res.decode("utf-8").strip().split()[-1]
+            if provider == "docker":
+                job_id = res.decode("utf-8").strip().split()[-1][:12]
             self.status = "SUBMITTED"
             self.job_id = job_id
         elif self.job_type == "slurm":
@@ -166,6 +173,7 @@ class Service(UUIDAuditBase):
     async def stop(
         self,
         session: AsyncSession,
+        config: State,
         delay: int = 0,
         timeout: bool = False,
         failed: bool = False,
@@ -198,7 +206,7 @@ class Service(UUIDAuditBase):
             )
 
         if self.job_type == "local":
-            job = self.get_job()
+            job = self.get_job(config.BLACKFISH_CONTAINER_PROVIDER)
             job.cancel()
         elif self.job_type == "slurm":
             job = self.get_job()
@@ -218,7 +226,7 @@ class Service(UUIDAuditBase):
         else:
             self.status = "STOPPED"
 
-    async def refresh(self, session: AsyncSession):
+    async def refresh(self, session: AsyncSession, config: State):
         """Update the service status. Assumes running in an attached state.
 
         Determines the service status by pinging the service and then checking
@@ -272,7 +280,7 @@ class Service(UUIDAuditBase):
             return self.status
 
         if self.job_type == "local":
-            job = self.get_job()
+            job = self.get_job(config.BLACKFISH_CONTAINER_PROVIDER)
             if job.state == "CREATED":
                 logger.debug(
                     f"Service {self.id} has not started. Setting status to PENDING."
@@ -290,7 +298,7 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a cancelled job. Setting status to"
                     " STOPPED and stopping the service."
                 )
-                await self.stop(session)
+                await self.stop(session, config)
                 return "STOPPED"
             elif job.state == "RUNNING":
                 res = await self.ping()
@@ -332,7 +340,7 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
-                await self.stop(session, failed=True)  # stop will push to database
+                await self.stop(session, config, failed=True)  # stop will push to database
                 return "FAILED"
         elif self.job_type == "slurm":
             job = self.get_job()
@@ -509,12 +517,12 @@ class Service(UUIDAuditBase):
 
         self.port = None
 
-    def get_job(self) -> Job:
+    def get_job(self, provider: str = None) -> Job:
         """Fetch the Slurm job backing the service."""
         if self.job_type == "slurm":
             job = Job(self.job_id, self.user, self.host)
         elif self.job_type == "local":
-            job = LocalJob(self.job_id)
+            job = LocalJob(self.job_id, provider)
         job.update()
         return job
 

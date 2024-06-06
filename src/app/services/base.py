@@ -88,7 +88,7 @@ class Service(UUIDAuditBase):
             with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
                 try:
                     if provider == "apptainer":
-                        job_id = uuid.uuid4()
+                        job_id = str(uuid.uuid4())
                         script = self.launch_script(container_options, job_options, job_id)
                     elif provider == "docker":
                         script = self.launch_script(container_options, job_options)

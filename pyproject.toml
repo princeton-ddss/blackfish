@@ -25,6 +25,7 @@ classifiers = [
 ]
 dependencies = [
   "advanced-alchemy",
+  "aiosqlite",
   "alembic",
   "click",
   "colorlog",
@@ -40,6 +41,7 @@ dependencies = [
   "pytest",
   "requests",
   "tqdm",
+  "uvicorn",
   "yaspin",
 ]
 [project.scripts]

@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import subprocess
 from dataclasses import dataclass, asdict, replace
 
@@ -214,7 +215,7 @@ class LocalJob:
     """A light-weight local job dataclass."""
 
     job_id: int
-    # container_type: str  # docker or apptainer
+    provider: str  # docker or apptainer
     name: Optional[str] = None
     state: Optional[str] = (
         None  # "created", "running", "restarting", "exited", "paused", "dead",
@@ -224,16 +225,16 @@ class LocalJob:
     def update(self):
         logger.debug("Updating job state.")
         try:
-            if self.container_type == "docker":
+            if self.provider == "docker":
                 res = subprocess.check_output(
                     [
                         "docker",
                         "inspect",
-                        f"{self.id}",
+                        f"{self.job_id}",
                         "--format='{{ .State.Status }}'",  # or {{ json .State }}
                     ]
                 )
-                new_state = "MISSING" if res == b"" else res.decode("utf-8").strip().upper()
+                new_state = "MISSING" if res == b"" else res.decode("utf-8").strip().strip("'").upper()
                 logger.debug(f"The current job state is: {new_state}")
                 if (
                     self.state in [None, "MISSING", "CREATED", "RESTARTING"]
@@ -245,8 +246,30 @@ class LocalJob:
                     )
                 self.state = new_state
                 logger.debug(f"Job {self.job_id} state set to {self.state}")
-            elif self.container_type == "apptainer":
-                raise NotImplementedError
+            elif self.provider == "apptainer":
+                res = subprocess.check_output(
+                    [
+                        "apptainer",
+                        "instance",
+                        "list",
+                        f"{self.job_id}",
+                        "--json"
+                    ]
+                )
+                body = json.loads(res)
+                if body['instances'] == []:
+                    new_state = "STOPPED"
+                else:
+                    new_state = "RUNNING"
+
+                logger.debug(f"The current job state is: {new_state}")
+                if self.state is None and new_state == "RUNNING":
+                    logger.debug(
+                        f"Job state switched from {self.state} to RUNNING"
+                        f" (job_id={self.job_id})."
+                    )
+                self.state = new_state
+                logger.debug(f"Job {self.job_id} state set to {self.state}")
         except subprocess.CalledProcessError as e:
             logger.warning(
                 f"Failed to update job state (job_id={self.job_id},"
@@ -257,13 +280,15 @@ class LocalJob:
 
     def cancel(self) -> None:
         try:
-            if self.container_type == "docker":
-                logger.debug(f"Canceling job {self.job_id}.")
+            logger.debug(f"Canceling job {self.job_id}.")
+            if self.provider == "docker":
                 subprocess.check_output(
                     ["docker", "container", "stop", f"{self.job_id}"]
                 )
-            elif self.container_type == "apptainer":
-                raise NotImplementedError
+            elif self.provider == "apptainer":
+                subprocess.check_output(
+                    ["apptainer", "instance", "stop", f"{self.job_id}"]
+                )
         except subprocess.CalledProcessError as e:
             logger.warning(
                 f"Failed to cancel job (job_id={self.job_id}," f" code={e.returncode})."

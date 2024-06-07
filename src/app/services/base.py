@@ -84,6 +84,7 @@ class Service(UUIDAuditBase):
             logger.debug(
                 f"Generating launch script and writing to {config.BLACKFISH_HOME_DIR}."
             )
+            self.port = container_options['port']
             provider = config.BLACKFISH_CONTAINER_PROVIDER
             with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
                 try:

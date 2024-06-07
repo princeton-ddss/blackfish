@@ -252,8 +252,8 @@ class LocalJob:
                         "apptainer",
                         "instance",
                         "list",
-                        f"{self.job_id}",
-                        "--json"
+                        "--json",
+                        f"{self.job_id}"
                     ]
                 )
                 body = json.loads(res)

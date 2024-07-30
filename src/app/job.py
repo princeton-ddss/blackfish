@@ -66,7 +66,8 @@ class SlurmJobConfig(JobConfig):
 
 
 @dataclass
-class EC2JobConfig(JobConfig): ...
+class EC2JobConfig(JobConfig):
+    ...
 
 
 @dataclass
@@ -206,7 +207,7 @@ class Job:
             )
         except subprocess.CalledProcessError as e:
             logger.warning(
-                f"Failed to cancel job (job_id={self.job_id}," f" code={e.returncode})."
+                f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
             )
 
 
@@ -234,7 +235,11 @@ class LocalJob:
                         "--format='{{ .State.Status }}'",  # or {{ json .State }}
                     ]
                 )
-                new_state = "MISSING" if res == b"" else res.decode("utf-8").strip().strip("'").upper()
+                new_state = (
+                    "MISSING"
+                    if res == b""
+                    else res.decode("utf-8").strip().strip("'").upper()
+                )
                 logger.debug(f"The current job state is: {new_state}")
                 if (
                     self.state in [None, "MISSING", "CREATED", "RESTARTING"]
@@ -248,16 +253,10 @@ class LocalJob:
                 logger.debug(f"Job {self.job_id} state set to {self.state}")
             elif self.provider == "apptainer":
                 res = subprocess.check_output(
-                    [
-                        "apptainer",
-                        "instance",
-                        "list",
-                        "--json",
-                        f"{self.job_id}"
-                    ]
+                    ["apptainer", "instance", "list", "--json", f"{self.job_id}"]
                 )
                 body = json.loads(res)
-                if body['instances'] == []:
+                if body["instances"] == []:
                     new_state = "STOPPED"
                 else:
                     new_state = "RUNNING"
@@ -291,5 +290,5 @@ class LocalJob:
                 )
         except subprocess.CalledProcessError as e:
             logger.warning(
-                f"Failed to cancel job (job_id={self.job_id}," f" code={e.returncode})."
+                f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
             )

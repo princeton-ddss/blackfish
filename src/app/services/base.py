@@ -84,13 +84,15 @@ class Service(UUIDAuditBase):
             logger.debug(
                 f"Generating launch script and writing to {config.BLACKFISH_HOME_DIR}."
             )
-            self.port = container_options['port']
+            self.port = container_options["port"]
             provider = config.BLACKFISH_CONTAINER_PROVIDER
             with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
                 try:
                     if provider == "apptainer":
                         job_id = str(uuid.uuid4())
-                        script = self.launch_script(container_options, job_options, job_id)
+                        script = self.launch_script(
+                            container_options, job_options, job_id
+                        )
                     elif provider == "docker":
                         script = self.launch_script(container_options, job_options)
                     f.write(script)
@@ -341,7 +343,9 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
-                await self.stop(session, config, failed=True)  # stop will push to database
+                await self.stop(
+                    session, config, failed=True
+                )  # stop will push to database
                 return "FAILED"
         elif self.job_type == "slurm":
             job = self.get_job()

@@ -93,9 +93,7 @@ def get_revisions(repo_id: str, profile: BlackfishProfile):
         revisions = []
         namespace, model = repo_id.split("/")
         model_dir = f"models--{namespace}--{model}"
-        with yaspin(
-            text=f"Searching localhost for model {repo_id} commits"
-        ) as spinner:                
+        with yaspin(text=f"Searching localhost for model {repo_id} commits") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
             spinner.text = f"Looking in default directory {default_dir}"
             model_dirs = os.listdir(default_dir)
@@ -161,9 +159,7 @@ def get_model_dir(repo_id: str, revision: str, profile: BlackfishProfile):
             )
         return None
     if isinstance(profile, LocalProfile):
-        with yaspin(
-            text=f"Searching localhost for {repo_id}[{revision}]"
-        ) as spinner:
+        with yaspin(text=f"Searching localhost for {repo_id}[{revision}]") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
             spinner.text = f"Looking in default directory {default_dir}"
             if model_dir in os.listdir(default_dir):

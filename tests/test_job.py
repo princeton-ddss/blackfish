@@ -99,7 +99,7 @@ def test_update_port_some(mock_check_output):
     assert job.port == 8081
 
 
-@mock.patch('logging.Logger.warning')
+@mock.patch("logging.Logger.warning")
 @mock.patch("subprocess.check_output")
 def test_update_port_warning(mock_check_output, mock_warning):
     mock_check_output.side_effect = subprocess.CalledProcessError(None, None)
@@ -108,8 +108,8 @@ def test_update_port_warning(mock_check_output, mock_warning):
     mock_warning.assert_called()
 
 
-@mock.patch('logging.Logger.warning')
-@mock.patch('subprocess.check_output')
+@mock.patch("logging.Logger.warning")
+@mock.patch("subprocess.check_output")
 def test_cancel_warning(mock_check_output, mock_warning):
     mock_check_output.side_effect = subprocess.CalledProcessError(None, None)
     job = Job(job_id=1, user="test", host="test")

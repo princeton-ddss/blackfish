@@ -103,7 +103,8 @@ def run_text_generate(
 
     else:
         click.echo(
-            f"{LogSymbols.ERROR.value} Unable to find {model} for profile '{profile.name}'."
+            f"{LogSymbols.ERROR.value} Unable to find {model} for profile"
+            f" '{profile.name}'."
         )
         return
 
@@ -216,7 +217,9 @@ def run_text_generate(
             click.echo(f"User: {profile.user}")
             click.echo(f"Provider: {container_options['provider']}")
             click.echo("-" * 80)
-            click.echo(service.launch_script(container_options, job_options, job_id="test"))
+            click.echo(
+                service.launch_script(container_options, job_options, job_id="test")
+            )
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(

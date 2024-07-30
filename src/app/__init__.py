@@ -254,7 +254,9 @@ async def stop_service(
 
 
 @get("/services/{service_id:str}")
-async def refresh_service(service_id: str, session: AsyncSession, state: State) -> Service:
+async def refresh_service(
+    service_id: str, session: AsyncSession, state: State
+) -> Service:
     service = await get_service(service_id, session)
     try:
         await service.refresh(session, state)
@@ -401,6 +403,7 @@ async def session_provider(
             status_code=HTTP_409_CONFLICT,
             detail=str(e),
         ) from e
+
 
 cors_config = CORSConfig(
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],

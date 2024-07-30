@@ -28,6 +28,7 @@ from litestar.exceptions import (
     InternalServerException,
 )
 from litestar.status_codes import HTTP_409_CONFLICT
+from litestar.config.cors import CORSConfig
 
 from app.logger import logger
 from app.services.base import Service
@@ -401,6 +402,12 @@ async def session_provider(
             detail=str(e),
         ) from e
 
+cors_config = CORSConfig(
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app = Litestar(
     route_handlers=[
@@ -419,4 +426,5 @@ app = Litestar(
     plugins=[SQLAlchemyPlugin(db_config)],
     logging_config=None,  # disable Litestar logger (we're using our own)
     state=State(blackfish_config.as_dict()),
+    cors_config=cors_config,
 )

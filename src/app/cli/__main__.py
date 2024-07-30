@@ -391,7 +391,7 @@ def models():
     "--profile",
     type=str,
     required=False,
-    default="default",
+    default=None,
     help="List models available for the given profile.",
 )
 @click.option(
@@ -406,9 +406,13 @@ def models_ls(profile, refresh):
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
 
+    params = f"refresh={refresh}"
+    if profile is not None:
+        params += f"&profile={profile}"
+
     with yaspin(text="Fetching models") as spinner:
         res = requests.get(
-            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models?refresh={refresh}&profile={profile}"
+            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models?{params}"
         )
         spinner.text = ""
         if not res.ok:

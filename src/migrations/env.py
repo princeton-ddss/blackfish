@@ -43,7 +43,12 @@ def order_columns(
     op: ops.CreateTableOp,
 ) -> ops.CreateTableOp:
     """Orders ID first and the audit columns at the end."""
-    special_names = {"id": -100, "sa_orm_sentinel": 3001, "created_at": 3002, "updated_at": 3003}
+    special_names = {
+        "id": -100,
+        "sa_orm_sentinel": 3001,
+        "created_at": 3002,
+        "updated_at": 3003,
+    }
     cols_by_key = [
         (
             special_names.get(col.key, index) if isinstance(col, Column) else 2000,
@@ -127,7 +132,10 @@ async def run_migrations_online() -> None:
         ),
     )
     if connectable is None:
-        msg = "Could not get engine from config.  Please ensure your `alembic.ini` according to the official Alembic documentation."
+        msg = (
+            "Could not get engine from config.  Please ensure your `alembic.ini`"
+            " according to the official Alembic documentation."
+        )
         raise RuntimeError(
             msg,
         )

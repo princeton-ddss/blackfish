@@ -25,12 +25,15 @@ classifiers = [
 ]
 dependencies = [
   "advanced-alchemy",
+  "aiosqlite",
   "alembic",
   "click",
   "colorlog",
   "fabric",
+  "huggingface_hub",
   "jinja2",
   "litestar",
+  "log_symbols",
   "nox",
   "pre-commit",
   "prettytable",
@@ -38,6 +41,7 @@ dependencies = [
   "pytest",
   "requests",
   "tqdm",
+  "uvicorn",
   "yaspin",
 ]
 [project.scripts]

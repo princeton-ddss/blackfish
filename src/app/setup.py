@@ -145,6 +145,13 @@ def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
             remote_dir = profile["home_dir"] if remote_dir == "" else remote_dir
             cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
             cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
+        elif profile_type == "local":
+            user = input(f"> user [{profile['user']}]: ")
+            user = profile["user"] if user == "" else user
+            remote_dir = input(f"> home [{profile['home_dir']}]: ")
+            remote_dir = profile["home_dir"] if remote_dir == "" else remote_dir
+            cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
+            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
         else:
             raise NotImplementedError
     else:
@@ -167,16 +174,35 @@ def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
             check_remote_cache_exists(
                 "slurm", host=host, user=user, cache_dir=cache_dir
             )
+        elif profile_type == "local":
+            user = input("> user: ")
+            while user == "":
+                print("User is required.")
+                user = input("> user: ")
+            remote_dir = input(f"> home [/home/{user}/.blackfish]: ")
+            remote_dir = f"/home/{user}/.blackfish" if remote_dir == "" else remote_dir
+            cache_dir = input(f"> cache [/scratch/gpfs/{user}/.cache]: ")
+            cache_dir = f"/scratch/gpfs/{user}/.cache" if cache_dir == "" else cache_dir
         else:
             raise NotImplementedError
 
-    profiles[name] = {
-        "type": profile_type,
-        "user": user,
-        "host": host,
-        "home_dir": remote_dir,
-        "cache_dir": cache_dir,
-    }
+    if profile_type == "slurm":
+        profiles[name] = {
+            "type": profile_type,
+            "user": user,
+            "host": host,
+            "home_dir": remote_dir,
+            "cache_dir": cache_dir,
+        }
+    elif profile_type == "local":
+        profiles[name] = {
+            "type": profile_type,
+            "user": user,
+            "home_dir": remote_dir,
+            "cache_dir": cache_dir,
+        }
+    else:
+        raise NotImplementedError
 
     with open(os.path.join(home_dir, "profiles"), "w") as f:
         profiles.write(f)

@@ -3,8 +3,14 @@ import requests
 from random import randint
 
 from app.services.nlp.text_generation import TextGeneration
-from app.config import config, SlurmRemote
-from app.utils import get_models, get_revisions, get_latest_commit, get_model_dir
+from app.config import config, SlurmRemote, LocalProfile
+from app.utils import (
+    find_port,
+    get_models,
+    get_revisions,
+    get_latest_commit,
+    get_model_dir,
+)
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
@@ -97,7 +103,8 @@ def run_text_generate(
 
     else:
         click.echo(
-            f"{LogSymbols.ERROR.value} Unable to find {model} on {profile.host}."
+            f"{LogSymbols.ERROR.value} Unable to find {model} for profile"
+            f" '{profile.name}'."
         )
         return
 
@@ -185,35 +192,60 @@ def run_text_generate(
                         f"{LogSymbols.ERROR.value} Failed to start service:"
                         f" {res.status_code} - {res.reason}"
                     )
-    # elif isinstance(profile, TestRemote):
-    #     if dry_run:
-    #         service = TextGeneration(
-    #             name=name,
-    #             model=model,
-    #             job_type="test",
-    #         )
-    #         click.echo("-" * 80)
-    #         click.echo("Service: text-generate")
-    #         click.echo(f"Model: {model}")
-    #         click.echo(f"Name: {name}")
-    #         click.echo("Type: slurm")
-    #         click.echo(f"Container options: {container_options}")
-    #         click.echo(f"Job options: {job_options}")
-    #         click.echo("-" * 80)
-    #         click.echo(service.launch_script(container_options, job_options))
-    #     else:
-    #         res = requests.post(
-    #             f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services",
-    #             json={
-    #                 "name": name,
-    #                 "image": "text_generation",
-    #                 "model": model,
-    #                 "job_type": "test",
-    #                 "container_options": container_options,
-    #                 "job_options": job_options,
-    #             },
-    #         )
-    #         click.echo(f"Started service: {res.json()['id']}")
+    elif isinstance(profile, LocalProfile):
+        container_options["port"] = find_port()
+        container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
+        job_options["user"] = profile.user
+        job_options["home_dir"] = profile.home_dir
+        job_options["cache_dir"] = profile.cache_dir
+        job_options["model_dir"] = model_dir
+
+        if dry_run:
+            service = TextGeneration(
+                name=name,
+                model=model,
+                job_type="local",
+                host="localhost",
+                user=profile.user,
+            )
+            click.echo("-" * 80)
+            click.echo("Service: text-generate")
+            click.echo(f"Model: {model}")
+            click.echo(f"Name: {name}")
+            click.echo("Type: local")
+            click.echo("Host: localhost")
+            click.echo(f"User: {profile.user}")
+            click.echo(f"Provider: {container_options['provider']}")
+            click.echo("-" * 80)
+            click.echo(
+                service.launch_script(container_options, job_options, job_id="test")
+            )
+        else:
+            with yaspin(text="Starting service...") as spinner:
+                res = requests.post(
+                    f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services",
+                    json={
+                        "name": name,
+                        "image": "text_generation",
+                        "model": model,
+                        "job_type": "local",
+                        "host": "localhost",
+                        "user": profile.user,
+                        "container_options": container_options,
+                        "job_options": job_options,
+                    },
+                )
+                spinner.text = ""
+                if res.ok:
+                    spinner.ok(
+                        f"{LogSymbols.SUCCESS.value} Started service:"
+                        f" {res.json()['id']}"
+                    )
+                else:
+                    spinner.fail(
+                        f"{LogSymbols.ERROR.value} Failed to start service:"
+                        f" {res.status_code} - {res.reason}"
+                    )
     else:
         raise NotImplementedError
 

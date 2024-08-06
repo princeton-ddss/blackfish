@@ -28,12 +28,13 @@ from litestar.exceptions import (
     InternalServerException,
 )
 from litestar.status_codes import HTTP_409_CONFLICT
+from litestar.config.cors import CORSConfig
 
 from app.logger import logger
 from app.services.base import Service
 from app.services.nlp.text_generation import TextGeneration
 from app.config import config as blackfish_config
-from app.config import BlackfishProfile, SlurmRemote
+from app.config import BlackfishProfile, SlurmRemote, LocalProfile
 
 
 class Model(UUIDAuditBase):
@@ -135,7 +136,6 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
                         models.append(
                             Model(
                                 repo=repo,
-                                image="",
                                 profile=profile.name,
                                 revision=revision,
                             )
@@ -143,6 +143,49 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
             return models
+    elif isinstance(profile, LocalProfile):
+        default_dir = os.path.join(profile.cache_dir, "models")
+        logger.debug(f"Searching default directory {default_dir}")
+        try:
+            model_dirs = os.listdir(default_dir)
+            logger.debug(f"Found model directories: {model_dirs}")
+            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                _, namespace, model = model_dir.split("--")
+                repo = f"{namespace}/{model}"
+                revisions = os.listdir(
+                    os.path.join(default_dir, model_dir, "snapshots")
+                )
+                for revision in revisions:
+                    models.append(
+                        Model(
+                            repo=repo,
+                            profile=profile.name,
+                            revision=revision,
+                        )
+                    )
+        except FileNotFoundError as e:
+            logger.error(f"Failed to list directory: {e}")
+
+        backup_dir = os.path.join(profile.home_dir, "models")
+        logger.debug(f"Searching backup directory: {backup_dir}")
+        try:
+            model_dirs = os.listdir(backup_dir)
+            logger.debug(f"Found model directories: {model_dirs}")
+            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                _, namespace, model = model_dir.split("--")
+                repo = f"{namespace}/{model}"
+                revisions = os.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
+                for revision in revisions:
+                    models.append(
+                        Model(
+                            repo=repo,
+                            profile=profile.name,
+                            revision=revision,
+                        )
+                    )
+        except FileNotFoundError as e:
+            logger.error(f"Failed to list directory: {e}")
+        return models
     else:
         raise NotImplementedError
 
@@ -200,21 +243,23 @@ async def run_service(
 
 @put("/services/{service_id:str}/stop")
 async def stop_service(
-    service_id: str, data: StopServiceRequest, session: AsyncSession
+    service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
     service = await get_service(service_id, session)
     await service.stop(
-        session, delay=data.delay, timeout=data.timeout, failed=data.failed
+        session, state, delay=data.delay, timeout=data.timeout, failed=data.failed
     )
 
     return service
 
 
 @get("/services/{service_id:str}")
-async def refresh_service(service_id: str, session: AsyncSession) -> Service:
+async def refresh_service(
+    service_id: str, session: AsyncSession, state: State
+) -> Service:
     service = await get_service(service_id, session)
     try:
-        await service.refresh(session)
+        await service.refresh(session, state)
     except Exception as e:
         logger.error(f"Failed to refresh service: {e}")
 
@@ -224,6 +269,7 @@ async def refresh_service(service_id: str, session: AsyncSession) -> Service:
 @get("/services")
 async def fetch_services(
     session: AsyncSession,
+    state: State,
     image: Optional[str] = None,
     status: Optional[str] = None,
     host: Optional[str] = None,
@@ -243,15 +289,15 @@ async def fetch_services(
     res = await session.execute(query)
     services = res.scalars().all()
 
-    await asyncio.gather(*[s.refresh(session) for s in services])
+    await asyncio.gather(*[s.refresh(session, state) for s in services])
 
     return services
 
 
 @delete("/services/{service_id:str}")
-async def delete_service(service_id: str, session: AsyncSession) -> None:
+async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
     service = await get_service(service_id, session)
-    await service.refresh(session)
+    await service.refresh(session, state)
     if service.status in ["STOPPED", "TIMEOUT", "FAILED"]:
         query = sa.delete(Service).where(Service.id == service_id)
         await session.execute(query)
@@ -281,10 +327,9 @@ async def get_models(
             query = sa.delete(Model).where(Model.profile == profile)
             await session.execute(query)
         else:
-            aws = [
+            res = await asyncio.gather(*[
                 find_models(profile) for profile in state.BLACKFISH_PROFILES.values()
-            ]
-            res = await asyncio.gather(*aws)
+            ])
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
             logger.debug("Deleting existing models...")
             query = sa.delete(Model)
@@ -359,6 +404,13 @@ async def session_provider(
         ) from e
 
 
+cors_config = CORSConfig(
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app = Litestar(
     route_handlers=[
         index,
@@ -376,4 +428,5 @@ app = Litestar(
     plugins=[SQLAlchemyPlugin(db_config)],
     logging_config=None,  # disable Litestar logger (we're using our own)
     state=State(blackfish_config.as_dict()),
+    cors_config=cors_config,
 )

@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import subprocess
 from dataclasses import dataclass, asdict, replace
 
@@ -40,8 +41,11 @@ class JobConfig:
 
 @dataclass
 class LocalJobConfig(JobConfig):
-    name: str
-    gres: int  # i.e., gpu:<gres>
+    user: Optional[str] = None
+    home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
+    cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
+    model_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
+    gres: Optional[bool] = False
 
 
 @dataclass
@@ -120,39 +124,51 @@ class Job:
 
     def update_node(self) -> Optional[str]:
         logger.debug(f"Updating node for job {self.job_id}.")
-        res = subprocess.check_output(
-            [
-                "ssh",
-                f"{self.user}@{self.host}",
-                "sacct",
-                "-n",
-                "-P",
-                "-X",
-                "-u",
-                self.user,
-                "-j",
-                str(self.job_id),
-                "-o",
-                "NodeList",
-            ]
-        )
-        self.node = None if res == b"" else res.decode("utf-8").strip()
-        logger.debug(f"Job {self.job_id} node set to {self.node}.")
+        try:
+            res = subprocess.check_output(
+                [
+                    "ssh",
+                    f"{self.user}@{self.host}",
+                    "sacct",
+                    "-n",
+                    "-P",
+                    "-X",
+                    "-u",
+                    self.user,
+                    "-j",
+                    str(self.job_id),
+                    "-o",
+                    "NodeList",
+                ]
+            )
+            self.node = None if res == b"" else res.decode("utf-8").strip()
+            logger.debug(f"Job {self.job_id} node set to {self.node}.")
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to update job node (job_id={self.job_id},"
+                f" code={e.returncode})."
+            )
 
         return self.node
 
     def update_port(self) -> Optional[int]:
         logger.debug(f"Updating port for job {self.job_id}.")
-        res = subprocess.check_output(
-            [
-                "ssh",
-                f"{self.user}@{self.host}",
-                "ls",
-                os.path.join(".blackfish", str(self.job_id)),
-            ]
-        )
-        self.port = None if res == b"" else int(res.decode("utf-8").strip())
-        logger.debug(f"Job {self.job_id} port set to {self.port}")
+        try:
+            res = subprocess.check_output(
+                [
+                    "ssh",
+                    f"{self.user}@{self.host}",
+                    "ls",
+                    os.path.join(".blackfish", str(self.job_id)),
+                ]
+            )
+            self.port = None if res == b"" else int(res.decode("utf-8").strip())
+            logger.debug(f"Job {self.job_id} port set to {self.port}")
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to update job port (job_id={self.job_id},"
+                f" code={e.returncode})."
+            )
 
         return self.port
 
@@ -184,7 +200,95 @@ class Job:
             time.sleep(period)
 
     def cancel(self) -> None:
-        logger.debug(f"Canceling job {self.job_id}.")
-        subprocess.check_output(
-            ["ssh", f"{self.user}@{self.host}", "scancel", str(self.job_id)]
-        )
+        try:
+            logger.debug(f"Canceling job {self.job_id}.")
+            subprocess.check_output(
+                ["ssh", f"{self.user}@{self.host}", "scancel", str(self.job_id)]
+            )
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
+            )
+
+
+@dataclass
+class LocalJob:
+    """A light-weight local job dataclass."""
+
+    job_id: int
+    provider: str  # docker or apptainer
+    name: Optional[str] = None
+    state: Optional[str] = (
+        None  # "created", "running", "restarting", "exited", "paused", "dead",
+    )
+    options: Optional[JobConfig] = None
+
+    def update(self):
+        logger.debug("Updating job state.")
+        try:
+            if self.provider == "docker":
+                res = subprocess.check_output(
+                    [
+                        "docker",
+                        "inspect",
+                        f"{self.job_id}",
+                        "--format='{{ .State.Status }}'",  # or {{ json .State }}
+                    ]
+                )
+                new_state = (
+                    "MISSING"
+                    if res == b""
+                    else res.decode("utf-8").strip().strip("'").upper()
+                )
+                logger.debug(f"The current job state is: {new_state}")
+                if (
+                    self.state in [None, "MISSING", "CREATED", "RESTARTING"]
+                    and new_state == "RUNNING"
+                ):
+                    logger.debug(
+                        f"Job state switched from {self.state} to RUNNING"
+                        f" (job_id={self.job_id})."
+                    )
+                self.state = new_state
+                logger.debug(f"Job {self.job_id} state set to {self.state}")
+            elif self.provider == "apptainer":
+                res = subprocess.check_output(
+                    ["apptainer", "instance", "list", "--json", f"{self.job_id}"]
+                )
+                body = json.loads(res)
+                if body["instances"] == []:
+                    new_state = "STOPPED"
+                else:
+                    new_state = "RUNNING"
+
+                logger.debug(f"The current job state is: {new_state}")
+                if self.state is None and new_state == "RUNNING":
+                    logger.debug(
+                        f"Job state switched from {self.state} to RUNNING"
+                        f" (job_id={self.job_id})."
+                    )
+                self.state = new_state
+                logger.debug(f"Job {self.job_id} state set to {self.state}")
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to update job state (job_id={self.job_id},"
+                f" code={e.returncode})."
+            )
+
+        return self.state
+
+    def cancel(self) -> None:
+        try:
+            logger.debug(f"Canceling job {self.job_id}.")
+            if self.provider == "docker":
+                subprocess.check_output(
+                    ["docker", "container", "stop", f"{self.job_id}"]
+                )
+            elif self.provider == "apptainer":
+                subprocess.check_output(
+                    ["apptainer", "instance", "stop", f"{self.job_id}"]
+                )
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
+            )

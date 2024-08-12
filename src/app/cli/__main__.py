@@ -26,7 +26,7 @@ def main() -> None:
 @click.option("--remote", type=str, default=None)
 @click.option("--host", type=str)
 @click.option("--user", type=str)
-def init(home_dir: str, remote: str, host: str, user: str) -> None:
+def init(home_dir: str | None, remote: str | None, host: str, user: str) -> None:
     "Initialize the blackfish service."
 
     from app.setup import (
@@ -70,9 +70,6 @@ def start(reload: bool, profile: str) -> None:
 
     if not os.path.isdir(config.BLACKFISH_HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
-        return
-    if not os.path.isdir(config.BLACKFISH_CACHE_DIR):
-        click.echo("Cache directory not found. Have you run `blackfish init`?")
         return
 
     if profile is None:

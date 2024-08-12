@@ -42,14 +42,14 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
                         f"""if [ -d {home_dir} ]; then echo 1; fi""",
                     ]
                 )
-                remote_exists = int(res.decode("utf-8").strip())
+                remote_exists = res.decode("utf-8").strip()
             except Exception as e:
                 spinner.text = ""
                 spinner.fail(
                     f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote home:"
                     f" {e}."
                 )
-            if not remote_exists:
+            if not remote_exists == "1":
                 try:
                     _ = subprocess.check_output(
                         ["ssh", f"{user}@{host}", "mkdir", home_dir]

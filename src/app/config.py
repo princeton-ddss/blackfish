@@ -8,7 +8,6 @@ from copy import deepcopy
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
-DEFAULT_CACHE_DIR = os.path.expanduser("~/.cache/.blackfish")
 DEFAULT_DEBUG = True
 
 
@@ -63,7 +62,6 @@ class BlackfishConfig:
         self.BLACKFISH_HOST = os.getenv("BLACKFISH_HOST", DEFAULT_HOST)
         self.BLACKFISH_PORT = os.getenv("BLACKFISH_PORT", DEFAULT_PORT)
         self.BLACKFISH_HOME_DIR = os.getenv("BLACKFISH_HOME_DIR", DEFAULT_HOME_DIR)
-        self.BLACKFISH_CACHE_DIR = os.getenv("BLACKFISH_CACHE_DIR", DEFAULT_CACHE_DIR)
         self.BLACKFISH_DEBUG = os.getenv("BLACKFISH_DEBUG", DEFAULT_DEBUG)
         self.BLACKFISH_PROFILES = {}
         self.BLACKFISH_CONTAINER_PROVIDER = os.getenv(

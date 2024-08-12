@@ -38,14 +38,14 @@ accessed from a browser if the cluster supports Open OnDemand.
 ## Installation
 Blackfish is a `pip`-installable python package. To keep things clean, we recommend
 installing Blackfish to its own environment:
-```bash
+```shell
 python -m venv env
 source env/bin/activate
 pip install blackfish
 ```
 
 For development, clone the package's repo and pip install:
-```bash
+```shell
 git clone ...
 python -m venv env
 source env/bin/activate
@@ -56,7 +56,7 @@ cd blackfish && pip install -e .
 Their are two ways that reseachers can interact with Blackfish: in a browser, via the user
 interface, or at the command-line using the Blackfish CLI. In either case, the starting
 point is to type
-```bash
+```shell
 blackfish start
 ```
 in the command-line. If this is your first time starting the application, then you'll need
@@ -67,27 +67,27 @@ let's instead take a look at the CLI.
 
 ### CLI
 Open a new terminal tab/window. First, let's see what type of services are available.
-```bash
+```shell
 blackfish run --help
 ```
 This command displays a list of available commands. One of these is called `text-generate`.
 This is a service that generates text given a input prompt. There are a variety of models
 that we might use to perform this task, so let's check out what's available on Blackfish:
-```bash
+```shell
 blackfish image ls --filter name=text-generate
 ```
 
 This command returns a list of models that we can pass to the `blackfish run text-generate`
 command. One of these should be `bigscience/bloom560m`. (The exact list you see will depend
 on your application settings/deployment). Let's spin it up:
-```bash
+```shell
 blackfish run --profile hpc text-generation --model bigscience/bloom-560m
 ```
 
 The CLI returns an ID for our new service. We can find more information about our
 service by running
 
-```bash
+```shell
 blackfish ls
 blackfish ls --filter id=<service_id>
 ```
@@ -104,18 +104,25 @@ that tea...
 
 Now that we're refreshed, let's see how our service is doing. Re-run the command above.
 If things went well, then we should see that the service's status has changed to `RUNNING`.
-At this point, we can start interacting with the service... *TODO* demonstrate how to
-reach the service (a) programmatically, and (b) via `blackfish fetch ...`.
+At this point, we can start interacting with the service. Let's say "Hello":
+
+```shell
+curl 127.0.0.1:8081/generate \
+  -X POST \
+  -d '{"inputs": "Hello", "parameters": {"max_new_tokens": 20}}' \
+  -H 'Content-Type: application/json'
+```
+*TODO* demonstrate how to reach the service via `blackfish fetch`.
 
 When we are done with our service, we should shut it off and return its resources to the
 cluster. To do so, simply type
-```bash
+```shell
 blackfish stop <service_id>
 ```
 
 If you check that service's status, you'll see that it is now `STOPPED`. The service will
 remain in your services list until you delete it:
-```bash
+```shell
 blackfish rm <service_id>
 ```
 
@@ -194,7 +201,7 @@ instead of Docker. Apptainer will not run Docker images directly. Instead, you n
 convert Docker images to SIF files. For images hosted on Docker Hub, running `apptainer
 pull` will do this automatically. For example,
 
-```bash
+```shell
 apptainer pull docker://ghcr.io/huggingface/text-generation-inference:latest
 ```
 
@@ -227,7 +234,9 @@ snapshot_download(repo_id="meta-llama/Meta-Llama-3-8B")
 These commands store models files to `~/.cache/huggingface/hub/` by default. You can
 modify the directory by setting `HF_HOME` in the local environment or providing a
 `cache_dir` argument (where applicable). After the model files are downloaded, they
-should be moved to a shared cache directory, e.g., `/scratch/gpfs/blackfish/models`.
+should be moved to a shared cache directory, e.g., `/scratch/gpfs/blackfish/models`,
+and permissions on the new model directory should be updated to `755` (recursively)
+to allow all users read and execute.
 
 ### Configuration
 The application and command-line interface (CLI) pull their settings from environment

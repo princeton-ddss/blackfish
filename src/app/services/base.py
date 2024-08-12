@@ -366,14 +366,14 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a cancelled job. Setting status to"
                     " STOPPED and stopping the service."
                 )
-                await self.stop(session)
+                await self.stop(session, config)
                 return "STOPPED"
             elif job.state == "TIMEOUT":
                 logger.debug(
                     f"Service {self.id} has a timed out job. Setting status to"
                     " TIMEOUT and stopping the service."
                 )
-                await self.stop(session, timeout=True)
+                await self.stop(session, config, timeout=True)
                 return "TIMEOUT"
             elif job.state == "RUNNING":
                 if self.port is None:
@@ -426,7 +426,7 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
-                await self.stop(session, failed=True)  # stop will push to database
+                await self.stop(session, config, failed=True)  # stop will push to database
                 return "FAILED"
         elif self.job_type == "ec2":
             raise NotImplementedError

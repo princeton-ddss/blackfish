@@ -29,7 +29,8 @@ def create_profile(ctx):
 
     if name in profiles:
         print(
-            f"{LogSymbols.ERROR.value} Profile named {name} already exists. Try deleting or modifying this profile instead."
+            f"{LogSymbols.ERROR.value} Profile named {name} already exists. Try"
+            " deleting or modifying this profile instead."
         )
         return
     else:
@@ -51,7 +52,9 @@ def create_profile(ctx):
                 print("Cache directory is required.")
                 cache_dir = input("> cache: ")
             try:
-                create_remote_home_dir("slurm", host=host, user=user, home_dir=remote_dir)
+                create_remote_home_dir(
+                    "slurm", host=host, user=user, home_dir=remote_dir
+                )
                 check_remote_cache_exists(
                     "slurm", host=host, user=user, cache_dir=cache_dir
                 )
@@ -179,7 +182,8 @@ def update_profile(ctx, name):
 
     if name not in profiles:
         print(
-            f"{LogSymbols.ERROR.value} Profile {name} not found. To view your existing profiles, type `blackfish profile list`."
+            f"{LogSymbols.ERROR.value} Profile {name} not found. To view your existing"
+            " profiles, type `blackfish profile list`."
         )
         return
     else:
@@ -188,17 +192,15 @@ def update_profile(ctx, name):
         profile_type = profile["type"] if profile_type == "" else profile_type
         if profile_type == "slurm":
             host = input(f"> host [{profile['host']}]: ")
-            host = profile['host'] if host == '' else host
+            host = profile["host"] if host == "" else host
             user = input(f"> user [{profile['user']}]: ")
-            user = profile['user'] if user == '' else user
+            user = profile["user"] if user == "" else user
             home_dir = input(f"> home_dir [{profile['home_dir']}]: ")
-            home_dir = profile['home_dir'] if home_dir == '' else home_dir
+            home_dir = profile["home_dir"] if home_dir == "" else home_dir
             cache_dir = input(f"> cache_dir [{profile['cache_dir']}]: ")
-            cache_dir = profile['cache_dir'] if cache_dir == '' else cache_dir
+            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
             try:
-                create_remote_home_dir(
-                    "slurm", host=host, user=user, home_dir=home_dir
-                )
+                create_remote_home_dir("slurm", host=host, user=user, home_dir=home_dir)
                 check_remote_cache_exists(
                     "slurm", host=host, user=user, cache_dir=cache_dir
                 )
@@ -259,7 +261,7 @@ def delete_profile(ctx, name: str):
 
     if name in profiles:
         confirm = input(f"  Delete profile {name}? (y/n)")
-        if confirm.lower() == 'y':
+        if confirm.lower() == "y":
             del profiles[name]
             with open(os.path.join(home_dir, "profiles"), "w") as f:
                 profiles.write(f)

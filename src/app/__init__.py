@@ -326,9 +326,9 @@ async def get_models(
             query = sa.delete(Model).where(Model.profile == profile)
             await session.execute(query)
         else:
-            res = await asyncio.gather(*[
-                find_models(profile) for profile in state.BLACKFISH_PROFILES.values()
-            ])
+            res = await asyncio.gather(
+                *[find_models(profile) for profile in state.BLACKFISH_PROFILES.values()]
+            )
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
             logger.debug("Deleting existing models...")
             query = sa.delete(Model)

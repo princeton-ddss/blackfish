@@ -22,6 +22,7 @@ def create_local_home_dir(home_dir: str) -> None:
                 spinner.fail(
                     f"{LogSymbols.ERROR.value} Failed to setup Blackfish home: {e}."
                 )
+                raise Exception
         else:
             spinner.text = ""
             spinner.ok(
@@ -49,6 +50,7 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
                     f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote home:"
                     f" {e}."
                 )
+                raise Exception
             if not remote_exists == "1":
                 try:
                     _ = subprocess.check_output(
@@ -78,6 +80,14 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
         raise NotImplementedError
 
 
+def check_local_cache_exists(cache_dir):
+    if os.path.exists(cache_dir):
+        print(f"{LogSymbols.SUCCESS.value} Blackfish cache directory already exists.")
+    else:
+        print(f"{LogSymbols.ERROR.value} Unable to find local cache dir {cache_dir}.")
+        raise Exception
+
+
 def check_remote_cache_exists(remote_type, host, user, cache_dir):
     with yaspin(text="Looking for remote cache") as spinner:
         try:
@@ -100,11 +110,13 @@ def check_remote_cache_exists(remote_type, host, user, cache_dir):
                     f"{LogSymbols.ERROR.value} Unable to find remote cache dir"
                     f" {cache_dir}."
                 )
+                raise Exception
         except Exception as e:
             spinner.text = ""
             spinner.fail(
                 f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote home: {e}."
             )
+            raise Exception
 
 
 def migrate_db() -> None:

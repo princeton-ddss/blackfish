@@ -246,7 +246,6 @@ environment variables are:
 BLACKFISH_HOST = '127.0.0.1' # host for local instance of the Blackfish app
 BLACKFISH_PORT = 8000 # port for local instance of the Blackfish app
 BLACKFISH_HOME_DIR = '~/.blackfish' # location to store application data
-BLACKFISH_CACHE_DIR = '~/.blackfish/.cache' # location to store image and model files
 ```
 
 ### Profiles

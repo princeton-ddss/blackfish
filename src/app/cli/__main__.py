@@ -5,6 +5,13 @@ from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
+from app.cli.profile import (
+    create_profile,
+    show_profile,
+    list_profiles,
+    update_profile,
+    delete_profile,
+)
 from app.config import config, SlurmRemote
 
 
@@ -22,31 +29,41 @@ def main() -> None:
 
 
 @main.command()
-@click.option("--home_dir", type=str, default=None)
-@click.option("--remote", type=str, default=None)
-@click.option("--host", type=str)
-@click.option("--user", type=str)
-def init(home_dir: str, remote: str, host: str, user: str) -> None:
-    "Initialize the blackfish service."
+@click.option(
+    "--home_dir",
+    type=str,
+    default=config.BLACKFISH_HOME_DIR,
+    help="The location to store Blackfish application data.",
+)
+def init(home_dir: str | None) -> None:
+    """Setup Blackfish.
+
+    Creates all files and directories to run Blackfish.
+    """
 
     from app.setup import (
         create_local_home_dir,
-        create_remote_home_dir,
         create_or_modify_profile,
     )
 
-    if remote is not None:
-        if remote == "slurm":
-            home_dir = home_dir if home_dir is not None else f"/home/{user}/.blackfish"
-            create_remote_home_dir("slurm", host, user, home_dir)
-        else:
-            raise NotImplementedError
-    else:
-        home_dir = home_dir if home_dir is not None else config.BLACKFISH_HOME_DIR
-        create_local_home_dir(home_dir)
-        create_or_modify_profile(home_dir)
+    create_local_home_dir(home_dir)
+    create_or_modify_profile(home_dir)
 
     print("\n🎉 All done—let's fish!")
+
+
+@main.group()
+@click.pass_context
+def profile(ctx):
+    """Create or modify a profile."""
+    ctx.obj = {"home_dir": config.BLACKFISH_HOME_DIR}
+
+
+profile.add_command(create_profile, "create")
+profile.add_command(show_profile, "show")
+profile.add_command(list_profiles, "list")
+profile.add_command(update_profile, "update")
+profile.add_command(delete_profile, "delete")
 
 
 @main.command()
@@ -70,9 +87,6 @@ def start(reload: bool, profile: str) -> None:
 
     if not os.path.isdir(config.BLACKFISH_HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
-        return
-    if not os.path.isdir(config.BLACKFISH_CACHE_DIR):
-        click.echo("Cache directory not found. Have you run `blackfish init`?")
         return
 
     if profile is None:

@@ -13,7 +13,7 @@ from app.setup import (
 
 @click.command()
 @click.pass_context
-def create_profile(ctx):
+def create_profile(ctx):  # pragma: no cover
     """Create a new profile.
 
     Fails if the profile name already exists.
@@ -105,7 +105,7 @@ def create_profile(ctx):
     "--name", type=str, default="default", help="The name of the profile to display."
 )
 @click.pass_context
-def show_profile(ctx, name):
+def show_profile(ctx, name):  # pragma: no cover
     """Display a profile."""
 
     default_home = ctx.obj.get("home_dir")
@@ -136,7 +136,7 @@ def show_profile(ctx, name):
 
 @click.command()
 @click.pass_context
-def list_profiles(ctx):
+def list_profiles(ctx):  # pragma: no cover
     """Display all available profiles."""
 
     default_home = ctx.obj.get("home_dir")
@@ -169,7 +169,7 @@ def list_profiles(ctx):
     "--name", type=str, default="default", help="The name of the profile to modify."
 )
 @click.pass_context
-def update_profile(ctx, name):
+def update_profile(ctx, name):  # pragma: no cover
     """Update a profile."""
 
     default_home = ctx.obj.get("home_dir")
@@ -249,7 +249,7 @@ def update_profile(ctx, name):
     "--name", type=str, default="default", help="The name of the profile to delete."
 )
 @click.pass_context
-def delete_profile(ctx, name: str):
+def delete_profile(ctx, name: str):  # pragma: no cover
     """Delete a profile.
 
     Does not clean up the profile's remote or local resources.

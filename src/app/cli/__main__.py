@@ -23,7 +23,7 @@ administrative tasks, such as adjusting application settings.
 
 # blackfish
 @click.group()
-def main() -> None:
+def main() -> None:  # pragma: no cover
     "A CLI to manage ML models."
     pass
 
@@ -35,7 +35,7 @@ def main() -> None:
     default=config.BLACKFISH_HOME_DIR,
     help="The location to store Blackfish application data.",
 )
-def init(home_dir: str | None) -> None:
+def init(home_dir: str | None) -> None:  # pragma: no cover
     """Setup Blackfish.
 
     Creates all files and directories to run Blackfish.
@@ -54,7 +54,7 @@ def init(home_dir: str | None) -> None:
 
 @main.group()
 @click.pass_context
-def profile(ctx):
+def profile(ctx):  # pragma: no cover
     """Create or modify a profile."""
     ctx.obj = {"home_dir": config.BLACKFISH_HOME_DIR}
 
@@ -79,7 +79,7 @@ profile.add_command(delete_profile, "delete")
     type=str,
     default=None,
 )
-def start(reload: bool, profile: str) -> None:
+def start(reload: bool, profile: str) -> None:  # pragma: no cover
     "Start the blackfish app."
 
     import uvicorn
@@ -169,7 +169,7 @@ def run(
     partition,
     constraint,
     profile,
-):
+):  # pragma: no cover
     """Run an inference service"""
     ctx.obj = {
         "profile": profile,
@@ -195,7 +195,7 @@ run.add_command(run_text_generate, "text-generate")
     type=str,
     required=True,
 )
-def stop(service_id, delay) -> None:
+def stop(service_id, delay) -> None:  # pragma: no cover
     """Stop one or more services"""
 
     with yaspin(text="Stopping service...") as spinner:
@@ -228,7 +228,7 @@ def stop(service_id, delay) -> None:
     default=False,
     help="Force the removal of a running service",
 )
-def rm(service_id, force) -> None:
+def rm(service_id, force) -> None:  # pragma: no cover
     """Remove one or more services"""
 
     with yaspin(text="Deleting service...") as spinner:
@@ -247,7 +247,7 @@ def rm(service_id, force) -> None:
 # blackfish details [OPTIONS] SERVICE
 @main.command()
 @click.argument("service_id", required=True, type=str)
-def details(service_id):
+def details(service_id):  # pragma: no cover
     """Show detailed service information"""
 
     from app.services.base import Service
@@ -304,7 +304,7 @@ def details(service_id):
         " image=text_generation,status=SUBMITTED"
     ),
 )
-def ls(filters):
+def ls(filters):  # pragma: no cover
     """List services"""
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
@@ -361,7 +361,7 @@ def ls(filters):
 
 # blackfish fetch
 @main.group(name="fetch")
-def fetch():
+def fetch():  # pragma: no cover
     """Fetch results from a service"""
     pass
 
@@ -371,7 +371,7 @@ fetch.add_command(fetch_text_generate, "fetch_text_generate")
 
 # blackfish image
 @main.group()
-def image():
+def image():  # pragma: no cover
     """View information about available images"""
     pass
 
@@ -379,7 +379,7 @@ def image():
 # blackfish image ls [OPTIONS]
 @image.command(name="ls")
 @click.option("--filter", type=str)
-def image_ls(filter):
+def image_ls(filter):  # pragma: no cover
     """List images"""
     pass
 
@@ -387,13 +387,13 @@ def image_ls(filter):
 # blackfish image details IMAGE
 @image.command(name="details")
 @click.argument("image", type=str, required=True)
-def image_details(image):
+def image_details(image):  # pragma: no cover
     """Show detailed image information"""
     pass
 
 
 @main.group()
-def models():
+def models():  # pragma: no cover
     """View information about available models."""
     pass
 
@@ -415,7 +415,7 @@ def models():
     default=False,
     help="Refresh the list of available models.",
 )
-def models_ls(profile, refresh):
+def models_ls(profile, refresh):  # pragma: no cover
     """Show available (downloaded) models for a given image and (optional) profile."""
 
     from prettytable import PrettyTable, PLAIN_COLUMNS

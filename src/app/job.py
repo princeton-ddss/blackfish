@@ -41,6 +41,7 @@ class JobConfig:
 
 @dataclass
 class LocalJobConfig(JobConfig):
+    """Job configuration for running a service locally."""
     user: Optional[str] = None
     home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
     cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
@@ -50,6 +51,7 @@ class LocalJobConfig(JobConfig):
 
 @dataclass
 class SlurmJobConfig(JobConfig):
+    """Job configuration for running a service as a Slurm job."""
     host: Optional[str] = None
     user: Optional[str] = None
     name: Optional[str] = "blackfish"
@@ -61,8 +63,8 @@ class SlurmJobConfig(JobConfig):
     partition: Optional[str] = None  # e.g., mig
     constraint: Optional[str] = None  # e.g., gpu80
     home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
-    cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
-    model_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
+    cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish
+    model_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish/models
 
 
 @dataclass
@@ -83,7 +85,15 @@ class Job:
     state: Optional[str] = None
     options: Optional[JobConfig] = None
 
-    def update(self):
+    def update(self) -> Optional[str]:
+        """Attempt to update the job state from Slurm accounting and return the new
+        state (or current state if the update fails).
+        
+        If the job state switches from PENDING or MISSING to RUNNING, also update
+        the job node and port.
+
+        This method logs a warning if the update fails, but does not raise an exception.
+        """
         logger.debug("Updating job state.")
         try:
             res = subprocess.check_output(
@@ -123,6 +133,11 @@ class Job:
         return self.state
 
     def update_node(self) -> Optional[str]:
+        """Attempt to update the job node from Slurm accounting and return the new
+        node (or the current node if the update fails).
+
+        This method logs a warning if the update fails, but does not raise an exception.
+        """
         logger.debug(f"Updating node for job {self.job_id}.")
         try:
             res = subprocess.check_output(
@@ -152,6 +167,14 @@ class Job:
         return self.node
 
     def update_port(self) -> Optional[int]:
+        """Attempt to update the job port and return the new port (or the current
+        port if the update fails)
+
+        The job port is stored as a directory in the remote Blackfish home when a port
+        is assigned to a service container. 
+
+        This method logs a warning if the update fails, but does not raise an exception.
+        """
         logger.debug(f"Updating port for job {self.job_id}.")
         try:
             res = subprocess.check_output(
@@ -173,7 +196,7 @@ class Job:
         return self.port
 
     def wait(self, period: int = 5) -> dict:
-        """Wait for the job to start."""
+        """Wait for the job to start, re-checking the job's status every `period` seconds."""
 
         logger.debug(f"waiting for job {self.job_id} to start")
         time.sleep(period)  # wait for slurm to accept job
@@ -200,6 +223,10 @@ class Job:
             time.sleep(period)
 
     def cancel(self) -> None:
+        """Cancel a Slurm job by issuing the `scancel` command on the remote host.
+
+        This method logs a warning if the update fails, but does not raise an exception.
+        """
         try:
             logger.debug(f"Canceling job {self.job_id}.")
             subprocess.check_output(

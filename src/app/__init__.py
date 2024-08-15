@@ -85,6 +85,9 @@ class StopServiceRequest:
 
 
 async def get_service(service_id: str, session: AsyncSession) -> Service:
+    """Query a single service ID from the application database and raise a `NotFoundException`
+    if the service is missing.
+    """
     query = sa.select(Service).where(Service.id == service_id)
     res = await session.execute(query)
     try:
@@ -94,6 +97,12 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
 
 
 async def find_models(profile: BlackfishProfile) -> list[Model]:
+    """Find all model revisions associated with a given profile.
+
+    The model files associated with a given profile are determined by the contents
+    found in `profile.home_dir` and `profile.cache_dir`. We assume that model files
+    are stored using the same schema as Hugging Face.
+    """
     models = []
     if isinstance(profile, SlurmRemote):
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
@@ -191,6 +200,8 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
 
 
 def build_service(data: ServiceRequest):
+    """Convert a service request into a service object based on the requested image."""
+
     if data.image == "text_generation":
         return TextGeneration(
             name=data.name,  # optional
@@ -326,9 +337,9 @@ async def get_models(
             query = sa.delete(Model).where(Model.profile == profile)
             await session.execute(query)
         else:
-            res = await asyncio.gather(*[
-                find_models(profile) for profile in state.BLACKFISH_PROFILES.values()
-            ])
+            res = await asyncio.gather(
+                *[find_models(profile) for profile in state.BLACKFISH_PROFILES.values()]
+            )
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
             logger.debug("Deleting existing models...")
             query = sa.delete(Model)

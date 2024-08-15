@@ -10,7 +10,7 @@ from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
 
-def get_latest_commit(repo_id: str, revisions: list[str]):
+def get_latest_commit(repo_id: str, revisions: list[str]) -> str:  # pragma: no cover
     """Return the most recent revision for a model from a list of options."""
     if len(revisions) == 0:
         raise Exception("List of revisions should be non-empty.")
@@ -21,7 +21,8 @@ def get_latest_commit(repo_id: str, revisions: list[str]):
     raise Exception("List of revisions should be a (non-empty) subset of repo commits.")
 
 
-def get_models(profile: BlackfishProfile):
+def get_models(profile: BlackfishProfile) -> list[str]:
+    """Return a list of models available to a given profile."""
     if isinstance(profile, SlurmRemote):
         models = []
         with yaspin(text=f"Searching {profile.host} for available models") as spinner:
@@ -63,7 +64,8 @@ def get_models(profile: BlackfishProfile):
         raise NotImplementedError
 
 
-def get_revisions(repo_id: str, profile: BlackfishProfile):
+def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
+    """Return a list of revisions associated with a given model and profile."""
     if isinstance(profile, SlurmRemote):
         revisions = []
         namespace, model = repo_id.split("/")
@@ -115,11 +117,12 @@ def get_revisions(repo_id: str, profile: BlackfishProfile):
         raise NotImplementedError
 
 
-def get_model_dir(repo_id: str, revision: str, profile: BlackfishProfile):
+def get_model_dir(
+    repo_id: str, revision: str, profile: BlackfishProfile
+) -> Optional[str]:
     """Find the directory of a specific model revision.
 
-    The job launcher needs to know where to find model files, but these can be split across
-    the managed cache and a user's private cache.
+    The job launcher needs to know where to find model files, but these can be split across the managed cache and a user's private cache.
     """
     namespace, model = repo_id.split("/")
     model_dir = f"models--{namespace}--{model}"
@@ -198,8 +201,8 @@ def has_model(
     repo_id: str,
     profile: BlackfishProfile,
     revision: Optional[str] = None,
-):
-    """Look for model files in the specified environment.
+) -> bool:
+    """Check if files exist for a given model and profile.
 
     Args:
         repo_id:
@@ -233,6 +236,7 @@ def has_model(
 
 
 def find_port(host="127.0.0.1", lower=8080, upper=8900) -> int:
+    """Find a available port in the range `[lower, upper)`."""
     for port in range(lower, upper):
         try:
             client = socket.socket()

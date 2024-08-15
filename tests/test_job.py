@@ -4,13 +4,10 @@ from unittest import mock
 from app.job import Job
 
 
-@mock.patch("logging.Logger.warning")
 @mock.patch.object(Job, "update_port")
 @mock.patch.object(Job, "update_node")
 @mock.patch("subprocess.check_output")
-def test_update_none(
-    mock_check_output, mock_update_node, mock_update_port, mock_warning
-):
+def test_update_none(mock_check_output, mock_update_node, mock_update_port):
     mock_check_output.return_value = b""
     job = Job(job_id=1, user="test", host="test")
     job.update()
@@ -38,7 +35,7 @@ def test_update_change(mock_check_output, mock_update_node, mock_update_port):
     mock_check_output.return_value = b"RUNNING"
     job = Job(job_id=1, user="test", host="test", state="PENDING")
     job.update()
-    assert job.state == "RUNNING"  # update_node, update_port should be called
+    assert job.state == "RUNNING"
     mock_update_node.assert_called()
     mock_update_port.assert_called()
 

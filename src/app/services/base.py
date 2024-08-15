@@ -426,7 +426,9 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
-                await self.stop(session, config, failed=True)  # stop will push to database
+                await self.stop(
+                    session, config, failed=True
+                )  # stop will push to database
                 return "FAILED"
         elif self.job_type == "ec2":
             raise NotImplementedError

@@ -9,6 +9,12 @@ from app.logger import logger
 
 
 def create_local_home_dir(home_dir: str) -> None:
+    """Attempt to construct root directory to store core application data and raise an
+    exception if creation fails and the directory does not already exist.
+
+    This method should be called when the application is initialized or a local profile
+    is created.
+    """
     with yaspin(text=f"Setting up home directory {home_dir}") as spinner:
         if not os.path.isdir(home_dir):
             try:
@@ -31,6 +37,11 @@ def create_local_home_dir(home_dir: str) -> None:
 
 
 def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
+    """Attempt to construct root directory to store core application data *remotely* and
+    raise an exception if creation fails and the directory does not already exist.
+
+    This method should called run when a new remote profile is created.
+    """
     if remote_type == "slurm":
         with yaspin(
             text=f"Setting up remote home directory for user {user} at {host}"
@@ -81,14 +92,17 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
 
 
 def check_local_cache_exists(cache_dir):
+    """Check that the local cache directory exists and raise and exception if not."""
     if os.path.exists(cache_dir):
         print(f"{LogSymbols.SUCCESS.value} Blackfish cache directory already exists.")
+        return True
     else:
         print(f"{LogSymbols.ERROR.value} Unable to find local cache dir {cache_dir}.")
         raise Exception
 
 
 def check_remote_cache_exists(remote_type, host, user, cache_dir):
+    """Check that the remote cache directory exists and raise and exception if not."""
     with yaspin(text="Looking for remote cache") as spinner:
         try:
             res = subprocess.check_output(

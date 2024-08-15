@@ -83,7 +83,7 @@ def run_text_generate(
     max_input_length,
     max_total_tokens,
     dry_run,
-):
+):  # pragma: no cover
     """Start service MODEL."""
 
     profile = config.BLACKFISH_PROFILES[ctx.obj.get("profile", "default")]
@@ -289,7 +289,7 @@ def fetch_text_generate(
     truncate,
     typical_p,
     watermark,
-):
+):  # pragma: no cover
     """Fetch results from a text-generation service"""
     # NEW
     # first, refresh the service data GET /services/:service_id

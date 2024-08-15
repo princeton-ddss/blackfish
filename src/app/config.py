@@ -12,6 +12,10 @@ DEFAULT_DEBUG = True
 
 
 def get_container_provider():
+    """Determine which container platform to use: Docker (preferred) or Apptainer.
+    
+    Raises an exception if neither container platform is available.
+    """
     try:
         _ = subprocess.run(["which", "docker"], check=True, capture_output=True)
         return "docker"
@@ -50,12 +54,12 @@ class LocalProfile(BlackfishProfile):
 class BlackfishConfig:
     """Blackfish app configuration.
 
-    Create a configuration object based on a provided profile. Environment variables
-    take precedence over profile values and default values; profile values are
-    preferred over defaults.
+    Most values are pulled from local environment or a default if no environment
+    variable is set.
 
-    # Arguments
-    - profile: str. Leave empty to generate baseline config variables.
+    These values are passed to the Blackfish application on start up and used by
+    the Blackfish CLI. Therefore, it's possible for the CLI config and app config
+    to get out of sync.
     """
 
     def __init__(self):

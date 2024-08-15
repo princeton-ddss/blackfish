@@ -30,14 +30,14 @@ def test_check_local_cache_exists_missing_dir(tmp_path):
 
 
 # def test_create_remote_home_dir(monkeypatch):
-    # 1 - missing root directory => "Directory <root> does not exist."
-    # 2 - existing root directory => assert <root>/.blackfish exists
-    # 3 - network error => "Unable to connect to host: <error>"
-    # pass
+# 1 - missing root directory => "Directory <root> does not exist."
+# 2 - existing root directory => assert <root>/.blackfish exists
+# 3 - network error => "Unable to connect to host: <error>"
+# pass
 
 
 # def test_check_remote_cache_exists(monkeypatch):
-    # 1 - cache exists => return 1
-    # 2 - cache missing => raise Exception
-    # 3 - network error => "Unable to connect to host: <error>"
-    # pass
+# 1 - cache exists => return 1
+# 2 - cache missing => raise Exception
+# 3 - network error => "Unable to connect to host: <error>"
+# pass

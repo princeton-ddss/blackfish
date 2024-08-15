@@ -39,7 +39,7 @@ def create_local_home_dir(home_dir: str) -> None:
 def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
     """Attempt to construct root directory to store core application data *remotely* and
     raise an exception if creation fails and the directory does not already exist.
-    
+
     This method should called run when a new remote profile is created.
     """
     if remote_type == "slurm":

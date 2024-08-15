@@ -13,7 +13,7 @@ DEFAULT_DEBUG = True
 
 def get_container_provider():
     """Determine which container platform to use: Docker (preferred) or Apptainer.
-    
+
     Raises an exception if neither container platform is available.
     """
     try:

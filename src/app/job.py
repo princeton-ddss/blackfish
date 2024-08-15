@@ -42,6 +42,7 @@ class JobConfig:
 @dataclass
 class LocalJobConfig(JobConfig):
     """Job configuration for running a service locally."""
+
     user: Optional[str] = None
     home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
     cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
@@ -52,6 +53,7 @@ class LocalJobConfig(JobConfig):
 @dataclass
 class SlurmJobConfig(JobConfig):
     """Job configuration for running a service as a Slurm job."""
+
     host: Optional[str] = None
     user: Optional[str] = None
     name: Optional[str] = "blackfish"
@@ -88,7 +90,7 @@ class Job:
     def update(self) -> Optional[str]:
         """Attempt to update the job state from Slurm accounting and return the new
         state (or current state if the update fails).
-        
+
         If the job state switches from PENDING or MISSING to RUNNING, also update
         the job node and port.
 
@@ -171,7 +173,7 @@ class Job:
         port if the update fails)
 
         The job port is stored as a directory in the remote Blackfish home when a port
-        is assigned to a service container. 
+        is assigned to a service container.
 
         This method logs a warning if the update fails, but does not raise an exception.
         """

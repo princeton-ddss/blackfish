@@ -2,7 +2,7 @@ import click
 import requests
 from random import randint
 
-from app.services.nlp.text_generation import TextGeneration
+from app.services.text_generation import TextGeneration
 from app.config import config, SlurmRemote, LocalProfile
 from app.utils import (
     find_port,

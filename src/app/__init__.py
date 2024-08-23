@@ -34,7 +34,7 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 
 from app.logger import logger
 from app.services.base import Service
-from app.services.nlp.text_generation import TextGeneration
+from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
 from app.config import BlackfishProfile, SlurmRemote, LocalProfile
 

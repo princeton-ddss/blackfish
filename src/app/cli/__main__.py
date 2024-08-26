@@ -4,8 +4,8 @@ import os
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-from app.cli.services.text_generation import run_text_generate, fetch_text_generate
-# from app.cli.services.speech_recognition import run_speech_recognition, fetch_speech_recognition
+from app.cli.services.text_generation import run_text_generate
+from app.cli.services.speech_recognition import run_speech_recognition
 
 from app.cli.profile import (
     create_profile,
@@ -186,7 +186,7 @@ def run(
 #The run_text_generation would be run automatically if text-generate option
 # is provided
 run.add_command(run_text_generate, "text-generate")
-# run.add_command(run_speech_recognition, "speech-recognition")
+run.add_command(run_speech_recognition, "speech-recognition")
 
 
 # blackfish stop [OPTIONS] SERVICE [SERVICE...]
@@ -371,7 +371,7 @@ def fetch():  # pragma: no cover
     pass
 
 
-fetch.add_command(fetch_text_generate, "fetch_text_generate")
+# fetch.add_command(fetch_text_generate, "fetch_text_generate")
 # fetch.add_command(fetch_speech_recognition, "fetch_speech_recognition")
 
 

@@ -17,7 +17,12 @@ from log_symbols.symbols import LogSymbols
 
 # blackfish run [OPTIONS] speech-recognition [OPTIONS]
 @click.command()
-@click.option("--model", default="bigscience/bloom-560m", help="Model to serve.")
+@click.option("--model", default="openai/whisper-large-v3", help="Model to serve.")
+@click.option(
+    "--name",
+    type=str,
+    required=False,
+)
 @click.option(
     "--revision",
     "-r",
@@ -28,11 +33,12 @@ from log_symbols.symbols import LogSymbols
 )
 @click.option("--dry-run", is_flag=True, default=False, help="Print Slurm script only.")
 @click.pass_context
-def run_text_generate(
+def run_speech_recognition(
     ctx,
     model,
+    name,
     revision,
-    dry_run
+    dry_run,
 ):  # pragma: no cover
     """Start service MODEL."""
 

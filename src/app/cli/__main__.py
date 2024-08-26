@@ -5,6 +5,8 @@ from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
 from app.cli.services.text_generation import run_text_generate, fetch_text_generate
+# from app.cli.services.speech_recognition import run_speech_recognition, fetch_speech_recognition
+
 from app.cli.profile import (
     create_profile,
     show_profile,
@@ -13,7 +15,6 @@ from app.cli.profile import (
     delete_profile,
 )
 from app.config import config, SlurmRemote
-
 
 """
 The CLI serves as a client to access the API from as well as performing
@@ -171,6 +172,7 @@ def run(
     profile,
 ):  # pragma: no cover
     """Run an inference service"""
+    print("gpu used for running the job", gres)
     ctx.obj = {
         "profile": profile,
         "time": time,
@@ -181,8 +183,10 @@ def run(
         "constraint": constraint,
     }
 
-
+#The run_text_generation would be run automatically if text-generate option
+# is provided
 run.add_command(run_text_generate, "text-generate")
+# run.add_command(run_speech_recognition, "speech-recognition")
 
 
 # blackfish stop [OPTIONS] SERVICE [SERVICE...]
@@ -331,6 +335,7 @@ def ls(filters):  # pragma: no cover
         filters = ""
 
     with yaspin(text="Fetching services...") as spinner:
+        print(f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}")
         res = requests.get(
             f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}"
         )  # fresh data 🥬
@@ -338,7 +343,7 @@ def ls(filters):  # pragma: no cover
         if not res.ok:
             spinner.fail(
                 f"{LogSymbols.ERROR.value} Failed to fetch services. Status code:"
-                f" {res.status_code}."
+                f" {res.status_code}.!!"
             )
             return
 
@@ -367,6 +372,7 @@ def fetch():  # pragma: no cover
 
 
 fetch.add_command(fetch_text_generate, "fetch_text_generate")
+# fetch.add_command(fetch_speech_recognition, "fetch_speech_recognition")
 
 
 # blackfish image
@@ -458,3 +464,4 @@ def models_ls(profile, refresh):  # pragma: no cover
 
 if __name__ == "__main__":
     main()
+    # ls([])

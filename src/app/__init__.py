@@ -33,6 +33,7 @@ from litestar.config.cors import CORSConfig
 from app.logger import logger
 from app.services.base import Service
 from app.services.nlp.text_generation import TextGeneration
+from app.services.speech_recognition.speech_recognition import SpeechRecognition
 from app.config import config as blackfish_config
 from app.config import BlackfishProfile, SlurmRemote, LocalProfile
 
@@ -44,7 +45,7 @@ class Model(UUIDAuditBase):
     revision: Mapped[str]
 
 
-JOB_TYPES = ["text_generation"]
+JOB_TYPES = ["text_generation", "speech_recognition"]
 
 # -------------------------------------------------------------------------------------------- #
 # API                                                                                          #
@@ -210,6 +211,15 @@ def build_service(data: ServiceRequest):
             user=data.user,  # optional (required to run remote services)
             host=data.host,  # optional (required to run remote services)
             job_type=data.job_type,
+        )
+    elif data.image == "speech_recognition":
+        return SpeechRecognition(
+            name=data.name,  # optional
+            image=data.image,
+            model=data.model,
+            user=data.user,  # optional (required to run remote services)
+            host=data.host,  # optional (required to run remote services)
+            job_type=data.job_type
         )
     else:
         raise Exception(f"Service image should be one of: {JOB_TYPES}")
@@ -440,3 +450,4 @@ app = Litestar(
     state=State(blackfish_config.as_dict()),
     cors_config=cors_config,
 )
+

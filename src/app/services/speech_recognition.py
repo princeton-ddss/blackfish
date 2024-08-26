@@ -58,7 +58,7 @@ class SpeechRecognition(Service):
             container_config=container_config.data(),
             job_id=job_id,
         )
-
+        print(job_script)
         return job_script
 
 #Call Blackfish API

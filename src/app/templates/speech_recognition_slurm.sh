@@ -16,7 +16,6 @@ apptainer run {{ ' --nv' if job_config.gres > 0 else '' }}\
   --env="MODEL_NAME={{container_config['model_name']}}" \
   --env="MODEL_SIZE={{container_config['model_size']}}" \
   --env="MODEL_FOLDER={{job_config.model_dir}}" \
-  --env="INPUT_FOLDER={{job_config.input_dir'}}" \
-  /scratch/gpfs/{{ job_config.user }}/images/audiototextapi_amd64.sif
-{%- endif %}
+  --env="INPUT_FOLDER={{job_config.input_dir}}" \
+  /scratch/gpfs/{{ job_config.user }}/images/audiototextapi_amd64_hf.sif
 {%- endblock %}

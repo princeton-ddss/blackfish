@@ -115,7 +115,7 @@ class Service(UUIDAuditBase):
                     script = self.launch_script(container_options, job_options)
                     f.write(script)
                 except Exception as e:
-                    logger.error(e)
+                    logger.error(f"Unable to render launch script: {e}")
 
             logger.info("Starting service")
 

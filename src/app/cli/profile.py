@@ -23,7 +23,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
             f"{LogSymbols.ERROR.value} Profile named {name} already exists. Try"
             " deleting or modifying this profile instead."
         )
-        return
+        return False
     else:
         profile_type = input("> type [slurm]: ")
         profile_type = "slurm" if profile_type == "" else profile_type
@@ -51,7 +51,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
                 )
             except Exception:
                 print(f"{LogSymbols.ERROR.value} Failed to setup remote profile.")
-                return
+                return False
         elif profile_type == "local":
             home_dir = input(f"> home [{default_home}]: ")
             home_dir = default_home if home_dir == "" else home_dir
@@ -64,7 +64,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
                 check_local_cache_exists(cache_dir)
             except Exception:
                 print(f"{LogSymbols.ERROR.value} Failed to setup local profile.")
-                return
+                return False
         else:
             raise NotImplementedError
 
@@ -88,6 +88,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
     with open(os.path.join(default_home, "profiles"), "w") as f:
         profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Created profile {name}.")
+        return True
 
 def _update_profile_(default_home: str, default_name: str = "default") -> None:
     profiles = configparser.ConfigParser()

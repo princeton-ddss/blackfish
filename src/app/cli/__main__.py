@@ -46,7 +46,10 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
 
     create_local_home_dir(home_dir)
     print("Let's set up a default profile:")
-    _create_profile_(home_dir)
+
+    success = False
+    while not success:
+        success = _create_profile_(home_dir)
 
     print("\n🎉 All done—let's fish!")
 

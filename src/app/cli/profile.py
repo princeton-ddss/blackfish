@@ -125,10 +125,10 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
                 print(f"{LogSymbols.ERROR.value} Failed to setup remote profile.")
                 return
         elif profile_type == "local":
-            home_dir = input(f"> type [{profile['home_dir']}]: ")
-            home_dir = profile["type"] if home_dir == "" else home_dir
-            cache_dir = input(f"> type [{profile['cache_dir']}]: ")
-            cache_dir = profile["type"] if cache_dir == "" else cache_dir
+            home_dir = input(f"> home_dir [{profile['home_dir']}]: ")
+            home_dir = profile["home_dir"] if home_dir == "" else home_dir
+            cache_dir = input(f"> cache_dir [{profile['cache_dir']}]: ")
+            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
             try:
                 create_local_home_dir(home_dir)
                 check_local_cache_exists(cache_dir)

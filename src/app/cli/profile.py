@@ -88,7 +88,6 @@ def create_profile(ctx):  # pragma: no cover
     elif profile_type == "local":
         profiles[name] = {
             "type": "local",
-            "user": user,
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
@@ -232,7 +231,6 @@ def update_profile(ctx, name):  # pragma: no cover
     elif profile_type == "local":
         profiles[name] = {
             "type": "local",
-            "user": user,
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
@@ -260,7 +258,7 @@ def delete_profile(ctx, name: str):  # pragma: no cover
     profiles.read(f"{home_dir}/profiles")
 
     if name in profiles:
-        confirm = input(f"  Delete profile {name}? (y/n)")
+        confirm = input(f"  Delete profile {name}? (y/n) ")
         if confirm.lower() == "y":
             del profiles[name]
             with open(os.path.join(home_dir, "profiles"), "w") as f:

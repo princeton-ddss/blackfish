@@ -1,5 +1,4 @@
 import os
-import configparser
 import subprocess
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols

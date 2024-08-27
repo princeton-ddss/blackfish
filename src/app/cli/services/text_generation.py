@@ -51,9 +51,9 @@ from log_symbols.symbols import LogSymbols
 )
 @click.option(
     "--sharded",
-    is_flag=True,
+    type=str,
     required=False,
-    default=False,
+    default='false',
     # TODO: help
 )
 @click.option(

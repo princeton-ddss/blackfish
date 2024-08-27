@@ -11,21 +11,12 @@ from app.setup import (
 )
 
 
-@click.command()
-@click.pass_context
-def create_profile(ctx):  # pragma: no cover
-    """Create a new profile.
-
-    Fails if the profile name already exists.
-    """
-
-    default_home = ctx.obj.get("home_dir")
-
+def _create_profile_(default_home: str, default_name: str = "default") -> None:
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles")
 
-    name = input("> name [default]: ")
-    name = "default" if name == "" else name
+    name = input(f"> name [{default_name}]: ")
+    name = default_name if name == "" else name
 
     if name in profiles:
         print(
@@ -98,6 +89,85 @@ def create_profile(ctx):  # pragma: no cover
         profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Created profile {name}.")
 
+def _update_profile_(default_home: str, default_name: str = "default") -> None:
+    profiles = configparser.ConfigParser()
+    profiles.read(f"{default_home}/profiles")
+
+    name = input("> name [{default_name}]: ")
+    name = default_name if name == "" else name
+
+    if name not in profiles:
+        print(
+            f"{LogSymbols.ERROR.value} Profile {name} not found. To view your existing"
+            " profiles, type `blackfish profile list`."
+        )
+        return
+    else:
+        profile = profiles[name]
+        profile_type = input(f"> type [{profile['type']}]: ")
+        profile_type = profile["type"] if profile_type == "" else profile_type
+        if profile_type == "slurm":
+            host = input(f"> host [{profile['host']}]: ")
+            host = profile["host"] if host == "" else host
+            user = input(f"> user [{profile['user']}]: ")
+            user = profile["user"] if user == "" else user
+            home_dir = input(f"> home_dir [{profile['home_dir']}]: ")
+            home_dir = profile["home_dir"] if home_dir == "" else home_dir
+            cache_dir = input(f"> cache_dir [{profile['cache_dir']}]: ")
+            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
+            try:
+                create_remote_home_dir("slurm", host=host, user=user, home_dir=home_dir)
+                check_remote_cache_exists(
+                    "slurm", host=host, user=user, cache_dir=cache_dir
+                )
+            except Exception:
+                print(f"{LogSymbols.ERROR.value} Failed to setup remote profile.")
+                return
+        elif profile_type == "local":
+            home_dir = input(f"> type [{profile['home_dir']}]: ")
+            home_dir = profile["type"] if home_dir == "" else home_dir
+            cache_dir = input(f"> type [{profile['cache_dir']}]: ")
+            cache_dir = profile["type"] if cache_dir == "" else cache_dir
+            try:
+                create_local_home_dir(home_dir)
+                check_local_cache_exists(cache_dir)
+            except Exception:
+                print(f"{LogSymbols.ERROR.value} Failed to setup local profile.")
+                return
+        else:
+            raise NotImplementedError
+
+    if profile_type == "slurm":
+        profiles[name] = {
+            "type": "slurm",
+            "user": user,
+            "host": host,
+            "home_dir": home_dir,
+            "cache_dir": cache_dir,
+        }
+    elif profile_type == "local":
+        profiles[name] = {
+            "type": "local",
+            "home_dir": home_dir,
+            "cache_dir": cache_dir,
+        }
+    else:
+        raise NotImplementedError
+
+    with open(os.path.join(default_home, "profiles"), "w") as f:
+        profiles.write(f)
+        print(f"{LogSymbols.SUCCESS.value} Updated profile {name}.")
+
+
+@click.command()
+@click.pass_context
+def create_profile(ctx):  # pragma: no cover
+    """Create a new profile.
+
+    Fails if the profile name already exists.
+    """
+
+    _create_profile_(ctx.obj.get("home_dir"))
 
 @click.command()
 @click.option(
@@ -171,75 +241,7 @@ def list_profiles(ctx):  # pragma: no cover
 def update_profile(ctx, name):  # pragma: no cover
     """Update a profile."""
 
-    default_home = ctx.obj.get("home_dir")
-
-    profiles = configparser.ConfigParser()
-    profiles.read(f"{default_home}/profiles")
-
-    name = input("> name [default]: ")
-    name = "default" if name == "" else name
-
-    if name not in profiles:
-        print(
-            f"{LogSymbols.ERROR.value} Profile {name} not found. To view your existing"
-            " profiles, type `blackfish profile list`."
-        )
-        return
-    else:
-        profile = profiles[name]
-        profile_type = input(f"> type [{profile['type']}]: ")
-        profile_type = profile["type"] if profile_type == "" else profile_type
-        if profile_type == "slurm":
-            host = input(f"> host [{profile['host']}]: ")
-            host = profile["host"] if host == "" else host
-            user = input(f"> user [{profile['user']}]: ")
-            user = profile["user"] if user == "" else user
-            home_dir = input(f"> home_dir [{profile['home_dir']}]: ")
-            home_dir = profile["home_dir"] if home_dir == "" else home_dir
-            cache_dir = input(f"> cache_dir [{profile['cache_dir']}]: ")
-            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
-            try:
-                create_remote_home_dir("slurm", host=host, user=user, home_dir=home_dir)
-                check_remote_cache_exists(
-                    "slurm", host=host, user=user, cache_dir=cache_dir
-                )
-            except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to setup remote profile.")
-                return
-        elif profile_type == "local":
-            home_dir = input(f"> type [{profile['home_dir']}]: ")
-            home_dir = profile["type"] if home_dir == "" else home_dir
-            cache_dir = input(f"> type [{profile['cache_dir']}]: ")
-            cache_dir = profile["type"] if cache_dir == "" else cache_dir
-            try:
-                create_local_home_dir(home_dir)
-                check_local_cache_exists(cache_dir)
-            except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to setup local profile.")
-                return
-        else:
-            raise NotImplementedError
-
-    if profile_type == "slurm":
-        profiles[name] = {
-            "type": "slurm",
-            "user": user,
-            "host": host,
-            "home_dir": home_dir,
-            "cache_dir": cache_dir,
-        }
-    elif profile_type == "local":
-        profiles[name] = {
-            "type": "local",
-            "home_dir": home_dir,
-            "cache_dir": cache_dir,
-        }
-    else:
-        raise NotImplementedError
-
-    with open(os.path.join(default_home, "profiles"), "w") as f:
-        profiles.write(f)
-        print(f"{LogSymbols.SUCCESS.value} Updated profile {name}.")
+    _update_profile_(ctx.obj.get("home_dir"), name)
 
 
 @click.command()

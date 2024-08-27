@@ -41,13 +41,11 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
     Creates all files and directories to run Blackfish.
     """
 
-    from app.setup import (
-        create_local_home_dir,
-        create_or_modify_profile,
-    )
+    from app.setup import create_local_home_dir
+    from app.cli.profile import _create_profile_
 
     create_local_home_dir(home_dir)
-    create_or_modify_profile(home_dir)
+    _create_profile_(home_dir)
 
     print("\n🎉 All done—let's fish!")
 

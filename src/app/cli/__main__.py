@@ -45,6 +45,7 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
     from app.cli.profile import _create_profile_
 
     create_local_home_dir(home_dir)
+    print("Let's set up a default profile:")
     _create_profile_(home_dir)
 
     print("\n🎉 All done—let's fish!")

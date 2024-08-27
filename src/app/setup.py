@@ -22,11 +22,11 @@ def create_local_home_dir(home_dir: str) -> None:
                 os.mkdir(os.path.join(home_dir, "models"))
                 os.mkdir(os.path.join(home_dir, "images"))
                 spinner.text = ""
-                spinner.ok(f"{LogSymbols.SUCCESS.value} Done!")
+                spinner.ok(f"{LogSymbols.SUCCESS.value} Set up default Blackfish home directory {home_dir}!")
             except OSError as e:
                 spinner.text = ""
                 spinner.fail(
-                    f"{LogSymbols.ERROR.value} Failed to setup Blackfish home: {e}."
+                    f"{LogSymbols.ERROR.value} Failed to setup Blackfish home directory: {e}."
                 )
                 raise Exception
         else:

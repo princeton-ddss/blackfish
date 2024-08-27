@@ -94,7 +94,7 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles")
 
-    name = input("> name [{default_name}]: ")
+    name = input(f"> name [{default_name}]: ")
     name = default_name if name == "" else name
 
     if name not in profiles:

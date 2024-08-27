@@ -45,8 +45,8 @@ plugins:
             show_root_heading: true
             show_source: false
             show_signature_annotations: true
-  - git-revision-date-localized:
-      enable_creation_date: true
+  # - git-revision-date-localized:
+  #     enable_creation_date: true
   - swagger-ui-tag:
       supportedSubmitMethods: []
 markdown_extensions:

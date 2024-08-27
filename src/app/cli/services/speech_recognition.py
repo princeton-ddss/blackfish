@@ -93,6 +93,7 @@ def run_speech_recognition(
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
+        job_options["input_dir"] = profile.input_dir
         job_options["model_dir"] = model_dir
 
         if dry_run:
@@ -144,6 +145,7 @@ def run_speech_recognition(
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
+        job_options["input_dir"] = profile.input_dir
         job_options["model_dir"] = model_dir
 
         if dry_run:

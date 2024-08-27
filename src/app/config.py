@@ -41,6 +41,7 @@ class SlurmRemote(BlackfishProfile):
     user: str
     home_dir: str
     cache_dir: str
+    input_dir: str
 
 
 @dataclass
@@ -49,6 +50,7 @@ class LocalProfile(BlackfishProfile):
     user: str
     home_dir: str
     cache_dir: str
+    input_dir: str
 
 
 class BlackfishConfig:
@@ -83,6 +85,7 @@ class BlackfishConfig:
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
+                    input_dir=profile["input_dir"]
                 )
             elif profile["type"] == "local":
                 self.BLACKFISH_PROFILES[section] = LocalProfile(
@@ -90,6 +93,7 @@ class BlackfishConfig:
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
+                    input_dir=profile["input_dir"]
                 )
             else:
                 pass

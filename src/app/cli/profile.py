@@ -112,10 +112,10 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
             host = profile["host"] if host == "" else host
             user = input(f"> user [{profile['user']}]: ")
             user = profile["user"] if user == "" else user
-            home_dir = input(f"> home_dir [{profile['home_dir']}]: ")
-            home_dir = profile["home_dir"] if home_dir == "" else home_dir
-            cache_dir = input(f"> cache_dir [{profile['cache_dir']}]: ")
-            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
+            home_dir = input(f"> home [{profile['home_dir']}]: ")
+            home_dir = profile["home"] if home_dir == "" else home_dir
+            cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
+            cache_dir = profile["cache"] if cache_dir == "" else cache_dir
             try:
                 create_remote_home_dir("slurm", host=host, user=user, home_dir=home_dir)
                 check_remote_cache_exists(
@@ -125,10 +125,10 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
                 print(f"{LogSymbols.ERROR.value} Failed to setup remote profile.")
                 return
         elif profile_type == "local":
-            home_dir = input(f"> home_dir [{profile['home_dir']}]: ")
-            home_dir = profile["home_dir"] if home_dir == "" else home_dir
-            cache_dir = input(f"> cache_dir [{profile['cache_dir']}]: ")
-            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
+            home_dir = input(f"> home [{profile['home_dir']}]: ")
+            home_dir = profile["home"] if home_dir == "" else home_dir
+            cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
+            cache_dir = profile["cache"] if cache_dir == "" else cache_dir
             try:
                 create_local_home_dir(home_dir)
                 check_local_cache_exists(cache_dir)

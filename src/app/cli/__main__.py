@@ -50,14 +50,13 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
     profiles = configparser.ConfigParser()
     profiles.read(f"{home_dir}/profiles")
     if "default" not in profiles:
-        print("Let's set up a default profile:")
-        success = False
-        while not success:
-            success = _create_profile_(home_dir)
-        print("\n🎉 All done—let's fish!")
+        print("Let's set up a profile:")
+        success = _create_profile_(home_dir)
+        if success:
+            print("🎉 All done—let's fish!")
     else:
         print(f"{LogSymbols.SUCCESS.value} Default profile exists.")
-        print("\n🎉 Looks good—let's fish!")
+        print("🎉 Looks good—let's fish!")
 
 
 @main.group()

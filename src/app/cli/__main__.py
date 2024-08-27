@@ -159,13 +159,13 @@ def start(reload: bool, profile: str) -> None:  # pragma: no cover
 
 # blackfish run [OPTIONS] COMMAND
 @main.group()
-@click.option("--time", type=str, default=None)
-@click.option("--ntasks_per_node", type=int, default=None)
-@click.option("--mem", type=int, default=None)
-@click.option("--gres", type=int, default=None)
-@click.option("--partition", type=str, default=None)
-@click.option("--constraint", type=str, default=None)
-@click.option("--profile", type=str, default="default")
+@click.option("--time", type=str, default=None, help="The duration to run the service for, e.g., 1:00 (one hour).")
+@click.option("--ntasks_per_node", type=int, default=None, help="The number of tasks per compute node.")
+@click.option("--mem", type=int, default=None, help="The memory required per compute node in GB, e.g., 16 (G).")
+@click.option("--gres", type=int, default=None, help="The number of GPU devices required per compute node, e.g., 1.")
+@click.option("--partition", type=str, default=None, help="The HPC partition to run the service on.")
+@click.option("--constraint", type=str, default=None, help="Required compute node features, e.g., 'gpu80'.")
+@click.option("--profile", type=str, default="default", help="The Blackfish profile to use.")
 @click.pass_context
 def run(
     ctx,

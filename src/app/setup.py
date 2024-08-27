@@ -26,7 +26,7 @@ def create_local_home_dir(home_dir: str) -> None:
             except OSError as e:
                 spinner.text = ""
                 spinner.fail(
-                    f"{LogSymbols.ERROR.value} Failed to setup Blackfish home directory: {e}."
+                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish home directory: {e}."
                 )
                 raise Exception
         else:
@@ -58,7 +58,7 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
             except Exception as e:
                 spinner.text = ""
                 spinner.fail(
-                    f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote home:"
+                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home:"
                     f" {e}."
                 )
                 raise Exception
@@ -78,7 +78,7 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
                 except Exception as e:
                     spinner.text = ""
                     spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote:"
+                        f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote:"
                         f" {e}."
                     )
             else:
@@ -128,7 +128,7 @@ def check_remote_cache_exists(remote_type, host, user, cache_dir):
         except Exception as e:
             spinner.text = ""
             spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote home: {e}."
+                f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home: {e}."
             )
             raise Exception
 

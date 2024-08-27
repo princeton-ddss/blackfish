@@ -50,7 +50,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
                     "slurm", host=host, user=user, cache_dir=cache_dir
                 )
             except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to setup remote profile.")
+                print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
                 return False
         elif profile_type == "local":
             home_dir = input(f"> home [{default_home}]: ")
@@ -63,7 +63,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
                 create_local_home_dir(home_dir)
                 check_local_cache_exists(cache_dir)
             except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to setup local profile.")
+                print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
                 return False
         else:
             raise NotImplementedError
@@ -122,7 +122,7 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
                     "slurm", host=host, user=user, cache_dir=cache_dir
                 )
             except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to setup remote profile.")
+                print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
                 return
         elif profile_type == "local":
             home_dir = input(f"> home [{profile['home_dir']}]: ")
@@ -133,7 +133,7 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
                 create_local_home_dir(home_dir)
                 check_local_cache_exists(cache_dir)
             except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to setup local profile.")
+                print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
                 return
         else:
             raise NotImplementedError

@@ -1,7 +1,7 @@
 name: ci
 on:
   push:
-    branches: ["master", "dev"]    
+    branches: ["master", "dev"]
   pull_request:
     branches: ["master", "dev"]
 env:
@@ -60,5 +60,5 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material
+      - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag
       - run: mkdocs gh-deploy --force

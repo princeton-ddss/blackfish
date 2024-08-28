@@ -29,11 +29,13 @@ from litestar.exceptions import (
 )
 from litestar.status_codes import HTTP_409_CONFLICT
 from litestar.config.cors import CORSConfig
+from litestar.openapi.config import OpenAPIConfig
+from litestar.openapi.plugins import SwaggerRenderPlugin
 
 from app.logger import logger
 from app.services.base import Service
-from app.services.nlp.text_generation import TextGeneration
 from app.services.speech_recognition import SpeechRecognition
+from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
 from app.config import BlackfishProfile, SlurmRemote, LocalProfile
 
@@ -431,6 +433,12 @@ cors_config = CORSConfig(
     allow_headers=["*"],
 )
 
+openapi_config = OpenAPIConfig(
+    title="Blackfish API",
+    version="0.0.1",
+    render_plugins=[SwaggerRenderPlugin(path="/swagger")],
+)
+
 app = Litestar(
     route_handlers=[
         index,
@@ -449,4 +457,5 @@ app = Litestar(
     logging_config=None,  # disable Litestar logger (we're using our own)
     state=State(blackfish_config.as_dict()),
     cors_config=cors_config,
+    openapi_config=openapi_config,
 )

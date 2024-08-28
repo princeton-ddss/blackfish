@@ -1,5 +1,4 @@
 import os
-import configparser
 import subprocess
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -22,11 +21,15 @@ def create_local_home_dir(home_dir: str) -> None:
                 os.mkdir(os.path.join(home_dir, "models"))
                 os.mkdir(os.path.join(home_dir, "images"))
                 spinner.text = ""
-                spinner.ok(f"{LogSymbols.SUCCESS.value} Done!")
+                spinner.ok(
+                    f"{LogSymbols.SUCCESS.value} Set up default Blackfish home"
+                    f" directory {home_dir}!"
+                )
             except OSError as e:
                 spinner.text = ""
                 spinner.fail(
-                    f"{LogSymbols.ERROR.value} Failed to setup Blackfish home: {e}."
+                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish home"
+                    f" directory: {e}."
                 )
                 raise Exception
         else:
@@ -58,7 +61,7 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
             except Exception as e:
                 spinner.text = ""
                 spinner.fail(
-                    f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote home:"
+                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home:"
                     f" {e}."
                 )
                 raise Exception
@@ -78,7 +81,7 @@ def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
                 except Exception as e:
                     spinner.text = ""
                     spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote:"
+                        f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote:"
                         f" {e}."
                     )
             else:
@@ -128,7 +131,7 @@ def check_remote_cache_exists(remote_type, host, user, cache_dir):
         except Exception as e:
             spinner.text = ""
             spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to setup Blackfish remote home: {e}."
+                f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home: {e}."
             )
             raise Exception
 
@@ -145,94 +148,3 @@ def migrate_db() -> None:
             "--no-prompt",
         ]
     )
-
-
-def create_or_modify_profile(home_dir: str, modify: bool = False) -> None:
-    """Create a new profile."""
-
-    profiles_exists = os.path.isfile(os.path.join(home_dir, "profiles"))
-
-    profiles = configparser.ConfigParser()
-    profiles.read(f"{home_dir}/profiles")
-
-    print("  Create or modify an existing profile:")
-    name = input("> name [default]: ")
-    name = "default" if name == "" else name
-
-    if name in profiles:
-        profile = profiles[name]
-        profile_type = profile["type"]
-        if profile_type == "slurm":
-            host = input(f"> host [{profile['host']}]: ")
-            host = profile["host"] if host == "" else host
-            user = input(f"> user [{profile['user']}]: ")
-            user = profile["user"] if user == "" else user
-            remote_dir = input(f"> home [{profile['home_dir']}]: ")
-            remote_dir = profile["home_dir"] if remote_dir == "" else remote_dir
-            cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
-            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
-        elif profile_type == "local":
-            user = input(f"> user [{profile['user']}]: ")
-            user = profile["user"] if user == "" else user
-            remote_dir = input(f"> home [{profile['home_dir']}]: ")
-            remote_dir = profile["home_dir"] if remote_dir == "" else remote_dir
-            cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
-            cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
-        else:
-            raise NotImplementedError
-    else:
-        profile_type = input("> type [slurm]: ")
-        profile_type = "slurm" if profile_type == "" else profile_type
-        if profile_type == "slurm":
-            host = input("> host: ")
-            while host == "":
-                print("Host is required.")
-                host = input("> host: ")
-            user = input("> user: ")
-            while user == "":
-                print("User is required.")
-                user = input("> user: ")
-            remote_dir = input(f"> home [/home/{user}/.blackfish]: ")
-            remote_dir = f"/home/{user}/.blackfish" if remote_dir == "" else remote_dir
-            cache_dir = input(f"> cache [/scratch/gpfs/{user}/.cache]: ")
-            cache_dir = f"/scratch/gpfs/{user}/.cache" if cache_dir == "" else cache_dir
-            create_remote_home_dir("slurm", host=host, user=user, home_dir=remote_dir)
-            check_remote_cache_exists(
-                "slurm", host=host, user=user, cache_dir=cache_dir
-            )
-        elif profile_type == "local":
-            user = input("> user: ")
-            while user == "":
-                print("User is required.")
-                user = input("> user: ")
-            remote_dir = input(f"> home [/home/{user}/.blackfish]: ")
-            remote_dir = f"/home/{user}/.blackfish" if remote_dir == "" else remote_dir
-            cache_dir = input(f"> cache [/scratch/gpfs/{user}/.cache]: ")
-            cache_dir = f"/scratch/gpfs/{user}/.cache" if cache_dir == "" else cache_dir
-        else:
-            raise NotImplementedError
-
-    if profile_type == "slurm":
-        profiles[name] = {
-            "type": profile_type,
-            "user": user,
-            "host": host,
-            "home_dir": remote_dir,
-            "cache_dir": cache_dir,
-        }
-    elif profile_type == "local":
-        profiles[name] = {
-            "type": profile_type,
-            "user": user,
-            "home_dir": remote_dir,
-            "cache_dir": cache_dir,
-        }
-    else:
-        raise NotImplementedError
-
-    with open(os.path.join(home_dir, "profiles"), "w") as f:
-        profiles.write(f)
-        if not profiles_exists:
-            print(f"{LogSymbols.SUCCESS.value} Created {home_dir}/profiles.")
-        else:
-            print(f"{LogSymbols.SUCCESS.value} Updated {home_dir}/profiles.")

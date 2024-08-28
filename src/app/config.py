@@ -24,10 +24,11 @@ def get_container_provider():
             _ = subprocess.run(["which", "apptainer"], check=True, capture_output=True)
             return "apptainer"
         except subprocess.CalledProcessError:
-            raise Exception(
+            print(
                 "No supported container platforms available. Please install one of:"
                 " docker, apptainer."
             )
+            return None
 
 
 class BlackfishProfile:
@@ -47,7 +48,6 @@ class SlurmRemote(BlackfishProfile):
 @dataclass
 class LocalProfile(BlackfishProfile):
     name: str
-    user: str
     home_dir: str
     cache_dir: str
     input_dir: str
@@ -90,7 +90,6 @@ class BlackfishConfig:
             elif profile["type"] == "local":
                 self.BLACKFISH_PROFILES[section] = LocalProfile(
                     name=section,
-                    user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
                     input_dir=profile["input_dir"],

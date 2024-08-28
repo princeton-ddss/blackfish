@@ -67,7 +67,7 @@ class SlurmJobConfig(JobConfig):
     home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
     cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish
     model_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish/models
-    input_dir: Optional[str] = None # e.g., //scratch/gpfs/jf3375/asr_api/data
+    input_dir: Optional[str] = None  # e.g., //scratch/gpfs/jf3375/asr_api/data
 
 
 @dataclass

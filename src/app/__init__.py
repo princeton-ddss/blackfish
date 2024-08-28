@@ -219,7 +219,7 @@ def build_service(data: ServiceRequest):
             model=data.model,
             user=data.user,  # optional (required to run remote services)
             host=data.host,  # optional (required to run remote services)
-            job_type=data.job_type
+            job_type=data.job_type,
         )
     else:
         raise Exception(f"Service image should be one of: {JOB_TYPES}")
@@ -450,4 +450,3 @@ app = Litestar(
     state=State(blackfish_config.as_dict()),
     cors_config=cors_config,
 )
-

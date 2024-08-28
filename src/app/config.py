@@ -85,7 +85,7 @@ class BlackfishConfig:
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
-                    input_dir=profile["input_dir"]
+                    input_dir=profile["input_dir"],
                 )
             elif profile["type"] == "local":
                 self.BLACKFISH_PROFILES[section] = LocalProfile(
@@ -93,7 +93,7 @@ class BlackfishConfig:
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
-                    input_dir=profile["input_dir"]
+                    input_dir=profile["input_dir"],
                 )
             else:
                 pass

@@ -183,7 +183,8 @@ def run(
         "constraint": constraint,
     }
 
-#The run_text_generation would be run automatically if text-generate option
+
+# The run_text_generation would be run automatically if text-generate option
 # is provided
 run.add_command(run_text_generate, "text-generate")
 run.add_command(run_speech_recognition, "speech-recognition")
@@ -335,7 +336,9 @@ def ls(filters):  # pragma: no cover
         filters = ""
 
     with yaspin(text="Fetching services...") as spinner:
-        print(f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}")
+        print(
+            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}"
+        )
         res = requests.get(
             f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}"
         )  # fresh data 🥬

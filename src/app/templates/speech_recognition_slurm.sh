@@ -20,4 +20,3 @@ apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --env="INPUT_DIR={{job_config.input_dir}}" \
   {{ job_config.cache_dir }}/images/audiototextapi_amd64_hf.sif
 {%- endblock %}
-

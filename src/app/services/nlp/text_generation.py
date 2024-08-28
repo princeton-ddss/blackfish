@@ -40,7 +40,7 @@ class TextGenerationConfig(ContainerConfig):
     quantize: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None
-    sharded: Optional[str] = None #Need to set up as 'true' or 'false'
+    sharded: Optional[str] = None  # Need to set up as 'true' or 'false'
     # instead of True and False
     num_shard: Optional[int] = None
     quantize: Optional[str] = None

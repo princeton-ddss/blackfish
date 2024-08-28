@@ -19,12 +19,14 @@ SpeechRecognitionModels = {
     "openai/whisper-tiny": {},
 }
 
+
 # The container options which are needed when setting up
 # service API. These options are not in job.py
 @dataclass
 class SpeechRecognitionConfig(ContainerConfig):
     revision: Optional[str] = None
     port: Optional[int] = None
+
 
 class SpeechRecognition(Service):
     """A containerized service running a speech recognition API."""
@@ -34,8 +36,7 @@ class SpeechRecognition(Service):
     }
 
     def launch_script(
-        self, container_options: dict,
-            job_options: dict, job_id: str = None
+        self, container_options: dict, job_options: dict, job_id: str = None
     ) -> str:
         if self.job_type == "local":
             job_config = LocalJobConfig().replace(job_options)
@@ -60,21 +61,21 @@ class SpeechRecognition(Service):
         print(job_script)
         return job_script
 
-#Call Blackfish API
-    async def call(self, file_name: str, language: Union[str, None] = None,
-                   response_format: Literal["json", "text"] = 'json'
-                   ) -> \
-            requests.Response:
+    # Call Blackfish API
+    async def call(
+        self,
+        file_name: str,
+        language: Union[str, None] = None,
+        response_format: Literal["json", "text"] = "json",
+    ) -> requests.Response:
         logger.info(f"calling service {self.service_id}")
         try:
             body = {
                 "file_name": file_name,
                 "language": language,
-                "response_format": response_format
+                "response_format": response_format,
             }
-            res = requests.post(
-                f"http://127.0.0.1:{self.port}/transcribe", json=body
-            )
+            res = requests.post(f"http://127.0.0.1:{self.port}/transcribe", json=body)
             logger.info(f"response state {res.status_code}")
         except Exception as e:
             raise e

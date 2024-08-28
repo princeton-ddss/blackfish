@@ -12,5 +12,3 @@ docker run -d \
   -v {{job_config.input_dir}}:/app/files \
   --name speech_recognition_api_container
   fjying/audiototextapi:arm64_hf
-
-

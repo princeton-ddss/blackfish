@@ -24,14 +24,14 @@ def get_container_provider():
             _ = subprocess.run(["which", "apptainer"], check=True, capture_output=True)
             return "apptainer"
         except subprocess.CalledProcessError:
-            raise Exception(
+            print(
                 "No supported container platforms available. Please install one of:"
                 " docker, apptainer."
             )
+            return None
 
 
-class BlackfishProfile:
-    ...
+class BlackfishProfile: ...
 
 
 @dataclass

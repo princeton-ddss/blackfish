@@ -23,8 +23,7 @@ SpeechRecognitionModels = {
 # service API. These options are not in job.py
 @dataclass
 class SpeechRecognitionConfig(ContainerConfig):
-    model_name: str = "whisper"
-    model_size: str = "large"
+    revision: Optional[str] = None
     port: Optional[int] = None
 
 class SpeechRecognition(Service):

@@ -107,7 +107,7 @@ If things went well, then we should see that the service's status has changed to
 At this point, we can start interacting with the service. Let's say "Hello":
 
 ```shell
-curl 127.0.0.1:8081/generate \
+curl 127.0.0.1:8080/generate \
   -X POST \
   -d '{"inputs": "Hello", "parameters": {"max_new_tokens": 20}}' \
   -H 'Content-Type: application/json'
@@ -127,8 +127,18 @@ blackfish rm <service_id>
 ```
 
 ### Configuration
-*TODO*: Section showing how to setup a profile (and access key) for an HPC cluster.
 
+#### SSH Setup
+Using Blackfish from your laptop requires a seamless (i.e., password-less) method of
+communicating with remote clusters. This is simple to setup with the `ssh-keygen` and
+`ssh-copy-id` utilitites. First, make sure that you are connected to your institution's
+network (or VPN), then type the following at the command-line:
+```
+ssh-keygen -t rsa # generates ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa
+ssh-copy-id <user>@<host> # answer yes to transfer the public key
+```
+These commands create a secure public-private key pair and send the public key to the HPC
+server you need access to. You now have password-less access to your HPC server!
 
 ### Model Selection
 Every service should specify at least one "recommended" model. Admins will

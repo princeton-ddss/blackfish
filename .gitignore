@@ -90,3 +90,6 @@ target/
 *.sqlite
 *.sqlite3
 src/migrations
+
+# GitHub pages
+site/

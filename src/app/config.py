@@ -31,7 +31,8 @@ def get_container_provider():
             return None
 
 
-class BlackfishProfile: ...
+class BlackfishProfile:
+    ...
 
 
 @dataclass

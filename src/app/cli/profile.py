@@ -90,6 +90,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
         print(f"{LogSymbols.SUCCESS.value} Created profile {name}.")
         return True
 
+
 def _update_profile_(default_home: str, default_name: str = "default") -> None:
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles")
@@ -169,6 +170,7 @@ def create_profile(ctx):  # pragma: no cover
     """
 
     _create_profile_(ctx.obj.get("home_dir"))
+
 
 @click.command()
 @click.option(

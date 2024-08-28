@@ -41,7 +41,7 @@ server you need access to. You now have password-less access to your HPC server!
 
 !!! warning
 
-    Blackfish depends on seemless interaction with your university's HPC cluster. Before proceeding,
+    Blackfish depends on seamless interaction with your university's HPC cluster. Before proceeding,
     make sure that you have enabled password-less login and are connected to your institutions
     network or VPN, if required.
 
@@ -53,10 +53,10 @@ blackfish init
 and answer the prompts to create a new default profile.
 
 !!! note
-    
+
     If your default profile connects to an HPC cluster, then Blackfish will attempt to set up
     the remote host at this point. If you're unable to connect to the HPC server, then profile
-    creation will fail and you'll need to re-run the `blackfish init` command or create a 
+    creation will fail and you'll need to re-run the `blackfish init` command or create a
     profile with `blackfish profile create` (see below).
 
 
@@ -117,7 +117,7 @@ blackfish profile update --name hpc
 Note that you cannot change the name attribute of a profile.
 
 #### Delete a profile
-To delete a profile, type `blackfish profile delete --name <profile>`. 
+To delete a profile, type `blackfish profile delete --name <profile>`.
 
 ## Usage
 Once you've initialized Blackfish and created a profile, you're ready to go. Their are two ways ways to interact with Blackfish: in a browser, via the user interface, or at the command-line using the Blackfish CLI. In either case, the entrypoint is to type
@@ -135,11 +135,11 @@ let's instead take a look at the CLI.
 Open a new terminal tab/window. First, let's see what type of services are available.
 ```shell
 ➜ blackfish run --help
-                                                                                
- Usage: blackfish run [OPTIONS] COMMAND [ARGS]...                               
-                                                                                
- Run an inference service                                                       
-                                                                                
+
+ Usage: blackfish run [OPTIONS] COMMAND [ARGS]...
+
+ Run an inference service
+
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --time               TEXT     The duration to run the service for, e.g.,     │
 │                               1:00:00 (one hour).                            │
@@ -170,15 +170,15 @@ This command displays a list of available sub-commands. One of these is `text-ge
 ##### `ls` - List available models
 ```shell
 blackfish models ls --refresh
-ID                                     REPO                                   REVISION                                   PROFILE      
-1cfd44ac-ce42-4eae-8f74-9387c3420001   meta-llama/Meta-Llama-3-70B            b4d08b7db49d488da3ac49adf25a6b9ac01ae338   default      
-d76857ca-2244-47d5-a309-897682f2d414   meta-llama/Meta-Llama-3-8B             62bd457b6fe961a42a631306577e622c83876cb6   default      
-87d0d03f-3c56-4c73-a358-dbad39cd5bf1   meta-llama/Meta-Llama-3-70B-instruct   7129260dd854a80eb10ace5f61c20324b472b31c   default      
-764c0ae8-5785-4ab5-8a50-b0ad60b220cc   bigscience/bloom-560m                  ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971   default      
+ID                                     REPO                                   REVISION                                   PROFILE
+1cfd44ac-ce42-4eae-8f74-9387c3420001   meta-llama/Meta-Llama-3-70B            b4d08b7db49d488da3ac49adf25a6b9ac01ae338   default
+d76857ca-2244-47d5-a309-897682f2d414   meta-llama/Meta-Llama-3-8B             62bd457b6fe961a42a631306577e622c83876cb6   default
+87d0d03f-3c56-4c73-a358-dbad39cd5bf1   meta-llama/Meta-Llama-3-70B-instruct   7129260dd854a80eb10ace5f61c20324b472b31c   default
+764c0ae8-5785-4ab5-8a50-b0ad60b220cc   bigscience/bloom-560m                  ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971   default
 d04de34b-1418-4ba1-a7a1-a16e92444f2b   meta-llama/Meta-Llama-3-8B-instruct    e1945c40cd546c78e41f1151f4db032b271faeaa   default
-b3aee869-10e9-4b35-ab20-cb943b400add   bigscience/bloom-560m                  4f42c91d806a19ae1a46af6c3fb5f4990d884cd6   test        
+b3aee869-10e9-4b35-ab20-cb943b400add   bigscience/bloom-560m                  4f42c91d806a19ae1a46af6c3fb5f4990d884cd6   test
 ```
-As you can see, we ahve a number of models available.[^1] Notice that `bigscience/bloom-560m` is listed twice. The first listing refers to a specific version of this model—`ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971`—that is available to the `default` profile; the second listing refers to a *different* version of the same model—`4f42c91d806a19ae1a46af6c3fb5f4990d884cd6`—that is available to the `test` profile. For reproducability, it's important to keep track of the exact revision used. 
+As you can see, we have a number of models available.[^1] Notice that `bigscience/bloom-560m` is listed twice. The first listing refers to a specific version of this model—`ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971`—that is available to the `default` profile; the second listing refers to a *different* version of the same model—`4f42c91d806a19ae1a46af6c3fb5f4990d884cd6`—that is available to the `test` profile. For reproducibility, it's important to keep track of the exact revision used.
 
 [^1]: The list of models you see will depend on your environment. If you do not have access to a shared HPC cache, your list of models is likely empty. Not to worry—we will see how to add models later on.
 
@@ -189,12 +189,12 @@ Let's go ahead and try to run one of these models.
 ##### `run` - Start a service
 Looking back at the help message for `blackfish run`, we see that there are a few items that we should provide. First, we need to select the type of service to run. We've already decide to run `text-generate`, so we're good there. Next, we have a number of job options that we can provide. With the exception of `profile`, job options are based on the Slurm `sbatch` command and tell Blackfish the resources required to run a service. Finally, there are a number of "container options" that we can use. To get a list, type `blackfish run text-generate --help`:
 ```shell
-blackfish run text-generate --help                                                   
-                                                                                
- Usage: blackfish run text-generate [OPTIONS]                                   
-                                                                                
- Start service MODEL.                                                           
-                                                                                
+blackfish run text-generate --help
+
+ Usage: blackfish run text-generate [OPTIONS]
+
+ Start service MODEL.
+
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --model                       TEXT     Model to serve. (TEXT)                │
 │ --name                        TEXT     (TEXT)                                │
@@ -226,11 +226,11 @@ blackfish run \
   --time 00:05 \
   text-generate \
   --model bigscience/bloom-560m
-✔ Found 5 models. 
-✔ Found 1 snapshots. 
-✔ Found model bigscience/bloom-560m[ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971] in /scratch/gpfs/ddss/.blackfish/models. 
+✔ Found 5 models.
+✔ Found 1 snapshots.
+✔ Found model bigscience/bloom-560m[ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971] in /scratch/gpfs/ddss/.blackfish/models.
 ⚠ No revision provided. Using latest available commit ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971.
-✔ Started service: fddefdaf-d9d2-4392-82d8-c3c4fd2588c6 
+✔ Started service: fddefdaf-d9d2-4392-82d8-c3c4fd2588c6
 ```
 What just happened? Blackfish checked to make sure that the requested model is available to the `default` profile, found an available revision and sent a request to deploy the model. Helpfully, the CLI returned an ID associated with the new service: `fddefdaf-d9d2-4392-82d8-c3c4fd2588c6`. We can get more information about our service using the `blackfish ls` command.
 
@@ -251,10 +251,10 @@ What just happened? Blackfish checked to make sure that the requested model is a
 To view a list of all your Blackfish services, type
 ```shell
 blackfish ls # --filter id=<service_id>,status=<status>
-SERVICE ID                             IMAGE             MODEL                         CREATED                       UPDATED                       STATUS    PORTS   NAME              
-12bb9574-28a8-4cdd-80a4-ad8430bd8d82   text_generation   meta-llama/Meta-Llama-3-8B    2024-07-31T15:16:32.825331Z   2024-07-31T15:30:03.860402Z   TIMEOUT   None    blackfish-10205   
-9c128c84-a908-4f17-995d-5780b2c0895d   text_generation   meta-llama/Meta-Llama-3-70B   2024-08-01T15:37:46.345488Z   2024-08-01T15:40:13.828408Z   FAILED    None    blackfish-12575      
-fddefdaf-d9d2-4392-82d8-c3c4fd2588c6   text_generation   bigscience/bloom-560m         2024-08-27T20:00:53.553854Z   2024-08-27T20:00:53.553864Z   PENDING   None    blackfish-11753 
+SERVICE ID                             IMAGE             MODEL                         CREATED                       UPDATED                       STATUS    PORTS   NAME
+12bb9574-28a8-4cdd-80a4-ad8430bd8d82   text_generation   meta-llama/Meta-Llama-3-8B    2024-07-31T15:16:32.825331Z   2024-07-31T15:30:03.860402Z   TIMEOUT   None    blackfish-10205
+9c128c84-a908-4f17-995d-5780b2c0895d   text_generation   meta-llama/Meta-Llama-3-70B   2024-08-01T15:37:46.345488Z   2024-08-01T15:40:13.828408Z   FAILED    None    blackfish-12575
+fddefdaf-d9d2-4392-82d8-c3c4fd2588c6   text_generation   bigscience/bloom-560m         2024-08-27T20:00:53.553854Z   2024-08-27T20:00:53.553864Z   PENDING   None    blackfish-11753
 ```
 The last item in this list is the service we just started. In this case, the `default` profile happens to be set up to connect to a remote HPC cluster, so the service is run as a Slurm job. It might take a few minutes for our Slurm job to start, and it will take some additional time for the service to be ready after that. Until then, our service's status will be either `SUBMITTED`, `PENDING` or `STARTING`. Now would be a good time to brew some tea...
 
@@ -279,7 +279,7 @@ When we are done with our service, we should shut it off and return its resource
 ```shell
 blackfish stop fddefdaf-d9d2-4392-82d8-c3c4fd2588c6
 ```
-You should receive a nice message stating that the service was stoppped, which you can confirm by checking its status with `blackfish ls`.
+You should receive a nice message stating that the service was stopped, which you can confirm by checking its status with `blackfish ls`.
 
 ##### `rm` - Delete a service
 Services aren't automatically deleted from your list, so it's a good idea to remove them when you're done if you don't need them for record keeping:

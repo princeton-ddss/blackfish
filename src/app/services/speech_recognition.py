@@ -44,8 +44,6 @@ class SpeechRecognition(Service):
             job_config = SlurmJobConfig().replace(job_options)
         elif self.job_type == "ec2":
             job_config = EC2JobConfig().replace(job_options)
-        elif self.job_type == "test":
-            job_config = SlurmJobConfig().replace(job_options)
 
         container_config = SpeechRecognitionConfig(**container_options)
 

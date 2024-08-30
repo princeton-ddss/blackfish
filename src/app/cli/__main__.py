@@ -329,8 +329,6 @@ def details(service_id):  # pragma: no cover
                 "name": job.name,
                 "state": job.state,
             }
-        elif service.job_type == "test":
-            data["job"] = {}
         else:
             raise NotImplementedError
         click.echo(data)

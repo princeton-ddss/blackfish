@@ -221,6 +221,7 @@ def run(
         "constraint": constraint,
     }
 
+
 run.add_command(run_text_generate, "text-generate")
 run.add_command(run_speech_recognition, "speech-recognition")
 

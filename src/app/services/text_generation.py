@@ -1,5 +1,5 @@
 import requests
-from typing import Optional,Literal
+from typing import Optional, Literal
 from dataclasses import dataclass
 
 from jinja2 import Environment, PackageLoader
@@ -12,6 +12,7 @@ from app.logger import logger
 # NOTE: TextGeneration container is optimized for NVIDIA A100, A10G and T4 GPUs with
 # CUDA 12.2+ and requires NVIDIA Container Toolkit on the service host. The image
 # was built to run on GPU and will not reliably work without GPU support.
+
 
 @dataclass
 class TextGenerationConfig(ContainerConfig):

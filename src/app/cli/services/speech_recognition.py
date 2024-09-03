@@ -18,10 +18,8 @@ from log_symbols.symbols import LogSymbols
 # blackfish run [OPTIONS] speech-recognition [OPTIONS]
 @click.command()
 @click.option(
-    "--model",
-    required=False,
-    default="openai/whisper-large-v3",
-    help="Model to serve.")
+    "--model", required=False, default="openai/whisper-large-v3", help="Model to serve."
+)
 @click.option(
     "--input_dir",
     type=str,

@@ -9,7 +9,7 @@ profile = SlurmRemote(
     host="test",
     user="test",
     cache_dir="/test/cache_dir/.blackfish",
-    home_dir="/test/home_dir/.blackfish"
+    home_dir="/test/home_dir/.blackfish",
 )
 
 

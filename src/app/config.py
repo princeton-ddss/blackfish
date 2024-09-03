@@ -43,11 +43,13 @@ class SlurmRemote(BlackfishProfile):
     home_dir: str
     cache_dir: str
 
+
 @dataclass
 class LocalProfile(BlackfishProfile):
     name: str
     home_dir: str
     cache_dir: str
+
 
 class BlackfishConfig:
     """Blackfish app configuration.
@@ -80,13 +82,13 @@ class BlackfishConfig:
                     host=profile["host"],
                     user=profile["user"],
                     home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"]
+                    cache_dir=profile["cache_dir"],
                 )
             elif profile["type"] == "local":
                 self.BLACKFISH_PROFILES[section] = LocalProfile(
                     name=section,
                     home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"]
+                    cache_dir=profile["cache_dir"],
                 )
             else:
                 pass

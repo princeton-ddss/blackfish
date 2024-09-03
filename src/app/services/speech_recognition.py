@@ -8,6 +8,7 @@ from app.services.base import Service, ContainerConfig
 from app.job import LocalJobConfig, SlurmJobConfig, EC2JobConfig
 from app.logger import logger
 
+
 # The container options which are needed when setting up
 # service API. These options are not in job.py
 @dataclass
@@ -15,7 +16,6 @@ class SpeechRecognitionConfig(ContainerConfig):
     input_dir: str = None
     revision: Optional[str] = None
     port: Optional[int] = None
-
 
 
 class SpeechRecognition(Service):
@@ -44,7 +44,7 @@ class SpeechRecognition(Service):
             name=self.name,
             job_config=job_config.data(),
             container_config=container_config.data(),
-            job_id=job_id
+            job_id=job_id,
         )
         return job_script
 

@@ -44,7 +44,7 @@ class SpeechRecognition(Service):
             name=self.name,
             job_config=job_config.data(),
             container_config=container_config.data(),
-            job_id=job_id,
+            job_id=job_id
         )
         return job_script
 

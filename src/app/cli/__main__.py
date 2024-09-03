@@ -211,7 +211,6 @@ def run(
     profile,
 ):  # pragma: no cover
     """Run an inference service"""
-    print("gpu used for running the job", gres)
     ctx.obj = {
         "profile": profile,
         "time": time,
@@ -222,9 +221,6 @@ def run(
         "constraint": constraint,
     }
 
-
-# The run_text_generation would be run automatically if text-generate option
-# is provided
 run.add_command(run_text_generate, "text-generate")
 run.add_command(run_speech_recognition, "speech-recognition")
 
@@ -373,9 +369,6 @@ def ls(filters):  # pragma: no cover
         filters = ""
 
     with yaspin(text="Fetching services...") as spinner:
-        print(
-            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}"
-        )
         res = requests.get(
             f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}"
         )  # fresh data 🥬
@@ -383,7 +376,7 @@ def ls(filters):  # pragma: no cover
         if not res.ok:
             spinner.fail(
                 f"{LogSymbols.ERROR.value} Failed to fetch services. Status code:"
-                f" {res.status_code}.!!"
+                f" {res.status_code}."
             )
             return
 
@@ -504,4 +497,3 @@ def models_ls(profile, refresh):  # pragma: no cover
 
 if __name__ == "__main__":
     main()
-    # ls([])

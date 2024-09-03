@@ -17,7 +17,16 @@ from log_symbols.symbols import LogSymbols
 
 # blackfish run [OPTIONS] speech-recognition [OPTIONS]
 @click.command()
-@click.option("--model", default="openai/whisper-large-v3", help="Model to serve.")
+@click.option(
+    "--model",
+    required=False,
+    default="openai/whisper-large-v3",
+    help="Model to serve.")
+@click.option(
+    "--input_dir",
+    type=str,
+    required=True,
+)
 @click.option(
     "--name",
     type=str,
@@ -36,6 +45,7 @@ from log_symbols.symbols import LogSymbols
 def run_speech_recognition(
     ctx,
     model,
+    input_dir,
     name,
     revision,
     dry_run,
@@ -64,25 +74,17 @@ def run_speech_recognition(
         )
         return
 
-    # if model not in TextGenerationModels:
-    #     click.echo(
-    #         f"{LogSymbols.ERROR.value} {model} is not a supported model. Supported models:"
-    #         f" {[x for x in TextGenerationModels.keys()]}."
-    #     )
-    #     return
-
-    # quantizations = TextGenerationModels[model]["quantizations"]
-    # if quantize is not None and quantize not in quantizations:
-    #     click.echo(
-    #         f"❌ {quantize} is not supported for model {model}. Supported quantizations:"
-    #         f" {quantizations}."
-    #     )
-    #     return
-
     if name is None:
         name = f"blackfish-{randint(10_000, 20_000)}"
 
+    # Put input_dir and revision in container_options
     container_options = {}
+
+    if input_dir is None:
+        raise Exception("Input Directory is Missing")
+    else:
+        container_options["input_dir"] = input_dir
+
     if revision is not None:
         container_options["revision"] = revision
 
@@ -93,7 +95,6 @@ def run_speech_recognition(
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
-        job_options["input_dir"] = profile.input_dir
         job_options["model_dir"] = model_dir
 
         if dry_run:
@@ -145,7 +146,6 @@ def run_speech_recognition(
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
-        job_options["input_dir"] = profile.input_dir
         job_options["model_dir"] = model_dir
 
         if dry_run:

@@ -17,6 +17,6 @@ apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
   {%- endif %}
   --env="SPEECH_RECOGNITION_PORT=$port" \
   --env="MODEL_DIR={{job_config.model_dir}}" \
-  --env="INPUT_DIR={{job_config.input_dir}}" \
+  --env="INPUT_DIR={{container_config['input_dir']}}" \
   {{ job_config.cache_dir }}/images/audiototextapi_amd64_hf.sif
 {%- endblock %}

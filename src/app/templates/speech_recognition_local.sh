@@ -8,7 +8,7 @@ docker run -d \
   -e MODEL_NAME={{container_config['model_name']}}\
   -e MODEL_SIZE={{container_config['model_size']}}\
   -e MODEL_FOLDER={{job_config.model_dir}}\
-  -e INPUT_FOLDER={{job_config.input_dir}}\
-  -v {{job_config.input_dir}}:/app/files \
+  -e INPUT_FOLDER={{container_config["input_dir"]}}\
+  -v {{container_config["input_dir"]}}:/app/files \
   --name speech_recognition_api_container
   fjying/audiototextapi:arm64_hf

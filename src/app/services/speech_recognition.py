@@ -8,24 +8,14 @@ from app.services.base import Service, ContainerConfig
 from app.job import LocalJobConfig, SlurmJobConfig, EC2JobConfig
 from app.logger import logger
 
-
-# NOTE: TextGeneration container is optimized for NVIDIA A100, A10G and T4 GPUs with
-# CUDA 12.2+ and requires NVIDIA Container Toolkit on the service host. The image
-# was built to run on GPU and will not reliably work without GPU support.
-
-
-SpeechRecognitionModels = {
-    "openai/whisper-large-v3": {},
-    "openai/whisper-tiny": {},
-}
-
-
 # The container options which are needed when setting up
 # service API. These options are not in job.py
 @dataclass
 class SpeechRecognitionConfig(ContainerConfig):
+    input_dir: str = None
     revision: Optional[str] = None
     port: Optional[int] = None
+
 
 
 class SpeechRecognition(Service):
@@ -56,7 +46,6 @@ class SpeechRecognition(Service):
             container_config=container_config.data(),
             job_id=job_id,
         )
-        print(job_script)
         return job_script
 
     # Call Blackfish API

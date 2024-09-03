@@ -445,7 +445,7 @@ class Service(UUIDAuditBase):
                 " `job.node` is missing."
             )
 
-        self.port = find_port()  # find port
+        self.port = find_port()
         if self.port is None:
             raise Exception(f"Unable to find an available port for service {self.id}.")
 

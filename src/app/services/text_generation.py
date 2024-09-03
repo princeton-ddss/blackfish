@@ -1,5 +1,5 @@
 import requests
-from typing import Optional
+from typing import Optional,Literal
 from dataclasses import dataclass
 
 from jinja2 import Environment, PackageLoader
@@ -54,6 +54,7 @@ class TextGenerationParameters:
     truncate: Optional[int] = None
     typical_p: Optional[float] = None
     watermark: Optional[bool] = False
+    shared: Optional[Literal["true", "false"]] = None
 
 
 class TextGeneration(Service):

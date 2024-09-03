@@ -47,7 +47,7 @@ class Model(UUIDAuditBase):
     revision: Mapped[str]
 
 
-JOB_TYPES = ["text_generation", "speech_recognition"]
+SERVICE_TYPES = ["text_generation", "speech_recognition"]
 
 # -------------------------------------------------------------------------------------------- #
 # API                                                                                          #
@@ -224,7 +224,7 @@ def build_service(data: ServiceRequest):
             job_type=data.job_type,
         )
     else:
-        raise Exception(f"Service image should be one of: {JOB_TYPES}")
+        raise Exception(f"Service image should be one of: {SERVICE_TYPES}")
 
 
 @get("/")

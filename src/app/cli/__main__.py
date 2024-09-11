@@ -4,7 +4,9 @@ import os
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-from app.cli.services.text_generation import run_text_generate, fetch_text_generate
+from app.cli.services.text_generation import run_text_generate
+from app.cli.services.speech_recognition import run_speech_recognition
+
 from app.cli.profile import (
     create_profile,
     show_profile,
@@ -13,7 +15,6 @@ from app.cli.profile import (
     delete_profile,
 )
 from app.config import config, SlurmRemote
-
 
 """
 The CLI serves as a client to access the API from as well as performing
@@ -222,6 +223,7 @@ def run(
 
 
 run.add_command(run_text_generate, "text-generate")
+run.add_command(run_speech_recognition, "speech-recognition")
 
 
 # blackfish stop [OPTIONS] SERVICE [SERVICE...]
@@ -324,8 +326,6 @@ def details(service_id):  # pragma: no cover
                 "name": job.name,
                 "state": job.state,
             }
-        elif service.job_type == "test":
-            data["job"] = {}
         else:
             raise NotImplementedError
         click.echo(data)
@@ -405,7 +405,8 @@ def fetch():  # pragma: no cover
     pass
 
 
-fetch.add_command(fetch_text_generate, "fetch_text_generate")
+# fetch.add_command(fetch_text_generate, "fetch_text_generate")
+# fetch.add_command(fetch_speech_recognition, "fetch_speech_recognition")
 
 
 # blackfish image

@@ -1,4 +1,3 @@
-import random
 import subprocess
 import os
 import uuid
@@ -115,7 +114,7 @@ class Service(UUIDAuditBase):
                     script = self.launch_script(container_options, job_options)
                     f.write(script)
                 except Exception as e:
-                    logger.error(e)
+                    logger.error(f"Unable to render launch script: {e}")
 
             logger.info("Starting service")
 
@@ -155,15 +154,6 @@ class Service(UUIDAuditBase):
             self.job_id = job_id
         elif self.job_type == "ec2":
             raise NotImplementedError
-        elif self.job_type == "test":
-            if self.host == "localhost":
-                logger.debug("[TEST] submitting batch job on login node.")
-            else:
-                logger.debug(f"[TEST] copying job script to {job_options['home_dir']}.")
-                logger.debug(f"[TEST] submitting batch job to {self.user}@{self.host}.")
-
-            self.status = "SUBMITTED"
-            self.job_id = f"test-{random.randint(10_000, 11_000)}"
         else:
             raise Exception("Job type should be one of: local, slurm, ec2, test.")
 
@@ -217,8 +207,6 @@ class Service(UUIDAuditBase):
             await self.close_tunnel(session)
         elif self.job_type == "ec2":
             raise NotImplementedError
-        elif self.job_type == "test":
-            pass
         else:
             raise Exception  # TODO: JobTypeError
 
@@ -432,8 +420,6 @@ class Service(UUIDAuditBase):
                 return "FAILED"
         elif self.job_type == "ec2":
             raise NotImplementedError
-        elif self.job_type == "test":
-            logger.warning("Refresh not implemented for job type 'test'. Skipping.")
         else:
             raise Exception  # TODO: JobTypeError
 

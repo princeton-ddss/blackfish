@@ -1,5 +1,5 @@
 import requests
-from typing import Optional
+from typing import Optional, Literal
 from dataclasses import dataclass
 
 from jinja2 import Environment, PackageLoader
@@ -14,33 +14,13 @@ from app.logger import logger
 # was built to run on GPU and will not reliably work without GPU support.
 
 
-TextGenerationModels = {
-    "bigscience/bloom-560m": {
-        "quantizations": [],
-    },
-    "google/flan": {},
-    "facebook/galactica": {},
-    "EleutherAI/gpt-neox": {},
-    "facebook/opt": {},
-    "bigcode/santacoder": {},
-    "bigcode/starcoder": {},
-    "tiiuae/falcon": {},
-    "mosaicml/mpt": {},
-    "meta-llama/Meta-Llama-3": {},
-    "meta-llama/Meta-Llama-2": {},
-    "meta-llama/CodeLlama": {},
-    "mistralai/Mistral": {},
-    "microsoft/phi-2": {},
-}
-
-
 @dataclass
 class TextGenerationConfig(ContainerConfig):
     port: Optional[int] = None
     quantize: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None
-    sharded: Optional[bool] = True
+    shared: Optional[Literal["true", "false"]] = None
     num_shard: Optional[int] = None
     quantize: Optional[str] = None
     speculate: Optional[int] = None
@@ -92,8 +72,6 @@ class TextGeneration(Service):
             job_config = SlurmJobConfig().replace(job_options)
         elif self.job_type == "ec2":
             job_config = EC2JobConfig().replace(job_options)
-        elif self.job_type == "test":
-            job_config = SlurmJobConfig().replace(job_options)
 
         container_config = TextGenerationConfig(**container_options)
 

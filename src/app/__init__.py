@@ -34,6 +34,7 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 
 from app.logger import logger
 from app.services.base import Service
+from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
 from app.config import BlackfishProfile, SlurmRemote, LocalProfile
@@ -46,7 +47,7 @@ class Model(UUIDAuditBase):
     revision: Mapped[str]
 
 
-JOB_TYPES = ["text_generation"]
+SERVICE_TYPES = ["text_generation", "speech_recognition"]
 
 # -------------------------------------------------------------------------------------------- #
 # API                                                                                          #
@@ -213,8 +214,17 @@ def build_service(data: ServiceRequest):
             host=data.host,  # optional (required to run remote services)
             job_type=data.job_type,
         )
+    elif data.image == "speech_recognition":
+        return SpeechRecognition(
+            name=data.name,  # optional
+            image=data.image,
+            model=data.model,
+            user=data.user,  # optional (required to run remote services)
+            host=data.host,  # optional (required to run remote services)
+            job_type=data.job_type,
+        )
     else:
-        raise Exception(f"Service image should be one of: {JOB_TYPES}")
+        raise Exception(f"Service image should be one of: {SERVICE_TYPES}")
 
 
 @get("/")

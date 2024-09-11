@@ -20,8 +20,8 @@ apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
 {%- if 'validation_workers' in container_config %}
   --validation-workers {{ container_config['validation_workers'] }} \
 {%- endif %}
-{%- if container_config.get('sharded') == True %}
-  --sharded \
+{%- if 'sharded' in container_config %}
+  --sharded {{ container_config['sharded'] }} \
 {%- endif %}
 {%- if 'num_shard' in container_config %}
   --num-shard {{ container_config['num_shard'] }} \

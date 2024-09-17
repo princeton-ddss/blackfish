@@ -14,7 +14,8 @@ from app.cli.profile import (
     update_profile,
     delete_profile,
 )
-from app.config import config, SlurmRemote
+from app.config import config
+from app.logger import logger
 
 """
 The CLI serves as a client to access the API from as well as performing
@@ -91,71 +92,36 @@ def start(reload: bool, profile: str) -> None:  # pragma: no cover
     "Start the blackfish app."
 
     import uvicorn
+    from advanced_alchemy.extensions.litestar.alembic import AlembicCommands
+    from sqlalchemy.exc import OperationalError
+
     from app import __file__
+    from app import app
 
     if not os.path.isdir(config.BLACKFISH_HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
         return
 
-    if profile is None:
-        # TODO: migrate_db()
-        # TODO: update models table
-        uvicorn.run(
-            "app:app",
-            host=config.BLACKFISH_HOST,
-            port=config.BLACKFISH_PORT,
-            log_level="info",
-            app_dir=os.path.abspath(os.path.join(__file__, "..", "..")),
-            reload_dirs=os.path.abspath(os.path.join(__file__, "..")),
-            reload=reload,
-        )
-        # _ = subprocess.check_output(
-        #     [
-        #         sys.executable,
-        #         "-m",
-        #         "uvicorn",
-        #         "--host",
-        #         config.BLACKFISH_HOST,
-        #         "--port",
-        #         str(config.BLACKFISH_PORT),
-        #         "--log-level",
-        #         "info",
-        #         "--reload",
-        #         "--app-dir",
-        #         os.path.abspath(os.path.join(app.__file__, "..", "..")),
-        #         "app:app",
-        #     ]
-        # )
-        # _ = subprocess.check_output(
-        #     [
-        #         "litestar",
-        #         "--app-dir",
-        #         os.path.abspath(os.path.join(app.__file__, "..", "..")),
-        #         "run",
-        #         "--reload"
-        #     ]
-        # )
-    else:
-        # TODO: running Blackfish remotely
-        profile = config.BLACKFISH_PROFILES[profile]
-        if isinstance(profile, SlurmRemote):
-            raise NotImplementedError
-            # _ = subprocess.check_output(
-            #     [
-            #         "ssh",
-            #         f"{profile['user']}@{profile['host']}",
-            #         "uvicorn",
-            #         "--port",
-            #         profile['port'],
-            #         "--log-level",
-            #         "info",
-            #         "--reload",
-            #         reload,
-            #     ]
-            # )
+    alembic_commands = AlembicCommands(app=app)
+
+    try:
+        logger.info("Upgrading database...")
+        alembic_commands.upgrade()
+    except OperationalError as e:
+        if e.args == ("(sqlite3.OperationalError) table service already exists",):
+            logger.info("Database is already up-to-date. Skipping.")
         else:
-            raise NotImplementedError
-        raise NotImplementedError
+            logger.error(f"Failed to upgrade database: {e}")
+
+    uvicorn.run(
+        "app:app",
+        host=config.BLACKFISH_HOST,
+        port=config.BLACKFISH_PORT,
+        log_level="info",
+        app_dir=os.path.abspath(os.path.join(__file__, "..", "..")),
+        reload_dirs=os.path.abspath(os.path.join(__file__, "..")),
+        reload=reload,
+    )
 
 
 # blackfish run [OPTIONS] COMMAND

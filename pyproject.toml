@@ -30,7 +30,7 @@ dependencies = [
   "click",
   "colorlog",
   "fabric",
-  "huggingface_hub",
+  "huggingface_hub>=0.25",
   "jinja2",
   "litestar",
   "log_symbols",

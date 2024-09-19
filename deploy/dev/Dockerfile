@@ -60,7 +60,7 @@ RUN pip install -e .
 STOPSIGNAL SIGINT
 EXPOSE 8000
 ENV BLACKFISH_HOST="0.0.0.0"
-ENV BLACKFISH_PORT="8080"
+ENV BLACKFISH_PORT="8000"
 ENV BLACKFISH_HOME_DIR="/data"
 ENTRYPOINT ["tini","--" ]
 CMD [ "blackfish", "start", "--reload"]

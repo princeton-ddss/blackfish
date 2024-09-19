@@ -64,7 +64,3 @@ ENV BLACKFISH_PORT="8080"
 ENV BLACKFISH_HOME_DIR="/data"
 ENTRYPOINT ["tini","--" ]
 CMD [ "blackfish", "start"]
-
-# docker run -v /var/run/docker.sock:/var/run/docker.sock ... something like this
-# is recommended to allow the container to start sibling containers instead of
-# running docker-in-docker ("dind"). Equivalent for apptainer?

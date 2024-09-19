@@ -63,6 +63,6 @@ ENV BLACKFISH_HOST="0.0.0.0"
 ENV BLACKFISH_PORT="8080"
 ENV BLACKFISH_HOME_DIR="/data"
 ENTRYPOINT ["tini","--" ]
-CMD [ "blackfish", "start"]
+CMD [ "blackfish", "start", "--reload"]
 
 VOLUME /workspace/app

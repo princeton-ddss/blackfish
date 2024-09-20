@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from typing import Optional
 import asyncio
 import itertools
+from pathlib import Path
 
 from fabric.connection import Connection
 
@@ -32,6 +33,10 @@ from litestar.status_codes import HTTP_409_CONFLICT
 from litestar.config.cors import CORSConfig
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
+from litestar.static_files import create_static_files_router
+from litestar.template.config import TemplateConfig
+from litestar.contrib.jinja import JinjaTemplateEngine
+from litestar.response import Template
 
 from app.logger import logger
 from app.services.base import Service
@@ -444,9 +449,42 @@ openapi_config = OpenAPIConfig(
     render_plugins=[SwaggerRenderPlugin(path="/swagger")],
 )
 
+template_config = TemplateConfig(
+    directory=Path(__file__).parent.parent / "dist",
+    engine=JinjaTemplateEngine,
+)
+
+next_server = create_static_files_router(
+    path="/_next", directories=["src/dist/_next"], html_mode=True
+)
+img_server = create_static_files_router(
+    path="/img", directories=["src/dist/img"], html_mode=True
+)
+
+
+@get(path="/ui", sync_to_thread=False)
+def home() -> Template:
+    return Template(template_name="index.html")
+
+
+@get(path="/ui/text-generation", sync_to_thread=False)
+def text_generation() -> Template:
+    return Template(template_name="text-generation.html")
+
+
+@get(path="/ui/speech-recognition", sync_to_thread=False)
+def speech_recognition() -> Template:
+    return Template(template_name="text-generation.html")
+
+
 app = Litestar(
     route_handlers=[
         index,
+        next_server,
+        img_server,
+        home,
+        text_generation,
+        speech_recognition,
         run_service,
         stop_service,
         refresh_service,
@@ -463,4 +501,5 @@ app = Litestar(
     state=State(blackfish_config.as_dict()),
     cors_config=cors_config,
     openapi_config=openapi_config,
+    template_config=template_config,
 )

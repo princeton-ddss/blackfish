@@ -67,6 +67,7 @@ class BlackfishConfig:
         self.BLACKFISH_PORT = int(os.getenv("BLACKFISH_PORT", DEFAULT_PORT))
         self.BLACKFISH_HOME_DIR = os.getenv("BLACKFISH_HOME_DIR", DEFAULT_HOME_DIR)
         self.BLACKFISH_DEBUG = os.getenv("BLACKFISH_DEBUG", DEFAULT_DEBUG)
+        self.DEV_MODE = bool(int(os.getenv("BLACKFISH_DEV_MODE", 1)))
         self.BLACKFISH_PROFILES = {}
         self.BLACKFISH_CONTAINER_PROVIDER = os.getenv(
             "BLACKFISH_CONTAINER_PROVIER", get_container_provider()

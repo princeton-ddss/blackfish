@@ -1,10 +1,13 @@
 import os
+from os import urandom
+from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional
 import asyncio
 import itertools
 from pathlib import Path
+from secrets import compare_digest
 
 from fabric.connection import Connection
 
@@ -13,7 +16,7 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from litestar import Litestar, get, post, put, delete
+from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
 from litestar.datastructures import State
 from litestar.dto import DTOConfig, DataclassDTO
@@ -27,6 +30,7 @@ from advanced_alchemy.base import UUIDAuditBase
 from litestar.exceptions import (
     ClientException,
     NotFoundException,
+    NotAuthorizedException,
     InternalServerException,
 )
 from litestar.status_codes import HTTP_409_CONFLICT
@@ -36,7 +40,14 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 from litestar.static_files import create_static_files_router
 from litestar.template.config import TemplateConfig
 from litestar.contrib.jinja import JinjaTemplateEngine
-from litestar.response import Template
+from litestar.response import Template, Redirect
+from litestar.connection import ASGIConnection
+from litestar.handlers.base import BaseRouteHandler
+from litestar.response.redirect import ASGIRedirectResponse
+from litestar.types import ASGIApp, Scope, Receive, Send
+from litestar.datastructures.secret_values import SecretString
+from litestar.middleware.base import MiddlewareProtocol
+from litestar.middleware.session.client_side import CookieBackendConfig
 
 from app.logger import logger
 from app.services.base import Service
@@ -53,46 +64,56 @@ class Model(UUIDAuditBase):
     revision: Mapped[str]
 
 
+# --- Auth ---
+logger.debug(f"BLACKFISH_DEV_MODE={blackfish_config.DEV_MODE}")
+AUTH_TOKEN = (
+    "test" if blackfish_config.DEV_MODE else b64encode(urandom(32)).decode("utf-8")
+)
+logger.info(f"Blackfish API is protected with AUTH_TOKEN={AUTH_TOKEN}.")
+
+
+class AuthMiddleware(MiddlewareProtocol):
+    def __init__(self, app: ASGIApp) -> None:
+        super().__init__(app)
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if Request(scope).session is None:
+            logger.debug(
+                "from AuthMiddleware: no session found => redirect to dashboard login"
+            )
+            response = ASGIRedirectResponse(path="/ui/login")
+            await response(scope, receive, send)
+        elif Request(scope).session.get("token") is None:
+            logger.debug(
+                "from AuthMiddleware: no token found => redirect to dashboard login"
+            )
+            response = ASGIRedirectResponse(path="/ui/login")
+            await response(scope, receive, send)
+        else:
+            logger.debug(f"from AuthMiddleware: {Request(scope).session}")
+            await self.app(scope, receive, send)
+
+
+def auth_guard(
+    connection: ASGIConnection, _: BaseRouteHandler
+) -> Optional[NotAuthorizedException]:
+    if connection.session is None:
+        logger.debug("from auth_guard: session is None => NotAuthorizedException")
+        raise NotAuthorizedException
+    token = connection.session.get("token")
+    if token is None:
+        logger.debug("from auth_guard: session.token is None => NotAuthorizedException")
+        raise NotAuthorizedException
+    if not compare_digest(token, AUTH_TOKEN):
+        logger.debug("from auth_guard: invalid token => NotAuthorizedException")
+        raise NotAuthorizedException
+
+
 SERVICE_TYPES = ["text_generation", "speech_recognition"]
 
-# -------------------------------------------------------------------------------------------- #
-# API                                                                                          #
-# -------------------------------------------------------------------------------------------- #
-# run               POST        /services              Start the job and create the service.   #
-# stop              PUT         /services/:id/stop     Stop the job and update the service.    #
-# ls                GET         /services              Check all jobs and update all services. #
-# ls                GET         /services/:id          Check the job and update the service.   #
-# rm                DELETE      /services/:id          Delete the service.                     #
-# models            GET         /models                List all models available.              #
-# images            GET         /images                List all images available.              #
-# image_details     GET         /images/:name/details  Provide details for a specific image.   #
-# -------------------------------------------------------------------------------------------- #
 
-
-@dataclass
-class ServiceRequest:
-    name: str  # TODO: optional w/ default by name generator
-    image: str
-    model: str
-    job_type: str
-    container_options: dict
-    job_options: dict
-    user: Optional[str] = None
-    host: Optional[str] = "localhost"
-    port: Optional[str] = None
-
-
-class ServiceRequestDTO(DataclassDTO[ServiceRequest]):
-    config = DTOConfig()
-
-
-@dataclass
-class StopServiceRequest:
-    delay: int = 0
-    timeout: bool = False
-    failed: bool = False
-
-
+# --- Utils ---
 async def get_service(service_id: str, session: AsyncSession) -> Service:
     """Query a single service ID from the application database and raise a `NotFoundException`
     if the service is missing.
@@ -208,6 +229,100 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
         raise NotImplementedError
 
 
+# --- Pages ---
+@get(path="/ui", middleware=[AuthMiddleware])
+async def dashboard() -> Template:
+    return Template(template_name="index.html")
+
+
+@get(path="/ui/login")
+async def dashboard_login(request: Request) -> Template | Redirect:
+    token = request.session.get("token")
+    if token is not None:
+        if compare_digest(token, AUTH_TOKEN):
+            logger.debug(
+                "from dashboard_login: user already authenticated => redirect dashboard"
+            )
+            return Redirect("/ui")
+    return Template(template_name="login.html")
+
+
+@get(path="/ui/text-generation", middleware=[AuthMiddleware])
+async def text_generation() -> Template:
+    return Template(template_name="text-generation.html")
+
+
+@get(path="/ui/speech-recognition", middleware=[AuthMiddleware])
+async def speech_recognition() -> Template:
+    return Template(template_name="speech-recognition.html")
+
+
+# --- Endpoints ---
+@get("/", guards=[auth_guard])
+async def index(state: State) -> dict:
+    return {
+        "BLACKFISH_HOST": state.BLACKFISH_HOST,
+        "BLACKFISH_PORT": state.BLACKFISH_PORT,
+        "BLACKFISH_HOME_DIR": state.BLACKFISH_HOME_DIR,
+        "BLACKFISH_DEBUG": state.BLACKFISH_DEBUG,
+    }
+
+
+@dataclass
+class LoginPayload:
+    token: SecretString
+
+
+@post("/login")
+async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
+    token = request.session.get("token")
+    if token is not None:
+        if compare_digest(token, AUTH_TOKEN):
+            logger.debug("from login: user already logged int => return None")
+            return None
+    token = data.token.get_secret()
+    if compare_digest(token, AUTH_TOKEN):
+        request.set_session({"token": token})
+        logger.debug(f"from login: added token:{token} to session => redirect /ui")
+    else:
+        logger.debug("from login: invalid token => return None")
+        return Redirect("/ui/login/?success=false")
+    return Redirect("/ui")
+
+
+@post("/logout", guards=[auth_guard])
+async def logout(request: Request) -> Redirect:
+    token = request.session.get("token")
+    if token is not None:
+        request.set_session({"token": None})
+        logger.debug("from logout: reset session => redirect /ui/login")
+    return Redirect("/ui/login")
+
+
+@dataclass
+class ServiceRequest:
+    name: str  # TODO: optional w/ default by name generator
+    image: str
+    model: str
+    job_type: str
+    container_options: dict
+    job_options: dict
+    user: Optional[str] = None
+    host: Optional[str] = "localhost"
+    port: Optional[str] = None
+
+
+class ServiceRequestDTO(DataclassDTO[ServiceRequest]):
+    config = DTOConfig()
+
+
+@dataclass
+class StopServiceRequest:
+    delay: int = 0
+    timeout: bool = False
+    failed: bool = False
+
+
 def build_service(data: ServiceRequest):
     """Convert a service request into a service object based on the requested image."""
 
@@ -233,28 +348,14 @@ def build_service(data: ServiceRequest):
         raise Exception(f"Service image should be one of: {SERVICE_TYPES}")
 
 
-@get("/")
-async def index(state: State) -> dict:
-    return f"""Welcome to Blackfish!
-
-BLACKFISH_HOST: {state.BLACKFISH_HOST}
-BLACKFISH_PORT: {state.BLACKFISH_PORT}
-BLACKFISH_HOME_DIR: {state.BLACKFISH_HOME_DIR}
-BLACKFISH_DEBUG: {state.BLACKFISH_DEBUG}
-
-PROFILES:
-{state.BLACKFISH_PROFILES}
-"""
-
-
-@post("/services", dto=ServiceRequestDTO)
+@post("/services", dto=ServiceRequestDTO, guards=[auth_guard])
 async def run_service(
     data: ServiceRequest, session: AsyncSession, state: State
 ) -> Service:
     try:
         service = build_service(data)
     except Exception as e:
-        print(e)
+        logger.error(e)
     try:
         await service.start(
             session,
@@ -269,7 +370,7 @@ async def run_service(
     return service
 
 
-@put("/services/{service_id:str}/stop")
+@put("/services/{service_id:str}/stop", guards=[auth_guard])
 async def stop_service(
     service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
@@ -281,7 +382,7 @@ async def stop_service(
     return service
 
 
-@get("/services/{service_id:str}")
+@get("/services/{service_id:str}", guards=[auth_guard])
 async def refresh_service(
     service_id: str, session: AsyncSession, state: State
 ) -> Service:
@@ -294,7 +395,7 @@ async def refresh_service(
     return service
 
 
-@get("/services")
+@get("/services", guards=[auth_guard])
 async def fetch_services(
     session: AsyncSession,
     state: State,
@@ -322,7 +423,7 @@ async def fetch_services(
     return services
 
 
-@delete("/services/{service_id:str}")
+@delete("/services/{service_id:str}", guards=[auth_guard])
 async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
     service = await get_service(service_id, session)
     await service.refresh(session, state)
@@ -336,7 +437,7 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
         # TODO: return failure status code and message
 
 
-@get("/models")
+@get("/models", guards=[auth_guard])
 async def get_models(
     session: AsyncSession,
     state: State,
@@ -372,7 +473,7 @@ async def get_models(
         return res.scalars().all()  # list[Model]
 
 
-@get("/models/{model_id:str}")
+@get("/models/{model_id:str}", guards=[auth_guard])
 async def get_model(model_id: str, session: AsyncSession) -> Model:
     logger.info(f"Model={model_id}")
     query = sa.select(Model).where(Model.id == model_id)
@@ -383,28 +484,29 @@ async def get_model(model_id: str, session: AsyncSession) -> Model:
         raise NotFoundException(detail=f"Model {model_id} not found") from e
 
 
-@post("/models")
+@post("/models", guards=[auth_guard])
 async def create_model(data: Model, session: AsyncSession) -> Model:
     session.add(data)
     return data
 
 
-@delete("/models/{model_id:str}")
+@delete("/models/{model_id:str}", guards=[auth_guard])
 async def delete_model(model_id: str, session: AsyncSession) -> None:
     query = sa.delete(Model).where(Model.id == model_id)
     await session.execute(query)
 
 
-@get("/images")
+@get("/images", guards=[auth_guard])
 async def get_images():
     pass
 
 
-@get("/images/{image_id:str}")
+@get("/images/{image_id:str}", guards=[auth_guard])
 async def get_image_details():
     pass
 
 
+# --- Config ---
 session_config = AsyncSessionConfig(expire_on_commit=False)
 
 BASE_DIR = module_to_os_path("app")
@@ -454,37 +556,26 @@ template_config = TemplateConfig(
     engine=JinjaTemplateEngine,
 )
 
+session_config = CookieBackendConfig(secret=urandom(16))
+
 next_server = create_static_files_router(
     path="/_next", directories=["src/dist/_next"], html_mode=True
 )
+
 img_server = create_static_files_router(
     path="/img", directories=["src/dist/img"], html_mode=True
 )
 
 
-@get(path="/ui", sync_to_thread=False)
-def home() -> Template:
-    return Template(template_name="index.html")
-
-
-@get(path="/ui/text-generation", sync_to_thread=False)
-def text_generation() -> Template:
-    return Template(template_name="text-generation.html")
-
-
-@get(path="/ui/speech-recognition", sync_to_thread=False)
-def speech_recognition() -> Template:
-    return Template(template_name="text-generation.html")
-
-
 app = Litestar(
     route_handlers=[
-        index,
-        next_server,
-        img_server,
-        home,
+        dashboard,
+        dashboard_login,
         text_generation,
         speech_recognition,
+        index,
+        login,
+        logout,
         run_service,
         stop_service,
         refresh_service,
@@ -494,6 +585,8 @@ app = Litestar(
         get_model,
         get_models,
         delete_model,
+        next_server,
+        img_server,
     ],
     dependencies={"session": session_provider},
     plugins=[SQLAlchemyPlugin(db_config)],
@@ -502,4 +595,5 @@ app = Litestar(
     cors_config=cors_config,
     openapi_config=openapi_config,
     template_config=template_config,
+    middleware=[session_config.middleware],
 )

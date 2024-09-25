@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from litestar import Litestar, get, post, put, delete
+from litestar.utils.module_loader import module_to_os_path
 from litestar.datastructures import State
 from litestar.dto import DTOConfig, DataclassDTO
 from advanced_alchemy.extensions.litestar import (
@@ -401,14 +402,18 @@ async def get_image_details():
 
 session_config = AsyncSessionConfig(expire_on_commit=False)
 
+BASE_DIR = module_to_os_path("app")
+
 db_config = SQLAlchemyAsyncConfig(
-    connection_string="sqlite+aiosqlite:///app.sqlite",
+    connection_string=(
+        f"sqlite+aiosqlite:///{blackfish_config.BLACKFISH_HOME_DIR}/app.sqlite"
+    ),
     metadata=UUIDAuditBase.metadata,
     create_all=True,
     alembic_config=AlembicAsyncConfig(
         version_table_name="ddl_version",
-        script_config="migrations/alembic.ini",
-        script_location="migrations",
+        script_config=f"{BASE_DIR}/db/migrations/alembic.ini",
+        script_location=f"{BASE_DIR}/db/migrations",
     ),
 )
 

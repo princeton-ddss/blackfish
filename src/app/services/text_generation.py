@@ -20,7 +20,7 @@ class TextGenerationConfig(ContainerConfig):
     quantize: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None
-    shared: Optional[Literal["true", "false"]] = None
+    sharded: Optional[Literal["true", "false"]] = None
     num_shard: Optional[int] = None
     quantize: Optional[str] = None
     speculate: Optional[int] = None

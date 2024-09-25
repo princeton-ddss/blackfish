@@ -19,8 +19,10 @@ from log_symbols.symbols import LogSymbols
 # blackfish run [OPTIONS] speech-recognition [OPTIONS]
 @click.command()
 @click.option(
-    "--model_id", required=False, default="openai/whisper-large-v3",
-    help="Model to serve."
+    "--model_id",
+    required=False,
+    default="openai/whisper-large-v3",
+    help="Model to serve.",
 )
 @click.option(
     "--input_dir",
@@ -56,8 +58,7 @@ def run_speech_recognition(
 
     if model_id in get_models(profile):
         if revision is None:
-            revision = get_latest_commit(model_id, get_revisions(model_id,
-                                                                profile))
+            revision = get_latest_commit(model_id, get_revisions(model_id, profile))
             model_dir = get_model_dir(model_id, revision, profile)
             click.echo(
                 f"{LogSymbols.WARNING.value} No revision provided. Using latest"

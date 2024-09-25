@@ -13,12 +13,11 @@ from app.logger import logger
 # service API. These options are not in job.py
 @dataclass
 class SpeechRecognitionConfig(ContainerConfig):
-    model_id: str = None,
-    model_dir: str = None,
-    input_dir: str = None,
-    port: int = None,
+    model_id: str = (None,)
+    model_dir: str = (None,)
+    input_dir: str = (None,)
+    port: int = (None,)
     revision: Optional[str] = None
-
 
 
 class SpeechRecognition(Service):

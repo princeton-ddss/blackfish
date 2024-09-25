@@ -13,9 +13,11 @@ from app.logger import logger
 # service API. These options are not in job.py
 @dataclass
 class SpeechRecognitionConfig(ContainerConfig):
-    input_dir: str = None
+    model_id: str = (None,)
+    model_dir: str = (None,)
+    input_dir: str = (None,)
+    port: int = (None,)
     revision: Optional[str] = None
-    port: Optional[int] = None
 
 
 class SpeechRecognition(Service):
@@ -51,14 +53,14 @@ class SpeechRecognition(Service):
     # Call Blackfish API
     async def call(
         self,
-        file_name: str,
+        audio_path: str,
         language: Union[str, None] = None,
         response_format: Literal["json", "text"] = "json",
     ) -> requests.Response:
         logger.info(f"calling service {self.service_id}")
         try:
             body = {
-                "file_name": file_name,
+                "audio_path": audio_path,
                 "language": language,
                 "response_format": response_format,
             }

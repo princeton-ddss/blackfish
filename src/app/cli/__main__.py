@@ -324,6 +324,7 @@ def ls(filters):  # pragma: no cover
             "STATUS",
             "PORTS",
             "NAME",
+            "MOUNTS",
         ]
     )
     tab.set_style(PLAIN_COLUMNS)
@@ -359,6 +360,7 @@ def ls(filters):  # pragma: no cover
                 service["status"],
                 service["port"],
                 service["name"],
+                service["mounts"],
             ]
         )
     click.echo(tab)

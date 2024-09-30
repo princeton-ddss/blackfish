@@ -47,6 +47,7 @@ class Service(UUIDAuditBase):
     job_type: Mapped[str]
     job_id: Mapped[Optional[str]]
     grace_period: Mapped[Optional[int]] = 180
+    mounts: Mapped[Optional[str]]
 
     __mapper_args__ = {
         "polymorphic_on": "image",

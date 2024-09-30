@@ -17,11 +17,6 @@ from app.cli.profile import (
 from app.config import config
 from app.logger import logger
 
-"""
-The CLI serves as a client to access the API from as well as performing
-administrative tasks, such as adjusting application settings.
-"""
-
 
 # blackfish
 @click.group()

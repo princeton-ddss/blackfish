@@ -65,11 +65,7 @@ class Model(UUIDAuditBase):
 
 
 # --- Auth ---
-logger.debug(f"BLACKFISH_DEV_MODE={blackfish_config.DEV_MODE}")
-AUTH_TOKEN = (
-    "test" if blackfish_config.DEV_MODE else b64encode(urandom(32)).decode("utf-8")
-)
-logger.info(f"Blackfish API is protected with AUTH_TOKEN={AUTH_TOKEN}.")
+AUTH_TOKEN = b64encode(urandom(32)).decode("utf-8")
 
 
 class AuthMiddleware(MiddlewareProtocol):
@@ -111,6 +107,13 @@ def auth_guard(
 
 
 SERVICE_TYPES = ["text_generation", "speech_recognition"]
+
+
+PAGE_MIDDLEWARE = [] if blackfish_config.DEV_MODE else [AuthMiddleware]
+ENDPOINT_GUARDS = [] if blackfish_config.DEV_MODE else [auth_guard]
+logger.debug(f"BLACKFISH_DEV_MODE={blackfish_config.DEV_MODE}")
+if not blackfish_config.DEV_MODE:
+    logger.info(f"Blackfish API is protected with AUTH_TOKEN={AUTH_TOKEN}.")
 
 
 # --- Utils ---
@@ -230,7 +233,7 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
 
 
 # --- Pages ---
-@get(path="/ui", middleware=[AuthMiddleware])
+@get(path="/ui", middleware=PAGE_MIDDLEWARE)
 async def dashboard() -> Template:
     return Template(template_name="index.html")
 
@@ -247,18 +250,18 @@ async def dashboard_login(request: Request) -> Template | Redirect:
     return Template(template_name="login.html")
 
 
-@get(path="/ui/text-generation", middleware=[AuthMiddleware])
+@get(path="/ui/text-generation", middleware=PAGE_MIDDLEWARE)
 async def text_generation() -> Template:
     return Template(template_name="text-generation.html")
 
 
-@get(path="/ui/speech-recognition", middleware=[AuthMiddleware])
+@get(path="/ui/speech-recognition", middleware=PAGE_MIDDLEWARE)
 async def speech_recognition() -> Template:
     return Template(template_name="speech-recognition.html")
 
 
 # --- Endpoints ---
-@get("/", guards=[auth_guard])
+@get("/", guards=ENDPOINT_GUARDS)
 async def index(state: State) -> dict:
     return {
         "BLACKFISH_HOST": state.BLACKFISH_HOST,
@@ -290,7 +293,7 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
     return Redirect("/ui")
 
 
-@post("/logout", guards=[auth_guard])
+@post("/logout", guards=ENDPOINT_GUARDS)
 async def logout(request: Request) -> Redirect:
     token = request.session.get("token")
     if token is not None:
@@ -348,7 +351,7 @@ def build_service(data: ServiceRequest):
         raise Exception(f"Service image should be one of: {SERVICE_TYPES}")
 
 
-@post("/services", dto=ServiceRequestDTO, guards=[auth_guard])
+@post("/services", dto=ServiceRequestDTO, guards=ENDPOINT_GUARDS)
 async def run_service(
     data: ServiceRequest, session: AsyncSession, state: State
 ) -> Service:
@@ -370,7 +373,7 @@ async def run_service(
     return service
 
 
-@put("/services/{service_id:str}/stop", guards=[auth_guard])
+@put("/services/{service_id:str}/stop", guards=ENDPOINT_GUARDS)
 async def stop_service(
     service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
@@ -382,7 +385,7 @@ async def stop_service(
     return service
 
 
-@get("/services/{service_id:str}", guards=[auth_guard])
+@get("/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def refresh_service(
     service_id: str, session: AsyncSession, state: State
 ) -> Service:
@@ -395,7 +398,7 @@ async def refresh_service(
     return service
 
 
-@get("/services", guards=[auth_guard])
+@get("/services", guards=ENDPOINT_GUARDS)
 async def fetch_services(
     session: AsyncSession,
     state: State,
@@ -423,7 +426,7 @@ async def fetch_services(
     return services
 
 
-@delete("/services/{service_id:str}", guards=[auth_guard])
+@delete("/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
     service = await get_service(service_id, session)
     await service.refresh(session, state)
@@ -437,7 +440,7 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
         # TODO: return failure status code and message
 
 
-@get("/models", guards=[auth_guard])
+@get("/models", guards=ENDPOINT_GUARDS)
 async def get_models(
     session: AsyncSession,
     state: State,
@@ -473,7 +476,7 @@ async def get_models(
         return res.scalars().all()  # list[Model]
 
 
-@get("/models/{model_id:str}", guards=[auth_guard])
+@get("/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def get_model(model_id: str, session: AsyncSession) -> Model:
     logger.info(f"Model={model_id}")
     query = sa.select(Model).where(Model.id == model_id)
@@ -484,24 +487,24 @@ async def get_model(model_id: str, session: AsyncSession) -> Model:
         raise NotFoundException(detail=f"Model {model_id} not found") from e
 
 
-@post("/models", guards=[auth_guard])
+@post("/models", guards=ENDPOINT_GUARDS)
 async def create_model(data: Model, session: AsyncSession) -> Model:
     session.add(data)
     return data
 
 
-@delete("/models/{model_id:str}", guards=[auth_guard])
+@delete("/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_model(model_id: str, session: AsyncSession) -> None:
     query = sa.delete(Model).where(Model.id == model_id)
     await session.execute(query)
 
 
-@get("/images", guards=[auth_guard])
+@get("/images", guards=ENDPOINT_GUARDS)
 async def get_images():
     pass
 
 
-@get("/images/{image_id:str}", guards=[auth_guard])
+@get("/images/{image_id:str}", guards=ENDPOINT_GUARDS)
 async def get_image_details():
     pass
 

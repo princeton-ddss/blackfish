@@ -1,3 +1,4 @@
+import os
 import click
 import requests
 from random import randint
@@ -18,7 +19,10 @@ from log_symbols.symbols import LogSymbols
 # blackfish run [OPTIONS] speech-recognition [OPTIONS]
 @click.command()
 @click.option(
-    "--model", required=False, default="openai/whisper-large-v3", help="Model to serve."
+    "--model_id",
+    required=False,
+    default="openai/whisper-large-v3",
+    help="Model to serve.",
 )
 @click.option(
     "--input_dir",
@@ -42,7 +46,7 @@ from log_symbols.symbols import LogSymbols
 @click.pass_context
 def run_speech_recognition(
     ctx,
-    model,
+    model_id,
     input_dir,
     name,
     revision,
@@ -52,22 +56,22 @@ def run_speech_recognition(
 
     profile = config.BLACKFISH_PROFILES[ctx.obj.get("profile", "default")]
 
-    if model in get_models(profile):
+    if model_id in get_models(profile):
         if revision is None:
-            revision = get_latest_commit(model, get_revisions(model, profile))
-            model_dir = get_model_dir(model, revision, profile)
+            revision = get_latest_commit(model_id, get_revisions(model_id, profile))
+            model_dir = get_model_dir(model_id, revision, profile)
             click.echo(
                 f"{LogSymbols.WARNING.value} No revision provided. Using latest"
                 f" available commit {revision}."
             )
         else:
-            model_dir = get_model_dir(model, revision, profile)
+            model_dir = get_model_dir(model_id, revision, profile)
             if model_dir is None:
                 return
 
     else:
         click.echo(
-            f"{LogSymbols.ERROR.value} Unable to find {model} for profile"
+            f"{LogSymbols.ERROR.value} Unable to find {model_id} for profile"
             f" '{profile.name}'."
         )
         return
@@ -86,6 +90,10 @@ def run_speech_recognition(
     if revision is not None:
         container_options["revision"] = revision
 
+    container_options["model_dir"] = os.path.dirname(model_dir)
+
+    container_options["model_id"] = model_id
+
     job_options = {k: v for k, v in ctx.obj.items() if v is not None}
     del job_options["profile"]
 
@@ -98,14 +106,14 @@ def run_speech_recognition(
         if dry_run:
             service = SpeechRecognition(
                 name=name,
-                model=model,
+                model=model_id,
                 job_type="slurm",
                 host=profile.host,
                 user=profile.user,
             )
             click.echo("-" * 80)
             click.echo("Service: speech-recognition")
-            click.echo(f"Model: {model}")
+            click.echo(f"Model: {model_id}")
             click.echo(f"Name: {name}")
             click.echo("Type: slurm")
             click.echo(f"Host: {profile.host}")
@@ -119,7 +127,7 @@ def run_speech_recognition(
                     json={
                         "name": name,
                         "image": "speech_recognition",
-                        "model": model,
+                        "model": model_id,
                         "job_type": "slurm",
                         "host": profile.host,
                         "user": profile.user,
@@ -149,14 +157,14 @@ def run_speech_recognition(
         if dry_run:
             service = SpeechRecognition(
                 name=name,
-                model=model,
+                model=model_id,
                 job_type="local",
                 host="localhost",
                 user=profile.user,
             )
             click.echo("-" * 80)
             click.echo("Service: speech-recognition")
-            click.echo(f"Model: {model}")
+            click.echo(f"Model: {model_id}")
             click.echo(f"Name: {name}")
             click.echo("Type: local")
             click.echo("Host: localhost")
@@ -173,7 +181,7 @@ def run_speech_recognition(
                     json={
                         "name": name,
                         "image": "speech_recognition",
-                        "model": model,
+                        "model": model_id,
                         "job_type": "local",
                         "host": "localhost",
                         "user": profile.user,

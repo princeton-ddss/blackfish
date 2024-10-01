@@ -91,7 +91,7 @@ def start(reload: bool, profile: str) -> None:  # pragma: no cover
     from sqlalchemy.exc import OperationalError
 
     from app import __file__
-    from app import app
+    from app.asgi import app
 
     if not os.path.isdir(config.BLACKFISH_HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
@@ -109,7 +109,8 @@ def start(reload: bool, profile: str) -> None:  # pragma: no cover
             logger.error(f"Failed to upgrade database: {e}")
 
     uvicorn.run(
-        "app:app",
+        "app.asgi:app",
+        # app,
         host=config.BLACKFISH_HOST,
         port=config.BLACKFISH_PORT,
         log_level="info",

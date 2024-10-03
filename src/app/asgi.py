@@ -350,6 +350,7 @@ def build_service(data: ServiceRequest):
             user=data.user,  # optional (required to run remote services)
             host=data.host,  # optional (required to run remote services)
             job_type=data.job_type,
+            mounts=data.container_options["input_dir"],
         )
     else:
         raise Exception(f"Service image should be one of: {SERVICE_TYPES}")

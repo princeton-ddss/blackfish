@@ -1,5 +1,6 @@
 import os
 from os import urandom
+from datetime import datetime
 from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
@@ -32,6 +33,8 @@ from litestar.exceptions import (
     NotFoundException,
     NotAuthorizedException,
     InternalServerException,
+    HTTPException,
+    ValidationException,
 )
 from litestar.status_codes import HTTP_409_CONFLICT
 from litestar.config.cors import CORSConfig
@@ -48,6 +51,7 @@ from litestar.types import ASGIApp, Scope, Receive, Send
 from litestar.datastructures.secret_values import SecretString
 from litestar.middleware.base import MiddlewareProtocol
 from litestar.middleware.session.client_side import CookieBackendConfig
+from litestar.response import File
 
 from app.logger import logger
 from app.services.base import Service
@@ -295,6 +299,73 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
         logger.debug("from login: invalid token => return None")
         return Redirect("/ui/login/?success=false")
     return Redirect("/ui")
+
+
+def listdir(
+    path: str,
+    page: Optional[int] = None,
+    page_size: int = 100,
+    hidden: bool = False,
+) -> dict:
+    if page is None:
+        # try:
+        #     items = os.scandir(path)
+        # except PermissionError:
+        #     raise PermissionError
+        items = os.scandir(path)
+        if not hidden:
+            items = filter(lambda x: not x.name.startswith("."), items)
+            logger.debug(f"items: {items}")
+        return [
+            FileStats(
+                name=item.name,
+                path=item.path,
+                is_dir=item.is_dir(),
+                size=item.stat().st_size,
+                created_at=datetime.fromtimestamp(item.stat().st_ctime),
+                modified_at=datetime.fromtimestamp(item.stat().st_mtime),
+            )
+            for item in items
+        ]
+    else:
+        pass  # TODO: return the `page`-th set of `page_size` items
+
+
+@dataclass
+class FileStats:
+    name: str
+    path: str
+    is_dir: bool
+    size: int  # bytes
+    created_at: datetime
+    modified_at: datetime
+
+
+@get("/files", guards=ENDPOINT_GUARDS)
+async def get_files(
+    path: str,
+    page: Optional[int] = None,
+    page_size: int = 100,
+    hidden: bool = False,
+) -> list[FileStats] | HTTPException:
+    if os.path.isdir(path):
+        try:
+            return listdir(path, page=page, page_size=page_size, hidden=hidden)
+        except PermissionError:
+            logger.debug("Permission error raised")
+            raise NotAuthorizedException(f"User not authorized to access {path}")
+    else:
+        logger.debug("Not found error")
+        raise NotFoundException(f"Path {path} does not exist.")
+
+
+@get("/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
+async def get_audio(path: str) -> File:
+    if os.path.isfile(path):
+        if path.endswith(".wav") or path.endswith(".mp3"):
+            return File(path=path)
+        else:
+            raise ValidationException("Path should specify a .wav or .mp3 file.")
 
 
 @post("/logout", guards=ENDPOINT_GUARDS)
@@ -584,6 +655,8 @@ app = Litestar(
         index,
         login,
         logout,
+        get_files,
+        get_audio,
         run_service,
         stop_service,
         refresh_service,

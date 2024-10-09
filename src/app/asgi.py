@@ -116,7 +116,7 @@ if not blackfish_config.DEV_MODE:
 else:
     logger.warning(
         """Blackfish is running in debug mode. API endpoints are unprotected. In a production
-          environment, set BLACKFISH_DEV_MODE=False to require user authentication."""
+          environment, set BLACKFISH_DEV_MODE=0 to require user authentication."""
     )
 
 

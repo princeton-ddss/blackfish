@@ -116,7 +116,7 @@ SERVICE_TYPES = ["text_generation", "speech_recognition"]
 PAGE_MIDDLEWARE = [] if blackfish_config.DEV_MODE else [AuthMiddleware]
 ENDPOINT_GUARDS = [] if blackfish_config.DEV_MODE else [auth_guard]
 if not blackfish_config.DEV_MODE:
-    logger.info(f"Blackfish API is protected with AUTH_TOKEN={AUTH_TOKEN}.")
+    logger.info(f"Blackfish API is protected with AUTH_TOKEN = {AUTH_TOKEN}")
 else:
     logger.warning(
         """Blackfish is running in debug mode. API endpoints are unprotected. In a production
@@ -638,11 +638,11 @@ template_config = TemplateConfig(
 session_config = CookieBackendConfig(secret=urandom(16))
 
 next_server = create_static_files_router(
-    path="/_next", directories=["src/dist/_next"], html_mode=True
+    path="_next", directories=["src/dist/_next"], html_mode=True
 )
 
 img_server = create_static_files_router(
-    path="/img", directories=["src/dist/img"], html_mode=True
+    path="img", directories=["src/dist/img"], html_mode=True
 )
 
 

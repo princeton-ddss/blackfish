@@ -3,7 +3,7 @@ ci:
   autoupdate_schedule: weekly
   autofix_commit_msg: "style: pre-commit fixes"
 
-exclude: 'dist/'
+exclude: 'build/'
 
 repos:
 

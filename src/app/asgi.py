@@ -58,7 +58,9 @@ from app.services.base import Service
 from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
-from app.config import BlackfishProfile, SlurmRemote, LocalProfile
+from app.config import SlurmRemote, LocalProfile, BlackfishProfile as Profile
+from app.profiles import import_profiles, write_profile, modify_profile, remove_profile
+from app.profiles import ProfileNotFoundException
 
 
 class Model(UUIDAuditBase):
@@ -137,7 +139,7 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
         raise NotFoundException(detail=f"Service {service_id} not found") from e
 
 
-async def find_models(profile: BlackfishProfile) -> list[Model]:
+async def find_models(profile: Profile) -> list[Model]:
     """Find all model revisions associated with a given profile.
 
     The model files associated with a given profile are determined by the contents
@@ -575,6 +577,37 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
     await session.execute(query)
 
 
+@post("/profiles", guards=ENDPOINT_GUARDS)
+async def create_profile(profile: Profile) -> Profile:
+    # TODO: this should also attempt to set up profile resources (see cli.profile)
+
+    try:
+        return write_profile(blackfish_config.BLACKFISH_HOME_DIR, profile)
+    except Exception as e:
+        raise Exception(f"Failed to create profile: {e}")
+
+
+@get("/profiles", guards=ENDPOINT_GUARDS)
+async def read_profiles() -> list[Profile]:
+    try:
+        return import_profiles(blackfish_config.BLACKFISH_HOME_DIR)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profiles config not found.")
+
+
+@put("/profiles", guards=ENDPOINT_GUARDS)
+async def update_profile(profile: Profile) -> Profile:
+    return modify_profile(blackfish_config.BLACKFISH_HOME_DIR, profile)
+
+
+@delete("/profiles/{name: str}")
+async def delete_profile(name: str) -> None:
+    try:
+        return remove_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
+    except ProfileNotFoundException as e:
+        raise NotFoundException(detail=f"{e}")
+
+
 @get("/images", guards=ENDPOINT_GUARDS)
 async def get_images():
     pass
@@ -666,6 +699,10 @@ app = Litestar(
         get_model,
         get_models,
         delete_model,
+        create_profile,
+        read_profiles,
+        update_profile,
+        delete_profile,
         next_server,
         img_server,
     ],

@@ -2,7 +2,9 @@
 {% block command %}
 {%- if container_config.provider == "docker" %}
 docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
-  --volume {{ job_config.model_dir }}:/data \
+  -p {{ container_config.port }}:{{ container_config.port }} \
+  -v {{ job_config.model_dir }}:/data \
+  --name {{ name }} \
   ghcr.io/huggingface/text-generation-inference:latest \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port {{ container_config.port }} \
@@ -10,7 +12,7 @@ docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ job_config.model_dir }}:/data \
   {{ job_config.cache_dir }}/images/text-generation-inference_latest.sif \
-  {{ job_id }} \
+  {{ name }} \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port {{ container_config.port }} \
 {%- endif %}

@@ -32,7 +32,7 @@ dependencies = [
   "fabric",
   "huggingface_hub>=0.25",
   "jinja2",
-  "litestar",
+  "litestar~=2.11",
   "log_symbols",
   "nox",
   "pre-commit",

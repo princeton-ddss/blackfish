@@ -17,11 +17,6 @@ from app.cli.profile import (
 from app.config import config
 from app.logger import logger
 
-"""
-The CLI serves as a client to access the API from as well as performing
-administrative tasks, such as adjusting application settings.
-"""
-
 
 # blackfish
 @click.group()
@@ -96,7 +91,7 @@ def start(reload: bool, profile: str) -> None:  # pragma: no cover
     from sqlalchemy.exc import OperationalError
 
     from app import __file__
-    from app import app
+    from app.asgi import app
 
     if not os.path.isdir(config.BLACKFISH_HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
@@ -114,7 +109,8 @@ def start(reload: bool, profile: str) -> None:  # pragma: no cover
             logger.error(f"Failed to upgrade database: {e}")
 
     uvicorn.run(
-        "app:app",
+        "app.asgi:app",
+        # app,
         host=config.BLACKFISH_HOST,
         port=config.BLACKFISH_PORT,
         log_level="info",
@@ -324,6 +320,7 @@ def ls(filters):  # pragma: no cover
             "STATUS",
             "PORTS",
             "NAME",
+            "MOUNTS",
         ]
     )
     tab.set_style(PLAIN_COLUMNS)
@@ -359,6 +356,7 @@ def ls(filters):  # pragma: no cover
                 service["status"],
                 service["port"],
                 service["name"],
+                service["mounts"],
             ]
         )
     click.echo(tab)

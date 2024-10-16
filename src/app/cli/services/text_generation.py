@@ -195,7 +195,6 @@ def run_text_generate(
     elif isinstance(profile, LocalProfile):
         container_options["port"] = find_port()
         container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
-        job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
         job_options["model_dir"] = model_dir
@@ -206,7 +205,6 @@ def run_text_generate(
                 model=model,
                 job_type="local",
                 host="localhost",
-                user=profile.user,
             )
             click.echo("-" * 80)
             click.echo("Service: text-generate")
@@ -214,7 +212,6 @@ def run_text_generate(
             click.echo(f"Name: {name}")
             click.echo("Type: local")
             click.echo("Host: localhost")
-            click.echo(f"User: {profile.user}")
             click.echo(f"Provider: {container_options['provider']}")
             click.echo("-" * 80)
             click.echo(
@@ -230,7 +227,6 @@ def run_text_generate(
                         "model": model,
                         "job_type": "local",
                         "host": "localhost",
-                        "user": profile.user,
                         "container_options": container_options,
                         "job_options": job_options,
                     },

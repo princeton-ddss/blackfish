@@ -45,7 +45,7 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
     create_local_home_dir(home_dir)
 
     profiles = configparser.ConfigParser()
-    profiles.read(f"{home_dir}/profiles")
+    profiles.read(f"{home_dir}/profiles.cfg")
     if "default" not in profiles:
         print("Let's set up a profile:")
         success = _create_profile_(home_dir)

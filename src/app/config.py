@@ -74,7 +74,7 @@ class BlackfishConfig:
         )
 
         parser = configparser.ConfigParser()
-        parser.read(os.path.join(self.BLACKFISH_HOME_DIR, "profiles"))
+        parser.read(os.path.join(self.BLACKFISH_HOME_DIR, "profiles.cfg"))
         for section in parser.sections():
             profile = {k: v for k, v in parser[section].items()}
             if profile["type"] == "slurm":

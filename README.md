@@ -259,7 +259,7 @@ BLACKFISH_HOME_DIR = '~/.blackfish' # location to store application data
 ```
 
 ### Profiles
-The CLI uses "profiles" to store details of environments where Blackfish has been setup.
+The CLI uses "profiles.cfg" to store details of environments where Blackfish has been setup.
 Generally, Blackfish will be setup up on a local environment, i.e., a laptop, as well
 as a remote environment, e.g., an HPC cluster. When running commands, you can tell the
 CLI which of these environments to use with the `--profile` option. For example, you might
@@ -292,7 +292,7 @@ This command tells Blackfish to start an application on the remote system specif
 `hpc` profile. Blackfish will pass the profile's `home_dir` and `cache_dir` values to the
 apps configuration.
 
-Profiles are stored in `~/.blackfish/profiles` and can be modified using the CLI commands
+Profiles are stored in `~/.blackfish/profiles.cfg` and can be modified using the CLI commands
 `blackfish profile create`, `blackfish profile delete`, and `blackfish profile update`,
 or by directly modifying the file.
 

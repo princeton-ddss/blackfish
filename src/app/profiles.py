@@ -76,7 +76,7 @@ def write_profile(
         return profile
 
 
-def import_profiles(home_dir: str) -> list[BlackfishProfile]:
+def import_profiles(home_dir: str) -> list[dict]:
     """Parse profiles from profile.ini."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
@@ -91,8 +91,9 @@ def import_profiles(home_dir: str) -> list[BlackfishProfile]:
         profile = {k: v for k, v in parser[section].items()}
         if profile["type"] == "slurm":
             profiles.append(
-                SlurmRemote(
+                dict(
                     name=section,
+                    type="slurm",
                     host=profile["host"],
                     user=profile["user"],
                     home_dir=profile["home_dir"],
@@ -101,8 +102,9 @@ def import_profiles(home_dir: str) -> list[BlackfishProfile]:
             )
         elif profile["type"] == "local":
             profiles.append(
-                LocalProfile(
+                dict(
                     name=section,
+                    type="local",
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
                 )
@@ -112,7 +114,7 @@ def import_profiles(home_dir: str) -> list[BlackfishProfile]:
     return profiles
 
 
-def import_profile(home_dir: str, name: str) -> BlackfishProfile:
+def import_profile(home_dir: str, name: str) -> dict:
     """Parse profile from profile.ini."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
@@ -126,16 +128,18 @@ def import_profile(home_dir: str, name: str) -> BlackfishProfile:
         if section == name:
             profile = {k: v for k, v in parser[section].items()}
             if profile["type"] == "slurm":
-                return SlurmRemote(
+                return dict(
                     name=section,
+                    type="slurm",
                     host=profile["host"],
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
                 )
             elif profile["type"] == "local":
-                return LocalProfile(
+                return dict(
                     name=section,
+                    type="local",
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
                 )

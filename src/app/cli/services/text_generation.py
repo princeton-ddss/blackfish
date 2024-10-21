@@ -53,7 +53,7 @@ from log_symbols.symbols import LogSymbols
     "--sharded",
     type=str,
     required=False,
-    default="false",
+    default="true",
     # TODO: help
 )
 @click.option(

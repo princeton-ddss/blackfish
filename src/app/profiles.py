@@ -93,7 +93,6 @@ def import_profiles(home_dir: str) -> list[BlackfishProfile]:
             profiles.append(
                 SlurmRemote(
                     name=section,
-                    type="slurm",
                     host=profile["host"],
                     user=profile["user"],
                     home_dir=profile["home_dir"],
@@ -104,7 +103,6 @@ def import_profiles(home_dir: str) -> list[BlackfishProfile]:
             profiles.append(
                 LocalProfile(
                     name=section,
-                    type="local",
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
                 )
@@ -130,7 +128,6 @@ def import_profile(home_dir: str, name: str) -> BlackfishProfile:
             if profile["type"] == "slurm":
                 return SlurmRemote(
                     name=section,
-                    type="slurm",
                     host=profile["host"],
                     user=profile["user"],
                     home_dir=profile["home_dir"],
@@ -139,7 +136,6 @@ def import_profile(home_dir: str, name: str) -> BlackfishProfile:
             elif profile["type"] == "local":
                 return LocalProfile(
                     name=section,
-                    type="local",
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
                 )

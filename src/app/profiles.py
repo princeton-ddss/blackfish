@@ -112,6 +112,39 @@ def import_profiles(home_dir: str) -> list[BlackfishProfile]:
     return profiles
 
 
+def import_profile(home_dir: str, name: str) -> BlackfishProfile:
+    """Parse profile from profile.ini."""
+
+    profiles_path = os.path.join(home_dir, "profiles.cfg")
+    if not os.path.isfile(profiles_path):
+        raise FileNotFoundError()
+
+    parser = ConfigParser()
+    parser.read(profiles_path)
+
+    for section in parser.sections():
+        if section == name:
+            profile = {k: v for k, v in parser[section].items()}
+            if profile["type"] == "slurm":
+                return SlurmRemote(
+                    name=section,
+                    host=profile["host"],
+                    user=profile["user"],
+                    home_dir=profile["home_dir"],
+                    cache_dir=profile["cache_dir"],
+                )
+            elif profile["type"] == "local":
+                return LocalProfile(
+                        name=section,
+                        home_dir=profile["home_dir"],
+                        cache_dir=profile["cache_dir"],
+                    )
+            else:
+                pass
+
+    return None
+
+
 def modify_profile(home_dir: str, profile: BlackfishProfile) -> BlackfishProfile:
     """Update a profile in profiles.cfg. The provided profile's name should match an existing profile."""
 

@@ -62,6 +62,7 @@ from app.config import SlurmRemote, LocalProfile, BlackfishProfile as Profile
 from app.profiles import (
     init_profile,
     import_profiles,
+    import_profile,
     write_profile,
     modify_profile,
     remove_profile,
@@ -608,6 +609,16 @@ async def read_profiles() -> list[Profile]:
         raise NotFoundException(detail="Profiles config not found.")
 
 
+@get("/profiles/{name: str}", guards=ENDPOINT_GUARDS)
+async def read_profile(name: str) -> Profile:
+    try:
+        profile = import_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
+        if profile is None:
+            raise NotFoundException(detail="Profile not found.")
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profiles config not found.")
+
+
 @put("/profiles", guards=ENDPOINT_GUARDS)
 async def update_profile(profile: Profile) -> Profile:
     return modify_profile(blackfish_config.BLACKFISH_HOME_DIR, profile)
@@ -714,6 +725,7 @@ app = Litestar(
         delete_model,
         create_profile,
         read_profiles,
+        read_profile,
         update_profile,
         delete_profile,
         next_server,

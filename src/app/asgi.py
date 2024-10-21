@@ -59,7 +59,13 @@ from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
 from app.config import SlurmRemote, LocalProfile, BlackfishProfile as Profile
-from app.profiles import import_profiles, write_profile, modify_profile, remove_profile
+from app.profiles import (
+    init_profile,
+    import_profiles,
+    write_profile,
+    modify_profile,
+    remove_profile,
+)
 from app.profiles import ProfileNotFoundException
 
 
@@ -578,13 +584,20 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
 
 
 @post("/profiles", guards=ENDPOINT_GUARDS)
-async def create_profile(profile: Profile) -> Profile:
-    # TODO: this should also attempt to set up profile resources (see cli.profile)
+async def create_profile(data: dict) -> Profile:
+    logger.debug("Heere")
+
+    return
 
     try:
-        return write_profile(blackfish_config.BLACKFISH_HOME_DIR, profile)
+        init_profile(blackfish_config.BLACKFISH_HOME_DIR, data)
     except Exception as e:
-        raise Exception(f"Failed to create profile: {e}")
+        raise HTTPException(detail=f"Unable to create profile: {e}")
+
+    try:
+        return write_profile(blackfish_config.BLACKFISH_HOME_DIR, data)
+    except Exception as e:
+        raise HTTPException(detail=f"Failed to create profile: {e}")
 
 
 @get("/profiles", guards=ENDPOINT_GUARDS)

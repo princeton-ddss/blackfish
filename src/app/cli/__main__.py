@@ -439,7 +439,6 @@ def models_ls(profile, refresh):  # pragma: no cover
 
     tab = PrettyTable(
         field_names=[
-            "ID",
             "REPO",
             "REVISION",
             "PROFILE",
@@ -451,7 +450,6 @@ def models_ls(profile, refresh):  # pragma: no cover
     for model in res.json():
         tab.add_row(
             [
-                model["id"],
                 model["repo"],
                 model["revision"],
                 model["profile"],

@@ -154,44 +154,71 @@ async def find_models(profile: Profile) -> list[Model]:
     are stored using the same schema as Hugging Face.
     """
     models = []
+    revisions = []
     if isinstance(profile, SlurmRemote):
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
         with Connection(
             host=profile.host, user=profile.user
         ) as conn, conn.sftp() as sftp:
             default_dir = os.path.join(profile.cache_dir, "models")
-            logger.debug(f"Searching default directory {default_dir}")
+            logger.debug(f"Searching cache directory {default_dir}")
             try:
                 model_dirs = sftp.listdir(default_dir)
                 logger.debug(f"Found model directories: {model_dirs}")
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
-                    revisions = sftp.listdir(
+                    for revision in sftp.listdir(
                         os.path.join(default_dir, model_dir, "snapshots")
-                    )
-                    for revision in revisions:
-                        models.append(
-                            Model(
-                                repo=repo,
-                                profile=profile.name,
-                                revision=revision,
+                    ):
+                        if revision not in revisions:
+                            models.append(
+                                Model(
+                                    repo=repo,
+                                    profile=profile.name,
+                                    revision=revision,
+                                )
                             )
-                        )
+                            revisions.append(revision)
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
             backup_dir = os.path.join(profile.home_dir, "models")
-            logger.debug(f"Searching backup directory: {backup_dir}")
+            logger.debug(f"Searching home directory: {backup_dir}")
             try:
                 model_dirs = sftp.listdir(backup_dir)
                 logger.debug(f"Found model directories: {model_dirs}")
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
-                    revisions = sftp.listdir(
+                    for revision in sftp.listdir(
                         os.path.join(backup_dir, model_dir, "snapshots")
-                    )
-                    for revision in revisions:
+                    ):
+                        if revision not in revisions:
+                            models.append(
+                                Model(
+                                    repo=repo,
+                                    profile=profile.name,
+                                    revision=revision,
+                                )
+                            )
+                            revisions.append(revision)
+            except FileNotFoundError as e:
+                logger.error(f"Failed to list directory: {e}")
+            return models
+    elif isinstance(profile, LocalProfile):
+        default_dir = os.path.join(profile.cache_dir, "models")
+        logger.debug(f"Searching cache directory {default_dir}")
+        try:
+            model_dirs = os.listdir(default_dir)
+            logger.debug(f"Found model directories: {model_dirs}")
+            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                _, namespace, model = model_dir.split("--")
+                repo = f"{namespace}/{model}"
+                for revision in os.listdir(
+                    os.path.join(default_dir, model_dir, "snapshots")
+                ):
+                    if revision not in revisions:
+                        logger.debug(f"Found revision: {revision}")
                         models.append(
                             Model(
                                 repo=repo,
@@ -199,52 +226,34 @@ async def find_models(profile: Profile) -> list[Model]:
                                 revision=revision,
                             )
                         )
-            except FileNotFoundError as e:
-                logger.error(f"Failed to list directory: {e}")
-            return models
-    elif isinstance(profile, LocalProfile):
-        default_dir = os.path.join(profile.cache_dir, "models")
-        logger.debug(f"Searching default directory {default_dir}")
-        try:
-            model_dirs = os.listdir(default_dir)
-            logger.debug(f"Found model directories: {model_dirs}")
-            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
-                _, namespace, model = model_dir.split("--")
-                repo = f"{namespace}/{model}"
-                revisions = os.listdir(
-                    os.path.join(default_dir, model_dir, "snapshots")
-                )
-                for revision in revisions:
-                    models.append(
-                        Model(
-                            repo=repo,
-                            profile=profile.name,
-                            revision=revision,
-                        )
-                    )
+                        revisions.append(revision)
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
 
         backup_dir = os.path.join(profile.home_dir, "models")
-        logger.debug(f"Searching backup directory: {backup_dir}")
+        logger.debug(f"Searching home directory: {backup_dir}")
         try:
             model_dirs = os.listdir(backup_dir)
             logger.debug(f"Found model directories: {model_dirs}")
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 repo = f"{namespace}/{model}"
-                revisions = os.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
-                for revision in revisions:
-                    models.append(
-                        Model(
-                            repo=repo,
-                            profile=profile.name,
-                            revision=revision,
+                for revision in os.listdir(
+                    os.path.join(backup_dir, model_dir, "snapshots")
+                ):
+                    if revision not in revisions:
+                        logger.debug(f"Found revision: {revision}")
+                        models.append(
+                            Model(
+                                repo=repo,
+                                profile=profile.name,
+                                revision=revision,
+                            )
                         )
-                    )
+                        revisions.append(revision)
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
-        return models
+        return list(models)
     else:
         raise NotImplementedError
 

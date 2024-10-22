@@ -164,13 +164,14 @@ async def find_models(profile: Profile) -> list[Model]:
             logger.debug(f"Searching cache directory {default_dir}")
             try:
                 model_dirs = sftp.listdir(default_dir)
-                logger.debug(f"Found model directories: {model_dirs}")
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
+                    logger.debug(f"Found model {repo}")
                     for revision in sftp.listdir(
                         os.path.join(default_dir, model_dir, "snapshots")
                     ):
+                        logger.debug(f"Found revision {revision}")
                         if revision not in revisions:
                             models.append(
                                 Model(
@@ -186,13 +187,14 @@ async def find_models(profile: Profile) -> list[Model]:
             logger.debug(f"Searching home directory: {backup_dir}")
             try:
                 model_dirs = sftp.listdir(backup_dir)
-                logger.debug(f"Found model directories: {model_dirs}")
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
+                    logger.debug("Found model {repo}")
                     for revision in sftp.listdir(
                         os.path.join(backup_dir, model_dir, "snapshots")
                     ):
+                        logger.debug("Found revision {revision}")
                         if revision not in revisions:
                             models.append(
                                 Model(
@@ -210,13 +212,14 @@ async def find_models(profile: Profile) -> list[Model]:
         logger.debug(f"Searching cache directory {default_dir}")
         try:
             model_dirs = os.listdir(default_dir)
-            logger.debug(f"Found model directories: {model_dirs}")
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 repo = f"{namespace}/{model}"
+                logger.debug(f"Found model {repo}")
                 for revision in os.listdir(
                     os.path.join(default_dir, model_dir, "snapshots")
                 ):
+                    logger.debug(f"Found revision {revision}")
                     if revision not in revisions:
                         logger.debug(f"Found revision: {revision}")
                         models.append(
@@ -234,13 +237,14 @@ async def find_models(profile: Profile) -> list[Model]:
         logger.debug(f"Searching home directory: {backup_dir}")
         try:
             model_dirs = os.listdir(backup_dir)
-            logger.debug(f"Found model directories: {model_dirs}")
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 repo = f"{namespace}/{model}"
+                logger.debug(f"Found model {repo}")
                 for revision in os.listdir(
                     os.path.join(backup_dir, model_dir, "snapshots")
                 ):
+                    logger.debug(f"Found revision {revision}")
                     if revision not in revisions:
                         logger.debug(f"Found revision: {revision}")
                         models.append(

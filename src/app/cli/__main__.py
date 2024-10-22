@@ -174,6 +174,7 @@ def run(
 ):  # pragma: no cover
     """Run an inference service"""
     ctx.obj = {
+        "config": config,
         "profile": profile,
         "time": time,
         "ntasks_per_node": ntasks_per_node,

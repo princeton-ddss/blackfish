@@ -4,7 +4,7 @@ from typing import Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
 from fabric.connection import Connection
-from app.config import BlackfishProfile, SlurmRemote, LocalProfile
+from app.profiles import BlackfishProfile, SlurmRemote, LocalProfile
 from app.logger import logger
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols

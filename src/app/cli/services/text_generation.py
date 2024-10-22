@@ -3,7 +3,7 @@ import requests
 from random import randint
 
 from app.services.text_generation import TextGeneration
-from app.config import config, SlurmRemote, LocalProfile
+from app.profiles import serialize_profiles, SlurmRemote, LocalProfile
 from app.utils import (
     find_port,
     get_models,
@@ -86,7 +86,9 @@ def run_text_generate(
 ):  # pragma: no cover
     """Start service MODEL."""
 
-    profile = config.BLACKFISH_PROFILES[ctx.obj.get("profile", "default")]
+    config = ctx.obj.get("config")
+    profiles = serialize_profiles(config.BLACKFISH_HOME_DIR)
+    profile = next(p for p in profiles if p.name == ctx.obj.get("profile", "default"))
 
     if model in get_models(profile):
         if revision is None:
@@ -108,21 +110,6 @@ def run_text_generate(
         )
         return
 
-    # if model not in TextGenerationModels:
-    #     click.echo(
-    #         f"{LogSymbols.ERROR.value} {model} is not a supported model. Supported models:"
-    #         f" {[x for x in TextGenerationModels.keys()]}."
-    #     )
-    #     return
-
-    # quantizations = TextGenerationModels[model]["quantizations"]
-    # if quantize is not None and quantize not in quantizations:
-    #     click.echo(
-    #         f"❌ {quantize} is not supported for model {model}. Supported quantizations:"
-    #         f" {quantizations}."
-    #     )
-    #     return
-
     if name is None:
         name = f"blackfish-{randint(10_000, 20_000)}"
 
@@ -142,6 +129,7 @@ def run_text_generate(
 
     job_options = {k: v for k, v in ctx.obj.items() if v is not None}
     del job_options["profile"]
+    del job_options["config"]
 
     if isinstance(profile, SlurmRemote):
         job_options["user"] = profile.user

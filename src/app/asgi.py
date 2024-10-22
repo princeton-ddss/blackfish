@@ -58,14 +58,17 @@ from app.services.base import Service
 from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
-from app.config import SlurmRemote, LocalProfile, BlackfishProfile as Profile
 from app.profiles import (
     init_profile,
     import_profiles,
+    serialize_profiles,
     import_profile,
     write_profile,
     modify_profile,
     remove_profile,
+    SlurmRemote,
+    LocalProfile,
+    BlackfishProfile as Profile,
 )
 from app.profiles import ProfileNotFoundException
 
@@ -171,8 +174,8 @@ async def find_models(profile: Profile) -> list[Model]:
                     for revision in sftp.listdir(
                         os.path.join(default_dir, model_dir, "snapshots")
                     ):
-                        logger.debug(f"Found revision {revision}")
                         if revision not in revisions:
+                            logger.debug(f"Found revision {revision}")
                             models.append(
                                 Model(
                                     repo=repo,
@@ -194,8 +197,8 @@ async def find_models(profile: Profile) -> list[Model]:
                     for revision in sftp.listdir(
                         os.path.join(backup_dir, model_dir, "snapshots")
                     ):
-                        logger.debug("Found revision {revision}")
                         if revision not in revisions:
+                            logger.debug(f"Found revision {revision}")
                             models.append(
                                 Model(
                                     repo=repo,
@@ -219,9 +222,8 @@ async def find_models(profile: Profile) -> list[Model]:
                 for revision in os.listdir(
                     os.path.join(default_dir, model_dir, "snapshots")
                 ):
-                    logger.debug(f"Found revision {revision}")
                     if revision not in revisions:
-                        logger.debug(f"Found revision: {revision}")
+                        logger.debug(f"Found revision {revision}")
                         models.append(
                             Model(
                                 repo=repo,
@@ -244,9 +246,8 @@ async def find_models(profile: Profile) -> list[Model]:
                 for revision in os.listdir(
                     os.path.join(backup_dir, model_dir, "snapshots")
                 ):
-                    logger.debug(f"Found revision {revision}")
                     if revision not in revisions:
-                        logger.debug(f"Found revision: {revision}")
+                        logger.debug(f"Found revision {revision}")
                         models.append(
                             Model(
                                 repo=repo,
@@ -545,6 +546,8 @@ async def get_models(
     profile: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
+    profiles = serialize_profiles(state.BLACKFISH_HOME_DIR)
+
     query_filter = {}
     if profile is not None:
         query_filter["profile"] = profile
@@ -552,14 +555,12 @@ async def get_models(
     if refresh:
         # TODO: combine delete and add into single transaction?
         if profile is not None:
-            models = await find_models(state.BLACKFISH_PROFILES[profile])
+            models = await find_models(next(p for p in profiles if p.name == profile))
             logger.debug("Deleting existing models...")
             query = sa.delete(Model).where(Model.profile == profile)
             await session.execute(query)
         else:
-            res = await asyncio.gather(
-                *[find_models(profile) for profile in state.BLACKFISH_PROFILES.values()]
-            )
+            res = await asyncio.gather(*[find_models(profile) for profile in profiles])
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
             logger.debug("Deleting existing models...")
             query = sa.delete(Model)

@@ -76,8 +76,44 @@ def write_profile(
         return profile
 
 
+def serialize_profiles(home_dir: str) -> list[BlackfishProfile]:
+    """Parse profiles from profile.cfg."""
+
+    profiles_path = os.path.join(home_dir, "profiles.cfg")
+    if not os.path.isfile(profiles_path):
+        raise FileNotFoundError()
+
+    parser = ConfigParser()
+    parser.read(profiles_path)
+
+    profiles = []
+    for section in parser.sections():
+        profile = {k: v for k, v in parser[section].items()}
+        if profile["type"] == "slurm":
+            profiles.append(
+                SlurmRemote(
+                    name=section,
+                    host=profile["host"],
+                    user=profile["user"],
+                    home_dir=profile["home_dir"],
+                    cache_dir=profile["cache_dir"],
+                )
+            )
+        elif profile["type"] == "local":
+            profiles.append(
+                LocalProfile(
+                    name=section,
+                    home_dir=profile["home_dir"],
+                    cache_dir=profile["cache_dir"],
+                )
+            )
+        else:
+            pass
+    return profiles
+
+
 def import_profiles(home_dir: str) -> list[dict]:
-    """Parse profiles from profile.ini."""
+    """Parse profiles from profile.cfg."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
     if not os.path.isfile(profiles_path):

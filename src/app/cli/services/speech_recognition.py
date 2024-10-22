@@ -4,7 +4,7 @@ import requests
 from random import randint
 
 from app.services.speech_recognition import SpeechRecognition
-from app.config import config, SlurmRemote, LocalProfile
+from app.profiles import serialize_profiles, SlurmRemote, LocalProfile
 from app.utils import (
     find_port,
     get_models,
@@ -54,7 +54,9 @@ def run_speech_recognition(
 ):  # pragma: no cover
     """Start service MODEL."""
 
-    profile = config.BLACKFISH_PROFILES[ctx.obj.get("profile", "default")]
+    config = ctx.obj.get("config")
+    profiles = serialize_profiles(config.BLACKFISH_HOME_DIR)
+    profile = next(p for p in profiles if p.name == ctx.obj.get("profile", "default"))
 
     if model_id in get_models(profile):
         if revision is None:
@@ -96,6 +98,7 @@ def run_speech_recognition(
 
     job_options = {k: v for k, v in ctx.obj.items() if v is not None}
     del job_options["profile"]
+    del job_options["config"]
 
     if isinstance(profile, SlurmRemote):
         job_options["user"] = profile.user

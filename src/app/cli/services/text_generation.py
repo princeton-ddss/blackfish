@@ -193,7 +193,7 @@ def run_text_generate(
                         f" {res.status_code} - {res.reason}"
                     )
     elif isinstance(profile, LocalProfile):
-        container_options["port"] = find_port()
+        container_options["port"] = find_port(use_stdout=True)
         container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir

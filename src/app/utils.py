@@ -235,19 +235,35 @@ def has_model(
             return False
 
 
-def find_port(host="127.0.0.1", lower=8080, upper=8900) -> int:
+def find_port(host="127.0.0.1", lower=8080, upper=8900, use_stdout=False) -> int:
     """Find a available port in the range `[lower, upper)`."""
     for port in range(lower, upper):
         try:
             client = socket.socket()
             client.bind((host, port))
             client.close()
+            if use_stdout:
+                print(f"{LogSymbols.SUCCESS.value} Found available port {port}.")
+            else:
+                logger.debug(f"Found available port {port}.")
             return int(port)
         except OSError:
             if port == upper - 1:
-                logger.debug(f"Failed to bind port {port} on host {host}.")
+                if use_stdout:
+                    print(
+                        f"{LogSymbols.ERROR.value} Failed to bind port {port} on host"
+                        f" {host}."
+                    )
+                else:
+                    logger.debug(f"Failed to bind port {port} on host {host}.")
             else:
-                logger.debug(
-                    f"Failed to bind port {port} on host {host}. Trying next port."
-                )
+                if use_stdout:
+                    print(
+                        f"{LogSymbols.WARNING.value} Failed to bind port {port} on host"
+                        f" {host}. Trying next port."
+                    )
+                else:
+                    logger.debug(
+                        f"Failed to bind port {port} on host {host}. Trying next port."
+                    )
     raise OSError(f"OSError: no ports available in range {lower}-{upper}")

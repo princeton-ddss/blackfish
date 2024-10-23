@@ -508,6 +508,7 @@ async def fetch_services(
     status: Optional[str] = None,
     host: Optional[str] = None,
     backend: Optional[str] = None,
+    profile: Optional[str] = None,
 ) -> list[Service]:
     query_filter = {}
     if image is not None:
@@ -518,8 +519,11 @@ async def fetch_services(
         query_filter["host"] = host
     if backend is not None:
         query_filter["backend"] = backend
+    if profile is not None:
+        query_filter["profile"] = profile
 
-    query = sa.select(Service)  # .filter_by(**query_filter)
+    # query = sa.select(Service)  # .filter_by(**query_filter)
+    query = sa.select(Service).filter_by(**query_filter)
     res = await session.execute(query)
     services = res.scalars().all()
 

@@ -141,14 +141,16 @@ def run_text_generate(
             service = TextGeneration(
                 name=name,
                 model=model,
+                profile=profile.name,
                 job_type="slurm",
                 host=profile.host,
                 user=profile.user,
             )
             click.echo("-" * 80)
+            click.echo(f"Name: {name}")
             click.echo("Service: text-generate")
             click.echo(f"Model: {model}")
-            click.echo(f"Name: {name}")
+            click.echo(f"Profile: {profile.name}")
             click.echo("Type: slurm")
             click.echo(f"Host: {profile.host}")
             click.echo(f"User: {profile.user}")
@@ -162,6 +164,7 @@ def run_text_generate(
                         "name": name,
                         "image": "text_generation",
                         "model": model,
+                        "profile": profile.name,
                         "job_type": "slurm",
                         "host": profile.host,
                         "user": profile.user,
@@ -191,13 +194,15 @@ def run_text_generate(
             service = TextGeneration(
                 name=name,
                 model=model,
+                profile=profile.name,
                 job_type="local",
                 host="localhost",
             )
             click.echo("-" * 80)
+            click.echo(f"Name: {name}")
             click.echo("Service: text-generate")
             click.echo(f"Model: {model}")
-            click.echo(f"Name: {name}")
+            click.echo(f"Profile: {profile.name}")
             click.echo("Type: local")
             click.echo("Host: localhost")
             click.echo(f"Provider: {container_options['provider']}")
@@ -213,6 +218,7 @@ def run_text_generate(
                         "name": name,
                         "image": "text_generation",
                         "model": model,
+                        "profile": profile.name,
                         "job_type": "local",
                         "host": "localhost",
                         "container_options": container_options,

@@ -267,6 +267,7 @@ def details(service_id):  # pragma: no cover
         data = {
             "image": service.image,
             "model": service.model,
+            "profile": service.profile,
             "created_at": service.created_at,  # .isoformat(),
             "name": service.name,
             "status": {
@@ -321,6 +322,7 @@ def ls(filters):  # pragma: no cover
             "STATUS",
             "PORTS",
             "NAME",
+            "PROFILE",
             "MOUNTS",
         ]
     )
@@ -357,6 +359,7 @@ def ls(filters):  # pragma: no cover
                 service["status"],
                 service["port"],
                 service["name"],
+                service["profile"],
                 service["mounts"],
             ]
         )

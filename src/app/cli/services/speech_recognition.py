@@ -110,15 +110,17 @@ def run_speech_recognition(
             service = SpeechRecognition(
                 name=name,
                 model=model_id,
+                profile=profile.name,
                 job_type="slurm",
                 host=profile.host,
                 user=profile.user,
                 mounts=container_options["input_dir"],
             )
             click.echo("-" * 80)
+            click.echo(f"Name: {name}")
             click.echo("Service: speech-recognition")
             click.echo(f"Model: {model_id}")
-            click.echo(f"Name: {name}")
+            click.echo(f"Profile: {profile.name}")
             click.echo("Type: slurm")
             click.echo(f"Host: {profile.host}")
             click.echo(f"User: {profile.user}")
@@ -132,6 +134,7 @@ def run_speech_recognition(
                         "name": name,
                         "image": "speech_recognition",
                         "model": model_id,
+                        "profile": profile.name,
                         "job_type": "slurm",
                         "host": profile.host,
                         "user": profile.user,
@@ -161,14 +164,16 @@ def run_speech_recognition(
             service = SpeechRecognition(
                 name=name,
                 model=model_id,
+                profile=profile.name,
                 job_type="local",
                 host="localhost",
                 mounts=container_options["input_dir"],
             )
             click.echo("-" * 80)
+            click.echo(f"Name: {name}")
             click.echo("Service: speech-recognition")
             click.echo(f"Model: {model_id}")
-            click.echo(f"Name: {name}")
+            click.echo(f"Profile: {profile.name}")
             click.echo("Type: local")
             click.echo("Host: localhost")
             click.echo(f"Provider: {container_options['provider']}")
@@ -184,6 +189,7 @@ def run_speech_recognition(
                         "name": name,
                         "image": "speech_recognition",
                         "model": model_id,
+                        "profile": profile.name,
                         "job_type": "local",
                         "host": "localhost",
                         "container_options": container_options,

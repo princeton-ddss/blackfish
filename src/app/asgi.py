@@ -405,6 +405,7 @@ class ServiceRequest:
     name: str  # TODO: optional w/ default by name generator
     image: str
     model: str
+    profile: str
     job_type: str
     container_options: dict
     job_options: dict
@@ -432,6 +433,7 @@ def build_service(data: ServiceRequest):
             name=data.name,  # optional
             image=data.image,
             model=data.model,
+            profile=data.profile,
             user=data.user,  # optional (required to run remote services)
             host=data.host,  # optional (required to run remote services)
             job_type=data.job_type,
@@ -441,6 +443,7 @@ def build_service(data: ServiceRequest):
             name=data.name,  # optional
             image=data.image,
             model=data.model,
+            profile=data.profile,
             user=data.user,  # optional (required to run remote services)
             host=data.host,  # optional (required to run remote services)
             job_type=data.job_type,

@@ -13,7 +13,7 @@ from app.setup import (
 
 def _create_profile_(default_home: str, default_name: str = "default") -> None:
     profiles = configparser.ConfigParser()
-    profiles.read(f"{default_home}/profiles")
+    profiles.read(f"{default_home}/profiles.cfg")
 
     name = input(f"> name [{default_name}]: ")
     name = default_name if name == "" else name
@@ -85,7 +85,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
     else:
         raise NotImplementedError
 
-    with open(os.path.join(default_home, "profiles"), "w") as f:
+    with open(os.path.join(default_home, "profiles.cfg"), "w") as f:
         profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Created profile {name}.")
         return True
@@ -93,7 +93,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
 
 def _update_profile_(default_home: str, default_name: str = "default") -> None:
     profiles = configparser.ConfigParser()
-    profiles.read(f"{default_home}/profiles")
+    profiles.read(f"{default_home}/profiles.cfg")
 
     name = input(f"> name [{default_name}]: ")
     name = default_name if name == "" else name
@@ -156,7 +156,7 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
     else:
         raise NotImplementedError
 
-    with open(os.path.join(default_home, "profiles"), "w") as f:
+    with open(os.path.join(default_home, "profiles.cfg"), "w") as f:
         profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Updated profile {name}.")
 
@@ -183,7 +183,7 @@ def show_profile(ctx, name):  # pragma: no cover
     default_home = ctx.obj.get("home_dir")
 
     profiles = configparser.ConfigParser()
-    profiles.read(f"{default_home}/profiles")
+    profiles.read(f"{default_home}/profiles.cfg")
 
     if name in profiles:
         profile = profiles[name]
@@ -214,7 +214,7 @@ def list_profiles(ctx):  # pragma: no cover
     default_home = ctx.obj.get("home_dir")
 
     profiles = configparser.ConfigParser()
-    profiles.read(f"{default_home}/profiles")
+    profiles.read(f"{default_home}/profiles.cfg")
 
     for name in profiles:
         profile = profiles[name]
@@ -260,13 +260,13 @@ def delete_profile(ctx, name: str):  # pragma: no cover
 
     home_dir = ctx.obj.get("home_dir")
     profiles = configparser.ConfigParser()
-    profiles.read(f"{home_dir}/profiles")
+    profiles.read(f"{home_dir}/profiles.cfg")
 
     if name in profiles:
         confirm = input(f"  Delete profile {name}? (y/n) ")
         if confirm.lower() == "y":
             del profiles[name]
-            with open(os.path.join(home_dir, "profiles"), "w") as f:
+            with open(os.path.join(home_dir, "profiles.cfg"), "w") as f:
                 profiles.write(f)
             print(f"{LogSymbols.SUCCESS.value} Profile {name} deleted.")
     else:

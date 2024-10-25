@@ -4,7 +4,7 @@ import requests
 from random import randint
 
 from app.services.speech_recognition import SpeechRecognition
-from app.config import config, SlurmRemote, LocalProfile
+from app.profiles import serialize_profiles, SlurmRemote, LocalProfile
 from app.utils import (
     find_port,
     get_models,
@@ -54,7 +54,9 @@ def run_speech_recognition(
 ):  # pragma: no cover
     """Start service MODEL."""
 
-    profile = config.BLACKFISH_PROFILES[ctx.obj.get("profile", "default")]
+    config = ctx.obj.get("config")
+    profiles = serialize_profiles(config.BLACKFISH_HOME_DIR)
+    profile = next(p for p in profiles if p.name == ctx.obj.get("profile", "default"))
 
     if model_id in get_models(profile):
         if revision is None:
@@ -96,6 +98,7 @@ def run_speech_recognition(
 
     job_options = {k: v for k, v in ctx.obj.items() if v is not None}
     del job_options["profile"]
+    del job_options["config"]
 
     if isinstance(profile, SlurmRemote):
         job_options["user"] = profile.user
@@ -107,15 +110,17 @@ def run_speech_recognition(
             service = SpeechRecognition(
                 name=name,
                 model=model_id,
+                profile=profile.name,
                 job_type="slurm",
                 host=profile.host,
                 user=profile.user,
                 mounts=container_options["input_dir"],
             )
             click.echo("-" * 80)
+            click.echo(f"Name: {name}")
             click.echo("Service: speech-recognition")
             click.echo(f"Model: {model_id}")
-            click.echo(f"Name: {name}")
+            click.echo(f"Profile: {profile.name}")
             click.echo("Type: slurm")
             click.echo(f"Host: {profile.host}")
             click.echo(f"User: {profile.user}")
@@ -129,6 +134,7 @@ def run_speech_recognition(
                         "name": name,
                         "image": "speech_recognition",
                         "model": model_id,
+                        "profile": profile.name,
                         "job_type": "slurm",
                         "host": profile.host,
                         "user": profile.user,
@@ -148,7 +154,7 @@ def run_speech_recognition(
                         f" {res.status_code} - {res.reason}"
                     )
     elif isinstance(profile, LocalProfile):
-        container_options["port"] = find_port()
+        container_options["port"] = find_port(use_stdout=True)
         container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
@@ -158,14 +164,16 @@ def run_speech_recognition(
             service = SpeechRecognition(
                 name=name,
                 model=model_id,
+                profile=profile.name,
                 job_type="local",
                 host="localhost",
                 mounts=container_options["input_dir"],
             )
             click.echo("-" * 80)
+            click.echo(f"Name: {name}")
             click.echo("Service: speech-recognition")
             click.echo(f"Model: {model_id}")
-            click.echo(f"Name: {name}")
+            click.echo(f"Profile: {profile.name}")
             click.echo("Type: local")
             click.echo("Host: localhost")
             click.echo(f"Provider: {container_options['provider']}")
@@ -181,6 +189,7 @@ def run_speech_recognition(
                         "name": name,
                         "image": "speech_recognition",
                         "model": model_id,
+                        "profile": profile.name,
                         "job_type": "local",
                         "host": "localhost",
                         "container_options": container_options,

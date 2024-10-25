@@ -1,7 +1,5 @@
 import os
-import configparser
 import subprocess
-from dataclasses import dataclass
 from copy import deepcopy
 
 
@@ -31,35 +29,13 @@ def get_container_provider():
             return None
 
 
-class BlackfishProfile:
-    ...
-
-
-@dataclass
-class SlurmRemote(BlackfishProfile):
-    name: str
-    host: str
-    user: str
-    home_dir: str
-    cache_dir: str
-
-
-@dataclass
-class LocalProfile(BlackfishProfile):
-    name: str
-    home_dir: str
-    cache_dir: str
-
-
 class BlackfishConfig:
     """Blackfish app configuration.
 
-    Most values are pulled from local environment or a default if no environment
-    variable is set.
+    Most values are pulled from the local environment or a default if no environment variable is set.
 
-    These values are passed to the Blackfish application on start up and used by
-    the Blackfish CLI. Therefore, it's possible for the CLI config and app config
-    to get out of sync.
+    These values are passed to the Blackfish application on start up and used by the Blackfish CLI.
+    Therefore, it's possible for the CLI config and app config to be out of sync.
     """
 
     def __init__(self):
@@ -68,31 +44,9 @@ class BlackfishConfig:
         self.BLACKFISH_HOME_DIR = os.getenv("BLACKFISH_HOME_DIR", DEFAULT_HOME_DIR)
         self.BLACKFISH_DEBUG = os.getenv("BLACKFISH_DEBUG", DEFAULT_DEBUG)
         self.DEV_MODE = bool(int(os.getenv("BLACKFISH_DEV_MODE", 1)))
-        self.BLACKFISH_PROFILES = {}
         self.BLACKFISH_CONTAINER_PROVIDER = os.getenv(
             "BLACKFISH_CONTAINER_PROVIER", get_container_provider()
         )
-
-        parser = configparser.ConfigParser()
-        parser.read(os.path.join(self.BLACKFISH_HOME_DIR, "profiles"))
-        for section in parser.sections():
-            profile = {k: v for k, v in parser[section].items()}
-            if profile["type"] == "slurm":
-                self.BLACKFISH_PROFILES[section] = SlurmRemote(
-                    name=section,
-                    host=profile["host"],
-                    user=profile["user"],
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            elif profile["type"] == "local":
-                self.BLACKFISH_PROFILES[section] = LocalProfile(
-                    name=section,
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            else:
-                pass
 
     def __str__(self) -> str:
         return str(self.__dict__)

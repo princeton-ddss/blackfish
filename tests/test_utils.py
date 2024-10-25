@@ -1,7 +1,7 @@
 from unittest import mock
 
 from app import utils
-from app.config import SlurmRemote
+from app.profiles import SlurmRemote
 
 
 profile = SlurmRemote(
@@ -51,20 +51,24 @@ def mock_sftp(conn):
 
 @mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
 def test_get_models():
-    assert utils.get_models(profile) == [
-        "test/model-a",
-        "test/model-b",
-        "test/model-c",
-        "test/model-d",
-    ]
+    assert set(utils.get_models(profile)) == set(
+        [
+            "test/model-a",
+            "test/model-b",
+            "test/model-c",
+            "test/model-d",
+        ]
+    )
 
 
 @mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
 def test_get_revisions():
-    assert utils.get_revisions("test/model-a", profile=profile) == [
-        "test-commit-a",
-        "test-commit-b",
-    ]
+    assert set(utils.get_revisions("test/model-a", profile=profile)) == set(
+        [
+            "test-commit-a",
+            "test-commit-b",
+        ]
+    )
 
 
 @mock.patch.object(utils.Connection, "sftp", new=mock_sftp)

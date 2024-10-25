@@ -4,7 +4,7 @@ from typing import Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
 from fabric.connection import Connection
-from app.config import BlackfishProfile, SlurmRemote, LocalProfile
+from app.profiles import BlackfishProfile, SlurmRemote, LocalProfile
 from app.logger import logger
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -24,42 +24,42 @@ def get_latest_commit(repo_id: str, revisions: list[str]) -> str:  # pragma: no 
 def get_models(profile: BlackfishProfile) -> list[str]:
     """Return a list of models available to a given profile."""
     if isinstance(profile, SlurmRemote):
-        models = []
+        models = set()
         with yaspin(text=f"Searching {profile.host} for available models") as spinner:
             with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
                 default_dir = os.path.join(profile.cache_dir, "models")
-                spinner.text = f"Looking in default directory {default_dir}"
+                spinner.text = f"Looking in cache directory {default_dir}"
                 model_dirs = sftp.listdir(default_dir)
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
-                    models.append(f"{namespace}/{model}")
+                    models.add(f"{namespace}/{model}")
                 backup_dir = os.path.join(profile.home_dir, "models")
-                spinner.text = f"Looking in default directory {backup_dir}"
+                spinner.text = f"Looking in home directory {backup_dir}"
                 model_dirs = sftp.listdir(backup_dir)
-                for model_dir in model_dirs:
+                for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
-                    models.append(f"{namespace}/{model}")
+                    models.add(f"{namespace}/{model}")
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
-        return models
+        return list(models)
     elif isinstance(profile, LocalProfile):
-        models = []
+        models = set()
         with yaspin(text="Searching localhost for available models") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
-            spinner.text = f"Looking in default directory {default_dir}"
+            spinner.text = f"Looking in cache directory {default_dir}"
             model_dirs = os.listdir(default_dir)
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
-                models.append(f"{namespace}/{model}")
+                models.add(f"{namespace}/{model}")
             backup_dir = os.path.join(profile.home_dir, "models")
-            spinner.text = f"Looking in default directory {backup_dir}"
+            spinner.text = f"Looking in home directory {backup_dir}"
             model_dirs = os.listdir(backup_dir)
-            for model_dir in model_dirs:
+            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
-                models.append(f"{namespace}/{model}")
+                models.add(f"{namespace}/{model}")
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
-        return models
+        return list(models)
     else:
         raise NotImplementedError
 
@@ -67,7 +67,7 @@ def get_models(profile: BlackfishProfile) -> list[str]:
 def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
     """Return a list of revisions associated with a given model and profile."""
     if isinstance(profile, SlurmRemote):
-        revisions = []
+        revisions = set()
         namespace, model = repo_id.split("/")
         model_dir = f"models--{namespace}--{model}"
         with yaspin(
@@ -75,44 +75,44 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
         ) as spinner:
             with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
                 default_dir = os.path.join(profile.cache_dir, "models")
-                spinner.text = f"Looking in default directory {default_dir}"
+                spinner.text = f"Looking in cache directory {default_dir}"
                 model_dirs = sftp.listdir(default_dir)
-                if model_dir in model_dirs:
-                    revisions.extend(
+                if model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                    revisions.update(
                         sftp.listdir(os.path.join(default_dir, model_dir, "snapshots"))
                     )
                 backup_dir = os.path.join(profile.home_dir, "models")
-                spinner.text = f"Looking in backup directory {backup_dir}"
-                models = sftp.listdir(backup_dir)
-                if model_dir in models:
-                    revisions.extend(
+                spinner.text = f"Looking in home directory {backup_dir}"
+                model_dirs = sftp.listdir(backup_dir)
+                if model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                    revisions.update(
                         sftp.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
                     )
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
-        return revisions
+        return list(revisions)
     elif isinstance(profile, LocalProfile):
-        revisions = []
+        revisions = set()
         namespace, model = repo_id.split("/")
         model_dir = f"models--{namespace}--{model}"
         with yaspin(text=f"Searching localhost for model {repo_id} commits") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
-            spinner.text = f"Looking in default directory {default_dir}"
+            spinner.text = f"Looking in cache directory {default_dir}"
             model_dirs = os.listdir(default_dir)
-            if model_dir in model_dirs:
-                revisions.extend(
+            if model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                revisions.update(
                     os.listdir(os.path.join(default_dir, model_dir, "snapshots"))
                 )
             backup_dir = os.path.join(profile.home_dir, "models")
-            spinner.text = f"Looking in backup directory {backup_dir}"
-            models = os.listdir(backup_dir)
-            if model_dir in models:
-                revisions.extend(
+            spinner.text = f"Looking in home directory {backup_dir}"
+            model_dirs = os.listdir(backup_dir)
+            if model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+                revisions.update(
                     os.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
                 )
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
-        return revisions
+        return list(revisions)
     else:
         raise NotImplementedError
 
@@ -235,19 +235,35 @@ def has_model(
             return False
 
 
-def find_port(host="127.0.0.1", lower=8080, upper=8900) -> int:
+def find_port(host="127.0.0.1", lower=8080, upper=8900, use_stdout=False) -> int:
     """Find a available port in the range `[lower, upper)`."""
     for port in range(lower, upper):
         try:
             client = socket.socket()
             client.bind((host, port))
             client.close()
+            if use_stdout:
+                print(f"{LogSymbols.SUCCESS.value} Found available port {port}.")
+            else:
+                logger.debug(f"Found available port {port}.")
             return int(port)
         except OSError:
             if port == upper - 1:
-                logger.debug(f"Failed to bind port {port} on host {host}.")
+                if use_stdout:
+                    print(
+                        f"{LogSymbols.ERROR.value} Failed to bind port {port} on host"
+                        f" {host}."
+                    )
+                else:
+                    logger.debug(f"Failed to bind port {port} on host {host}.")
             else:
-                logger.debug(
-                    f"Failed to bind port {port} on host {host}. Trying next port."
-                )
+                if use_stdout:
+                    print(
+                        f"{LogSymbols.WARNING.value} Failed to bind port {port} on host"
+                        f" {host}. Trying next port."
+                    )
+                else:
+                    logger.debug(
+                        f"Failed to bind port {port} on host {host}. Trying next port."
+                    )
     raise OSError(f"OSError: no ports available in range {lower}-{upper}")

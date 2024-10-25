@@ -39,6 +39,7 @@ class Service(UUIDAuditBase):
     endpoints: Mapped[Optional[str]]
     image: Mapped[str]
     model: Mapped[str]
+    profile: Mapped[str]
     status: Mapped[Optional[str]]
     user: Mapped[Optional[str]]
     host: Mapped[str]

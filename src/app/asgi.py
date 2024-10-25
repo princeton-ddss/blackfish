@@ -58,7 +58,19 @@ from app.services.base import Service
 from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
-from app.config import BlackfishProfile, SlurmRemote, LocalProfile
+from app.profiles import (
+    init_profile,
+    import_profiles,
+    serialize_profiles,
+    import_profile,
+    write_profile,
+    modify_profile,
+    remove_profile,
+    SlurmRemote,
+    LocalProfile,
+    BlackfishProfile as Profile,
+)
+from app.profiles import ProfileNotFoundException
 
 
 class Model(UUIDAuditBase):
@@ -137,7 +149,7 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
         raise NotFoundException(detail=f"Service {service_id} not found") from e
 
 
-async def find_models(profile: BlackfishProfile) -> list[Model]:
+async def find_models(profile: Profile) -> list[Model]:
     """Find all model revisions associated with a given profile.
 
     The model files associated with a given profile are determined by the contents
@@ -145,97 +157,108 @@ async def find_models(profile: BlackfishProfile) -> list[Model]:
     are stored using the same schema as Hugging Face.
     """
     models = []
+    revisions = []
     if isinstance(profile, SlurmRemote):
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
         with Connection(
             host=profile.host, user=profile.user
         ) as conn, conn.sftp() as sftp:
             default_dir = os.path.join(profile.cache_dir, "models")
-            logger.debug(f"Searching default directory {default_dir}")
+            logger.debug(f"Searching cache directory {default_dir}")
             try:
                 model_dirs = sftp.listdir(default_dir)
-                logger.debug(f"Found model directories: {model_dirs}")
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
-                    revisions = sftp.listdir(
+                    logger.debug(f"Found model {repo}")
+                    for revision in sftp.listdir(
                         os.path.join(default_dir, model_dir, "snapshots")
-                    )
-                    for revision in revisions:
-                        models.append(
-                            Model(
-                                repo=repo,
-                                profile=profile.name,
-                                revision=revision,
+                    ):
+                        if revision not in revisions:
+                            logger.debug(f"Found revision {revision}")
+                            models.append(
+                                Model(
+                                    repo=repo,
+                                    profile=profile.name,
+                                    revision=revision,
+                                )
                             )
-                        )
+                            revisions.append(revision)
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
             backup_dir = os.path.join(profile.home_dir, "models")
-            logger.debug(f"Searching backup directory: {backup_dir}")
+            logger.debug(f"Searching home directory: {backup_dir}")
             try:
                 model_dirs = sftp.listdir(backup_dir)
-                logger.debug(f"Found model directories: {model_dirs}")
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
-                    revisions = sftp.listdir(
+                    logger.debug("Found model {repo}")
+                    for revision in sftp.listdir(
                         os.path.join(backup_dir, model_dir, "snapshots")
-                    )
-                    for revision in revisions:
-                        models.append(
-                            Model(
-                                repo=repo,
-                                profile=profile.name,
-                                revision=revision,
+                    ):
+                        if revision not in revisions:
+                            logger.debug(f"Found revision {revision}")
+                            models.append(
+                                Model(
+                                    repo=repo,
+                                    profile=profile.name,
+                                    revision=revision,
+                                )
                             )
-                        )
+                            revisions.append(revision)
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
             return models
     elif isinstance(profile, LocalProfile):
         default_dir = os.path.join(profile.cache_dir, "models")
-        logger.debug(f"Searching default directory {default_dir}")
+        logger.debug(f"Searching cache directory {default_dir}")
         try:
             model_dirs = os.listdir(default_dir)
-            logger.debug(f"Found model directories: {model_dirs}")
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 repo = f"{namespace}/{model}"
-                revisions = os.listdir(
+                logger.debug(f"Found model {repo}")
+                for revision in os.listdir(
                     os.path.join(default_dir, model_dir, "snapshots")
-                )
-                for revision in revisions:
-                    models.append(
-                        Model(
-                            repo=repo,
-                            profile=profile.name,
-                            revision=revision,
+                ):
+                    if revision not in revisions:
+                        logger.debug(f"Found revision {revision}")
+                        models.append(
+                            Model(
+                                repo=repo,
+                                profile=profile.name,
+                                revision=revision,
+                            )
                         )
-                    )
+                        revisions.append(revision)
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
 
         backup_dir = os.path.join(profile.home_dir, "models")
-        logger.debug(f"Searching backup directory: {backup_dir}")
+        logger.debug(f"Searching home directory: {backup_dir}")
         try:
             model_dirs = os.listdir(backup_dir)
-            logger.debug(f"Found model directories: {model_dirs}")
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 repo = f"{namespace}/{model}"
-                revisions = os.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
-                for revision in revisions:
-                    models.append(
-                        Model(
-                            repo=repo,
-                            profile=profile.name,
-                            revision=revision,
+                logger.debug(f"Found model {repo}")
+                for revision in os.listdir(
+                    os.path.join(backup_dir, model_dir, "snapshots")
+                ):
+                    if revision not in revisions:
+                        logger.debug(f"Found revision {revision}")
+                        models.append(
+                            Model(
+                                repo=repo,
+                                profile=profile.name,
+                                revision=revision,
+                            )
                         )
-                    )
+                        revisions.append(revision)
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
-        return models
+        return list(models)
     else:
         raise NotImplementedError
 
@@ -382,6 +405,7 @@ class ServiceRequest:
     name: str  # TODO: optional w/ default by name generator
     image: str
     model: str
+    profile: str
     job_type: str
     container_options: dict
     job_options: dict
@@ -409,6 +433,7 @@ def build_service(data: ServiceRequest):
             name=data.name,  # optional
             image=data.image,
             model=data.model,
+            profile=data.profile,
             user=data.user,  # optional (required to run remote services)
             host=data.host,  # optional (required to run remote services)
             job_type=data.job_type,
@@ -418,6 +443,7 @@ def build_service(data: ServiceRequest):
             name=data.name,  # optional
             image=data.image,
             model=data.model,
+            profile=data.profile,
             user=data.user,  # optional (required to run remote services)
             host=data.host,  # optional (required to run remote services)
             job_type=data.job_type,
@@ -482,6 +508,7 @@ async def fetch_services(
     status: Optional[str] = None,
     host: Optional[str] = None,
     backend: Optional[str] = None,
+    profile: Optional[str] = None,
 ) -> list[Service]:
     query_filter = {}
     if image is not None:
@@ -492,8 +519,11 @@ async def fetch_services(
         query_filter["host"] = host
     if backend is not None:
         query_filter["backend"] = backend
+    if profile is not None:
+        query_filter["profile"] = profile
 
-    query = sa.select(Service)  # .filter_by(**query_filter)
+    # query = sa.select(Service)  # .filter_by(**query_filter)
+    query = sa.select(Service).filter_by(**query_filter)
     res = await session.execute(query)
     services = res.scalars().all()
 
@@ -523,6 +553,8 @@ async def get_models(
     profile: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
+    profiles = serialize_profiles(state.BLACKFISH_HOME_DIR)
+
     query_filter = {}
     if profile is not None:
         query_filter["profile"] = profile
@@ -530,14 +562,12 @@ async def get_models(
     if refresh:
         # TODO: combine delete and add into single transaction?
         if profile is not None:
-            models = await find_models(state.BLACKFISH_PROFILES[profile])
+            models = await find_models(next(p for p in profiles if p.name == profile))
             logger.debug("Deleting existing models...")
             query = sa.delete(Model).where(Model.profile == profile)
             await session.execute(query)
         else:
-            res = await asyncio.gather(
-                *[find_models(profile) for profile in state.BLACKFISH_PROFILES.values()]
-            )
+            res = await asyncio.gather(*[find_models(profile) for profile in profiles])
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
             logger.debug("Deleting existing models...")
             query = sa.delete(Model)
@@ -573,6 +603,54 @@ async def create_model(data: Model, session: AsyncSession) -> Model:
 async def delete_model(model_id: str, session: AsyncSession) -> None:
     query = sa.delete(Model).where(Model.id == model_id)
     await session.execute(query)
+
+
+@post("/profiles", guards=ENDPOINT_GUARDS)
+async def create_profile(data: dict) -> Profile:
+    raise NotImplementedError
+
+    try:
+        init_profile(blackfish_config.BLACKFISH_HOME_DIR, data)
+    except Exception as e:
+        raise HTTPException(detail=f"Unable to create profile: {e}")
+
+    try:
+        return write_profile(blackfish_config.BLACKFISH_HOME_DIR, data)
+    except Exception as e:
+        raise HTTPException(detail=f"Failed to create profile: {e}")
+
+
+@get("/profiles", guards=ENDPOINT_GUARDS)
+async def read_profiles() -> list[Profile]:
+    try:
+        return import_profiles(blackfish_config.BLACKFISH_HOME_DIR)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profiles config not found.")
+
+
+@get("/profiles/{name: str}", guards=ENDPOINT_GUARDS)
+async def read_profile(name: str) -> Profile:
+    try:
+        profile = import_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
+        if profile is None:
+            raise NotFoundException(detail="Profile not found.")
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profiles config not found.")
+
+
+@put("/profiles", guards=ENDPOINT_GUARDS)
+async def update_profile(profile: Profile) -> Profile:
+    raise NotImplementedError
+    return modify_profile(blackfish_config.BLACKFISH_HOME_DIR, profile)
+
+
+@delete("/profiles/{name: str}")
+async def delete_profile(name: str) -> None:
+    raise NotImplementedError
+    try:
+        return remove_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
+    except ProfileNotFoundException as e:
+        raise NotFoundException(detail=f"{e}")
 
 
 @get("/images", guards=ENDPOINT_GUARDS)
@@ -666,6 +744,11 @@ app = Litestar(
         get_model,
         get_models,
         delete_model,
+        create_profile,
+        read_profiles,
+        read_profile,
+        update_profile,
+        delete_profile,
         next_server,
         img_server,
     ],

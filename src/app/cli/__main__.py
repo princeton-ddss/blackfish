@@ -45,7 +45,7 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
     create_local_home_dir(home_dir)
 
     profiles = configparser.ConfigParser()
-    profiles.read(f"{home_dir}/profiles")
+    profiles.read(f"{home_dir}/profiles.cfg")
     if "default" not in profiles:
         print("Let's set up a profile:")
         success = _create_profile_(home_dir)
@@ -174,6 +174,7 @@ def run(
 ):  # pragma: no cover
     """Run an inference service"""
     ctx.obj = {
+        "config": config,
         "profile": profile,
         "time": time,
         "ntasks_per_node": ntasks_per_node,
@@ -266,6 +267,7 @@ def details(service_id):  # pragma: no cover
         data = {
             "image": service.image,
             "model": service.model,
+            "profile": service.profile,
             "created_at": service.created_at,  # .isoformat(),
             "name": service.name,
             "status": {
@@ -320,6 +322,7 @@ def ls(filters):  # pragma: no cover
             "STATUS",
             "PORTS",
             "NAME",
+            "PROFILE",
             "MOUNTS",
         ]
     )
@@ -356,6 +359,7 @@ def ls(filters):  # pragma: no cover
                 service["status"],
                 service["port"],
                 service["name"],
+                service["profile"],
                 service["mounts"],
             ]
         )
@@ -439,7 +443,6 @@ def models_ls(profile, refresh):  # pragma: no cover
 
     tab = PrettyTable(
         field_names=[
-            "ID",
             "REPO",
             "REVISION",
             "PROFILE",
@@ -451,7 +454,6 @@ def models_ls(profile, refresh):  # pragma: no cover
     for model in res.json():
         tab.add_row(
             [
-                model["id"],
                 model["repo"],
                 model["revision"],
                 model["profile"],

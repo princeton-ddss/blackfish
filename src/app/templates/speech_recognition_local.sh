@@ -17,7 +17,7 @@ docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
 apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{container_config["input_dir"]}}:/data/audio \
   --bind {{container_config["model_dir"]}}:/data/models \
-  {{ job_config.cache_dir }}/images/speech-recognition-inference_latest.sif \
+  {{ job_config.cache_dir }}/images/speech-recognition-inference_0.1.2.sif \
   {{ name }}
   --model_dir /data/models \
   --model_id {{ container_config['model_id'] }} \

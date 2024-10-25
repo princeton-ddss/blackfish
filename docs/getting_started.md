@@ -80,7 +80,7 @@ Each profile consists of some combination of the following attributes, depending
 
 !!! tip
 
-    Blackfish profiles are stored in `$BLACKFISH_HOME/profiles`. On Linux, this is `$HOME/.blackfish/profile`
+    Blackfish profiles are stored in `$BLACKFISH_HOME/profiles.cfg`. On Linux, this is `$HOME/.blackfish/profile`
     by default. You can modify this file directly, if needed, but you'll need to need setup any required remote
     resources by hand.
 

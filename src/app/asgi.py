@@ -595,6 +595,17 @@ async def get_model(model_id: str, session: AsyncSession) -> Model:
 
 @post("/models", guards=ENDPOINT_GUARDS)
 async def create_model(data: Model, session: AsyncSession) -> Model:
+    # Args
+    # - repo: str
+    # - revision: str
+    # - profile: str
+    # - cache: Bool
+
+    # 1. Use huggingface_hub to download the model
+    # 2. Use huggingface_hub to get the model image
+    # 3. Record the model image to info.json
+    # 4. Create a model object and insert to Models table
+
     session.add(data)
     return data
 

@@ -607,9 +607,7 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
 
 @post("/profiles", guards=ENDPOINT_GUARDS)
 async def create_profile(data: dict) -> Profile:
-    logger.debug("Heere")
-
-    return
+    raise NotImplementedError
 
     try:
         init_profile(blackfish_config.BLACKFISH_HOME_DIR, data)
@@ -642,11 +640,13 @@ async def read_profile(name: str) -> Profile:
 
 @put("/profiles", guards=ENDPOINT_GUARDS)
 async def update_profile(profile: Profile) -> Profile:
+    raise NotImplementedError
     return modify_profile(blackfish_config.BLACKFISH_HOME_DIR, profile)
 
 
 @delete("/profiles/{name: str}")
 async def delete_profile(name: str) -> None:
+    raise NotImplementedError
     try:
         return remove_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
     except ProfileNotFoundException as e:

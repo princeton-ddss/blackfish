@@ -417,13 +417,21 @@ def models():  # pragma: no cover
     help="List models available for the given profile.",
 )
 @click.option(
+    "-t",
+    "--image",
+    type=str,
+    required=False,
+    default=None,
+    help="List models available for the given task/image.",
+)
+@click.option(
     "-r",
     "--refresh",
     is_flag=True,
     default=False,
     help="Refresh the list of available models.",
 )
-def models_ls(profile, refresh):  # pragma: no cover
+def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
     """Show available (downloaded) models for a given image and (optional) profile."""
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
@@ -431,6 +439,8 @@ def models_ls(profile, refresh):  # pragma: no cover
     params = f"refresh={refresh}"
     if profile is not None:
         params += f"&profile={profile}"
+    if image is not None:
+        params += f"&image={image}"
 
     with yaspin(text="Fetching models") as spinner:
         res = requests.get(

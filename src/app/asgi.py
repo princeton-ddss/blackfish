@@ -621,6 +621,7 @@ async def get_models(
     session: AsyncSession,
     state: State,
     profile: Optional[str] = None,
+    image: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
     profiles = serialize_profiles(state.BLACKFISH_HOME_DIR)
@@ -628,6 +629,8 @@ async def get_models(
     query_filter = {}
     if profile is not None:
         query_filter["profile"] = profile
+    if image is not None:
+        query_filter["image"] = image
 
     if refresh:
         if profile is not None:
@@ -655,7 +658,10 @@ async def get_models(
             await session.flush()
         except Exception as e:
             logger.error(f"Failed to execute transaction: {e}")
-        return models
+        if image is not None:
+            return filter(lambda x: x.image == image, models)
+        else:
+            return models
     else:
         logger.info("Querying model table...")
         query = sa.select(Model).filter_by(**query_filter)

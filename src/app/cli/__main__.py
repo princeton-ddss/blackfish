@@ -401,13 +401,13 @@ def image_details(image):  # pragma: no cover
 
 
 @main.group()
-def models():  # pragma: no cover
-    """View information about available models."""
+def model():  # pragma: no cover
+    """View and manage available models."""
     pass
 
 
 # blackfish models ls [OPTIONS]
-@models.command(name="ls")
+@model.command(name="ls")
 @click.option(
     "-p",
     "--profile",
@@ -432,7 +432,7 @@ def models():  # pragma: no cover
     help="Refresh the list of available models.",
 )
 def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
-    """Show available (downloaded) models for a given image and (optional) profile."""
+    """Show available (downloaded) models."""
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
 
@@ -474,7 +474,7 @@ def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
     click.echo(tab)
 
 
-@models.command(name="add")
+@model.command(name="add")
 @click.argument("repo_id", type=str, required=True)
 @click.option(
     "-p",
@@ -509,6 +509,11 @@ def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
 def models_add(
     repo_id: str, profile: str, revision: str | None, use_cache: bool
 ) -> None:
+    """Download a model to make it available.
+
+    Models can only downloaded for local profiles.
+    """
+
     from app.models.model import add_model
     from app.models.profile import serialize_profile, LocalProfile
 
@@ -552,7 +557,7 @@ def models_add(
             spinner.ok(f"{LogSymbols.SUCCESS.value} Added model {repo_id}")
 
 
-@models.command(name="rm")
+@model.command(name="rm")
 @click.argument("repo_id", type=str, required=True)
 @click.option(
     "-p",
@@ -587,6 +592,8 @@ def models_add(
 def models_remove(
     repo_id: str, profile: str, revision: str | None, use_cache: bool
 ) -> None:
+    """Remove model files."""
+
     from app.models.model import remove_model
     from app.models.profile import serialize_profile, LocalProfile
 

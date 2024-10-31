@@ -401,13 +401,13 @@ def image_details(image):  # pragma: no cover
 
 
 @main.group()
-def models():  # pragma: no cover
-    """View information about available models."""
+def model():  # pragma: no cover
+    """View and manage available models."""
     pass
 
 
 # blackfish models ls [OPTIONS]
-@models.command(name="ls")
+@model.command(name="ls")
 @click.option(
     "-p",
     "--profile",
@@ -417,20 +417,30 @@ def models():  # pragma: no cover
     help="List models available for the given profile.",
 )
 @click.option(
+    "-t",
+    "--image",
+    type=str,
+    required=False,
+    default=None,
+    help="List models available for the given task/image.",
+)
+@click.option(
     "-r",
     "--refresh",
     is_flag=True,
     default=False,
     help="Refresh the list of available models.",
 )
-def models_ls(profile, refresh):  # pragma: no cover
-    """Show available (downloaded) models for a given image and (optional) profile."""
+def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
+    """Show available (downloaded) models."""
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
 
     params = f"refresh={refresh}"
     if profile is not None:
         params += f"&profile={profile}"
+    if image is not None:
+        params += f"&image={image}"
 
     with yaspin(text="Fetching models") as spinner:
         res = requests.get(
@@ -446,6 +456,7 @@ def models_ls(profile, refresh):  # pragma: no cover
             "REPO",
             "REVISION",
             "PROFILE",
+            "IMAGE",
         ]
     )
     tab.set_style(PLAIN_COLUMNS)
@@ -457,9 +468,153 @@ def models_ls(profile, refresh):  # pragma: no cover
                 model["repo"],
                 model["revision"],
                 model["profile"],
+                model["image"],
             ]
         )
     click.echo(tab)
+
+
+@model.command(name="add")
+@click.argument("repo_id", type=str, required=True)
+@click.option(
+    "-p",
+    "--profile",
+    type=str,
+    required=False,
+    default="default",
+    help="Add model to the given profile (default: 'default').",
+)
+@click.option(
+    "-r",
+    "--revision",
+    type=str,
+    required=False,
+    default=None,
+    help=(
+        "Add the specified model commit. Use the latest commit if no revision is"
+        " provided."
+    ),
+)
+@click.option(
+    "-c",
+    "--use_cache",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help=(
+        "Add the model to the profile's cache directory. By default, the model is added"
+        " to the profile's home directory."
+    ),
+)
+def models_add(
+    repo_id: str, profile: str, revision: str | None, use_cache: bool
+) -> None:
+    """Download a model to make it available.
+
+    Models can only downloaded for local profiles.
+    """
+
+    from app.models.model import add_model
+    from app.models.profile import serialize_profile, LocalProfile
+
+    profile = serialize_profile(config.BLACKFISH_HOME_DIR, profile)
+    if not isinstance(profile, LocalProfile):
+        print(
+            f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for local"
+            " profiles 😔."
+        )
+        return
+
+    try:
+        model, path = add_model(
+            repo_id, profile=profile, revision=revision, use_cache=use_cache
+        )
+        print(
+            f"{LogSymbols.SUCCESS.value} Successfully downloaded model {repo_id} to"
+            f" {path}."
+        )
+    except Exception as e:
+        print(f"{LogSymbols.ERROR.value} Failed to download model {repo_id}: {e}.")
+        return
+
+    with yaspin(text="Inserting model to database...") as spinner:
+        res = requests.post(
+            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models",
+            json={
+                "repo": model.repo,
+                "profile": model.profile,
+                "revision": model.revision,
+                "image": model.image,
+            },
+        )
+        spinner.text = ""
+        if not res.ok is not None:
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to insert model"
+                f" {repo_id} ({res.status_code}: {res.reason})"
+            )
+        else:
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Added model {repo_id}")
+
+
+@model.command(name="rm")
+@click.argument("repo_id", type=str, required=True)
+@click.option(
+    "-p",
+    "--profile",
+    type=str,
+    required=False,
+    default="default",
+    help="Remove model from the given profile (default: 'default').",
+)
+@click.option(
+    "-r",
+    "--revision",
+    type=str,
+    required=False,
+    default=None,
+    help=(
+        "Remove the specified model commit. Remove *all* commits if no revision is"
+        " provided."
+    ),
+)
+@click.option(
+    "-c",
+    "--use_cache",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help=(
+        "Remove the model from the profile's cache directory. By default, the model is"
+        " removed from the profile's home directory."
+    ),
+)
+def models_remove(
+    repo_id: str, profile: str, revision: str | None, use_cache: bool
+) -> None:
+    """Remove model files."""
+
+    from app.models.model import remove_model
+    from app.models.profile import serialize_profile, LocalProfile
+
+    profile = serialize_profile(config.BLACKFISH_HOME_DIR, profile)
+    if not isinstance(profile, LocalProfile):
+        print(
+            f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for local"
+            " profiles 😔."
+        )
+        return
+
+    with yaspin(text="Removing model...") as spinner:
+        try:
+            remove_model(
+                repo_id, profile=profile, revision=revision, use_cache=use_cache
+            )
+            spinner.text = ""
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Removed model {repo_id}")
+        except Exception as e:
+            spinner.text = ""
+            spinner.fail(f"{LogSymbols.ERROR.value} Failed to remove model: {e}")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 from unittest import mock
 
 from app import utils
-from app.profiles import SlurmRemote
+from app.models.profile import SlurmRemote
 
 
 profile = SlurmRemote(

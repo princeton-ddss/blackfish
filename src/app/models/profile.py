@@ -30,6 +30,11 @@ class ProfileNotFoundException(Exception):
         super().__init__(f"Profile {name} not found.")
 
 
+class ProfileTypeException(Exception):
+    def __init__(self, type):
+        super().__init__(f"Profile type {type} is not supported.")
+
+
 def init_profile(home_dir: str, profile: BlackfishProfile) -> None:
     """Create resources required by profile."""
     # create home_dir
@@ -110,6 +115,39 @@ def serialize_profiles(home_dir: str) -> list[BlackfishProfile]:
         else:
             pass
     return profiles
+
+
+def serialize_profile(home_dir: str, name: str) -> BlackfishProfile:
+    """Parse a profile from profile.cfg."""
+
+    profiles_path = os.path.join(home_dir, "profiles.cfg")
+    if not os.path.isfile(profiles_path):
+        raise FileNotFoundError()
+
+    parser = ConfigParser()
+    parser.read(profiles_path)
+
+    for section in parser.sections():
+        if section == name:
+            profile = {k: v for k, v in parser[section].items()}
+            if profile["type"] == "slurm":
+                return SlurmRemote(
+                    name=section,
+                    host=profile["host"],
+                    user=profile["user"],
+                    home_dir=profile["home_dir"],
+                    cache_dir=profile["cache_dir"],
+                )
+            elif profile["type"] == "local":
+                return LocalProfile(
+                    name=section,
+                    home_dir=profile["home_dir"],
+                    cache_dir=profile["cache_dir"],
+                )
+            else:
+                raise ProfileTypeException(profile["type"])
+
+    raise ProfileNotFoundException(name)
 
 
 def import_profiles(home_dir: str) -> list[dict]:

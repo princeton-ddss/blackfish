@@ -4,7 +4,7 @@ import requests
 from random import randint
 
 from app.services.speech_recognition import SpeechRecognition
-from app.profiles import serialize_profiles, SlurmRemote, LocalProfile
+from app.models.profile import serialize_profiles, SlurmRemote, LocalProfile
 from app.utils import (
     find_port,
     get_models,

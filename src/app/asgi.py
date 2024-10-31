@@ -1,19 +1,20 @@
 import os
 from os import urandom
+import json
 from datetime import datetime
 from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional
+from typing import Optional, Tuple
 import asyncio
 import itertools
 from pathlib import Path
 from secrets import compare_digest
 
 from fabric.connection import Connection
+from paramiko.sftp_client import SFTPClient
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -58,7 +59,7 @@ from app.services.base import Service
 from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
-from app.profiles import (
+from app.models.profile import (
     init_profile,
     import_profiles,
     serialize_profiles,
@@ -69,15 +70,9 @@ from app.profiles import (
     SlurmRemote,
     LocalProfile,
     BlackfishProfile as Profile,
+    ProfileNotFoundException,
 )
-from app.profiles import ProfileNotFoundException
-
-
-class Model(UUIDAuditBase):
-    __tablename__ = "model"
-    repo: Mapped[str]  # e.g., bigscience/bloom-560m
-    profile: Mapped[str]  # e.g.,  hpc
-    revision: Mapped[str]
+from app.models.model import Model
 
 
 # --- Auth ---
@@ -149,6 +144,48 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
         raise NotFoundException(detail=f"Service {service_id} not found") from e
 
 
+def model_info(profile: Profile) -> Tuple[str, str]:
+    if not isinstance(profile, LocalProfile):
+        raise Exception("Profile should be a LocalProfile.")
+
+    cache_dir = Path(*[profile.cache_dir, "models", "info.json"])
+    try:
+        with open(cache_dir, "r") as f:
+            cache_info = json.load(f)
+    except OSError as e:
+        logger.error(f"Failed to open cache info.json: {e}.")
+        cache_info = dict()
+    home_dir = Path(*[profile.home_dir, "models", "info.json"])
+    try:
+        with open(home_dir, "r") as f:
+            home_info = json.load(f)
+    except OSError as e:
+        logger.error(f"Failed to open home info.json: {e}.")
+        home_info = dict()
+    return cache_info, home_info
+
+
+def remote_model_info(profile: Profile, sftp: SFTPClient) -> Tuple[str, str]:
+    if not isinstance(profile, SlurmRemote):
+        raise Exception("Profile should be a SlurmProfile.")
+
+    cache_dir = os.path.join(profile.cache_dir, "models", "info.json")
+    try:
+        with sftp.open(cache_dir, "r") as f:
+            cache_info = json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to open remote cache info.json: {e}")
+        cache_info = dict()
+    home_dir = os.path.join(profile.home_dir, "models", "info.json")
+    try:
+        with sftp.open(home_dir, "r") as f:
+            home_info = json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to open remote home info.json: {e}")
+        home_info = dict()
+    return cache_info, home_info
+
+
 async def find_models(profile: Profile) -> list[Model]:
     """Find all model revisions associated with a given profile.
 
@@ -163,16 +200,23 @@ async def find_models(profile: Profile) -> list[Model]:
         with Connection(
             host=profile.host, user=profile.user
         ) as conn, conn.sftp() as sftp:
-            default_dir = os.path.join(profile.cache_dir, "models")
-            logger.debug(f"Searching cache directory {default_dir}")
+            cache_info, home_info = remote_model_info(profile, sftp=sftp)
+            cache_dir = os.path.join(profile.cache_dir, "models")
+            logger.debug(f"Searching cache directory {cache_dir}")
             try:
-                model_dirs = sftp.listdir(default_dir)
+                model_dirs = sftp.listdir(cache_dir)
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
                     logger.debug(f"Found model {repo}")
+                    image = cache_info.get(repo)
+                    if image is None:
+                        logger.warning(
+                            f"No image info found for model {repo} in {cache_dir}!"
+                        )
+                        image = "missing"
                     for revision in sftp.listdir(
-                        os.path.join(default_dir, model_dir, "snapshots")
+                        os.path.join(cache_dir, model_dir, "snapshots")
                     ):
                         if revision not in revisions:
                             logger.debug(f"Found revision {revision}")
@@ -181,21 +225,29 @@ async def find_models(profile: Profile) -> list[Model]:
                                     repo=repo,
                                     profile=profile.name,
                                     revision=revision,
+                                    image=image,
                                 )
                             )
                             revisions.append(revision)
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
-            backup_dir = os.path.join(profile.home_dir, "models")
-            logger.debug(f"Searching home directory: {backup_dir}")
+
+            home_dir = os.path.join(profile.home_dir, "models")
+            logger.debug(f"Searching home directory: {home_dir}")
             try:
-                model_dirs = sftp.listdir(backup_dir)
+                model_dirs = sftp.listdir(home_dir)
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     repo = f"{namespace}/{model}"
                     logger.debug("Found model {repo}")
+                    image = home_info.get(repo)
+                    if image is None:
+                        logger.warning(
+                            f"No image info found for model {repo} in {home_dir}!"
+                        )
+                        image = "missing"
                     for revision in sftp.listdir(
-                        os.path.join(backup_dir, model_dir, "snapshots")
+                        os.path.join(home_dir, model_dir, "snapshots")
                     ):
                         if revision not in revisions:
                             logger.debug(f"Found revision {revision}")
@@ -204,6 +256,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                     repo=repo,
                                     profile=profile.name,
                                     revision=revision,
+                                    image=image,
                                 )
                             )
                             revisions.append(revision)
@@ -211,16 +264,23 @@ async def find_models(profile: Profile) -> list[Model]:
                 logger.error(f"Failed to list directory: {e}")
             return models
     elif isinstance(profile, LocalProfile):
-        default_dir = os.path.join(profile.cache_dir, "models")
-        logger.debug(f"Searching cache directory {default_dir}")
+        cache_info, home_info = model_info(profile)
+        cache_dir = os.path.join(profile.cache_dir, "models")
+        logger.debug(f"Searching cache directory {cache_dir}")
         try:
-            model_dirs = os.listdir(default_dir)
+            model_dirs = os.listdir(cache_dir)
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 repo = f"{namespace}/{model}"
                 logger.debug(f"Found model {repo}")
+                image = cache_info.get(repo)
+                if image is None:
+                    logger.warning(
+                        f"No image info found for model {repo} in {cache_dir}!"
+                    )
+                    image = "missing"
                 for revision in os.listdir(
-                    os.path.join(default_dir, model_dir, "snapshots")
+                    os.path.join(cache_dir, model_dir, "snapshots")
                 ):
                     if revision not in revisions:
                         logger.debug(f"Found revision {revision}")
@@ -229,22 +289,29 @@ async def find_models(profile: Profile) -> list[Model]:
                                 repo=repo,
                                 profile=profile.name,
                                 revision=revision,
+                                image=image,
                             )
                         )
                         revisions.append(revision)
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
 
-        backup_dir = os.path.join(profile.home_dir, "models")
-        logger.debug(f"Searching home directory: {backup_dir}")
+        home_dir = os.path.join(profile.home_dir, "models")
+        logger.debug(f"Searching home directory: {home_dir}")
         try:
-            model_dirs = os.listdir(backup_dir)
+            model_dirs = os.listdir(home_dir)
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 repo = f"{namespace}/{model}"
                 logger.debug(f"Found model {repo}")
+                image = home_info.get(repo)
+                if image is None:
+                    logger.warning(
+                        f"No image info found for model {repo} in {home_dir}!"
+                    )
+                    image = "missing"
                 for revision in os.listdir(
-                    os.path.join(backup_dir, model_dir, "snapshots")
+                    os.path.join(home_dir, model_dir, "snapshots")
                 ):
                     if revision not in revisions:
                         logger.debug(f"Found revision {revision}")
@@ -551,6 +618,7 @@ async def get_models(
     session: AsyncSession,
     state: State,
     profile: Optional[str] = None,
+    image: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
     profiles = serialize_profiles(state.BLACKFISH_HOME_DIR)
@@ -558,28 +626,48 @@ async def get_models(
     query_filter = {}
     if profile is not None:
         query_filter["profile"] = profile
+    if image is not None:
+        query_filter["image"] = image
 
     if refresh:
-        # TODO: combine delete and add into single transaction?
         if profile is not None:
             models = await find_models(next(p for p in profiles if p.name == profile))
-            logger.debug("Deleting existing models...")
-            query = sa.delete(Model).where(Model.profile == profile)
-            await session.execute(query)
+            logger.debug(
+                "Deleting existing models WHERE model.profile == '{profile}'..."
+            )
+            try:
+                query = sa.delete(Model).where(Model.profile == profile)
+                await session.execute(query)
+            except Exception as e:
+                logger.error(f"Failed to execute query: {e}")
         else:
             res = await asyncio.gather(*[find_models(profile) for profile in profiles])
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
-            logger.debug("Deleting existing models...")
-            query = sa.delete(Model)
-            await session.execute(query)
+            logger.debug("Deleting all existing models...")
+            try:
+                query = sa.delete(Model)
+                await session.execute(query)
+            except Exception as e:
+                logger.error(f"Failed to execute query: {e}")
         logger.debug("Inserting refreshed models...")
         session.add_all(models)
-        await session.flush()
-        return models
+        try:
+            await session.flush()
+        except Exception as e:
+            logger.error(f"Failed to execute transaction: {e}")
+        if image is not None:
+            return filter(lambda x: x.image == image, models)
+        else:
+            return models
     else:
+        logger.info("Querying model table...")
         query = sa.select(Model).filter_by(**query_filter)
-        res = await session.execute(query)
-        return res.scalars().all()  # list[Model]
+        try:
+            res = await session.execute(query)
+            return res.scalars().all()
+        except Exception as e:
+            logger.error(f"Failed to execute query: {e}")
+            return []
 
 
 @get("/models/{model_id:str}", guards=ENDPOINT_GUARDS)

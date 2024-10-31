@@ -12,6 +12,7 @@ from pathlib import Path
 from secrets import compare_digest
 
 from fabric.connection import Connection
+from paramiko.sftp_client import SFTPClient
 
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -144,49 +145,45 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
 
 
 def model_info(profile: Profile) -> Tuple[str, str]:
-    if isinstance(profile, LocalProfile):
-        cache_dir = Path(*[profile.cache_dir, "models", "info.json"])
-        try:
-            with open(cache_dir, "r") as f:
-                cache_info = json.load(f)
-        except OSError as e:
-            logger.error(f"Failed to open cache info.json: {e}.")
-            cache_info = dict()
-        home_dir = Path(*[profile.home_dir, "models", "info.json"])
-        try:
-            with open(home_dir, "r") as f:
-                home_info = json.load(f)
-        except OSError as e:
-            logger.error(f"Failed to open home info.json: {e}.")
-            home_info = dict()
-        return cache_info, home_info
-    else:
+    if not isinstance(profile, LocalProfile):
         raise Exception("Profile should be a LocalProfile.")
 
+    cache_dir = Path(*[profile.cache_dir, "models", "info.json"])
+    try:
+        with open(cache_dir, "r") as f:
+            cache_info = json.load(f)
+    except OSError as e:
+        logger.error(f"Failed to open cache info.json: {e}.")
+        cache_info = dict()
+    home_dir = Path(*[profile.home_dir, "models", "info.json"])
+    try:
+        with open(home_dir, "r") as f:
+            home_info = json.load(f)
+    except OSError as e:
+        logger.error(f"Failed to open home info.json: {e}.")
+        home_info = dict()
+    return cache_info, home_info
 
-def remote_model_info(profile: Profile, conn: Connection) -> Tuple[str, str]:
-    if isinstance(profile, SlurmRemote):
-        logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
-        with Connection(
-            host=profile.host, user=profile.user
-        ) as conn, conn.sftp() as sftp:
-            cache_dir = os.path.join(profile.cache_dir, "models")
-            try:
-                with sftp.open(cache_dir, "r") as f:
-                    cache_info = json.load(f)
-            except IOError:
-                logger.error("Failed to open remote cache info.json.")
-                cache_info = dict()
-            home_dir = os.path.join(profile.home_dir, "models")
-            try:
-                with sftp.open(home_dir, "r") as f:
-                    home_info = json.load(f)
-            except IOError:
-                logger.error("Failed to open remote home info.json.")
-                home_info = dict()
-            return cache_info, home_info
-    else:
+
+def remote_model_info(profile: Profile, sftp: SFTPClient) -> Tuple[str, str]:
+    if not isinstance(profile, SlurmRemote):
         raise Exception("Profile should be a SlurmProfile.")
+
+    cache_dir = os.path.join(profile.cache_dir, "models", "info.json")
+    try:
+        with sftp.open(cache_dir, "r") as f:
+            cache_info = json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to open remote cache info.json: {e}")
+        cache_info = dict()
+    home_dir = os.path.join(profile.home_dir, "models", "info.json")
+    try:
+        with sftp.open(home_dir, "r") as f:
+            home_info = json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to open remote home info.json: {e}")
+        home_info = dict()
+    return cache_info, home_info
 
 
 async def find_models(profile: Profile) -> list[Model]:
@@ -203,7 +200,7 @@ async def find_models(profile: Profile) -> list[Model]:
         with Connection(
             host=profile.host, user=profile.user
         ) as conn, conn.sftp() as sftp:
-            cache_info, home_info = remote_model_info(profile, conn)
+            cache_info, home_info = remote_model_info(profile, sftp=sftp)
             cache_dir = os.path.join(profile.cache_dir, "models")
             logger.debug(f"Searching cache directory {cache_dir}")
             try:

@@ -59,6 +59,7 @@ from app.services.base import Service
 from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
+from app.utils import find_port
 from app.models.profile import (
     init_profile,
     import_profiles,
@@ -477,6 +478,12 @@ async def logout(request: Request) -> Redirect:
     return Redirect("/ui/login")
 
 
+@get("/ports", guards=ENDPOINT_GUARDS)
+async def get_ports(request: Request) -> int:
+    """Find an available port on the server. This endpoint allows a UI to run local services."""
+    return find_port()    
+
+
 @dataclass
 class ServiceRequest:
     name: str  # TODO: optional w/ default by name generator
@@ -832,6 +839,7 @@ app = Litestar(
         info,
         login,
         logout,
+        get_ports,
         get_files,
         get_audio,
         run_service,

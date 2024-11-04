@@ -226,6 +226,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                     profile=profile.name,
                                     revision=revision,
                                     image=image,
+                                    model_dir=os.path.join(cache_dir, model_dir),
                                 )
                             )
                             revisions.append(revision)
@@ -257,6 +258,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                     profile=profile.name,
                                     revision=revision,
                                     image=image,
+                                    model_dir=os.path.join(home_dir, model_dir),
                                 )
                             )
                             revisions.append(revision)
@@ -290,6 +292,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                 profile=profile.name,
                                 revision=revision,
                                 image=image,
+                                model_dir=os.path.join(cache_dir, model_dir),
                             )
                         )
                         revisions.append(revision)
@@ -320,6 +323,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                 repo=repo,
                                 profile=profile.name,
                                 revision=revision,
+                                model_dir=os.path.join(home_dir, model_dir)
                             )
                         )
                         revisions.append(revision)

@@ -365,11 +365,17 @@ async def speech_recognition() -> Template:
 # --- Endpoints ---
 @get("/", guards=ENDPOINT_GUARDS)
 async def index(state: State) -> dict:
+    return
+
+
+@get("/info", guards=ENDPOINT_GUARDS)
+async def info(state: State) -> dict:
     return {
         "BLACKFISH_HOST": state.BLACKFISH_HOST,
         "BLACKFISH_PORT": state.BLACKFISH_PORT,
         "BLACKFISH_HOME_DIR": state.BLACKFISH_HOME_DIR,
         "BLACKFISH_DEBUG": state.BLACKFISH_DEBUG,
+        "BLACKFISH_CONTAINER_PROVIDER": state.BLACKFISH_CONTAINER_PROVIDER,
     }
 
 
@@ -823,6 +829,7 @@ app = Litestar(
         text_generation,
         speech_recognition,
         index,
+        info,
         login,
         logout,
         get_files,

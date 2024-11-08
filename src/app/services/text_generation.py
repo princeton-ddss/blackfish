@@ -16,6 +16,7 @@ from app.logger import logger
 
 @dataclass
 class TextGenerationConfig(ContainerConfig):
+    model_dir: Optional[str] = None
     port: Optional[int] = None
     quantize: Optional[str] = None
     revision: Optional[str] = None

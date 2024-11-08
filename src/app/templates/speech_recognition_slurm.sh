@@ -11,7 +11,7 @@ apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ container_config["model_dir"] }}:/data/models \
   {{ job_config.cache_dir }}/images/speech-recognition-inference_0.1.2.sif \
   --model_dir /data/models \
-  --model_id {{ container_config['model_id'] }} \
+  --model_id {{ model }} \
   {%- if 'revision' in container_config %}
   --revision {{ container_config['revision'] }} \
   {%- endif %}

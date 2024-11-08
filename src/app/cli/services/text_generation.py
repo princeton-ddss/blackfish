@@ -116,7 +116,7 @@ def run_text_generate(
     if name is None:
         name = f"blackfish-{randint(10_000, 20_000)}"
 
-    container_options = {}
+    container_options = {"model_dir": model_dir}
     if revision is not None:
         container_options["revision"] = revision
     if disable_custom_kernels is not None:
@@ -138,7 +138,7 @@ def run_text_generate(
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
-        job_options["model_dir"] = model_dir
+        # job_options["model_dir"] = model_dir
 
         if dry_run:
             service = TextGeneration(
@@ -188,10 +188,10 @@ def run_text_generate(
                     )
     elif isinstance(profile, LocalProfile):
         container_options["port"] = find_port(use_stdout=True)
-        container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
+        # container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
-        job_options["model_dir"] = model_dir
+        # job_options["model_dir"] = model_dir
 
         if dry_run:
             service = TextGeneration(

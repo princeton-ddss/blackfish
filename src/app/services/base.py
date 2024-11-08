@@ -86,15 +86,17 @@ class Service(UUIDAuditBase):
                 f"Generating launch script and writing to {config.BLACKFISH_HOME_DIR}."
             )
             self.port = container_options["port"]
-            provider = config.BLACKFISH_CONTAINER_PROVIDER
+            container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
             with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
                 try:
-                    if provider == "apptainer":
+                    if container_options["provider"] == "apptainer":
+                        logger.debug("The container provider is Apptainer.")
                         job_id = str(uuid.uuid4())
                         script = self.launch_script(
                             container_options, job_options, job_id
                         )
-                    elif provider == "docker":
+                    elif container_options["provider"] == "docker":
+                        logger.debug("The container provider is Docker.")
                         script = self.launch_script(container_options, job_options)
                     f.write(script)
                 except Exception as e:
@@ -103,7 +105,7 @@ class Service(UUIDAuditBase):
             res = subprocess.check_output(
                 ["bash", os.path.join(config.BLACKFISH_HOME_DIR, "start.sh")]
             )
-            if provider == "docker":
+            if container_options["provider"] == "docker":
                 job_id = res.decode("utf-8").strip().split()[-1][:12]
             self.status = "SUBMITTED"
             self.job_id = job_id

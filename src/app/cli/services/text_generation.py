@@ -53,8 +53,11 @@ from log_symbols.symbols import LogSymbols
     "--sharded",
     type=str,
     required=False,
-    default="true",
-    # TODO: help
+    default=None,
+    help=(
+        "Shard the model across multiple GPUs. The API uses all available GPUs by"
+        " default. Setting to 'true' with a single GPU results in an error."
+    ),
 )
 @click.option(
     "--max-input-length",

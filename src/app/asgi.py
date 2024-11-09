@@ -324,7 +324,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                 repo=repo,
                                 profile=profile.name,
                                 revision=revision,
-                                model_dir=os.path.join(home_dir, model_dir)
+                                model_dir=os.path.join(home_dir, model_dir),
                             )
                         )
                         revisions.append(revision)
@@ -481,7 +481,7 @@ async def logout(request: Request) -> Redirect:
 @get("/ports", guards=ENDPOINT_GUARDS)
 async def get_ports(request: Request) -> int:
     """Find an available port on the server. This endpoint allows a UI to run local services."""
-    return find_port()    
+    return find_port()
 
 
 @dataclass

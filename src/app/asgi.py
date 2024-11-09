@@ -59,6 +59,7 @@ from app.services.base import Service
 from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
+from app.utils import find_port
 from app.models.profile import (
     init_profile,
     import_profiles,
@@ -226,6 +227,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                     profile=profile.name,
                                     revision=revision,
                                     image=image,
+                                    model_dir=os.path.join(cache_dir, model_dir),
                                 )
                             )
                             revisions.append(revision)
@@ -257,6 +259,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                     profile=profile.name,
                                     revision=revision,
                                     image=image,
+                                    model_dir=os.path.join(home_dir, model_dir),
                                 )
                             )
                             revisions.append(revision)
@@ -290,6 +293,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                 profile=profile.name,
                                 revision=revision,
                                 image=image,
+                                model_dir=os.path.join(cache_dir, model_dir),
                             )
                         )
                         revisions.append(revision)
@@ -320,6 +324,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                 repo=repo,
                                 profile=profile.name,
                                 revision=revision,
+                                model_dir=os.path.join(home_dir, model_dir),
                             )
                         )
                         revisions.append(revision)
@@ -361,11 +366,17 @@ async def speech_recognition() -> Template:
 # --- Endpoints ---
 @get("/", guards=ENDPOINT_GUARDS)
 async def index(state: State) -> dict:
+    return
+
+
+@get("/info", guards=ENDPOINT_GUARDS)
+async def info(state: State) -> dict:
     return {
         "BLACKFISH_HOST": state.BLACKFISH_HOST,
         "BLACKFISH_PORT": state.BLACKFISH_PORT,
         "BLACKFISH_HOME_DIR": state.BLACKFISH_HOME_DIR,
         "BLACKFISH_DEBUG": state.BLACKFISH_DEBUG,
+        "BLACKFISH_CONTAINER_PROVIDER": state.BLACKFISH_CONTAINER_PROVIDER,
     }
 
 
@@ -465,6 +476,12 @@ async def logout(request: Request) -> Redirect:
         request.set_session({"token": None})
         logger.debug("from logout: reset session => redirect /ui/login")
     return Redirect("/ui/login")
+
+
+@get("/ports", guards=ENDPOINT_GUARDS)
+async def get_ports(request: Request) -> int:
+    """Find an available port on the server. This endpoint allows a UI to run local services."""
+    return find_port()
 
 
 @dataclass
@@ -819,8 +836,10 @@ app = Litestar(
         text_generation,
         speech_recognition,
         index,
+        info,
         login,
         logout,
+        get_ports,
         get_files,
         get_audio,
         run_service,

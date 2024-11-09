@@ -21,6 +21,7 @@ class Model(UUIDAuditBase):
     profile: Mapped[str]  # e.g.,  hpc
     revision: Mapped[str]
     image: Mapped[str]  # e.g., "text-generation"
+    model_dir: Mapped[str]  # e.g., "<home_dir>/models/models--<namespace>--<model>"
 
 
 class ModelNotFoundError(FileNotFoundError):

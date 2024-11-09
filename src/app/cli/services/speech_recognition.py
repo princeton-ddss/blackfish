@@ -89,8 +89,6 @@ def run_speech_recognition(
         container_options["input_dir"] = input_dir
     if revision is not None:
         container_options["revision"] = revision
-    # container_options["model_dir"] = os.path.dirname(model_dir)
-    # container_options["model_id"] = model_id
 
     job_options = {k: v for k, v in ctx.obj.items() if v is not None}
     del job_options["profile"]
@@ -100,7 +98,6 @@ def run_speech_recognition(
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
-        # job_options["model_dir"] = model_dir
 
         if dry_run:
             service = SpeechRecognition(
@@ -151,10 +148,8 @@ def run_speech_recognition(
                     )
     elif isinstance(profile, LocalProfile):
         container_options["port"] = find_port(use_stdout=True)
-        # container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
-        # job_options["model_dir"] = model_dir
 
         if dry_run:
             service = SpeechRecognition(

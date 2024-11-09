@@ -138,7 +138,6 @@ def run_text_generate(
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
-        # job_options["model_dir"] = model_dir
 
         if dry_run:
             service = TextGeneration(
@@ -188,10 +187,8 @@ def run_text_generate(
                     )
     elif isinstance(profile, LocalProfile):
         container_options["port"] = find_port(use_stdout=True)
-        # container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
-        # job_options["model_dir"] = model_dir
 
         if dry_run:
             service = TextGeneration(
@@ -244,9 +241,8 @@ def run_text_generate(
 
 
 # blackfish fetch text-generation [OPTIONS] SERVICE INPUT
-# TODO: add help messages
 @click.argument("service_id", type=str, required=True)
-@click.argument("input", type=str, required=True)
+@click.argument("inputs", type=str, required=True)
 @click.option("--best_of", type=int, default=None)
 @click.option("--decoder_input_details", type=bool, default=True)
 @click.option("--details", type=bool, default=True)
@@ -284,19 +280,4 @@ def fetch_text_generate(
     watermark,
 ):  # pragma: no cover
     """Fetch results from a text-generation service"""
-    # NEW
-    # first, refresh the service data GET /services/:service_id
-    # next, directly call the service
-    # res = service.call(...)
-    # -or-
-    # call the service via the API (slow, but the API if definitely connected to the service—the CLI might not be)
-    # res = GET /fetch/:service_id
-    pass
-
-    # OLD
-    # service = fetch_service(session, service_id)
-    # if service is not None:
-    #     resp = service.call(input, max_new_tokens=max_new_tokens)
-    #     click.echo(resp.json())
-    # else:
-    #     click.echo(f"Service {service} not found")
+    raise NotImplementedError

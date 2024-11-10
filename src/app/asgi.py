@@ -402,6 +402,15 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
     return Redirect("/ui")
 
 
+@post("/logout", guards=ENDPOINT_GUARDS)
+async def logout(request: Request) -> Redirect:
+    token = request.session.get("token")
+    if token is not None:
+        request.set_session({"token": None})
+        logger.debug("from logout: reset session => redirect /ui/login")
+    return Redirect("/ui/login")
+
+
 def listdir(
     path: str,
     page: Optional[int] = None,
@@ -467,15 +476,6 @@ async def get_audio(path: str) -> File:
             return File(path=path)
         else:
             raise ValidationException("Path should specify a .wav or .mp3 file.")
-
-
-@post("/logout", guards=ENDPOINT_GUARDS)
-async def logout(request: Request) -> Redirect:
-    token = request.session.get("token")
-    if token is not None:
-        request.set_session({"token": None})
-        logger.debug("from logout: reset session => redirect /ui/login")
-    return Redirect("/ui/login")
 
 
 @get("/ports", guards=ENDPOINT_GUARDS)
@@ -739,6 +739,7 @@ async def read_profile(name: str) -> Profile:
         profile = import_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
         if profile is None:
             raise NotFoundException(detail="Profile not found.")
+        return profile
     except FileNotFoundError:
         raise NotFoundException(detail="Profiles config not found.")
 
@@ -756,16 +757,6 @@ async def delete_profile(name: str) -> None:
         return remove_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
     except ProfileNotFoundException as e:
         raise NotFoundException(detail=f"{e}")
-
-
-@get("/images", guards=ENDPOINT_GUARDS)
-async def get_images():
-    pass
-
-
-@get("/images/{image_id:str}", guards=ENDPOINT_GUARDS)
-async def get_image_details():
-    pass
 
 
 # --- Config ---

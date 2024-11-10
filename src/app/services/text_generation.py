@@ -103,7 +103,6 @@ class TextGeneration(Service):
             res = requests.post(
                 f"http://127.0.0.1:{self.port}/generate", json=body, headers=headers
             )
-            logger.info(f"response state {res.status_code}")
         except Exception as e:
             raise e
 
@@ -113,7 +112,6 @@ class TextGeneration(Service):
         logger.debug(f"Pinging service {self.id}")
         try:
             res = requests.get(f"http://127.0.0.1:{self.port}/health")
-            logger.debug(f"response state {res.status_code}")
             return {"ok": res.ok}
         except Exception as e:
             return {"ok": False, "error": e}

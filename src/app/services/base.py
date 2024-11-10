@@ -125,7 +125,7 @@ class Service(UUIDAuditBase):
             if self.host == "localhost":
                 logger.debug("submitting batch job on login node.")
                 res = subprocess.check_output(
-                    ["sbatch", os.path.join(config.BLACKFISH_HOME_DIR, "start.sh")]
+                    ["sbatch", os.path.join(config.HOME_DIR, "start.sh")]
                 )
             else:
                 logger.debug(
@@ -134,7 +134,7 @@ class Service(UUIDAuditBase):
                 _ = subprocess.check_output(
                     [
                         "scp",
-                        os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"),
+                        os.path.join(config.HOME_DIR, "start.sh"),
                         (
                             f"{self.user}@{self.host}:{os.path.join(job_options['home_dir'], 'start.sh')}"
                         ),

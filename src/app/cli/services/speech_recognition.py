@@ -18,21 +18,22 @@ from log_symbols.symbols import LogSymbols
 
 # blackfish run [OPTIONS] speech-recognition [OPTIONS]
 @click.command()
-@click.option(
-    "--model_id",
-    required=False,
-    default="openai/whisper-large-v3",
-    help="Model to serve.",
+@click.argument(
+    "model",
+    required=True,
+    type=str,
 )
-@click.option(
-    "--input_dir",
+@click.argument(
+    "input_dir",
     type=str,
     required=True,
 )
 @click.option(
     "--name",
+    "-n",
     type=str,
     required=False,
+    help="Assign a name to the service. A random name is assigned by default."
 )
 @click.option(
     "--revision",
@@ -40,40 +41,48 @@ from log_symbols.symbols import LogSymbols
     type=str,
     required=False,
     default=None,
-    help="Use a specific model revision (commit id or branch)",
+    help="Use a specific model revision. The most recent locally available (i.e., downloaded) revision is used by default.",
 )
-@click.option("--dry-run", is_flag=True, default=False, help="Print Slurm script only.")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Print the job script but do not run it."
+)
 @click.pass_context
 def run_speech_recognition(
     ctx,
-    model_id,
+    model,
     input_dir,
     name,
     revision,
     dry_run,
 ):  # pragma: no cover
-    """Start service MODEL."""
+    """Start a speech recognition service hosting MODEL with access to INPUT_DIR on the service host. MODEL is specified as a repo ID, e.g., openai/whisper-tiny.
+    
+        See https://github.com/princeton-ddss/speech-recognition-inference for additional option details.
+    """
 
     config = ctx.obj.get("config")
     profiles = serialize_profiles(config.BLACKFISH_HOME_DIR)
     profile = next(p for p in profiles if p.name == ctx.obj.get("profile", "default"))
 
-    if model_id in get_models(profile):
+    if model in get_models(profile):
         if revision is None:
-            revision = get_latest_commit(model_id, get_revisions(model_id, profile))
-            model_dir = get_model_dir(model_id, revision, profile)
+            revision = get_latest_commit(model, get_revisions(model, profile))
+            model_dir = get_model_dir(model, revision, profile)
             click.echo(
                 f"{LogSymbols.WARNING.value} No revision provided. Using latest"
                 f" available commit {revision}."
             )
         else:
-            model_dir = get_model_dir(model_id, revision, profile)
+            model_dir = get_model_dir(model, revision, profile)
             if model_dir is None:
                 return
 
     else:
         click.echo(
-            f"{LogSymbols.ERROR.value} Unable to find {model_id} for profile"
+            f"{LogSymbols.ERROR.value} Unable to find {model} for profile"
             f" '{profile.name}'."
         )
         return
@@ -102,7 +111,7 @@ def run_speech_recognition(
         if dry_run:
             service = SpeechRecognition(
                 name=name,
-                model=model_id,
+                model=model,
                 profile=profile.name,
                 job_type="slurm",
                 host=profile.host,
@@ -112,7 +121,7 @@ def run_speech_recognition(
             click.echo("-" * 80)
             click.echo(f"Name: {name}")
             click.echo("Service: speech-recognition")
-            click.echo(f"Model: {model_id}")
+            click.echo(f"Model: {model}")
             click.echo(f"Profile: {profile.name}")
             click.echo("Type: slurm")
             click.echo(f"Host: {profile.host}")
@@ -126,7 +135,7 @@ def run_speech_recognition(
                     json={
                         "name": name,
                         "image": "speech_recognition",
-                        "model": model_id,
+                        "model": model,
                         "profile": profile.name,
                         "job_type": "slurm",
                         "host": profile.host,
@@ -154,7 +163,7 @@ def run_speech_recognition(
         if dry_run:
             service = SpeechRecognition(
                 name=name,
-                model=model_id,
+                model=model,
                 profile=profile.name,
                 job_type="local",
                 host="localhost",
@@ -163,7 +172,7 @@ def run_speech_recognition(
             click.echo("-" * 80)
             click.echo(f"Name: {name}")
             click.echo("Service: speech-recognition")
-            click.echo(f"Model: {model_id}")
+            click.echo(f"Model: {model}")
             click.echo(f"Profile: {profile.name}")
             click.echo("Type: local")
             click.echo("Host: localhost")
@@ -179,7 +188,7 @@ def run_speech_recognition(
                     json={
                         "name": name,
                         "image": "speech_recognition",
-                        "model": model_id,
+                        "model": model,
                         "profile": profile.name,
                         "job_type": "local",
                         "host": "localhost",

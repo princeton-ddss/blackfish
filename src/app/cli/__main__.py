@@ -4,7 +4,7 @@ import os
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-from app.cli.services.text_generation import run_text_generate
+from app.cli.services.text_generation import run_text_generation
 from app.cli.services.speech_recognition import run_speech_recognition
 
 from app.cli.profile import (
@@ -59,15 +59,21 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
 @main.group()
 @click.pass_context
 def profile(ctx):  # pragma: no cover
-    """Create or modify a profile."""
+    """Manage profiles.
+    
+        Profiles determine how services are deployed and what assets (i.e., models) are available.
+    There are currently two profile types: "slurm" and "local". Slurm profiles look for model files
+    and deploy services on a remote HPC cluster running a Slurm scheduler; local profiles look for
+    model files on the same host where the Blackfish API is running.
+    """
     ctx.obj = {"home_dir": config.BLACKFISH_HOME_DIR}
 
 
-profile.add_command(create_profile, "create")
+profile.add_command(list_profiles, "ls")
 profile.add_command(show_profile, "show")
-profile.add_command(list_profiles, "list")
+profile.add_command(create_profile, "add")
+profile.add_command(delete_profile, "rm")
 profile.add_command(update_profile, "update")
-profile.add_command(delete_profile, "delete")
 
 
 @main.command()
@@ -78,13 +84,24 @@ profile.add_command(delete_profile, "delete")
     default=False,
     help="Automatically reload changes to the application",
 )
-@click.option(
-    "--profile",
-    type=str,
-    default=None,
-)
-def start(reload: bool, profile: str) -> None:  # pragma: no cover
-    "Start the blackfish app."
+def start(reload: bool) -> None:  # pragma: no cover
+    """Start the blackfish app.
+    
+        Application configuration is based on the following local environment variables:
+
+        - BLACKFISH_HOST: the host to run the API on. Default: "localhost".
+        
+        - BLACKFISH_PORT: the port to run the API on. Default: 8000.
+
+        - BLACKFISH_HOME_DIR: the location of Blackfish application file. Default: $HOME/.blackfish.
+
+        - BLACKFISH_DEBUG: the debug logger. Default: 1 (true).
+
+        - DEV_MODE: run the API without token authentication. Default: 1 (true).
+
+        - BLACKFISH_CONTAINER_PROVIDER: the container management system to use for local
+            service deployment. Defaults to Docker, if available, then Apptainer.
+    """
 
     import uvicorn
     from advanced_alchemy.extensions.litestar.alembic import AlembicCommands
@@ -110,7 +127,6 @@ def start(reload: bool, profile: str) -> None:  # pragma: no cover
 
     uvicorn.run(
         "app.asgi:app",
-        # app,
         host=config.BLACKFISH_HOST,
         port=config.BLACKFISH_PORT,
         log_level="info",
@@ -159,7 +175,11 @@ def start(reload: bool, profile: str) -> None:  # pragma: no cover
     help="Required compute node features, e.g., 'gpu80'.",
 )
 @click.option(
-    "--profile", type=str, default="default", help="The Blackfish profile to use."
+    "--profile",
+    "-p",
+    type=str,
+    default="default",
+    help="The Blackfish profile to use."
 )
 @click.pass_context
 def run(
@@ -172,7 +192,10 @@ def run(
     constraint,
     profile,
 ):  # pragma: no cover
-    """Run an inference service"""
+    """Run an inference service.
+    
+        The format of options approximately follows that of Slurm's `sbatch` command.
+    """
     ctx.obj = {
         "config": config,
         "profile": profile,
@@ -185,7 +208,7 @@ def run(
     }
 
 
-run.add_command(run_text_generate, "text-generate")
+run.add_command(run_text_generation, "text-generation")
 run.add_command(run_speech_recognition, "speech-recognition")
 
 

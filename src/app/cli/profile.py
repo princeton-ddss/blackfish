@@ -1,3 +1,4 @@
+from typing import Optional
 import click
 import configparser
 import os
@@ -91,12 +92,13 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
         return True
 
 
-def _update_profile_(default_home: str, default_name: str = "default") -> None:
+def _update_profile_(default_home: str, default_name: str = "default", name: Optional[str] = None) -> None:
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles.cfg")
 
-    name = input(f"> name [{default_name}]: ")
-    name = default_name if name == "" else name
+    if name is None:
+        name = input(f"> name [{default_name}]: ")
+        name = default_name if name == "" else name
 
     if name not in profiles:
         print(
@@ -106,8 +108,7 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
         return
     else:
         profile = profiles[name]
-        profile_type = input(f"> type [{profile['type']}]: ")
-        profile_type = profile["type"] if profile_type == "" else profile_type
+        profile_type = profile["type"]
         if profile_type == "slurm":
             host = input(f"> host [{profile['host']}]: ")
             host = profile["host"] if host == "" else host
@@ -164,10 +165,7 @@ def _update_profile_(default_home: str, default_name: str = "default") -> None:
 @click.command()
 @click.pass_context
 def create_profile(ctx):  # pragma: no cover
-    """Create a new profile.
-
-    Fails if the profile name already exists.
-    """
+    """Create a new profile. Fails if the profile name already exists."""
 
     _create_profile_(ctx.obj.get("home_dir"))
 
@@ -242,9 +240,14 @@ def list_profiles(ctx):  # pragma: no cover
 )
 @click.pass_context
 def update_profile(ctx, name):  # pragma: no cover
-    """Update a profile."""
+    """Update a profile.
+    
+        This command does not permit changes to a profile's name or type. If you wish 
+        to rename a profile, you must delete the profile and then re-create
+        it using a new name.
+    """
 
-    _update_profile_(ctx.obj.get("home_dir"), name)
+    _update_profile_(ctx.obj.get("home_dir"), "default", name)
 
 
 @click.command()
@@ -255,7 +258,8 @@ def update_profile(ctx, name):  # pragma: no cover
 def delete_profile(ctx, name: str):  # pragma: no cover
     """Delete a profile.
 
-    Does not clean up the profile's remote or local resources.
+    This command does not clean up the profile's remote or local resources because
+    these might be required for another profile or user.
     """
 
     home_dir = ctx.obj.get("home_dir")

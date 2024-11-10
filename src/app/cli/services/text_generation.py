@@ -17,11 +17,17 @@ from log_symbols.symbols import LogSymbols
 
 # blackfish run [OPTIONS] text-generation [OPTIONS]
 @click.command()
-@click.option("--model", default="bigscience/bloom-560m", help="Model to serve.")
+@click.argument(
+    "model",
+    required=True,
+    type=str,
+)
 @click.option(
     "--name",
+    "-n",
     type=str,
     required=False,
+    help="Assign a name to the service. A random name is assigned by default."
 )
 @click.option(
     "--revision",
@@ -29,25 +35,25 @@ from log_symbols.symbols import LogSymbols
     type=str,
     required=False,
     default=None,
-    help="Use a specific model revision (commit id or branch)",
+    help="Use a specific model revision. The most recent locally available (i.e., downloaded) revision is used by default.",
 )
-@click.option(
-    "--quantize",
-    "-q",
-    type=str,
-    required=False,
-    default=None,
-    help=(
-        "Quantize the model. Supported values: awq (4bit), gptq (4-bit), bitsandbytes"
-        " (8-bit)."
-    ),
-)
+# @click.option(
+#     "--quantize",
+#     "-q",
+#     type=str,
+#     required=False,
+#     default=None,
+#     help=(
+#         "Quantize the model. Supported values: awq (4bit), gptq (4-bit), bitsandbytes"
+#         " (8-bit)."
+#     ),
+# )
 @click.option(
     "--disable-custom-kernels",
     is_flag=True,
     required=False,
     default=True,
-    help="Disable custom CUDA kernels.",
+    help="Disable custom CUDA kernels. Custom CUDA kernels are not guaranteed to run on all devices, but will run faster if they do.",
 )
 @click.option(
     "--sharded",
@@ -73,21 +79,29 @@ from log_symbols.symbols import LogSymbols
     default=None,  # 2048,
     help="The maximum allowed total length of input and output (in tokens).",
 )
-@click.option("--dry-run", is_flag=True, default=False, help="Print Slurm script only.")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Print the job script but do not run it."
+)
 @click.pass_context
-def run_text_generate(
+def run_text_generation(
     ctx,
     model,
     name,
     revision,
-    quantize,
+    # quantize,
     disable_custom_kernels,
     sharded,
     max_input_length,
     max_total_tokens,
     dry_run,
 ):  # pragma: no cover
-    """Start service MODEL."""
+    """Start a text generation service hosting MODEL, where MODEL is specified as a repo ID, e.g., openai/whisper-tiny.
+    
+        See https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher for additional option details.
+    """
 
     config = ctx.obj.get("config")
     profiles = serialize_profiles(config.BLACKFISH_HOME_DIR)
@@ -123,8 +137,8 @@ def run_text_generate(
         container_options["disable_custom_kernels"] = disable_custom_kernels
     if sharded is not None:
         container_options["sharded"] = sharded
-    if quantize is not None:
-        container_options["quantize"] = quantize
+    # if quantize is not None:
+    #     container_options["quantize"] = quantize
     if max_input_length is not None:
         container_options["max_input_length"] = max_input_length
     if max_total_tokens is not None:

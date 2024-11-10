@@ -588,26 +588,32 @@ async def refresh_service(
 async def fetch_services(
     session: AsyncSession,
     state: State,
+    id: Optional[str] = None,
     image: Optional[str] = None,
+    model: Optional[str] = None,
     status: Optional[str] = None,
-    host: Optional[str] = None,
-    backend: Optional[str] = None,
+    port: Optional[int] = None,
+    name: Optional[str] = None,
     profile: Optional[str] = None,
 ) -> list[Service]:
-    query_filter = {}
+    
+    query_params = {}
+    if id is not None:
+        query_params["id"] = id
     if image is not None:
-        query_filter["image"] = image
+        query_params["image"] = image
+    if model is not None:
+        query_params["model"] = model
     if status is not None:
-        query_filter["status"] = status
-    if host is not None:
-        query_filter["host"] = host
-    if backend is not None:
-        query_filter["backend"] = backend
+        query_params["status"] = status
+    if port is not None:
+        query_params["port"] = port
+    if name is not None:
+        query_params["name"] = name
     if profile is not None:
-        query_filter["profile"] = profile
+        query_params["profile"] = profile
 
-    # query = sa.select(Service)  # .filter_by(**query_filter)
-    query = sa.select(Service).filter_by(**query_filter)
+    query = sa.select(Service).filter_by(**query_params)
     res = await session.execute(query)
     services = res.scalars().all()
 

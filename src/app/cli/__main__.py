@@ -365,7 +365,11 @@ def ls(filters):  # pragma: no cover
     tab.right_padding_width = 3
 
     if filters is not None:
-        params = {k: v for k,v in map(lambda x: x.split("="), filters.split(","))}
+        try:
+            params = {k: v for k,v in map(lambda x: x.split("="), filters.split(","))}
+        except Exception as e:
+            click.echo(f"Unable to parse filter: {e}")
+            return
     else:
         params = None
 

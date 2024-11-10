@@ -6,7 +6,8 @@ from copy import deepcopy
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
-DEFAULT_DEBUG = True
+DEFAULT_DEBUG = 1 # True
+DEFAULT_DEV_MODE = 1 # True
 
 
 def get_container_provider():
@@ -39,14 +40,12 @@ class BlackfishConfig:
     """
 
     def __init__(self):
-        self.BLACKFISH_HOST = os.getenv("BLACKFISH_HOST", DEFAULT_HOST)
-        self.BLACKFISH_PORT = int(os.getenv("BLACKFISH_PORT", DEFAULT_PORT))
-        self.BLACKFISH_HOME_DIR = os.getenv("BLACKFISH_HOME_DIR", DEFAULT_HOME_DIR)
-        self.BLACKFISH_DEBUG = os.getenv("BLACKFISH_DEBUG", DEFAULT_DEBUG)
-        self.DEV_MODE = bool(int(os.getenv("BLACKFISH_DEV_MODE", 1)))
-        self.BLACKFISH_CONTAINER_PROVIDER = os.getenv(
-            "BLACKFISH_CONTAINER_PROVIER", get_container_provider()
-        )
+        self.HOST = os.getenv("BLACKFISH_HOST", DEFAULT_HOST)
+        self.PORT = int(os.getenv("BLACKFISH_PORT", DEFAULT_PORT))
+        self.HOME_DIR = os.getenv("BLACKFISH_HOME_DIR", DEFAULT_HOME_DIR)
+        self.DEBUG = bool(int(os.getenv("BLACKFISH_DEBUG", DEFAULT_DEBUG)))
+        self.DEV_MODE = bool(int(os.getenv("BLACKFISH_DEV_MODE", DEFAULT_DEBUG)))
+        self.CONTAINER_PROVIDER = os.getenv("BLACKFISH_CONTAINER_PROVIER", get_container_provider())
 
     def __str__(self) -> str:
         return str(self.__dict__)

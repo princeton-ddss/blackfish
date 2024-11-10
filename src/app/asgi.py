@@ -372,12 +372,12 @@ async def index(state: State) -> dict:
 @get("/info", guards=ENDPOINT_GUARDS)
 async def info(state: State) -> dict:
     return {
-        "BLACKFISH_HOST": state.BLACKFISH_HOST,
-        "BLACKFISH_PORT": state.BLACKFISH_PORT,
-        "BLACKFISH_HOME_DIR": state.BLACKFISH_HOME_DIR,
-        "BLACKFISH_DEBUG": state.BLACKFISH_DEBUG,
+        "HOST": state.HOST,
+        "PORT": state.PORT,
+        "HOME_DIR": state.HOME_DIR,
+        "DEBUG": state.DEBUG,
         "DEV_MODE": state.DEV_MODE,
-        "BLACKFISH_CONTAINER_PROVIDER": state.BLACKFISH_CONTAINER_PROVIDER,
+        "CONTAINER_PROVIDER": state.CONTAINER_PROVIDER,
     }
 
 
@@ -639,7 +639,7 @@ async def get_models(
     image: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
-    profiles = serialize_profiles(state.BLACKFISH_HOME_DIR)
+    profiles = serialize_profiles(state.HOME_DIR)
 
     query_filter = {}
     if profile is not None:
@@ -716,12 +716,12 @@ async def create_profile(data: dict) -> Profile:
     raise NotImplementedError
 
     try:
-        init_profile(blackfish_config.BLACKFISH_HOME_DIR, data)
+        init_profile(blackfish_config.HOME_DIR, data)
     except Exception as e:
         raise HTTPException(detail=f"Unable to create profile: {e}")
 
     try:
-        return write_profile(blackfish_config.BLACKFISH_HOME_DIR, data)
+        return write_profile(blackfish_config.HOME_DIR, data)
     except Exception as e:
         raise HTTPException(detail=f"Failed to create profile: {e}")
 
@@ -729,7 +729,7 @@ async def create_profile(data: dict) -> Profile:
 @get("/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
-        return import_profiles(blackfish_config.BLACKFISH_HOME_DIR)
+        return import_profiles(blackfish_config.HOME_DIR)
     except FileNotFoundError:
         raise NotFoundException(detail="Profiles config not found.")
 
@@ -737,7 +737,7 @@ async def read_profiles() -> list[Profile]:
 @get("/profiles/{name: str}", guards=ENDPOINT_GUARDS)
 async def read_profile(name: str) -> Profile:
     try:
-        profile = import_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
+        profile = import_profile(blackfish_config.HOME_DIR, name)
         if profile is None:
             raise NotFoundException(detail="Profile not found.")
         return profile
@@ -748,14 +748,14 @@ async def read_profile(name: str) -> Profile:
 @put("/profiles", guards=ENDPOINT_GUARDS)
 async def update_profile(profile: Profile) -> Profile:
     raise NotImplementedError
-    return modify_profile(blackfish_config.BLACKFISH_HOME_DIR, profile)
+    return modify_profile(blackfish_config.HOME_DIR, profile)
 
 
 @delete("/profiles/{name: str}")
 async def delete_profile(name: str) -> None:
     raise NotImplementedError
     try:
-        return remove_profile(blackfish_config.BLACKFISH_HOME_DIR, name)
+        return remove_profile(blackfish_config.HOME_DIR, name)
     except ProfileNotFoundException as e:
         raise NotFoundException(detail=f"{e}")
 
@@ -767,7 +767,7 @@ BASE_DIR = module_to_os_path("app")
 
 db_config = SQLAlchemyAsyncConfig(
     connection_string=(
-        f"sqlite+aiosqlite:///{blackfish_config.BLACKFISH_HOME_DIR}/app.sqlite"
+        f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite"
     ),
     metadata=UUIDAuditBase.metadata,
     create_all=True,

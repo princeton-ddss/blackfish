@@ -15,7 +15,7 @@ class CustomFormatter(colorlog.ColoredFormatter):
         return super().formatMessage(recordcopy)
 
 
-if app_config.BLACKFISH_DEBUG:
+if app_config.DEBUG:
     handler = colorlog.StreamHandler()
     formatter = CustomFormatter(
         (
@@ -37,7 +37,7 @@ if app_config.BLACKFISH_DEBUG:
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 else:
-    handler = logging.FileHandler(f"{os.path.join(app_config.BLACKFISH_HOME, 'logs')}")
+    handler = logging.FileHandler(f"{os.path.join(app_config.HOME_DIR, 'logs')}")
     formatter = logging.Formatter(
         "[%(asctime)s.%(msecs)03d] %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",

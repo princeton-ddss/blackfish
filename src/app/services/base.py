@@ -83,11 +83,11 @@ class Service(UUIDAuditBase):
 
         if self.job_type == "local":
             logger.debug(
-                f"Generating launch script and writing to {config.BLACKFISH_HOME_DIR}."
+                f"Generating launch script and writing to {config.HOME_DIR}."
             )
             self.port = container_options["port"]
-            container_options["provider"] = config.BLACKFISH_CONTAINER_PROVIDER
-            with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
+            container_options["provider"] = config.CONTAINER_PROVIDER
+            with open(os.path.join(config.HOME_DIR, "start.sh"), "w") as f:
                 try:
                     if container_options["provider"] == "apptainer":
                         logger.debug("The container provider is Apptainer.")
@@ -103,7 +103,7 @@ class Service(UUIDAuditBase):
                     logger.error(e)
             logger.info("Starting local service")
             res = subprocess.check_output(
-                ["bash", os.path.join(config.BLACKFISH_HOME_DIR, "start.sh")]
+                ["bash", os.path.join(config.HOME_DIR, "start.sh")]
             )
             if container_options["provider"] == "docker":
                 job_id = res.decode("utf-8").strip().split()[-1][:12]
@@ -111,9 +111,9 @@ class Service(UUIDAuditBase):
             self.job_id = job_id
         elif self.job_type == "slurm":
             logger.debug(
-                f"Generating job script and writing to {config.BLACKFISH_HOME_DIR}."
+                f"Generating job script and writing to {config.HOME_DIR}."
             )
-            with open(os.path.join(config.BLACKFISH_HOME_DIR, "start.sh"), "w") as f:
+            with open(os.path.join(config.HOME_DIR, "start.sh"), "w") as f:
                 try:
                     script = self.launch_script(container_options, job_options)
                     f.write(script)
@@ -203,7 +203,7 @@ class Service(UUIDAuditBase):
             )
 
         if self.job_type == "local":
-            job = self.get_job(config.BLACKFISH_CONTAINER_PROVIDER)
+            job = self.get_job(config.CONTAINER_PROVIDER)
             job.cancel()
         elif self.job_type == "slurm":
             job = self.get_job()
@@ -275,7 +275,7 @@ class Service(UUIDAuditBase):
             return self.status
 
         if self.job_type == "local":
-            job = self.get_job(config.BLACKFISH_CONTAINER_PROVIDER)
+            job = self.get_job(config.CONTAINER_PROVIDER)
             if job.state == "CREATED":
                 logger.debug(
                     f"Service {self.id} has not started. Setting status to PENDING."

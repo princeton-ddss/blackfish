@@ -29,7 +29,7 @@ def main() -> None:  # pragma: no cover
 @click.option(
     "--home_dir",
     type=str,
-    default=config.BLACKFISH_HOME_DIR,
+    default=config.HOME_DIR,
     help="The location to store Blackfish application data.",
 )
 def init(home_dir: str | None) -> None:  # pragma: no cover
@@ -66,7 +66,7 @@ def profile(ctx):  # pragma: no cover
     and deploy services on a remote HPC cluster running a Slurm scheduler; local profiles look for
     model files on the same host where the Blackfish API is running.
     """
-    ctx.obj = {"home_dir": config.BLACKFISH_HOME_DIR}
+    ctx.obj = {"home_dir": config.HOME_DIR}
 
 
 profile.add_command(list_profiles, "ls")
@@ -97,7 +97,7 @@ def start(reload: bool) -> None:  # pragma: no cover
 
         - BLACKFISH_DEBUG: the debug logger. Default: 1 (true).
 
-        - DEV_MODE: run the API without token authentication. Default: 1 (true).
+        - BLACKFISH_DEV_MODE: run the API without token authentication. Default: 1 (true).
 
         - BLACKFISH_CONTAINER_PROVIDER: the container management system to use for local
             service deployment. Defaults to Docker, if available, then Apptainer.
@@ -110,7 +110,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     from app import __file__
     from app.asgi import app
 
-    if not os.path.isdir(config.BLACKFISH_HOME_DIR):
+    if not os.path.isdir(config.HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
         return
 
@@ -127,8 +127,8 @@ def start(reload: bool) -> None:  # pragma: no cover
 
     uvicorn.run(
         "app.asgi:app",
-        host=config.BLACKFISH_HOST,
-        port=config.BLACKFISH_PORT,
+        host=config.HOST,
+        port=config.PORT,
         log_level="info",
         app_dir=os.path.abspath(os.path.join(__file__, "..", "..")),
         reload_dirs=os.path.abspath(os.path.join(__file__, "..")),
@@ -227,7 +227,7 @@ def stop(service_id, delay) -> None:  # pragma: no cover
 
     with yaspin(text="Stopping service...") as spinner:
         res = requests.put(
-            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services/{service_id}/stop",
+            f"http://{config.HOST}:{config.PORT}/services/{service_id}/stop",
             json={
                 "delay": delay,
             },
@@ -260,7 +260,7 @@ def rm(service_id, force) -> None:  # pragma: no cover
 
     with yaspin(text="Deleting service...") as spinner:
         res = requests.delete(
-            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services/{service_id}"
+            f"http://{config.HOST}:{config.PORT}/services/{service_id}"
         )
         spinner.text = ""
         if not res.ok:
@@ -280,7 +280,7 @@ def details(service_id):  # pragma: no cover
     from app.services.base import Service
 
     res = requests.get(
-        f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services/{service_id}"
+        f"http://{config.HOST}:{config.PORT}/services/{service_id}"
     )  # fresh data 🥬
 
     service = Service(**res.json())
@@ -360,7 +360,7 @@ def ls(filters):  # pragma: no cover
 
     with yaspin(text="Fetching services...") as spinner:
         res = requests.get(
-            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services{filters}"
+            f"http://{config.HOST}:{config.PORT}/services{filters}"
         )  # fresh data 🥬
         spinner.text = ""
         if not res.ok:
@@ -467,7 +467,7 @@ def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
 
     with yaspin(text="Fetching models") as spinner:
         res = requests.get(
-            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models?{params}"
+            f"http://{config.HOST}:{config.PORT}/models?{params}"
         )
         spinner.text = ""
         if not res.ok:
@@ -540,7 +540,7 @@ def models_add(
     from app.models.model import add_model
     from app.models.profile import serialize_profile, LocalProfile
 
-    profile = serialize_profile(config.BLACKFISH_HOME_DIR, profile)
+    profile = serialize_profile(config.HOME_DIR, profile)
     if not isinstance(profile, LocalProfile):
         print(
             f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for local"
@@ -562,7 +562,7 @@ def models_add(
 
     with yaspin(text="Inserting model to database...") as spinner:
         res = requests.post(
-            f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/models",
+            f"http://{config.HOST}:{config.PORT}/models",
             json={
                 "repo": model.repo,
                 "profile": model.profile,
@@ -620,7 +620,7 @@ def models_remove(
     from app.models.model import remove_model
     from app.models.profile import serialize_profile, LocalProfile
 
-    profile = serialize_profile(config.BLACKFISH_HOME_DIR, profile)
+    profile = serialize_profile(config.HOME_DIR, profile)
     if not isinstance(profile, LocalProfile):
         print(
             f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for local"

@@ -64,7 +64,7 @@ def run_speech_recognition(
     """
 
     config = ctx.obj.get("config")
-    profiles = serialize_profiles(config.BLACKFISH_HOME_DIR)
+    profiles = serialize_profiles(config.HOME_DIR)
     profile = next(p for p in profiles if p.name == ctx.obj.get("profile", "default"))
 
     if model in get_models(profile):
@@ -131,7 +131,7 @@ def run_speech_recognition(
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services",
+                    f"http://{config.HOST}:{config.PORT}/services",
                     json={
                         "name": name,
                         "image": "speech_recognition",
@@ -184,7 +184,7 @@ def run_speech_recognition(
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.BLACKFISH_HOST}:{config.BLACKFISH_PORT}/services",
+                    f"http://{config.HOST}:{config.PORT}/services",
                     json={
                         "name": name,
                         "image": "speech_recognition",

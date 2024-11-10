@@ -199,7 +199,7 @@ class Service(UUIDAuditBase):
 
         if self.job_id is None:
             raise Exception(
-                f"Unable to stop service {self.id} because `job` is missing."
+                f"Unable to stop service {self.id} because `job_id` is missing."
             )
 
         if self.job_type == "local":

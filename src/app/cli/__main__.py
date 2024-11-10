@@ -354,7 +354,7 @@ def ls(filters):  # pragma: no cover
             "CREATED",
             "UPDATED",
             "STATUS",
-            "PORTS",
+            "PORT",
             "NAME",
             "PROFILE",
             "MOUNTS",

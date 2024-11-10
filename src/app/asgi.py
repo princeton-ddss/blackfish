@@ -376,6 +376,7 @@ async def info(state: State) -> dict:
         "BLACKFISH_PORT": state.BLACKFISH_PORT,
         "BLACKFISH_HOME_DIR": state.BLACKFISH_HOME_DIR,
         "BLACKFISH_DEBUG": state.BLACKFISH_DEBUG,
+        "DEV_MODE": state.DEV_MODE,
         "BLACKFISH_CONTAINER_PROVIDER": state.BLACKFISH_CONTAINER_PROVIDER,
     }
 

@@ -426,7 +426,6 @@ def listdir(
         items = os.scandir(path)
         if not hidden:
             items = filter(lambda x: not x.name.startswith("."), items)
-            logger.debug(f"items: {items}")
         return [
             FileStats(
                 name=item.name,

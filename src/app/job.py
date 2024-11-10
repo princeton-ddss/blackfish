@@ -119,7 +119,6 @@ class Job:
             logger.debug(
                 f"The current job state is: {new_state} (job_id=${self.job_id})"
             )
-            self.state = new_state
             if (
                 self.state in [None, "MISSING", "PENDING"]
                 and new_state == "RUNNING"
@@ -137,6 +136,7 @@ class Job:
                     f"Job state updated from {self.state} to {new_state}"
                     f" (job_id={self.job_id})."
                 )                
+            self.state = new_state
         except subprocess.CalledProcessError as e:
             logger.warning(
                 f"Failed to update job state (job_id={self.job_id},"
@@ -151,7 +151,7 @@ class Job:
 
         This method logs a warning if the update fails, but does not raise an exception.
         """
-        logger.debug(f"Updating node for job {self.job_id}.")
+        logger.debug(f"Fetching node for job {self.job_id}.")
         try:
             res = subprocess.check_output(
                 [
@@ -188,7 +188,7 @@ class Job:
 
         This method logs a warning if the update fails, but does not raise an exception.
         """
-        logger.debug(f"Updating port for job {self.job_id}.")
+        logger.debug(f"Fetching port for job {self.job_id}.")
         try:
             res = subprocess.check_output(
                 [
@@ -283,12 +283,12 @@ class LocalJob:
                 logger.debug(
                     f"The current job state is: {new_state} (job_id={self.job_id})"
                 )
-                self.state = new_state
                 if self.state is not None and self.state != new_state:
                     logger.debug(
                         f"Job state updated from {self.state} to {new_state}"
                         f" (job_id={self.job_id})"
                     )
+                self.state = new_state
             elif self.provider == "apptainer":
                 res = subprocess.check_output(
                     ["apptainer", "instance", "list", "--json", f"{self.job_id}"]
@@ -300,12 +300,12 @@ class LocalJob:
                     new_state = "RUNNING"
 
                 logger.debug(f"The current job state is: {new_state} (job_id={self.job_id})")
-                self.state = new_state
                 if self.state is not None and self.state != new_state:
                     logger.debug(
                         f"Job state updated from {self.state} to {new_state}"
                         f" (job_id={self.job_id})."
                     )
+                self.state = new_state
         except subprocess.CalledProcessError as e:
             logger.warning(
                 f"Failed to update job state (job_id={self.job_id},"

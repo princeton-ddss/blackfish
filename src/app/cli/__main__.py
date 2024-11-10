@@ -365,13 +365,14 @@ def ls(filters):  # pragma: no cover
     tab.right_padding_width = 3
 
     if filters is not None:
-        filters = "/?" + filters.replace(",", "&")
+        params = {k: v for k,v in map(lambda x: x.split("="), filters.split(","))}
     else:
-        filters = ""
+        params = None
 
     with yaspin(text="Fetching services...") as spinner:
         res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/services{filters}"
+            f"http://{config.HOST}:{config.PORT}/services",
+            params=params
         )  # fresh data 🥬
         spinner.text = ""
         if not res.ok:

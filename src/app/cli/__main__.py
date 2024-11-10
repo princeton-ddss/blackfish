@@ -277,13 +277,18 @@ def rm(service_id, force) -> None:  # pragma: no cover
 def details(service_id):  # pragma: no cover
     """Show detailed service information"""
 
+    from datetime import datetime
+    import json
     from app.services.base import Service
 
     res = requests.get(
         f"http://{config.HOST}:{config.PORT}/services/{service_id}"
     )  # fresh data 🥬
 
-    service = Service(**res.json())
+    body = res.json()
+    body["created_at"] = datetime.fromisoformat(body["created_at"])
+    body["updated_at"] = datetime.fromisoformat(body["updated_at"])
+    service = Service(**body)
 
     if service is not None:
         job = service.get_job()
@@ -291,11 +296,11 @@ def details(service_id):  # pragma: no cover
             "image": service.image,
             "model": service.model,
             "profile": service.profile,
-            "created_at": service.created_at,  # .isoformat(),
+            "created_at": service.created_at.isoformat().replace("+00:00", "Z"),
             "name": service.name,
             "status": {
                 "value": service.status,
-                "updated_at": service.updated_at,  # .isoformat(),
+                "updated_at": service.updated_at.isoformat().replace("+00:00", "Z"),
             },
             "connection": {
                 "host": service.host,
@@ -306,16 +311,22 @@ def details(service_id):  # pragma: no cover
         if service.job_type == "slurm":
             data["job"] = {
                 "job_id": job.job_id,
-                "host": job.host,  # or service["host"]
-                "user": job.user,  # or service["user"]
+                "host": job.host,
+                "user": job.user,
                 "node": job.node,
                 "port": job.port,
                 "name": job.name,
                 "state": job.state,
             }
+        if service.job_type == "local":
+            data["job"] = {
+                "job_id": job.job_id,
+                "name": job.name,
+                "state": job.state,
+            }
         else:
             raise NotImplementedError
-        click.echo(data)
+        click.echo(json.dumps(data))
     else:
         click.echo(f"Service {service} not found.")
 

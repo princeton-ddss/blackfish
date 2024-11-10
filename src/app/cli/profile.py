@@ -1,5 +1,5 @@
 from typing import Optional
-import click
+import rich_click as click
 import configparser
 import os
 from log_symbols.symbols import LogSymbols

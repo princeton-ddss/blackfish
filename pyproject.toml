@@ -34,15 +34,21 @@ dependencies = [
   "jinja2<4,>=3.1.3",
   "litestar~=2.11",
   "log_symbols",
-  "nox",
-  "pre-commit",
   "prettytable<4,>=3.10",
   "psutil<6,>5.9",
-  "pytest",
   "requests<3,>=2.31",
   "tqdm<5,>=4.66.4",
   "uvicorn",
   "yaspin==3.0.2",
+  # dev
+  "nox",
+  "pre-commit",
+  # test
+  "pytest",
+  "mkdocs-material",
+  "mkdocstrings",
+  "mkdocstrings[python]",
+  "mkdocs-swagger-ui-tag",
 ]
 [project.scripts]
 blackfish = "app.cli.__main__:main"

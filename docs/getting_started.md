@@ -83,19 +83,52 @@ type.
     `$HOME/.blackfish/profile` by default. You can modify this file directly, if needed, but you'll
     need to need setup any required remote resources by hand.
 
-#### Profile Attributes
+#### Types
+Each profile specifies a number of attributes that allow Blackfish to find resources (e.g., model 
+files) and deploy services accordingly. The exact attributes depend on the profile *type*. There are currently two profile types: `LocalProfile` ("local") and `SlurmRemote` ("slurm"). All profiles require the following attributes:
+
 - `name`: the unique profile name. The "default" profile is used by Blackfish when a profile isn't
 explicitly provided.
 - `type`: one of "slurm" or "local". The profile type determines how services associated with this
 profile are deployed by Blackfish. Use "slurm" if this profile will run jobs on HPC and "local" to
 run jobs on your laptop (or wherever Blackfish is installed).
-- `host`: the HPC server to run services on, e.g. `<cluster>@<university>.edu`.
-- `user`: the user name on the HPC server.
-- `home`: the location on the HPC server to store application data, e.g., `/home/<user>/.blackfish`
-- `cache`: the location on the HPC server to store additional (typically shared) model images and
+
+The additional attribute requirements for specific types are listed below.
+
+##### Slurm (Remote)
+A remote Slurm profile specifies how to schedule services *on* a a remote server (e.g., HPC cluster) running Slurm *from* a local machine.
+
+- `host`: a HPC server to run services on, e.g. `<cluster>@<university>.edu`.
+- `user`: a user name on the HPC server.
+- `home`: a location on the HPC server to store application data, e.g., `/home/<user>/.blackfish`
+- `cache`: a location on the HPC server to store additional (typically shared) model images and
 files. Blackfish does **not** attempt to create this directory for you, but it does require that it can be found.
 
-#### Create a profile
+##### Slurm (Local)
+A local Slurm profile specifies how to schedule services *on* a cluster running Slurm *from* the cluster. This is useful if your cluster provides a login node where it is permissible to execute  long-running, low-resource programs.
+
+
+- `user`: a user name on the HPC server.
+- `home`: a location on the HPC server to store application data, e.g., `/home/<user>/.blackfish`
+- `cache`: a location on the HPC server to store additional (typically shared) model images and
+files. Blackfish does **not** attempt to create this directory for you, but it does require that it can be found.
+
+##### Local
+A local profile specifies how to run services on a local machine, i.e., your laptop or desktop. This is useful for development and for running models that do not require large amounts of resource, especially if the model is able to utilize a GPU on your local machine.
+
+- `home`: a location on the local machine to store application data, e.g., `/home/<user>/.blackfish`
+- `cache`: a location on the local machine to store additional (typically shared) model images and
+files. Blackfish does **not** attempt to create this directory for you, but it does require that it can be found.
+
+#### Commands
+
+##### ls - List profiles
+To view all profiles, type
+```shell
+blackfish profile ls
+```
+
+##### add - Create a profile
 Creating a new profile is as simple as typing
 ```shell
 blackfish profile add
@@ -104,7 +137,7 @@ blackfish profile add
 and following the prompts (see attribute descriptions above). Note that profile names
 are unique.
 
-#### View a profile
+##### show - View a profile
 You can view a list of all profiles with the `blackfish profile ls` command. If you want to view a
 specific profile, use the `blackfish profile show` command instead, e.g.
 
@@ -115,7 +148,7 @@ blackfish profile show --name <profile>
 Leaving off the `--name` option above will display the default profile, which is used by most
 commands if no profile is explicitly provided.
 
-#### Modify a profile
+##### update - Modify a profile
 To modify a profile, use the `blackfish profile update` command, e.g.
 
 ```shell
@@ -124,8 +157,8 @@ blackfish profile update --name <profile>
 This command updates the default profile if not `--name` is specified. Note that you cannot change
 the name or type attributes of a profile.
 
-#### Delete a profile
-To delete a profile, type `blackfish profile delete --name <profile>`. By default, the command
+##### rm - Delete a profile
+To delete a profile, type `blackfish profile rm --name <profile>`. By default, the command
 requires you to confirm before deleting.
 
 
@@ -144,7 +177,6 @@ browser by heading over to `http://127.0.0.1:8000`. It's a relatively straight-f
 and we have detailed usage examples on the [user interface page](), so let's instead take a look at
 the CLI.
 
-### CLI
 Open a new terminal tab or window. First, let's see what type of services are available.
 ```shell
 ❯ blackfish run --help
@@ -175,9 +207,15 @@ This command displays a list of available sub-commands. One of these is `text-ge
 a service that generates text given an input prompt. There are a variety of models that we might use
 to perform this task, so let's check out what's available on our setup.
 
-#### Models
+### Models
 
-##### `blackfish model ls` - List available models
+#### Commands
+
+##### `add` - Download a model
+
+##### `rm` - Delete a model
+
+##### `ls` - List available models
 ```shell
 ❯ blackfish model ls
 REPO                                   REVISION                                   PROFILE   IMAGE
@@ -202,9 +240,11 @@ later on.
 
 Let's go ahead and try to run one of these models.
 
-#### Services
+### Services
 
-##### `blackfish run` - Start a service
+#### Commands
+
+##### `run` - Start a service
 Looking back at the help message for `blackfish run`, we see that there are a few items that we
 should provide. First, we need to select the type of service to run. We've already decide to run
 `text-generation`, so we're good there. Next, there are a number of job options that we can provide.
@@ -281,7 +321,7 @@ deploy the model. Helpfully, the CLI returned an ID associated with the new serv
 
     Add the `--dry-run` flag to preview the start-up script that Blackfish will submit.
 
-##### `blackfish ls` - List services
+##### `ls` - List services
 To view a list of your Blackfish services, type
 ```shell
 ❯ blackfish ls # --filter id=<service_id>,status=<status>

@@ -227,7 +227,7 @@ def stop(service_id, delay) -> None:  # pragma: no cover
 
     with yaspin(text="Stopping service...") as spinner:
         res = requests.put(
-            f"http://{config.HOST}:{config.PORT}/services/{service_id}/stop",
+            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}/stop",
             json={
                 "delay": delay,
             },
@@ -260,7 +260,7 @@ def rm(service_id, force) -> None:  # pragma: no cover
 
     with yaspin(text="Deleting service...") as spinner:
         res = requests.delete(
-            f"http://{config.HOST}:{config.PORT}/services/{service_id}"
+            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
         )
         spinner.text = ""
         if not res.ok:
@@ -282,7 +282,7 @@ def details(service_id):  # pragma: no cover
     from app.services.base import Service
 
     res = requests.get(
-        f"http://{config.HOST}:{config.PORT}/services/{service_id}"
+        f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
     )  # fresh data 🥬
 
     body = res.json()
@@ -375,7 +375,7 @@ def ls(filters):  # pragma: no cover
 
     with yaspin(text="Fetching services...") as spinner:
         res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/services",
+            f"http://{config.HOST}:{config.PORT}/api/services",
             params=params
         )  # fresh data 🥬
         spinner.text = ""
@@ -483,7 +483,7 @@ def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
 
     with yaspin(text="Fetching models") as spinner:
         res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/models?{params}"
+            f"http://{config.HOST}:{config.PORT}/api/models?{params}"
         )
         spinner.text = ""
         if not res.ok:
@@ -578,7 +578,7 @@ def models_add(
 
     with yaspin(text="Inserting model to database...") as spinner:
         res = requests.post(
-            f"http://{config.HOST}:{config.PORT}/models",
+            f"http://{config.HOST}:{config.PORT}/api/models",
             json={
                 "repo": model.repo,
                 "profile": model.profile,

@@ -131,7 +131,7 @@ def run_speech_recognition(
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/services",
+                    f"http://{config.HOST}:{config.PORT}/api/services",
                     json={
                         "name": name,
                         "image": "speech_recognition",
@@ -184,7 +184,7 @@ def run_speech_recognition(
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/services",
+                    f"http://{config.HOST}:{config.PORT}/api/services",
                     json={
                         "name": name,
                         "image": "speech_recognition",

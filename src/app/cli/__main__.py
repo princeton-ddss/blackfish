@@ -405,11 +405,11 @@ def ls(filters):  # pragma: no cover
     click.echo(tab)
 
 
-# blackfish fetch
-@main.group(name="fetch")
-def fetch():  # pragma: no cover
-    """Fetch results from a service"""
-    pass
+# # blackfish fetch
+# @main.group(name="fetch")
+# def fetch():  # pragma: no cover
+#     """Fetch results from a service"""
+#     pass
 
 
 # fetch.add_command(fetch_text_generate, "fetch_text_generate")
@@ -417,26 +417,26 @@ def fetch():  # pragma: no cover
 
 
 # blackfish image
-@main.group()
-def image():  # pragma: no cover
-    """View information about available images"""
-    pass
+# @main.group()
+# def image():  # pragma: no cover
+#     """View information about available images"""
+#     pass
 
 
 # blackfish image ls [OPTIONS]
-@image.command(name="ls")
-@click.option("--filter", type=str)
-def image_ls(filter):  # pragma: no cover
-    """List images"""
-    pass
+# @image.command(name="ls")
+# @click.option("--filter", type=str)
+# def image_ls(filter):  # pragma: no cover
+#     """List images"""
+#     pass
 
 
 # blackfish image details IMAGE
-@image.command(name="details")
-@click.argument("image", type=str, required=True)
-def image_details(image):  # pragma: no cover
-    """Show detailed image information"""
-    pass
+# @image.command(name="details")
+# @click.argument("image", type=str, required=True)
+# def image_details(image):  # pragma: no cover
+#     """Show detailed image information"""
+#     pass
 
 
 @main.group()

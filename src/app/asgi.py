@@ -90,13 +90,13 @@ class AuthMiddleware(MiddlewareProtocol):
             logger.debug(
                 "from AuthMiddleware: no session found => redirect to dashboard login"
             )
-            response = ASGIRedirectResponse(path="/ui/login")
+            response = ASGIRedirectResponse(path="/login")
             await response(scope, receive, send)
         elif Request(scope).session.get("token") is None:
             logger.debug(
                 "from AuthMiddleware: no token found => redirect to dashboard login"
             )
-            response = ASGIRedirectResponse(path="/ui/login")
+            response = ASGIRedirectResponse(path="/login")
             await response(scope, receive, send)
         else:
             logger.debug(f"from AuthMiddleware: {Request(scope).session}")
@@ -336,12 +336,17 @@ async def find_models(profile: Profile) -> list[Model]:
 
 
 # --- Pages ---
-@get(path="/ui", middleware=PAGE_MIDDLEWARE)
+@get("/", middleware=PAGE_MIDDLEWARE)
+async def index() -> Redirect:
+    return Redirect("/dashboard")
+
+
+@get(path="/dashboard", middleware=PAGE_MIDDLEWARE)
 async def dashboard() -> Template:
-    return Template(template_name="index.html")
+    return Template(template_name="dashboard.html")
 
 
-@get(path="/ui/login")
+@get(path="/login")
 async def dashboard_login(request: Request) -> Template | Redirect:
     token = request.session.get("token")
     if token is not None:
@@ -349,27 +354,22 @@ async def dashboard_login(request: Request) -> Template | Redirect:
             logger.debug(
                 "from dashboard_login: user already authenticated => redirect dashboard"
             )
-            return Redirect("/ui")
+            return Redirect("/dashboard")
     return Template(template_name="login.html")
 
 
-@get(path="/ui/text-generation", middleware=PAGE_MIDDLEWARE)
+@get(path="/text-generation", middleware=PAGE_MIDDLEWARE)
 async def text_generation() -> Template:
     return Template(template_name="text-generation.html")
 
 
-@get(path="/ui/speech-recognition", middleware=PAGE_MIDDLEWARE)
+@get(path="/speech-recognition", middleware=PAGE_MIDDLEWARE)
 async def speech_recognition() -> Template:
     return Template(template_name="speech-recognition.html")
 
 
 # --- Endpoints ---
-@get("/", guards=ENDPOINT_GUARDS)
-async def index(state: State) -> dict:
-    return
-
-
-@get("/info", guards=ENDPOINT_GUARDS)
+@get("/api/info", guards=ENDPOINT_GUARDS)
 async def info(state: State) -> dict:
     return {
         "HOST": state.HOST,
@@ -386,7 +386,7 @@ class LoginPayload:
     token: SecretString
 
 
-@post("/login")
+@post("/api/login")
 async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
     token = request.session.get("token")
     if token is not None:
@@ -396,20 +396,20 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
     token = data.token.get_secret()
     if compare_digest(token, AUTH_TOKEN):
         request.set_session({"token": token})
-        logger.debug(f"from login: added token:{token} to session => redirect /ui")
+        logger.debug(f"from login: added token:{token} to session => redirect /dashboard")
     else:
         logger.debug("from login: invalid token => return None")
-        return Redirect("/ui/login/?success=false")
-    return Redirect("/ui")
+        return Redirect("/login/?success=false")
+    return Redirect("/dashboard")
 
 
-@post("/logout", guards=ENDPOINT_GUARDS)
+@post("/api/logout", guards=ENDPOINT_GUARDS)
 async def logout(request: Request) -> Redirect:
     token = request.session.get("token")
     if token is not None:
         request.set_session({"token": None})
-        logger.debug("from logout: reset session => redirect /ui/login")
-    return Redirect("/ui/login")
+        logger.debug("from logout: reset session => redirect /login")
+    return Redirect("/login")
 
 
 def listdir(
@@ -451,7 +451,7 @@ class FileStats:
     modified_at: datetime
 
 
-@get("/files", guards=ENDPOINT_GUARDS)
+@get("/api/files", guards=ENDPOINT_GUARDS)
 async def get_files(
     path: str,
     page: Optional[int] = None,
@@ -469,7 +469,7 @@ async def get_files(
         raise NotFoundException(f"Path {path} does not exist.")
 
 
-@get("/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
+@get("/api/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
 async def get_audio(path: str) -> File:
     if os.path.isfile(path):
         if path.endswith(".wav") or path.endswith(".mp3"):
@@ -478,7 +478,7 @@ async def get_audio(path: str) -> File:
             raise ValidationException("Path should specify a .wav or .mp3 file.")
 
 
-@get("/ports", guards=ENDPOINT_GUARDS)
+@get("/api/ports", guards=ENDPOINT_GUARDS)
 async def get_ports(request: Request) -> int:
     """Find an available port on the server. This endpoint allows a UI to run local services."""
     return find_port()
@@ -537,7 +537,7 @@ def build_service(data: ServiceRequest):
         raise Exception(f"Service image should be one of: {SERVICE_TYPES}")
 
 
-@post("/services", dto=ServiceRequestDTO, guards=ENDPOINT_GUARDS)
+@post("/api/services", dto=ServiceRequestDTO, guards=ENDPOINT_GUARDS)
 async def run_service(
     data: ServiceRequest, session: AsyncSession, state: State
 ) -> Service:
@@ -559,7 +559,7 @@ async def run_service(
     return service
 
 
-@put("/services/{service_id:str}/stop", guards=ENDPOINT_GUARDS)
+@put("/api/services/{service_id:str}/stop", guards=ENDPOINT_GUARDS)
 async def stop_service(
     service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
@@ -571,7 +571,7 @@ async def stop_service(
     return service
 
 
-@get("/services/{service_id:str}", guards=ENDPOINT_GUARDS)
+@get("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def refresh_service(
     service_id: str, session: AsyncSession, state: State
 ) -> Service:
@@ -584,7 +584,7 @@ async def refresh_service(
     return service
 
 
-@get("/services", guards=ENDPOINT_GUARDS)
+@get("/api/services", guards=ENDPOINT_GUARDS)
 async def fetch_services(
     session: AsyncSession,
     state: State,
@@ -596,7 +596,6 @@ async def fetch_services(
     name: Optional[str] = None,
     profile: Optional[str] = None,
 ) -> list[Service]:
-    
     query_params = {}
     if id is not None:
         query_params["id"] = id
@@ -622,7 +621,7 @@ async def fetch_services(
     return services
 
 
-@delete("/services/{service_id:str}", guards=ENDPOINT_GUARDS)
+@delete("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
     service = await get_service(service_id, session)
     await service.refresh(session, state)
@@ -636,7 +635,7 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
         # TODO: return failure status code and message
 
 
-@get("/models", guards=ENDPOINT_GUARDS)
+@get("/api/models", guards=ENDPOINT_GUARDS)
 async def get_models(
     session: AsyncSession,
     state: State,
@@ -693,7 +692,7 @@ async def get_models(
             return []
 
 
-@get("/models/{model_id:str}", guards=ENDPOINT_GUARDS)
+@get("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def get_model(model_id: str, session: AsyncSession) -> Model:
     logger.info(f"Model={model_id}")
     query = sa.select(Model).where(Model.id == model_id)
@@ -704,19 +703,19 @@ async def get_model(model_id: str, session: AsyncSession) -> Model:
         raise NotFoundException(detail=f"Model {model_id} not found") from e
 
 
-@post("/models", guards=ENDPOINT_GUARDS)
+@post("/api/models", guards=ENDPOINT_GUARDS)
 async def create_model(data: Model, session: AsyncSession) -> Model:
     session.add(data)
     return data
 
 
-@delete("/models/{model_id:str}", guards=ENDPOINT_GUARDS)
+@delete("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_model(model_id: str, session: AsyncSession) -> None:
     query = sa.delete(Model).where(Model.id == model_id)
     await session.execute(query)
 
 
-@post("/profiles", guards=ENDPOINT_GUARDS)
+@post("/api/profiles", guards=ENDPOINT_GUARDS)
 async def create_profile(data: dict) -> Profile:
     raise NotImplementedError
 
@@ -731,7 +730,7 @@ async def create_profile(data: dict) -> Profile:
         raise HTTPException(detail=f"Failed to create profile: {e}")
 
 
-@get("/profiles", guards=ENDPOINT_GUARDS)
+@get("/api/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
         return import_profiles(blackfish_config.HOME_DIR)
@@ -739,7 +738,7 @@ async def read_profiles() -> list[Profile]:
         raise NotFoundException(detail="Profiles config not found.")
 
 
-@get("/profiles/{name: str}", guards=ENDPOINT_GUARDS)
+@get("/api/profiles/{name: str}", guards=ENDPOINT_GUARDS)
 async def read_profile(name: str) -> Profile:
     try:
         profile = import_profile(blackfish_config.HOME_DIR, name)
@@ -750,13 +749,13 @@ async def read_profile(name: str) -> Profile:
         raise NotFoundException(detail="Profiles config not found.")
 
 
-@put("/profiles", guards=ENDPOINT_GUARDS)
+@put("/api/profiles", guards=ENDPOINT_GUARDS)
 async def update_profile(profile: Profile) -> Profile:
     raise NotImplementedError
     return modify_profile(blackfish_config.HOME_DIR, profile)
 
 
-@delete("/profiles/{name: str}")
+@delete("/api/profiles/{name: str}")
 async def delete_profile(name: str) -> None:
     raise NotImplementedError
     try:
@@ -771,9 +770,7 @@ session_config = AsyncSessionConfig(expire_on_commit=False)
 BASE_DIR = module_to_os_path("app")
 
 db_config = SQLAlchemyAsyncConfig(
-    connection_string=(
-        f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite"
-    ),
+    connection_string=(f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite"),
     metadata=UUIDAuditBase.metadata,
     create_all=True,
     alembic_config=AlembicAsyncConfig(

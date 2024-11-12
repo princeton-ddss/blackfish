@@ -295,7 +295,7 @@ service:
   --gres 1 \
   --time 00:05 \
   text-generation \
-  --model bigscience/bloom-560m
+  bigscience/bloom-560m
 ✔ Found 5 models.
 ✔ Found 1 snapshots.
 ✔ Found model bigscience/bloom-560m[ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971] in /scratch/gpfs/ddss/.blackfish/models.

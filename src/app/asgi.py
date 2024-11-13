@@ -5,11 +5,12 @@ from datetime import datetime
 from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 import asyncio
 import itertools
 from pathlib import Path
 from secrets import compare_digest
+import urllib.parse
 
 from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
@@ -396,7 +397,9 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
     token = data.token.get_secret()
     if compare_digest(token, AUTH_TOKEN):
         request.set_session({"token": token})
-        logger.debug(f"from login: added token:{token} to session => redirect /dashboard")
+        logger.debug(
+            f"from login: added token:{token} to session => redirect /dashboard"
+        )
     else:
         logger.debug("from login: invalid token => return None")
         return Redirect("/login/?success=false")
@@ -412,17 +415,23 @@ async def logout(request: Request) -> Redirect:
     return Redirect("/login")
 
 
-def listdir(
+@dataclass
+class FileStats:
+    name: str
+    path: str
+    is_dir: bool
+    size: int  # bytes
+    modified_at: datetime
+    created_at: Optional[datetime] = None
+
+
+def stat(
     path: str,
     page: Optional[int] = None,
     page_size: int = 100,
     hidden: bool = False,
-) -> dict:
+) -> List[FileStats]:
     if page is None:
-        # try:
-        #     items = os.scandir(path)
-        # except PermissionError:
-        #     raise PermissionError
         items = os.scandir(path)
         if not hidden:
             items = filter(lambda x: not x.name.startswith("."), items)
@@ -438,35 +447,166 @@ def listdir(
             for item in items
         ]
     else:
-        pass  # TODO: return the `page`-th set of `page_size` items
+        # Return the `page`-th set of `page_size` items
+        raise NotImplementedError
 
 
-@dataclass
-class FileStats:
-    name: str
-    path: str
-    is_dir: bool
-    size: int  # bytes
-    created_at: datetime
-    modified_at: datetime
+async def stat_remote(
+    host: str,
+    user: str,
+    path: str,
+    page: Optional[int] = None,
+    page_size: int = 100,
+    hidden: bool = False,
+) -> dict:
+    logger.debug("Scanning remote host...")
+
+    if page is None:
+        logger.debug("About to ssh")
+
+        proc = await asyncio.create_subprocess_exec(
+            f"ssh {user}@{host} stat --format '%n,%F,%Y,%s' {path}/*",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        res = await proc.communicate()
+
+        logger.debug("Received response:", res[0])
+
+        items = (
+            None
+            if res[0] == b""
+            else [x.split(",") for x in res[0].decode("utf-8").strip().split("\n")]
+        )
+
+        if items is not None:
+            files = [
+                FileStats(
+                    name=item[0],
+                    path=f"{path}/{item[0]}",
+                    is_dir=item[1] == "directory",
+                    created_at=None,
+                    modified_at=datetime.fromtimestamp(item[2]),
+                    size=item[3],
+                )
+                for item in items
+            ]
+
+            logger.debug(f"Found {len(files)} files")
+
+            if not hidden:
+                logger.debug("Returning non-hidden files")
+                return list(filter(lambda x: not x.name.startswith("."), files))
+            else:
+                logger.debug("Returning all files")
+                return files
+        else:
+            raise Exception("ssh stat return empty byte-string")
+    else:
+        # Return the `page`-th set of `page_size` items
+        raise NotImplementedError
+
+
+# def stat_remote(
+#     host: str,
+#     user: str,
+#     path: str,
+#     page: Optional[int] = None,
+#     page_size: int = 100,
+#     hidden: bool = False,
+# ) -> dict:
+
+#     import subprocess
+#     from datetime import datetime
+
+#     logger.debug("Scanning remote host...")
+
+#     if page is None:
+
+#         logger.debug("About to ssh")
+
+#         res = subprocess.check_output(
+#             [
+#                 "ssh",
+#                 f"{user}@{host}",
+#                 "stat",
+#                 "--format",
+#                 "'%n,%F,%Y,%s'",
+#                 f"{path}/*",
+#             ]
+#         )
+
+#         logger.debug("Here")
+
+#         items = None if res == b"" else [
+#             x.split(",") for x in res.decode("utf-8").strip().split("\n")
+#         ]
+
+#         logger.debug("Done splitting")
+
+#         if items is not None:
+#             logger.debug("items is not None!")
+#             try:
+#                 files = [
+#                     FileStats(
+#                             name=item[0],
+#                             path=f"{path}/{item[0]}",
+#                             is_dir=item[1] == "directory",
+#                             created_at=None,
+#                             modified_at=datetime.fromtimestamp(int(item[2])),
+#                             size=item[3],
+#                         )
+#                     for item in items
+#                 ]
+#                 logger.debug(f"there are {len(files)} files")
+#             except Exception as e:
+#                 logger.error(f"{e}")
+#             if not hidden:
+#                 logger.debug("I'm return non-hidden files now...")
+#                 return list(filter(lambda x: not x.name.startswith("."), files))
+#             else:
+#                 logger.debug("I'm returning files now...")
+#                 return files
+#         else:
+#             raise Exception("ssh stat return empty byte-string")
+#     else:
+#         # Return the `page`-th set of `page_size` items
+#         raise NotImplementedError
 
 
 @get("/api/files", guards=ENDPOINT_GUARDS)
 async def get_files(
     path: str,
+    host: Optional[str] = None,
+    user: Optional[str] = None,
     page: Optional[int] = None,
     page_size: int = 100,
     hidden: bool = False,
 ) -> list[FileStats] | HTTPException:
-    if os.path.isdir(path):
+    path = urllib.parse.unquote(path)
+
+    if host is not None and user is not None:
+        logger.info(f"HOST={host}, USER={user}, PATH={path}")
         try:
-            return listdir(path, page=page, page_size=page_size, hidden=hidden)
-        except PermissionError:
-            logger.debug("Permission error raised")
-            raise NotAuthorizedException(f"User not authorized to access {path}")
+            return await stat_remote(
+                host, user, path, page=page, page_size=page_size, hidden=hidden
+            )
+            # return stat_remote(host, user, path, page=page, page_size=page_size, hidden=hidden)
+        except Exception as e:
+            raise Exception(f"Failed to scan remote directory: {e}")
     else:
-        logger.debug("Not found error")
-        raise NotFoundException(f"Path {path} does not exist.")
+        logger.info(f"PATH={path}")
+        if os.path.isdir(path):
+            try:
+                logger.debug(f"Scanning local directory {path}")
+                return stat(path, page=page, page_size=page_size, hidden=hidden)
+            except PermissionError:
+                logger.debug("Permission error raised")
+                raise NotAuthorizedException(f"User not authorized to access {path}")
+        else:
+            logger.debug("Not found error")
+            raise NotFoundException(f"Path {path} does not exist.")
 
 
 @get("/api/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
@@ -770,7 +910,7 @@ session_config = AsyncSessionConfig(expire_on_commit=False)
 BASE_DIR = module_to_os_path("app")
 
 db_config = SQLAlchemyAsyncConfig(
-    connection_string=(f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite"),
+    connection_string=f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite",
     metadata=UUIDAuditBase.metadata,
     create_all=True,
     alembic_config=AlembicAsyncConfig(

@@ -395,7 +395,7 @@ class Service(UUIDAuditBase):
                         if dt.seconds > self.grace_period:
                             logger.debug(
                                 f"Service {self.id} grace period exceeded. Setting"
-                                "status to UNHEALTHY."
+                                " status to UNHEALTHY."
                             )
                             self.status = "UNHEALTHY"
                             return "UNHEALTHY"

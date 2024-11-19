@@ -17,9 +17,8 @@ __pycache__/
 env/
 venv/
 build/
+!/src/build
 develop-eggs/
-dist/
-!blackfish/app/dist
 downloads/
 eggs/
 .eggs/
@@ -50,6 +49,7 @@ htmlcov/
 .coverage.*
 .cache
 .pytest_cache
+.ruff_cache
 nosetests.xml
 coverage.xml
 *,cover
@@ -88,3 +88,6 @@ target/
 # Database
 *.sqlite
 *.sqlite3
+
+# GitHub pages
+site/

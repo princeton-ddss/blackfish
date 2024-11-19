@@ -1,9 +1,9 @@
 {% extends "base_slurm.sh" %}
 {% block command %}
-apptainer{{ ' --nv' if job_config.gres > 0 else '' }} run \
-  --bind {{ app_config.model_cache }}/huggingface/data:/data \
-  {{ app_config.image_cache }}/huggingface/images/text-generation-inference_latest.sif \
-  --model-id /data/{{ model }} \
+apptainer run {{ ' --nv' if job_config.gres > 0 else '' }}\
+  --bind {{ container_config.model_dir }}:/data \
+  {{ job_config.cache_dir }}/images/text-generation-inference_2.3.0.sif \
+  --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port $port \
 {%- if 'revision' in container_config %}
   --revision {{ container_config['revision'] }} \
@@ -11,8 +11,8 @@ apptainer{{ ' --nv' if job_config.gres > 0 else '' }} run \
 {%- if 'validation_workers' in container_config %}
   --validation-workers {{ container_config['validation_workers'] }} \
 {%- endif %}
-{%- if container_config.get('sharded') == True %}
-  --sharded \
+{%- if 'sharded' in container_config %}
+  --sharded {{ container_config['sharded'] }} \
 {%- endif %}
 {%- if 'num_shard' in container_config %}
   --num-shard {{ container_config['num_shard'] }} \

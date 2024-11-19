@@ -1,6 +1,8 @@
 [build-system]
 build-backend = "hatchling.build"
-requires = ["hatchling"]
+requires = [
+  "hatchling",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]
@@ -11,10 +13,7 @@ version = "0.1.0"
 description = "An open-source MLaaS platform."
 readme = "README.md"
 license = "MIT"
-authors = [
-    { name = "Colin Swaney" },
-    { email = "colinswaney@princeton.edu" },
-]
+authors = [{ name = "Colin Swaney" }, { email = "colinswaney@princeton.edu" }]
 requires-python = ">=3.7"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
@@ -25,18 +24,29 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
+  "advanced-alchemy<1,>=0.8.4",
+  "aiosqlite",
+  "alembic<2,>=1.13.1",
   "click",
   "colorlog",
-  "jinja2",
+  "fabric",
+  "huggingface_hub<1,>=0.25",
+  "jinja2<4,>=3.1.3",
+  "litestar~=2.11",
+  "log_symbols",
+  "mkdocs-material",
+  "mkdocs-swagger-ui-tag",
+  "mkdocstrings",
+  "mkdocstrings[python]",
   "nox",
-  "pre-commit",
-  "prettytable",
-  "psutil",
-  "litestar",
-  "advanced-alchemy",
-  "alembic",
+  "pre-commit", # test
+  "prettytable<4,>=3.10",
+  "psutil<6,>5.9",
   "pytest",
-  "requests",
+  "requests<3,>=2.31",
+  "tqdm<5,>=4.66.4",
+  "uvicorn",
+  "yaspin==3.0.2", # dev
 ]
 [project.scripts]
 blackfish = "app.cli.__main__:main"

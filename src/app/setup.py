@@ -1,137 +1,150 @@
 import os
-import configparser
 import subprocess
+from yaspin import yaspin
+from log_symbols.symbols import LogSymbols
 
-from app.config import BlackfishConfig, base_config
+import app
 from app.logger import logger
 
 
-def setup():
-    """Setup up the blackfish CLI. Called by CLI command `blackfish setup`."""
-    make_local_dir()
-    migrate_db()
-    create_or_modify_config()
+def create_local_home_dir(home_dir: str) -> None:
+    """Attempt to construct root directory to store core application data and raise an
+    exception if creation fails and the directory does not already exist.
+
+    This method should be called when the application is initialized or a local profile
+    is created.
+    """
+    with yaspin(text=f"Setting up home directory {home_dir}") as spinner:
+        if not os.path.isdir(home_dir):
+            try:
+                os.mkdir(home_dir)
+                os.mkdir(os.path.join(home_dir, "models"))
+                os.mkdir(os.path.join(home_dir, "images"))
+                spinner.text = ""
+                spinner.ok(
+                    f"{LogSymbols.SUCCESS.value} Set up default Blackfish home"
+                    f" directory {home_dir}!"
+                )
+            except OSError as e:
+                spinner.text = ""
+                spinner.fail(
+                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish home"
+                    f" directory: {e}."
+                )
+                raise Exception
+        else:
+            spinner.text = ""
+            spinner.ok(
+                f"{LogSymbols.SUCCESS.value} Blackfish home directory already exists."
+            )
 
 
-def make_local_dir():
-    if not os.path.isdir(base_config.BLACKFISH_HOME):
-        logger.info(f"making blackfish home directory {base_config.BLACKFISH_HOME}")
-        try:
-            os.mkdir(base_config.BLACKFISH_HOME)
-        except OSError as e:
-            logger.error("unable to make blackfish home directory: ", e)
+def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
+    """Attempt to construct root directory to store core application data *remotely* and
+    raise an exception if creation fails and the directory does not already exist.
+
+    This method should called run when a new remote profile is created.
+    """
+    if remote_type == "slurm":
+        with yaspin(
+            text=f"Setting up remote home directory for user {user} at {host}"
+        ) as spinner:
+            try:
+                res = subprocess.check_output(
+                    [
+                        "ssh",
+                        f"{user}@{host}",
+                        f"""if [ -d {home_dir} ]; then echo 1; fi""",
+                    ]
+                )
+                remote_exists = res.decode("utf-8").strip()
+            except Exception as e:
+                spinner.text = ""
+                spinner.fail(
+                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home:"
+                    f" {e}."
+                )
+                raise Exception
+            if not remote_exists == "1":
+                try:
+                    _ = subprocess.check_output(
+                        ["ssh", f"{user}@{host}", "mkdir", home_dir]
+                    )
+                    _ = subprocess.check_output(
+                        ["ssh", f"{user}@{host}", "mkdir", f"{home_dir}/models"]
+                    )
+                    _ = subprocess.check_output(
+                        ["ssh", f"{user}@{host}", "mkdir", f"{home_dir}/images"]
+                    )
+                    spinner.text = ""
+                    spinner.ok(f"{LogSymbols.SUCCESS.value} Done!")
+                except Exception as e:
+                    spinner.text = ""
+                    spinner.fail(
+                        f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote:"
+                        f" {e}."
+                    )
+            else:
+                spinner.text = ""
+                spinner.ok(
+                    f"{LogSymbols.SUCCESS.value} Blackfish remote home directory"
+                    " already exists."
+                )
     else:
-        logger.info("blackfish home directory already exists. Skipping.")
+        raise NotImplementedError
 
 
-def make_remote_dir(user, host, cache):
-    """
-    NOTE: setting up della also sets up della-gpu. On other systems these might
-    require separate profiles.
-    """
+def check_local_cache_exists(cache_dir):
+    """Check that the local cache directory exists and raise and exception if not."""
+    if os.path.exists(cache_dir):
+        print(f"{LogSymbols.SUCCESS.value} Blackfish cache directory already exists.")
+        return True
+    else:
+        print(f"{LogSymbols.ERROR.value} Unable to find local cache dir {cache_dir}.")
+        raise Exception
 
-    config = BlackfishConfig(user=user, host=host, cache=cache)
 
-    logger.debug(f"setting up new remote for user {user} at {host}.")
-    try:
-        res = subprocess.check_output(
-            [
-                "ssh",
-                f"{user}@{host}",
-                f"""if [ -d {config.BLACKFISH_REMOTE} ]; then echo 1; fi""",
-            ]
-        )
-        remote_exists = int(res.decode("utf-8").strip())
-    except Exception as e:
-        logger.error(
-            f"Failed to setup remote blackfish home for user {user} at"
-            f" {host}:{config.BLACKFISH_REMOTE}."
-        )
-        raise e
-
-    if not remote_exists:
+def check_remote_cache_exists(remote_type, host, user, cache_dir):
+    """Check that the remote cache directory exists and raise and exception if not."""
+    with yaspin(text="Looking for remote cache") as spinner:
         try:
-            logger.debug(f"making blackfish home directory {config.BLACKFISH_HOME}")
-            _ = subprocess.check_output(
-                ["ssh", f"{user}@{host}", "mkdir", config.BLACKFISH_REMOTE]
-            )
-
-            logger.debug(
-                "copying blackfish config to remote home directory"
-                f" {config.BLACKFISH_REMOTE}"
-            )
-            _ = subprocess.check_output(
+            res = subprocess.check_output(
                 [
-                    "scp",
-                    os.path.join(config.BLACKFISH_HOME, "config"),
-                    f"{user}@{host}:{os.path.join(config.BLACKFISH_REMOTE, 'config')}",
+                    "ssh",
+                    f"{user}@{host}",
+                    f"""if [ -d {cache_dir} ]; then echo 1; fi""",
                 ]
             )
+            remote_exists = res.decode("utf-8").strip()
+            spinner.text = ""
+            if remote_exists == "1":
+                spinner.ok(
+                    f"{LogSymbols.SUCCESS.value} Blackfish remote cache directory"
+                    " exists."
+                )
+            else:
+                spinner.fail(
+                    f"{LogSymbols.ERROR.value} Unable to find remote cache dir"
+                    f" {cache_dir}."
+                )
+                raise Exception
         except Exception as e:
-            logger.error(
-                f"Failed to setup remote blackfish home for user {user} at"
-                f" {host}:{config.BLACKFISH_REMOTE}."
+            spinner.text = ""
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home: {e}."
             )
-            raise e
-    else:
-        logger.info("blackfish remote home directory already exists. Skipping.")
+            raise Exception
 
 
-def migrate_db():
+def migrate_db() -> None:
     logger.info("running database migration")
-    # TODO: run database migrations
-    # in command-line, this is just:
-    # litestar database upgrade
-    pass
-
-
-def create_or_modify_config(modify=False):
-    created = os.path.isfile(os.path.join(base_config.BLACKFISH_HOME, "config"))
-    if not created or modify:
-        if created:
-            print("Create a new profile:")
-        else:
-            print("Modify a profile:")
-        name = input("> name [default]: ")
-        name = "default" if name == "" else name
-        user = input("> user: ")
-        host = input("> host [della.princeton.edu]: ")
-        host = "della.princeton.edu" if host == "" else host
-        cache = input(f"> cache [/scratch/gpfs/{user}]: ")
-        cache = f"/scratch/gpfs/{user}" if cache == "" else cache
-
-        if name == "base":
-            raise Exception("Profile name 'base' is not allowed.")
-        if user == "":
-            raise Exception("User is required.")
-        if host != "della.princeton.edu" or "della-gpu.princeton.edu":
-            raise Exception("Host is unknown.")
-        if cache == "":
-            raise Exception("Cache is required.")
-
-        config = configparser.ConfigParser()
-        config.read(f"{base_config.BLACKFISH_HOME}/config")
-        profile_exists = name in config
-
-        config[name] = {
-            "user": user,
-            "host": host,
-            "cache": cache,
-        }
-        with open(os.path.join(base_config.BLACKFISH_HOME, "config"), "w") as f:
-            config.write(f)
-
-        if not profile_exists:
-            try:
-                make_remote_dir(user, host, cache)
-            except Exception as e:
-                logger.error(e)
-                logger.info("rolling back changes to blackfish config.")
-                config = configparser.ConfigParser()
-                # TODO: need to write a copy of original config!!
-                with open(os.path.join(base_config.BLACKFISH_HOME, "config"), "w") as f:
-                    config.write(f)
-
-    else:
-        logger.info("blackfish config already exists. Skipping.")
-    print("\n🎉 All done--let's fish! 🎉")
+    _ = subprocess.check_output(
+        [
+            "litestar",
+            "--app-dir",
+            os.path.abspath(os.path.join(app.__file__, "..", "..")),
+            "database",
+            "upgrade",
+            "--no-prompt",
+        ]
+    )

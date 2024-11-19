@@ -82,9 +82,7 @@ class Service(UUIDAuditBase):
         """
 
         if self.job_type == "local":
-            logger.debug(
-                f"Generating launch script and writing to {config.HOME_DIR}."
-            )
+            logger.debug(f"Generating launch script and writing to {config.HOME_DIR}.")
             self.port = container_options["port"]
             container_options["provider"] = config.CONTAINER_PROVIDER
             with open(os.path.join(config.HOME_DIR, "start.sh"), "w") as f:
@@ -110,9 +108,7 @@ class Service(UUIDAuditBase):
             self.status = "SUBMITTED"
             self.job_id = job_id
         elif self.job_type == "slurm":
-            logger.debug(
-                f"Generating job script and writing to {config.HOME_DIR}."
-            )
+            logger.debug(f"Generating job script and writing to {config.HOME_DIR}.")
             with open(os.path.join(config.HOME_DIR, "start.sh"), "w") as f:
                 try:
                     script = self.launch_script(container_options, job_options)

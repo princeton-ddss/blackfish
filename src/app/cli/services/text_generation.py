@@ -27,7 +27,7 @@ from log_symbols.symbols import LogSymbols
     "-n",
     type=str,
     required=False,
-    help="Assign a name to the service. A random name is assigned by default."
+    help="Assign a name to the service. A random name is assigned by default.",
 )
 @click.option(
     "--revision",
@@ -35,7 +35,10 @@ from log_symbols.symbols import LogSymbols
     type=str,
     required=False,
     default=None,
-    help="Use a specific model revision. The most recent locally available (i.e., downloaded) revision is used by default.",
+    help=(
+        "Use a specific model revision. The most recent locally available (i.e.,"
+        " downloaded) revision is used by default."
+    ),
 )
 # @click.option(
 #     "--quantize",
@@ -53,7 +56,10 @@ from log_symbols.symbols import LogSymbols
     is_flag=True,
     required=False,
     default=True,
-    help="Disable custom CUDA kernels. Custom CUDA kernels are not guaranteed to run on all devices, but will run faster if they do.",
+    help=(
+        "Disable custom CUDA kernels. Custom CUDA kernels are not guaranteed to run on"
+        " all devices, but will run faster if they do."
+    ),
 )
 @click.option(
     "--sharded",
@@ -83,7 +89,7 @@ from log_symbols.symbols import LogSymbols
     "--dry-run",
     is_flag=True,
     default=False,
-    help="Print the job script but do not run it."
+    help="Print the job script but do not run it.",
 )
 @click.pass_context
 def run_text_generation(
@@ -99,8 +105,8 @@ def run_text_generation(
     dry_run,
 ):  # pragma: no cover
     """Start a text generation service hosting MODEL, where MODEL is specified as a repo ID, e.g., openai/whisper-tiny.
-    
-        See https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher for additional option details.
+
+    See https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher for additional option details.
     """
 
     config = ctx.obj.get("config")

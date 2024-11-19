@@ -71,7 +71,8 @@ class SlurmJobConfig(JobConfig):
 
 
 @dataclass
-class EC2JobConfig(JobConfig): ...
+class EC2JobConfig(JobConfig):
+    ...
 
 
 @dataclass
@@ -135,7 +136,7 @@ class Job:
                 logger.debug(
                     f"Job state updated from {self.state} to {new_state}"
                     f" (job_id={self.job_id})."
-                )                
+                )
             self.state = new_state
         except subprocess.CalledProcessError as e:
             logger.warning(
@@ -299,7 +300,9 @@ class LocalJob:
                 else:
                     new_state = "RUNNING"
 
-                logger.debug(f"The current job state is: {new_state} (job_id={self.job_id})")
+                logger.debug(
+                    f"The current job state is: {new_state} (job_id={self.job_id})"
+                )
                 if self.state is not None and self.state != new_state:
                     logger.debug(
                         f"Job state updated from {self.state} to {new_state}"

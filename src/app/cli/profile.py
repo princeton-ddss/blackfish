@@ -92,7 +92,9 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
         return True
 
 
-def _update_profile_(default_home: str, default_name: str = "default", name: Optional[str] = None) -> None:
+def _update_profile_(
+    default_home: str, default_name: str = "default", name: Optional[str] = None
+) -> None:
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles.cfg")
 
@@ -241,10 +243,10 @@ def list_profiles(ctx):  # pragma: no cover
 @click.pass_context
 def update_profile(ctx, name):  # pragma: no cover
     """Update a profile.
-    
-        This command does not permit changes to a profile's name or type. If you wish 
-        to rename a profile, you must delete the profile and then re-create
-        it using a new name.
+
+    This command does not permit changes to a profile's name or type. If you wish
+    to rename a profile, you must delete the profile and then re-create
+    it using a new name.
     """
 
     _update_profile_(ctx.obj.get("home_dir"), "default", name)

@@ -396,7 +396,9 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
     token = data.token.get_secret()
     if compare_digest(token, AUTH_TOKEN):
         request.set_session({"token": token})
-        logger.debug(f"from login: added token:{token} to session => redirect /dashboard")
+        logger.debug(
+            f"from login: added token:{token} to session => redirect /dashboard"
+        )
     else:
         logger.debug("from login: invalid token => return None")
         return Redirect("/login/?success=false")
@@ -770,7 +772,7 @@ session_config = AsyncSessionConfig(expire_on_commit=False)
 BASE_DIR = module_to_os_path("app")
 
 db_config = SQLAlchemyAsyncConfig(
-    connection_string=(f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite"),
+    connection_string=f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite",
     metadata=UUIDAuditBase.metadata,
     create_all=True,
     alembic_config=AlembicAsyncConfig(

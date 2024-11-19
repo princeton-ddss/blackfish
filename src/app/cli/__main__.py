@@ -60,7 +60,7 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
 @click.pass_context
 def profile(ctx):  # pragma: no cover
     """Manage profiles.
-    
+
         Profiles determine how services are deployed and what assets (i.e., models) are available.
     There are currently two profile types: "slurm" and "local". Slurm profiles look for model files
     and deploy services on a remote HPC cluster running a Slurm scheduler; local profiles look for
@@ -86,21 +86,21 @@ profile.add_command(update_profile, "update")
 )
 def start(reload: bool) -> None:  # pragma: no cover
     """Start the blackfish app.
-    
-        Application configuration is based on the following local environment variables:
 
-        - BLACKFISH_HOST: the host to run the API on. Default: "localhost".
-        
-        - BLACKFISH_PORT: the port to run the API on. Default: 8000.
+    Application configuration is based on the following local environment variables:
 
-        - BLACKFISH_HOME_DIR: the location of Blackfish application file. Default: $HOME/.blackfish.
+    - BLACKFISH_HOST: the host to run the API on. Default: "localhost".
 
-        - BLACKFISH_DEBUG: the debug logger. Default: 1 (true).
+    - BLACKFISH_PORT: the port to run the API on. Default: 8000.
 
-        - BLACKFISH_DEV_MODE: run the API without token authentication. Default: 1 (true).
+    - BLACKFISH_HOME_DIR: the location of Blackfish application file. Default: $HOME/.blackfish.
 
-        - BLACKFISH_CONTAINER_PROVIDER: the container management system to use for local
-            service deployment. Defaults to Docker, if available, then Apptainer.
+    - BLACKFISH_DEBUG: the debug logger. Default: 1 (true).
+
+    - BLACKFISH_DEV_MODE: run the API without token authentication. Default: 1 (true).
+
+    - BLACKFISH_CONTAINER_PROVIDER: the container management system to use for local
+        service deployment. Defaults to Docker, if available, then Apptainer.
     """
 
     import uvicorn
@@ -175,11 +175,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     help="Required compute node features, e.g., 'gpu80'.",
 )
 @click.option(
-    "--profile",
-    "-p",
-    type=str,
-    default="default",
-    help="The Blackfish profile to use."
+    "--profile", "-p", type=str, default="default", help="The Blackfish profile to use."
 )
 @click.pass_context
 def run(
@@ -193,8 +189,8 @@ def run(
     profile,
 ):  # pragma: no cover
     """Run an inference service.
-    
-        The format of options approximately follows that of Slurm's `sbatch` command.
+
+    The format of options approximately follows that of Slurm's `sbatch` command.
     """
     ctx.obj = {
         "config": config,
@@ -366,7 +362,7 @@ def ls(filters):  # pragma: no cover
 
     if filters is not None:
         try:
-            params = {k: v for k,v in map(lambda x: x.split("="), filters.split(","))}
+            params = {k: v for k, v in map(lambda x: x.split("="), filters.split(","))}
         except Exception as e:
             click.echo(f"Unable to parse filter: {e}")
             return
@@ -375,8 +371,7 @@ def ls(filters):  # pragma: no cover
 
     with yaspin(text="Fetching services...") as spinner:
         res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/api/services",
-            params=params
+            f"http://{config.HOST}:{config.PORT}/api/services", params=params
         )  # fresh data 🥬
         spinner.text = ""
         if not res.ok:
@@ -482,9 +477,7 @@ def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
         params += f"&image={image}"
 
     with yaspin(text="Fetching models") as spinner:
-        res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/api/models?{params}"
-        )
+        res = requests.get(f"http://{config.HOST}:{config.PORT}/api/models?{params}")
         spinner.text = ""
         if not res.ok:
             spinner.fail(f"{LogSymbols.ERROR.value} Error: {res.status_code}")

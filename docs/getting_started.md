@@ -68,7 +68,7 @@ BLACKFISH_HOME_DIR = '~/.blackfish' # location to store application data
 BLACKFISH_DEV_MODE = 1 # run the application with development settings
 ```
 
-Running the application in development mode is recommened for development only on a shared system
+Running the application in development mode is recommended for development only on a shared system
 as it does not use authentication.
 
 ### Profiles
@@ -84,7 +84,7 @@ type.
     need to need setup any required remote resources by hand.
 
 #### Types
-Each profile specifies a number of attributes that allow Blackfish to find resources (e.g., model 
+Each profile specifies a number of attributes that allow Blackfish to find resources (e.g., model
 files) and deploy services accordingly. The exact attributes depend on the profile *type*. There are currently two profile types: `LocalProfile` ("local") and `SlurmRemote` ("slurm"). All profiles require the following attributes:
 
 - `name`: the unique profile name. The "default" profile is used by Blackfish when a profile isn't
@@ -249,7 +249,7 @@ Looking back at the help message for `blackfish run`, we see that there are a fe
 should provide. First, we need to select the type of service to run. We've already decide to run
 `text-generation`, so we're good there. Next, there are a number of job options that we can provide.
 With the exception of `profile`, job options are based on the Slurm `sbatch` command and tell
-Blackfish the resources required to run a service. Finally, there are a number of "container 
+Blackfish the resources required to run a service. Finally, there are a number of "container
 options" available. To get a list of these, type `blackfish run text-generation --help`:
 
 ```shell
@@ -280,7 +280,7 @@ options" available. To get a list of these, type `blackfish run text-generation 
 │ --help                                 Show this message and exit.                               │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-The most important of these is the `revision`, which specifies the exact version of the model we 
+The most important of these is the `revision`, which specifies the exact version of the model we
 want to run. By default, Blackfish selects the most recent locally available version. This container
 option (as well as `--name`) is available for *all* tasks: the remaining options are task-specific.
 
@@ -303,7 +303,7 @@ service:
 ✔ Started service: fddefdaf-d9d2-4392-82d8-c3c4fd2588c6
 ```
 What just happened? First, Blackfish checked to make sure that the requested model is available to
-the `default` profile. Next, it found a list of available revisions of the model and selected the 
+the `default` profile. Next, it found a list of available revisions of the model and selected the
 most recently published version because no revision was specified. Finally, it sent a request to
 deploy the model. Helpfully, the CLI returned an ID associated with the new service
 `fddefdaf-d9d2-4392-82d8-c3c4fd2588c6`, which we can use get information about our service via the
@@ -326,9 +326,9 @@ To view a list of your Blackfish services, type
 ```shell
 ❯ blackfish ls # --filter id=<service_id>,status=<status>
 SERVICE ID                             IMAGE             MODEL                         CREATED                       UPDATED                       STATUS    PORTS   NAME              PROFILE   MOUNTS
-12bb9574-28a8-4cdd-80a4-ad8430bd8d82   text_generation   meta-llama/Meta-Llama-3-8B    2024-07-31T15:16:32.825331Z   2024-07-31T15:30:03.860402Z   TIMEOUT   None    blackfish-10205   default   
-9c128c84-a908-4f17-995d-5780b2c0895d   text_generation   meta-llama/Meta-Llama-3-70B   2024-08-01T15:37:46.345488Z   2024-08-01T15:40:13.828408Z   FAILED    None    blackfish-12575   macbook       
-fddefdaf-d9d2-4392-82d8-c3c4fd2588c6   text_generation   bigscience/bloom-560m         2024-08-27T20:00:53.553854Z   2024-08-27T20:00:53.553864Z   PENDING   None    blackfish-11753   default   
+12bb9574-28a8-4cdd-80a4-ad8430bd8d82   text_generation   meta-llama/Meta-Llama-3-8B    2024-07-31T15:16:32.825331Z   2024-07-31T15:30:03.860402Z   TIMEOUT   None    blackfish-10205   default
+9c128c84-a908-4f17-995d-5780b2c0895d   text_generation   meta-llama/Meta-Llama-3-70B   2024-08-01T15:37:46.345488Z   2024-08-01T15:40:13.828408Z   FAILED    None    blackfish-12575   macbook
+fddefdaf-d9d2-4392-82d8-c3c4fd2588c6   text_generation   bigscience/bloom-560m         2024-08-27T20:00:53.553854Z   2024-08-27T20:00:53.553864Z   PENDING   None    blackfish-11753   default
 ```
 The last item in this list is the service we just started. In this case, the `default` profile
 happens to be set up to connect to a remote HPC cluster, so the service is run as a Slurm job. It
@@ -343,7 +343,7 @@ service to be ready after that. Until then, our service's status will be either 
     information.
 
 Now that we're refreshed, let's see how our service is doing. Re-run the command above. If things
-went smoothly, then we should see that the service's status has changed to `HEALTHY` (if your 
+went smoothly, then we should see that the service's status has changed to `HEALTHY` (if your
 service is still `STARTING`, give it another minute and try again). At this point, we can start
 interacting with the service. Let's say "Hello", shall we?
 

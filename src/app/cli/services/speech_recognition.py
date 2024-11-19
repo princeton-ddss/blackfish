@@ -33,7 +33,7 @@ from log_symbols.symbols import LogSymbols
     "-n",
     type=str,
     required=False,
-    help="Assign a name to the service. A random name is assigned by default."
+    help="Assign a name to the service. A random name is assigned by default.",
 )
 @click.option(
     "--revision",
@@ -41,13 +41,16 @@ from log_symbols.symbols import LogSymbols
     type=str,
     required=False,
     default=None,
-    help="Use a specific model revision. The most recent locally available (i.e., downloaded) revision is used by default.",
+    help=(
+        "Use a specific model revision. The most recent locally available (i.e.,"
+        " downloaded) revision is used by default."
+    ),
 )
 @click.option(
     "--dry-run",
     is_flag=True,
     default=False,
-    help="Print the job script but do not run it."
+    help="Print the job script but do not run it.",
 )
 @click.pass_context
 def run_speech_recognition(
@@ -59,8 +62,8 @@ def run_speech_recognition(
     dry_run,
 ):  # pragma: no cover
     """Start a speech recognition service hosting MODEL with access to INPUT_DIR on the service host. MODEL is specified as a repo ID, e.g., openai/whisper-tiny.
-    
-        See https://github.com/princeton-ddss/speech-recognition-inference for additional option details.
+
+    See https://github.com/princeton-ddss/speech-recognition-inference for additional option details.
     """
 
     config = ctx.obj.get("config")

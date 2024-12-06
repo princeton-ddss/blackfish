@@ -104,7 +104,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     """
 
     import uvicorn
-    from advanced_alchemy.extensions.litestar.alembic import AlembicCommands
+    from advanced_alchemy.extensions.litestar import AlembicCommands
     from sqlalchemy.exc import OperationalError
 
     from app import __file__

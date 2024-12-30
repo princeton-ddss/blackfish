@@ -1,26 +1,27 @@
 from dataclasses import dataclass
+from typing import Literal, Optional
 from configparser import ConfigParser
 import os
 
 from app.logger import logger
 
 
+@dataclass
 class BlackfishProfile:
-    ...
+    """
+    A Blackfish profile indicates how to launch services.
 
+    Not all combinations for fields represent valid profile settings. The logic
+    to validate profile fields must be provided by the user. For example, a
+    profile that uses a remote host *should* specify a `host` and `user`, even
+    though these are optional fields.
+    """
 
-@dataclass
-class SlurmRemote(BlackfishProfile):
     name: str
-    host: str
-    user: str
-    home_dir: str
-    cache_dir: str
-
-
-@dataclass
-class LocalProfile(BlackfishProfile):
-    name: str
+    provider: Literal["docker", "apptainer"]
+    scheduler: Literal["slurm", None]
+    host: Optional[str]
+    user: Optional[str]
     home_dir: str
     cache_dir: str
 
@@ -35,13 +36,6 @@ class ProfileTypeException(Exception):
         super().__init__(f"Profile type {type} is not supported.")
 
 
-def init_profile(home_dir: str, profile: BlackfishProfile) -> None:
-    """Create resources required by profile."""
-    # create home_dir
-    # create cache_dir
-    # raise exception if any of this fails
-
-
 def write_profile(
     home_dir: str, profile: BlackfishProfile, modify: bool = False
 ) -> BlackfishProfile:
@@ -52,29 +46,20 @@ def write_profile(
     if modify:
         if profile.name not in profiles:
             raise Exception(f"Profile {profile.name} not found.")
-    else:
-        if profile.name in profiles:
-            raise Exception(
-                f"Profile {profile.name} already exists. Set `modify=True` to modify an"
-                " existing profile."
-            )
+    elif profile.name in profiles:
+        raise Exception(
+            f"Profile {profile.name} already exists. Set `modify=True` to modify an"
+            " existing profile."
+        )
 
-    if profile.type == "slurm":
-        profiles[profile.name] = {
-            "type": "slurm",
-            "user": profile.user,
-            "host": profile.host,
-            "home_dir": profile.home_dir,
-            "cache_dir": profile.cache_dir,
-        }
-    elif profile.type == "local":
-        profiles[profile.name] = {
-            "type": "local",
-            "home_dir": profile.home_dir,
-            "cache_dir": profile.cache_dir,
-        }
-    else:
-        raise NotImplementedError("Profile type should be one of: slurm, local.")
+    profiles[profile.name] = {
+        "provider": profile.provider,
+        "scheduler": profile.scheduler,
+        "host": profile.host,
+        "user": profile.user,
+        "home_dir": profile.home_dir,
+        "cache_dir": profile.cache_dir,
+    }
 
     with open(os.path.join(home_dir, "profiles.cfg"), "w") as f:
         profiles.write(f)
@@ -93,27 +78,9 @@ def serialize_profiles(home_dir: str) -> list[BlackfishProfile]:
 
     profiles = []
     for section in parser.sections():
-        profile = {k: v for k, v in parser[section].items()}
-        if profile["type"] == "slurm":
-            profiles.append(
-                SlurmRemote(
-                    name=section,
-                    host=profile["host"],
-                    user=profile["user"],
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            )
-        elif profile["type"] == "local":
-            profiles.append(
-                LocalProfile(
-                    name=section,
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            )
-        else:
-            pass
+        profile = BlackfishProfile(**{k: v for k, v in parser[section].items()})
+        profiles.append(profile)
+
     return profiles
 
 
@@ -129,29 +96,13 @@ def serialize_profile(home_dir: str, name: str) -> BlackfishProfile:
 
     for section in parser.sections():
         if section == name:
-            profile = {k: v for k, v in parser[section].items()}
-            if profile["type"] == "slurm":
-                return SlurmRemote(
-                    name=section,
-                    host=profile["host"],
-                    user=profile["user"],
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            elif profile["type"] == "local":
-                return LocalProfile(
-                    name=section,
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            else:
-                raise ProfileTypeException(profile["type"])
+            return BlackfishProfile(**{k: v for k, v in parser[section].items()})
 
     raise ProfileNotFoundException(name)
 
 
 def import_profiles(home_dir: str) -> list[dict]:
-    """Parse profiles from profile.cfg."""
+    """Parse profiles from profile.cfg and return as dict."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
     if not os.path.isfile(profiles_path):
@@ -163,33 +114,13 @@ def import_profiles(home_dir: str) -> list[dict]:
     profiles = []
     for section in parser.sections():
         profile = {k: v for k, v in parser[section].items()}
-        if profile["type"] == "slurm":
-            profiles.append(
-                dict(
-                    name=section,
-                    type="slurm",
-                    host=profile["host"],
-                    user=profile["user"],
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            )
-        elif profile["type"] == "local":
-            profiles.append(
-                dict(
-                    name=section,
-                    type="local",
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            )
-        else:
-            pass
+        profiles.append(profile)
+
     return profiles
 
 
 def import_profile(home_dir: str, name: str) -> dict:
-    """Parse profile from profile.ini."""
+    """Parse profile from profile.cfg and return as dict."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
     if not os.path.isfile(profiles_path):
@@ -200,25 +131,7 @@ def import_profile(home_dir: str, name: str) -> dict:
 
     for section in parser.sections():
         if section == name:
-            profile = {k: v for k, v in parser[section].items()}
-            if profile["type"] == "slurm":
-                return dict(
-                    name=section,
-                    type="slurm",
-                    host=profile["host"],
-                    user=profile["user"],
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            elif profile["type"] == "local":
-                return dict(
-                    name=section,
-                    type="local",
-                    home_dir=profile["home_dir"],
-                    cache_dir=profile["cache_dir"],
-                )
-            else:
-                pass
+            return {k: v for k, v in parser[section].items()}
 
     return None
 

@@ -24,7 +24,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
-  "advanced-alchemy<1,>=0.8.4",
+  "advanced-alchemy<0.9.0,>=0.8.4",
   "aiosqlite",
   "alembic<2,>=1.13.1",
   "click",

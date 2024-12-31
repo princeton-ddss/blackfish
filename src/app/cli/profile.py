@@ -29,10 +29,8 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
         profile_type = input("> type [slurm]: ")
         profile_type = "slurm" if profile_type == "" else profile_type
         if profile_type == "slurm":
-            host = input("> host: ")
-            while host == "":
-                print("Host is required.")
-                host = input("> host: ")
+            host = input("> host [localhost]: ")
+            host = "localhost" if host == "" else host
             user = input("> user: ")
             while user == "":
                 print("User is required.")

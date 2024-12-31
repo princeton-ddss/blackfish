@@ -35,22 +35,30 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
             while user == "":
                 print("User is required.")
                 user = input("> user: ")
-            remote_dir = input(f"> home [/home/{user}/.blackfish]: ")
-            remote_dir = f"/home/{user}/.blackfish" if remote_dir == "" else remote_dir
+            home_dir = input(f"> home [/home/{user}/.blackfish]: ")
+            home_dir = f"/home/{user}/.blackfish" if home_dir == "" else home_dir
             cache_dir = input("> cache: ")
             while cache_dir == "":
                 print("Cache directory is required.")
                 cache_dir = input("> cache: ")
-            try:
-                create_remote_home_dir(
-                    "slurm", host=host, user=user, home_dir=remote_dir
-                )
-                check_remote_cache_exists(
-                    "slurm", host=host, user=user, cache_dir=cache_dir
-                )
-            except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
-                return False
+            if host == "localhost":
+                try:
+                    create_local_home_dir(home_dir)
+                    check_local_cache_exists(cache_dir)
+                except Exception:
+                    print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
+                    return False
+            else:
+                try:
+                    create_remote_home_dir(
+                        "slurm", host=host, user=user, home_dir=home_dir
+                    )
+                    check_remote_cache_exists(
+                        "slurm", host=host, user=user, cache_dir=cache_dir
+                    )
+                except Exception:
+                    print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
+                    return False
         elif profile_type == "local":
             home_dir = input(f"> home [{default_home}]: ")
             home_dir = default_home if home_dir == "" else home_dir
@@ -72,7 +80,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
             "type": "slurm",
             "user": user,
             "host": host,
-            "home_dir": remote_dir,
+            "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
     elif profile_type == "local":

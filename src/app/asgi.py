@@ -810,18 +810,22 @@ openapi_config = OpenAPIConfig(
 )
 
 template_config = TemplateConfig(
-    directory=Path(__file__).parent.parent / "build",
+    directory=blackfish_config.STATIC_DIR / "build",
     engine=JinjaTemplateEngine,
 )
 
 session_config = CookieBackendConfig(secret=urandom(16))
 
 next_server = create_static_files_router(
-    path="_next", directories=["src/build/_next"], html_mode=True
+    path="_next",
+    directories=[blackfish_config.STATIC_DIR / "build" / "_next"],
+    html_mode=True,
 )
 
 img_server = create_static_files_router(
-    path="img", directories=["src/build/img"], html_mode=True
+    path="img",
+    directories=[blackfish_config.STATIC_DIR / "build" / "img"],
+    html_mode=True,
 )
 
 

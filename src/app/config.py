@@ -1,10 +1,12 @@
 import os
+from pathlib import Path
 import subprocess
 from copy import deepcopy
 
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
+DEFAULT_STATIC_DIR = Path(__file__).parent.parent
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
 DEFAULT_DEBUG = 1  # True
 DEFAULT_DEV_MODE = 1  # True
@@ -42,6 +44,7 @@ class BlackfishConfig:
     def __init__(self):
         self.HOST = os.getenv("BLACKFISH_HOST", DEFAULT_HOST)
         self.PORT = int(os.getenv("BLACKFISH_PORT", DEFAULT_PORT))
+        self.STATIC_DIR = Path(os.getenv("BLACKFISH_STATIC_DIR", DEFAULT_STATIC_DIR))
         self.HOME_DIR = os.getenv("BLACKFISH_HOME_DIR", DEFAULT_HOME_DIR)
         self.DEBUG = bool(int(os.getenv("BLACKFISH_DEBUG", DEFAULT_DEBUG)))
         self.DEV_MODE = bool(int(os.getenv("BLACKFISH_DEV_MODE", DEFAULT_DEBUG)))

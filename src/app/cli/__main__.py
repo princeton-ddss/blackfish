@@ -547,15 +547,16 @@ def models_add(
     """
 
     from app.models.model import add_model
-    from app.models.profile import serialize_profile, LocalProfile
+    from app.models.profile import serialize_profile, SlurmProfile
 
     profile = serialize_profile(config.HOME_DIR, profile)
-    if not isinstance(profile, LocalProfile):
-        print(
-            f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for local"
-            " profiles 😔."
-        )
-        return
+    if isinstance(profile, SlurmProfile):
+        if not profile.host == "localhost":
+            print(
+                f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for"
+                " local profiles 😔."
+            )
+            return
 
     try:
         model, path = add_model(
@@ -627,15 +628,16 @@ def models_remove(
     """Remove model files."""
 
     from app.models.model import remove_model
-    from app.models.profile import serialize_profile, LocalProfile
+    from app.models.profile import serialize_profile, SlurmProfile
 
     profile = serialize_profile(config.HOME_DIR, profile)
-    if not isinstance(profile, LocalProfile):
-        print(
-            f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for local"
-            " profiles 😔."
-        )
-        return
+    if isinstance(profile, SlurmProfile):
+        if not profile.host == "localhost":
+            print(
+                f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for"
+                " local profiles 😔."
+            )
+            return
 
     with yaspin(text="Removing model...") as spinner:
         try:

@@ -106,7 +106,7 @@ def run_speech_recognition(
     del job_options["profile"]
     del job_options["config"]
 
-    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
+    if isinstance(profile, SlurmProfile) and not profile.is_local():
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir

@@ -23,7 +23,7 @@ def get_latest_commit(repo_id: str, revisions: list[str]) -> str:  # pragma: no 
 
 def get_models(profile: BlackfishProfile) -> list[str]:
     """Return a list of models available to a given profile."""
-    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
+    if isinstance(profile, SlurmProfile) and not profile.is_local():
         models = set()
         with yaspin(text=f"Searching {profile.host} for available models") as spinner:
             with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
@@ -64,7 +64,7 @@ def get_models(profile: BlackfishProfile) -> list[str]:
 
 def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
     """Return a list of revisions associated with a given model and profile."""
-    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
+    if isinstance(profile, SlurmProfile) and not profile.is_local():
         revisions = set()
         namespace, model = repo_id.split("/")
         model_dir = f"models--{namespace}--{model}"
@@ -122,7 +122,7 @@ def get_model_dir(
     """
     namespace, model = repo_id.split("/")
     model_dir = f"models--{namespace}--{model}"
-    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
+    if isinstance(profile, SlurmProfile) and not profile.is_local():
         with yaspin(
             text=f"Searching {profile.host} for {repo_id}[{revision}]"
         ) as spinner:

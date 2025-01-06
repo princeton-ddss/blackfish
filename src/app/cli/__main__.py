@@ -551,7 +551,7 @@ def models_add(
 
     profile = serialize_profile(config.HOME_DIR, profile)
     if isinstance(profile, SlurmProfile):
-        if not profile.host == "localhost":
+        if not profile.is_local():
             print(
                 f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for"
                 " local profiles 😔."
@@ -632,7 +632,7 @@ def models_remove(
 
     profile = serialize_profile(config.HOME_DIR, profile)
     if isinstance(profile, SlurmProfile):
-        if not profile.host == "localhost":
+        if not profile.is_local():
             print(
                 f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for"
                 " local profiles 😔."

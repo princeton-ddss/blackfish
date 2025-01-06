@@ -146,7 +146,7 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
 
 
 def model_info(profile: Profile) -> Tuple[str, str]:
-    if not isinstance(profile, LocalProfile) or not profile.host == "localhost":
+    if not isinstance(profile, LocalProfile) or not profile.is_local():
         raise Exception("Profile should be a LocalProfile.")
 
     cache_dir = Path(*[profile.cache_dir, "models", "info.json"])
@@ -196,7 +196,7 @@ async def find_models(profile: Profile) -> list[Model]:
     """
     models = []
     revisions = []
-    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
+    if isinstance(profile, SlurmProfile) and not profile.is_local():
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
         with Connection(
             host=profile.host, user=profile.user

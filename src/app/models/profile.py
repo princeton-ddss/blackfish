@@ -12,10 +12,13 @@ class BlackfishProfile:
 @dataclass
 class SlurmProfile(BlackfishProfile):
     name: str
-    host: str  # localhost if OnDemand
+    host: str
     user: str
     home_dir: str
     cache_dir: str
+
+    def is_local(self):
+        return self.host == "localhost"
 
 
 @dataclass
@@ -23,6 +26,9 @@ class LocalProfile(BlackfishProfile):
     name: str
     home_dir: str
     cache_dir: str
+
+    def is_local(self):
+        return True
 
 
 class ProfileNotFoundException(Exception):

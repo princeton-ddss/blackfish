@@ -146,8 +146,9 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
 
 
 def model_info(profile: Profile) -> Tuple[str, str]:
-    if not isinstance(profile, LocalProfile) or not profile.is_local():
-        raise Exception("Profile should be a LocalProfile.")
+    if not profile.is_local():
+        logger.error("Profile should be local.")
+        raise Exception("Profile should be local.")
 
     cache_dir = Path(*[profile.cache_dir, "models", "info.json"])
     try:
@@ -324,6 +325,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                 repo=repo,
                                 profile=profile.name,
                                 revision=revision,
+                                image=image,
                                 model_dir=os.path.join(home_dir, model_dir),
                             )
                         )

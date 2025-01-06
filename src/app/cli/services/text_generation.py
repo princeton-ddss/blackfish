@@ -154,7 +154,7 @@ def run_text_generation(
     del job_options["profile"]
     del job_options["config"]
 
-    if isinstance(profile, SlurmProfile) and not profile.is_local():
+    if isinstance(profile, SlurmProfile):
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
@@ -215,7 +215,7 @@ def run_text_generation(
                 name=name,
                 model=model,
                 profile=profile.name,
-                job_type="local" if isinstance(profile, LocalProfile) else "slurm",
+                job_type="local",
                 host="localhost",
             )
             click.echo("-" * 80)
@@ -239,9 +239,7 @@ def run_text_generation(
                         "image": "text_generation",
                         "model": model,
                         "profile": profile.name,
-                        "job_type": (
-                            "local" if isinstance(profile, LocalProfile) else "slurm"
-                        ),
+                        "job_type": "local",
                         "host": "localhost",
                         "container_options": container_options,
                         "job_options": job_options,

@@ -10,9 +10,9 @@ class BlackfishProfile:
 
 
 @dataclass
-class SlurmRemote(BlackfishProfile):
+class SlurmProfile(BlackfishProfile):
     name: str
-    host: str
+    host: str  # localhost if OnDemand
     user: str
     home_dir: str
     cache_dir: str
@@ -96,7 +96,7 @@ def serialize_profiles(home_dir: str) -> list[BlackfishProfile]:
         profile = {k: v for k, v in parser[section].items()}
         if profile["type"] == "slurm":
             profiles.append(
-                SlurmRemote(
+                SlurmProfile(
                     name=section,
                     host=profile["host"],
                     user=profile["user"],
@@ -131,7 +131,7 @@ def serialize_profile(home_dir: str, name: str) -> BlackfishProfile:
         if section == name:
             profile = {k: v for k, v in parser[section].items()}
             if profile["type"] == "slurm":
-                return SlurmRemote(
+                return SlurmProfile(
                     name=section,
                     host=profile["host"],
                     user=profile["user"],

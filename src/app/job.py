@@ -11,7 +11,6 @@ from app.logger import logger
 
 class JobState(Enum):
     "BOOT_FAIL"  # Job terminated due to launch failure (BF)
-
     "CANCELLED"  # Job was explicitly cancelled by the user or system administrator (CA)
     "COMPLETED"  # Job terminated all processes on all nodes with exit code of zero (CD)
     "DEADLINE"  # Job terminated on deadline (DL)
@@ -77,11 +76,17 @@ class EC2JobConfig(JobConfig):
 
 @dataclass
 class Job:
+    ...
+
+
+@dataclass
+class SlurmJob(Job):
     """A light-weight Slurm job dataclass."""
 
     job_id: int
     user: str
     host: str
+    is_local: bool
     name: Optional[str] = None
     node: Optional[str] = None
     port: Optional[int] = None
@@ -99,22 +104,38 @@ class Job:
         """
         logger.debug(f"Updating job state (job_id={self.job_id}).")
         try:
-            res = subprocess.check_output(
-                [
-                    "ssh",
-                    f"{self.user}@{self.host}",
-                    "sacct",
-                    "-n",
-                    "-P",
-                    "-X",
-                    "-u",
-                    self.user,
-                    "-j",
-                    str(self.job_id),
-                    "-o",
-                    "State",
-                ]
-            )
+            if self.is_local:
+                res = subprocess.check_output(
+                    [
+                        "sacct",
+                        "-n",
+                        "-P",
+                        "-X",
+                        "-u",
+                        self.user,
+                        "-j",
+                        str(self.job_id),
+                        "-o",
+                        "State",
+                    ]
+                )
+            else:
+                res = subprocess.check_output(
+                    [
+                        "ssh",
+                        f"{self.user}@{self.host}",
+                        "sacct",
+                        "-n",
+                        "-P",
+                        "-X",
+                        "-u",
+                        self.user,
+                        "-j",
+                        str(self.job_id),
+                        "-o",
+                        "State",
+                    ]
+                )
 
             new_state = "MISSING" if res == b"" else res.decode("utf-8").strip()
             logger.debug(
@@ -154,22 +175,39 @@ class Job:
         """
         logger.debug(f"Fetching node for job {self.job_id}.")
         try:
-            res = subprocess.check_output(
-                [
-                    "ssh",
-                    f"{self.user}@{self.host}",
-                    "sacct",
-                    "-n",
-                    "-P",
-                    "-X",
-                    "-u",
-                    self.user,
-                    "-j",
-                    str(self.job_id),
-                    "-o",
-                    "NodeList",
-                ]
-            )
+            if self.is_local:
+                res = subprocess.check_output(
+                    [
+                        "sacct",
+                        "-n",
+                        "-P",
+                        "-X",
+                        "-u",
+                        self.user,
+                        "-j",
+                        str(self.job_id),
+                        "-o",
+                        "NodeList",
+                    ]
+                )
+            else:
+                res = subprocess.check_output(
+                    [
+                        "ssh",
+                        f"{self.user}@{self.host}",
+                        "sacct",
+                        "-n",
+                        "-P",
+                        "-X",
+                        "-u",
+                        self.user,
+                        "-j",
+                        str(self.job_id),
+                        "-o",
+                        "NodeList",
+                    ]
+                )
+
             self.node = None if res == b"" else res.decode("utf-8").strip()
             logger.debug(f"Job {self.job_id} node set to {self.node}.")
         except subprocess.CalledProcessError as e:
@@ -191,14 +229,22 @@ class Job:
         """
         logger.debug(f"Fetching port for job {self.job_id}.")
         try:
-            res = subprocess.check_output(
-                [
-                    "ssh",
-                    f"{self.user}@{self.host}",
-                    "ls",
-                    os.path.join(".blackfish", str(self.job_id)),
-                ]
-            )
+            if self.is_local:
+                res = subprocess.check_output(
+                    [
+                        "ls",
+                        os.path.join(".blackfish", str(self.job_id)),
+                    ]
+                )
+            else:
+                res = subprocess.check_output(
+                    [
+                        "ssh",
+                        f"{self.user}@{self.host}",
+                        "ls",
+                        os.path.join(".blackfish", str(self.job_id)),
+                    ]
+                )
             self.port = None if res == b"" else int(res.decode("utf-8").strip())
             logger.debug(f"Job {self.job_id} port set to {self.port}")
         except subprocess.CalledProcessError as e:
@@ -243,9 +289,12 @@ class Job:
         """
         try:
             logger.debug(f"Canceling job {self.job_id}")
-            subprocess.check_output(
-                ["ssh", f"{self.user}@{self.host}", "scancel", str(self.job_id)]
-            )
+            if self.is_local:
+                subprocess.check_output(["scancel", str(self.job_id)])
+            else:
+                subprocess.check_output(
+                    ["ssh", f"{self.user}@{self.host}", "scancel", str(self.job_id)]
+                )
         except subprocess.CalledProcessError as e:
             logger.warning(
                 f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
@@ -253,7 +302,7 @@ class Job:
 
 
 @dataclass
-class LocalJob:
+class LocalJob(Job):
     """A light-weight local job dataclass."""
 
     job_id: int

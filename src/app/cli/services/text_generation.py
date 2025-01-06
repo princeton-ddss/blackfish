@@ -3,7 +3,7 @@ import requests
 from random import randint
 
 from app.services.text_generation import TextGeneration
-from app.models.profile import serialize_profiles, SlurmRemote, LocalProfile
+from app.models.profile import serialize_profiles, SlurmProfile, LocalProfile
 from app.utils import (
     find_port,
     get_models,
@@ -154,7 +154,7 @@ def run_text_generation(
     del job_options["profile"]
     del job_options["config"]
 
-    if isinstance(profile, SlurmRemote):
+    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
         job_options["user"] = profile.user
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
@@ -205,7 +205,7 @@ def run_text_generation(
                         f"{LogSymbols.ERROR.value} Failed to start service:"
                         f" {res.status_code} - {res.reason}"
                     )
-    elif isinstance(profile, LocalProfile):
+    else:
         container_options["port"] = find_port(use_stdout=True)
         job_options["home_dir"] = profile.home_dir
         job_options["cache_dir"] = profile.cache_dir
@@ -215,7 +215,7 @@ def run_text_generation(
                 name=name,
                 model=model,
                 profile=profile.name,
-                job_type="local",
+                job_type="local" if isinstance(profile, LocalProfile) else "slurm",
                 host="localhost",
             )
             click.echo("-" * 80)
@@ -223,7 +223,7 @@ def run_text_generation(
             click.echo("Service: text-generate")
             click.echo(f"Model: {model}")
             click.echo(f"Profile: {profile.name}")
-            click.echo("Type: local")
+            click.echo(f"Type: {service.job_type}")
             click.echo("Host: localhost")
             click.echo(f"Provider: {container_options['provider']}")
             click.echo("-" * 80)
@@ -239,7 +239,9 @@ def run_text_generation(
                         "image": "text_generation",
                         "model": model,
                         "profile": profile.name,
-                        "job_type": "local",
+                        "job_type": (
+                            "local" if isinstance(profile, LocalProfile) else "slurm"
+                        ),
                         "host": "localhost",
                         "container_options": container_options,
                         "job_options": job_options,
@@ -256,8 +258,6 @@ def run_text_generation(
                         f"{LogSymbols.ERROR.value} Failed to start service:"
                         f" {res.status_code} - {res.reason}"
                     )
-    else:
-        raise NotImplementedError
 
 
 # blackfish fetch text-generation [OPTIONS] SERVICE INPUT

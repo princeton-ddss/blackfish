@@ -4,7 +4,7 @@ from typing import Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
 from fabric.connection import Connection
-from app.models.profile import BlackfishProfile, SlurmRemote, LocalProfile
+from app.models.profile import BlackfishProfile, SlurmProfile
 from app.logger import logger
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -23,7 +23,7 @@ def get_latest_commit(repo_id: str, revisions: list[str]) -> str:  # pragma: no 
 
 def get_models(profile: BlackfishProfile) -> list[str]:
     """Return a list of models available to a given profile."""
-    if isinstance(profile, SlurmRemote):
+    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
         models = set()
         with yaspin(text=f"Searching {profile.host} for available models") as spinner:
             with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
@@ -42,7 +42,7 @@ def get_models(profile: BlackfishProfile) -> list[str]:
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
         return list(models)
-    elif isinstance(profile, LocalProfile):
+    else:
         models = set()
         with yaspin(text="Searching localhost for available models") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
@@ -60,13 +60,11 @@ def get_models(profile: BlackfishProfile) -> list[str]:
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
         return list(models)
-    else:
-        raise NotImplementedError
 
 
 def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
     """Return a list of revisions associated with a given model and profile."""
-    if isinstance(profile, SlurmRemote):
+    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
         revisions = set()
         namespace, model = repo_id.split("/")
         model_dir = f"models--{namespace}--{model}"
@@ -91,7 +89,7 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
         return list(revisions)
-    elif isinstance(profile, LocalProfile):
+    else:
         revisions = set()
         namespace, model = repo_id.split("/")
         model_dir = f"models--{namespace}--{model}"
@@ -113,8 +111,6 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
         return list(revisions)
-    else:
-        raise NotImplementedError
 
 
 def get_model_dir(
@@ -126,7 +122,7 @@ def get_model_dir(
     """
     namespace, model = repo_id.split("/")
     model_dir = f"models--{namespace}--{model}"
-    if isinstance(profile, SlurmRemote):
+    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
         with yaspin(
             text=f"Searching {profile.host} for {repo_id}[{revision}]"
         ) as spinner:
@@ -161,7 +157,7 @@ def get_model_dir(
                 f" {profile.host}."
             )
         return None
-    if isinstance(profile, LocalProfile):
+    else:
         with yaspin(text=f"Searching localhost for {repo_id}[{revision}]") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
             spinner.text = f"Looking in default directory {default_dir}"
@@ -193,8 +189,6 @@ def get_model_dir(
                 f" {profile.host}."
             )
         return None
-    else:
-        raise NotImplementedError
 
 
 def has_model(

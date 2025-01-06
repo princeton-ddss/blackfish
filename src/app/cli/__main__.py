@@ -63,8 +63,8 @@ def profile(ctx):  # pragma: no cover
 
         Profiles determine how services are deployed and what assets (i.e., models) are available.
     There are currently two profile types: "slurm" and "local". Slurm profiles look for model files
-    and deploy services on a remote HPC cluster running a Slurm scheduler; local profiles look for
-    model files on the same host where the Blackfish API is running.
+    and deploy services on a HPC cluster running a Slurm scheduler; local profiles look for
+    model files on the same host where the Blackfish API is running and deploy services using without a scheduler.
     """
     ctx.obj = {"home_dir": config.HOME_DIR}
 

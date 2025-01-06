@@ -13,7 +13,7 @@ from advanced_alchemy.base import UUIDAuditBase
 
 from litestar.datastructures import State
 
-from app.job import Job, LocalJob
+from app.job import Job, SlurmJob, LocalJob
 from app.logger import logger
 from app.utils import find_port
 
@@ -155,7 +155,7 @@ class Service(UUIDAuditBase):
         elif self.job_type == "ec2":
             raise NotImplementedError
         else:
-            raise Exception("Job type should be one of: local, slurm, ec2, test.")
+            raise Exception("Job type should be one of: local, slurm.")
 
         logger.info("Adding service to database")
         session.add(self)
@@ -513,7 +513,7 @@ class Service(UUIDAuditBase):
     def get_job(self, provider: str = None) -> Job:
         """Fetch the Slurm job backing the service."""
         if self.job_type == "slurm":
-            job = Job(self.job_id, self.user, self.host)
+            job = SlurmJob(self.job_id, self.user, self.host)
         elif self.job_type == "local":
             job = LocalJob(self.job_id, provider)
         job.update()

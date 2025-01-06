@@ -68,7 +68,7 @@ from app.models.profile import (
     write_profile,
     modify_profile,
     remove_profile,
-    SlurmRemote,
+    SlurmProfile,
     LocalProfile,
     BlackfishProfile as Profile,
     ProfileNotFoundException,
@@ -146,7 +146,7 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
 
 
 def model_info(profile: Profile) -> Tuple[str, str]:
-    if not isinstance(profile, LocalProfile):
+    if not isinstance(profile, LocalProfile) or not profile.host == "localhost":
         raise Exception("Profile should be a LocalProfile.")
 
     cache_dir = Path(*[profile.cache_dir, "models", "info.json"])
@@ -167,7 +167,7 @@ def model_info(profile: Profile) -> Tuple[str, str]:
 
 
 def remote_model_info(profile: Profile, sftp: SFTPClient) -> Tuple[str, str]:
-    if not isinstance(profile, SlurmRemote):
+    if not isinstance(profile, SlurmProfile):
         raise Exception("Profile should be a SlurmProfile.")
 
     cache_dir = os.path.join(profile.cache_dir, "models", "info.json")
@@ -196,7 +196,7 @@ async def find_models(profile: Profile) -> list[Model]:
     """
     models = []
     revisions = []
-    if isinstance(profile, SlurmRemote):
+    if isinstance(profile, SlurmProfile) and not profile.host == "localhost":
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
         with Connection(
             host=profile.host, user=profile.user
@@ -266,7 +266,7 @@ async def find_models(profile: Profile) -> list[Model]:
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
             return models
-    elif isinstance(profile, LocalProfile):
+    else:
         cache_info, home_info = model_info(profile)
         cache_dir = os.path.join(profile.cache_dir, "models")
         logger.debug(f"Searching cache directory {cache_dir}")
@@ -331,8 +331,6 @@ async def find_models(profile: Profile) -> list[Model]:
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
         return list(models)
-    else:
-        raise NotImplementedError
 
 
 # --- Pages ---

@@ -85,7 +85,7 @@ type.
 
 #### Types
 Each profile specifies a number of attributes that allow Blackfish to find resources (e.g., model
-files) and deploy services accordingly. The exact attributes depend on the profile *type*. There are currently two profile types: `LocalProfile` ("local") and `SlurmRemote` ("slurm"). All profiles require the following attributes:
+files) and deploy services accordingly. The exact attributes depend on the profile *type*. There are currently two profile types: `LocalProfile` ("local") and `SlurmProfile` ("slurm"). All profiles require the following attributes:
 
 - `name`: the unique profile name. The "default" profile is used by Blackfish when a profile isn't
 explicitly provided.

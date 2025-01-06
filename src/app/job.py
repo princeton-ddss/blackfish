@@ -86,12 +86,14 @@ class SlurmJob(Job):
     job_id: int
     user: str
     host: str
-    is_local: bool
     name: Optional[str] = None
     node: Optional[str] = None
     port: Optional[int] = None
     state: Optional[str] = None
     options: Optional[JobConfig] = None
+
+    def is_local(self) -> bool:
+        return self.host == "localhost"
 
     def update(self) -> Optional[str]:
         """Attempt to update the job state from Slurm accounting and return the new
@@ -104,7 +106,7 @@ class SlurmJob(Job):
         """
         logger.debug(f"Updating job state (job_id={self.job_id}).")
         try:
-            if self.is_local:
+            if self.is_local():
                 res = subprocess.check_output(
                     [
                         "sacct",
@@ -175,7 +177,7 @@ class SlurmJob(Job):
         """
         logger.debug(f"Fetching node for job {self.job_id}.")
         try:
-            if self.is_local:
+            if self.is_local():
                 res = subprocess.check_output(
                     [
                         "sacct",
@@ -229,7 +231,7 @@ class SlurmJob(Job):
         """
         logger.debug(f"Fetching port for job {self.job_id}.")
         try:
-            if self.is_local:
+            if self.is_local():
                 res = subprocess.check_output(
                     [
                         "ls",
@@ -289,7 +291,7 @@ class SlurmJob(Job):
         """
         try:
             logger.debug(f"Canceling job {self.job_id}")
-            if self.is_local:
+            if self.is_local():
                 subprocess.check_output(["scancel", str(self.job_id)])
             else:
                 subprocess.check_output(

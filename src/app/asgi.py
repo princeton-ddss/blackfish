@@ -673,9 +673,11 @@ async def proxy_service(
         async def generator() -> AsyncGenerator:
             url = f"http://127.0.0.1:{port}/{cmd}"
             headers = {"Content-Type": "application/json"}
-            with requests.post(url, data=data, headers=headers, stream=True) as res:
+            logger.debug(f"data={data}, type={type(data)}")
+            with requests.post(url, json=data, headers=headers, stream=True) as res:
                 for line in res.iter_lines():
                     if line:
+                        logger.debug(f"line={line}")
                         yield line
                  
         return Stream(generator)

@@ -1,6 +1,8 @@
 import os
 from os import urandom
 import json
+import aiohttp
+import requests
 from datetime import datetime
 from base64 import b64encode
 from dataclasses import dataclass
@@ -69,7 +71,6 @@ from app.models.profile import (
     modify_profile,
     remove_profile,
     SlurmProfile,
-    LocalProfile,
     BlackfishProfile as Profile,
     ProfileNotFoundException,
 )
@@ -637,11 +638,6 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
         # TODO: return failure status code and message
 
 
-import aiohttp
-import asyncio
-import requests
-
-
 async def asyncget(url):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
@@ -652,7 +648,7 @@ async def asyncpost(url, data, headers):
     async with aiohttp.ClientSession() as session:
         async with session.post(url, data=data, headers=headers) as response:
             return await response.json()
-        
+
 
 @post("/proxy/{port:int}/{cmd:str}", guards=ENDPOINT_GUARDS)
 async def proxy_service(
@@ -661,10 +657,11 @@ async def proxy_service(
     cmd: str,
     streaming: Optional[bool],
     session: AsyncSession,
-    state: State) -> Any | Stream:
+    state: State,
+) -> Any | Stream:
     """Call a service via proxy and return the response.
-    
-        Setting query parameter `streaming` to `True` streams the response.
+
+    Setting query parameter `streaming` to `True` streams the response.
     """
 
     if streaming:
@@ -675,18 +672,18 @@ async def proxy_service(
             headers = {"Content-Type": "application/json"}
             logger.debug(f"data={data}, type={type(data)}")
             with requests.post(url, json=data, headers=headers, stream=True) as res:
-                for line in res.iter_lines():
-                    if line:
-                        logger.debug(f"line={line}")
-                        yield line
-                 
+                for x in res.iter_content(chunk_size=None):
+                    if x:
+                        logger.debug(f"x={x}")
+                        yield x
+
         return Stream(generator)
     else:
         logger.debug(f"data={data}, type={type(data)}")
         res = await asyncpost(
             f"http://127.0.0.1:{port}/{cmd}",
-            json.dumps(data), 
-            {"Content-Type": "application/json"}
+            json.dumps(data),
+            {"Content-Type": "application/json"},
         )
         logger.debug(f"res={res}")
         return res

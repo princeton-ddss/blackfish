@@ -457,7 +457,7 @@ class Service(UUIDAuditBase):
                         "-N",
                         "-f",
                         "-L",
-                        f"{self.port}:{job.node}:{job.port}",
+                        f"{self.port}:{job.node}:{job.port}", # e.g., localhost:8080 -> della-h3401:5432
                         f"{self.user}@{job.node}",
                     ]
                 )
@@ -472,7 +472,7 @@ class Service(UUIDAuditBase):
                         "-f",
                         "-L",
                         f"{self.port}:{job.node}:{job.port}",
-                        f"{self.user}@{self.host}",
+                        f"{self.user}@{self.host}", # e.g., tom123@della.princeton.edu
                     ]
                 )
                 logger.debug(

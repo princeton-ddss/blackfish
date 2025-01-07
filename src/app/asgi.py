@@ -5,7 +5,7 @@ from datetime import datetime
 from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 import asyncio
 import itertools
 from pathlib import Path
@@ -44,7 +44,7 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 from litestar.static_files import create_static_files_router
 from litestar.template.config import TemplateConfig
 from litestar.contrib.jinja import JinjaTemplateEngine
-from litestar.response import Template, Redirect
+from litestar.response import Template, Redirect, Stream
 from litestar.connection import ASGIConnection
 from litestar.handlers.base import BaseRouteHandler
 from litestar.response.redirect import ASGIRedirectResponse
@@ -637,6 +637,59 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
         # TODO: return failure status code and message
 
 
+import aiohttp
+import asyncio
+import requests
+
+
+async def asyncget(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.json()
+
+
+async def asyncpost(url, data, headers):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data, headers=headers) as response:
+            return await response.json()
+        
+
+@post("/proxy/{port:int}/{cmd:str}", guards=ENDPOINT_GUARDS)
+async def proxy_service(
+    data: dict[Any, Any],
+    port: int,
+    cmd: str,
+    streaming: Optional[bool],
+    session: AsyncSession,
+    state: State) -> Any | Stream:
+    """Call a service via proxy and return the response.
+    
+        Setting query parameter `streaming` to `True` streams the response.
+    """
+
+    if streaming:
+        logger.info("Streaming proxy response.")
+
+        async def generator() -> AsyncGenerator:
+            url = f"http://127.0.0.1:{port}/{cmd}"
+            headers = {"Content-Type": "application/json"}
+            with requests.post(url, data=data, headers=headers, stream=True) as res:
+                for line in res.iter_lines():
+                    if line:
+                        yield line
+                 
+        return Stream(generator)
+    else:
+        logger.debug(f"data={data}, type={type(data)}")
+        res = await asyncpost(
+            f"http://127.0.0.1:{port}/{cmd}",
+            json.dumps(data), 
+            {"Content-Type": "application/json"}
+        )
+        logger.debug(f"res={res}")
+        return res
+
+
 @get("/api/models", guards=ENDPOINT_GUARDS)
 async def get_models(
     session: AsyncSession,
@@ -848,6 +901,7 @@ app = Litestar(
         refresh_service,
         fetch_services,
         delete_service,
+        proxy_service,
         create_model,
         get_model,
         get_models,

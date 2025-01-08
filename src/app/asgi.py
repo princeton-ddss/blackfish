@@ -674,7 +674,7 @@ async def proxy_service(
             with requests.post(url, json=data, headers=headers, stream=True) as res:
                 for x in res.iter_content(chunk_size=None):
                     if x:
-                        logger.debug(f"x={x}")
+                        logger.debug(f"x={x}\n\n")
                         yield x
 
         return Stream(generator)

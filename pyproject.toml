@@ -1,3 +1,35 @@
+[project]
+name = "blackfish"
+version = "0.1.0"
+description = "An open-source AI-as-a-Service platform."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Colin Swaney", email = "colinswaney@princeton.edu" }
+]
+requires-python = ">=3.12"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+  "advanced-alchemy>=0.27.1",
+  "aiohttp>=3.11.11",
+  "aiosqlite>=0.20",
+  "colorlog>=6.9",
+  "fabric>=3.2.2",
+  "huggingface-hub>=0.27.1",
+  "jinja2>=3.1.5",
+  "litestar>=2.14",
+  "log-symbols>=0.0.14",
+  "prettytable>=3.12",
+  "psutil>=6.1.1",
+  "requests>=2.32.3",
+  "uvicorn>=0.34",
+  "yaspin>=3.1",
+]
+[project.scripts]
+blackfish = "app.cli.__main__:main"
+
 [build-system]
 build-backend = "hatchling.build"
 requires = [
@@ -6,66 +38,3 @@ requires = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]
-
-[project]
-name = "blackfish"
-version = "0.1.0"
-description = "An open-source MLaaS platform."
-readme = "README.md"
-license = "MIT"
-authors = [{ name = "Colin Swaney" }, { email = "colinswaney@princeton.edu" }]
-requires-python = ">=3.7"
-classifiers = [
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-]
-dependencies = [
-  "advanced-alchemy<0.9.0,>=0.8.4",
-  "aiosqlite",
-  "alembic<2,>=1.13.1",
-  "click",
-  "colorlog",
-  "fabric",
-  "huggingface_hub<1,>=0.25",
-  "jinja2<4,>=3.1.3",
-  "litestar~=2.11",
-  "log_symbols",
-  "mkdocs-material",
-  "mkdocs-swagger-ui-tag",
-  "mkdocstrings",
-  "mkdocstrings[python]",
-  "nox",
-  "pre-commit", # test
-  "prettytable<4,>=3.10",
-  "psutil<6,>5.9",
-  "pytest",
-  "requests<3,>=2.31",
-  "tqdm<5,>=4.66.4",
-  "uvicorn",
-  "yaspin==3.0.2", # dev
-]
-[project.scripts]
-blackfish = "app.cli.__main__:main"
-
-[tool.mypy]
-files = "blackfish"
-python_version = "3.10"
-strict = true
-show_error_codes = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-warn_unreachable = true
-
-[[tool.mypy.overrides]]
-module = [
-  "celery.*",
-  "click.*",
-  "colorlog.*",
-  "prettytable.*",
-  "pydantic.*",
-  "tasks.*",
-]
-ignore_missing_imports = true

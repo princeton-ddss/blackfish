@@ -104,8 +104,12 @@ def start(reload: bool) -> None:  # pragma: no cover
     """
 
     import uvicorn
-    from advanced_alchemy.extensions.litestar import AlembicCommands
+    from advanced_alchemy.extensions.litestar import (
+        AlembicCommands as _AlembicCommands,
+        SQLAlchemyInitPlugin,
+    )
     from sqlalchemy.exc import OperationalError
+    from litestar import Litestar
 
     from app import __file__
     from app.asgi import app
@@ -113,6 +117,14 @@ def start(reload: bool) -> None:  # pragma: no cover
     if not os.path.isdir(config.HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
         return
+
+    class AlembicCommands(_AlembicCommands):
+        def __init__(self, app: Litestar) -> None:
+            self._app = app
+            self.sqlalchemy_config = self._app.plugins.get(
+                SQLAlchemyInitPlugin
+            )._config  # noqa: SLF001
+            self.config = self._get_alembic_command_config()
 
     alembic_commands = AlembicCommands(app=app)
 

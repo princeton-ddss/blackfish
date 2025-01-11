@@ -3,7 +3,7 @@ import requests
 from random import randint
 
 from app.services.text_generation import TextGeneration
-from app.models.profile import serialize_profiles, SlurmProfile, LocalProfile
+from app.models.profile import serialize_profiles, SlurmProfile
 from app.utils import (
     find_port,
     get_models,

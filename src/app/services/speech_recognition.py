@@ -64,7 +64,7 @@ class SpeechRecognition(Service):
                 "language": language,
                 "response_format": response_format,
             }
-            res = requests.post(f"http://127.0.0.1:{self.port}/transcribe", json=body)
+            res = requests.post(f"http://localhost:{self.port}/transcribe", json=body)
         except Exception as e:
             raise e
 
@@ -73,7 +73,7 @@ class SpeechRecognition(Service):
     async def ping(self) -> dict:
         logger.debug(f"Pinging service {self.id}")
         try:
-            res = requests.get(f"http://127.0.0.1:{self.port}/health")
+            res = requests.get(f"http://localhost:{self.port}/health")
             return {"ok": res.ok}
         except Exception as e:
             return {"ok": False, "error": e}

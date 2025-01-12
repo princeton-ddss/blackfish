@@ -4,7 +4,7 @@ import subprocess
 from copy import deepcopy
 
 
-DEFAULT_HOST = "127.0.0.1"
+DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8000
 DEFAULT_STATIC_DIR = Path(__file__).parent.parent
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")

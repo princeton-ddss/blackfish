@@ -62,7 +62,7 @@ blackfish start
 in the command-line. If this is your first time starting the application, then you'll need
 to answer a few prompts to set things up. Once you're setup, the application will launch.
 At this point, we need to decide how we want to interact with Blackfish. The UI is available
-in your browser by heading over to `http://127.0.0.1:8000`. It's large self-explanatory, so
+in your browser by heading over to `http://localhost:8000`. It's large self-explanatory, so
 let's instead take a look at the CLI.
 
 ### CLI
@@ -107,7 +107,7 @@ If things went well, then we should see that the service's status has changed to
 At this point, we can start interacting with the service. Let's say "Hello":
 
 ```shell
-curl 127.0.0.1:8080/generate \
+curl localhost:8080/generate \
   -X POST \
   -d '{"inputs": "Hello", "parameters": {"max_new_tokens": 20}}' \
   -H 'Content-Type: application/json'
@@ -253,7 +253,7 @@ The application and command-line interface (CLI) pull their settings from enviro
 variables and/or (for the application) arguments provided at start-up. The most important
 environment variables are:
 ```shell
-BLACKFISH_HOST = '127.0.0.1' # host for local instance of the Blackfish app
+BLACKFISH_HOST = 'localhost' # host for local instance of the Blackfish app
 BLACKFISH_PORT = 8000 # port for local instance of the Blackfish app
 BLACKFISH_HOME_DIR = '~/.blackfish' # location to store application data
 ```

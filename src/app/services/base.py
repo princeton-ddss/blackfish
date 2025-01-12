@@ -550,7 +550,7 @@ class Service(UUIDAuditBase):
     async def ping(self) -> dict:
         logger.debug(f"Pinging service {self.id}")
         try:
-            res = requests.get(f"http://127.0.0.1:{self.port}/health")
+            res = requests.get(f"http://localhost:{self.port}/health")
             logger.debug(f"Response status code: {res.status_code}")
             return {"ok": res.ok}
         except Exception as e:

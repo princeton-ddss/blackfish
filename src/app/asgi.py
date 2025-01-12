@@ -673,7 +673,7 @@ async def proxy_service(
         logger.info("Streaming proxy response.")
 
         async def generator() -> AsyncGenerator:
-            url = f"http://127.0.0.1:{port}/{cmd}"
+            url = f"http://localhost:{port}/{cmd}"
             headers = {"Content-Type": "application/json"}
             logger.debug(f"data={data}, type={type(data)}")
             with requests.post(url, json=data, headers=headers, stream=True) as res:
@@ -686,7 +686,7 @@ async def proxy_service(
     else:
         logger.debug(f"data={data}, type={type(data)}")
         res = await asyncpost(
-            f"http://127.0.0.1:{port}/{cmd}",
+            f"http://localhost:{port}/{cmd}",
             json.dumps(data),
             {"Content-Type": "application/json"},
         )
@@ -854,7 +854,6 @@ async def session_provider(
 
 
 cors_config = CORSConfig(
-    # allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],

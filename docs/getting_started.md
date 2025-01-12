@@ -62,7 +62,7 @@ The application and command-line interface (CLI) pull their settings from enviro
 variables and/or (for the application) arguments provided at start-up. The most important
 environment variables are:
 ```shell
-BLACKFISH_HOST = '127.0.0.1' # host for local instance of the Blackfish app
+BLACKFISH_HOST = 'localhost' # host for local instance of the Blackfish app
 BLACKFISH_PORT = 8000 # port for local instance of the Blackfish app
 BLACKFISH_HOME_DIR = '~/.blackfish' # location to store application data
 BLACKFISH_DEV_MODE = 1 # run the application with development settings
@@ -173,7 +173,7 @@ in the command-line. If everything worked, you should see a message stating the 
 startup is complete.
 
 At this point, we need to decide how we want to interact with Blackfish. The UI is available in your
-browser by heading over to `http://127.0.0.1:8000`. It's a relatively straight-forward interface,
+browser by heading over to `http://localhost:8000`. It's a relatively straight-forward interface,
 and we have detailed usage examples on the [user interface page](), so let's instead take a look at
 the CLI.
 
@@ -350,7 +350,7 @@ interacting with the service. Let's say "Hello", shall we?
 The details of calling a service depend on the service you are trying to connect to. For the
 `text-generation` service, the primary endpoint is accessed like so:
 ```shell
-❯ curl 127.0.0.1:8080/generate \
+❯ curl localhost:8080/generate \
   -X POST \
   -d '{"inputs": "Hello!", "parameters": {"max_new_tokens": 20}}' \
   -H 'Content-Type: application/json'

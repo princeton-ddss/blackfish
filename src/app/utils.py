@@ -229,7 +229,7 @@ def has_model(
             return False
 
 
-def find_port(host="127.0.0.1", lower=8080, upper=8900, use_stdout=False) -> int:
+def find_port(host="localhost", lower=8080, upper=8900, use_stdout=False) -> int:
     """Find a available port in the range `[lower, upper)`."""
     for port in range(lower, upper):
         try:

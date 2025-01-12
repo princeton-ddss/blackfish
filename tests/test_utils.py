@@ -1,5 +1,6 @@
 import os
 from unittest import mock
+import datetime
 
 from app import utils
 from app.models.profile import SlurmProfile
@@ -94,3 +95,29 @@ def test_get_model_dir_none():
 # TODO
 def test_find_port_none():
     pass
+
+
+def test_format_datetime():
+    t1 = datetime.datetime(
+        2025, 1, 12, 14, 58, 29, 646404, tzinfo=datetime.timezone.utc
+    )
+
+    t0 = datetime.datetime(
+        2024, 11, 19, 14, 46, 40, 499539, tzinfo=datetime.timezone.utc
+    )
+    assert utils.format_datetime(t0, t1) == "54 days ago"
+
+    t0 = datetime.datetime(
+        2025, 1, 12, 14, 58, 29, 499539, tzinfo=datetime.timezone.utc
+    )
+    assert utils.format_datetime(t0, t1) == "Now"
+
+    t0 = datetime.datetime(
+        2025, 1, 12, 14, 58, 19, 646404, tzinfo=datetime.timezone.utc
+    )
+    assert utils.format_datetime(t0, t1) == "10 sec ago"
+
+    t0 = datetime.datetime(
+        2025, 1, 12, 14, 55, 29, 646404, tzinfo=datetime.timezone.utc
+    )
+    assert utils.format_datetime(t0, t1) == "3 min ago"

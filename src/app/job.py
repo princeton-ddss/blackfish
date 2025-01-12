@@ -11,6 +11,7 @@ from app.logger import logger
 
 class JobState(Enum):
     "BOOT_FAIL"  # Job terminated due to launch failure (BF)
+
     "CANCELLED"  # Job was explicitly cancelled by the user or system administrator (CA)
     "COMPLETED"  # Job terminated all processes on all nodes with exit code of zero (CD)
     "DEADLINE"  # Job terminated on deadline (DL)
@@ -70,13 +71,11 @@ class SlurmJobConfig(JobConfig):
 
 
 @dataclass
-class EC2JobConfig(JobConfig):
-    ...
+class EC2JobConfig(JobConfig): ...
 
 
 @dataclass
-class Job:
-    ...
+class Job: ...
 
 
 @dataclass

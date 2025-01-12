@@ -200,9 +200,10 @@ async def find_models(profile: Profile) -> list[Model]:
     revisions = []
     if isinstance(profile, SlurmProfile) and not profile.is_local():
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
-        with Connection(
-            host=profile.host, user=profile.user
-        ) as conn, conn.sftp() as sftp:
+        with (
+            Connection(host=profile.host, user=profile.user) as conn,
+            conn.sftp() as sftp,
+        ):
             cache_info, home_info = remote_model_info(profile, sftp=sftp)
             cache_dir = os.path.join(profile.cache_dir, "models")
             logger.debug(f"Searching cache directory {cache_dir}")

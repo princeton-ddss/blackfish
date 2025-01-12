@@ -5,8 +5,7 @@ import os
 from app.logger import logger
 
 
-class BlackfishProfile:
-    ...
+class BlackfishProfile: ...
 
 
 @dataclass

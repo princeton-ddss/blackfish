@@ -121,9 +121,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     class AlembicCommands(_AlembicCommands):
         def __init__(self, app: Litestar) -> None:
             self._app = app
-            self.sqlalchemy_config = self._app.plugins.get(
-                SQLAlchemyInitPlugin
-            )._config  # noqa: SLF001
+            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # noqa: SLF001
             self.config = self._get_alembic_command_config()
 
     alembic_commands = AlembicCommands(app=app)

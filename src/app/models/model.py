@@ -24,12 +24,10 @@ class Model(UUIDAuditBase):
     model_dir: Mapped[str]  # e.g., "<home_dir>/models/models--<namespace>--<model>"
 
 
-class ModelNotFoundError(FileNotFoundError):
-    ...
+class ModelNotFoundError(FileNotFoundError): ...
 
 
-class RevisionNotFoundError(FileNotFoundError):
-    ...
+class RevisionNotFoundError(FileNotFoundError): ...
 
 
 def split(repo_id: str) -> Tuple[str, str]:

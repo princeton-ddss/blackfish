@@ -40,6 +40,7 @@ class JobState(StrEnum):
     PAUSED = auto()
     EXITED = auto()
     MISSING = auto()
+    STOPPED = auto()
 
 
 @dataclass
@@ -152,7 +153,11 @@ class SlurmJob(Job):
                     ]
                 )
 
-            new_state = JobState.MISSING if res == b"" else res.decode("utf-8").strip()
+            new_state = (
+                JobState.MISSING
+                if res == b""
+                else JobState(res.decode("utf-8").strip().lower())
+            )
             logger.debug(
                 f"The current job state is: {new_state} (job_id=${self.job_id})"
             )
@@ -347,17 +352,17 @@ class LocalJob(Job):
                 new_state = (
                     JobState.MISSING
                     if res == b""
-                    else res.decode("utf-8").strip().strip("'").lower()
+                    else JobState(res.decode("utf-8").strip().strip("'").lower())
                 )
                 logger.debug(
-                    f"The current job state is: {new_state.upper()} (job_id={self.job_id})"
+                    f"The current job state is: {new_state} (job_id={self.job_id})"
                 )
                 if self.state is not None and self.state != new_state:
                     logger.debug(
-                        f"Job state updated from {self.state.upper()} to {new_state.upper()}"
+                        f"Job state updated from {self.state} to {new_state}"
                         f" (job_id={self.job_id})"
                     )
-                self.state = JobState(new_state)
+                self.state = new_state
             elif self.provider == "apptainer":
                 res = subprocess.check_output(
                     ["apptainer", "instance", "list", "--json", f"{self.job_id}"]
@@ -369,11 +374,11 @@ class LocalJob(Job):
                     new_state = JobState.RUNNING
 
                 logger.debug(
-                    f"The current job state is: {new_state.upper()} (job_id={self.job_id})"
+                    f"The current job state is: {new_state} (job_id={self.job_id})"
                 )
                 if self.state is not None and self.state != new_state:
                     logger.debug(
-                        f"Job state updated from {self.state} to {new_state.upper()}"
+                        f"Job state updated from {self.state} to {new_state}"
                         f" (job_id={self.job_id})."
                     )
                 self.state = new_state

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Optional
 import requests
 from dataclasses import dataclass, asdict, replace
+from enum import StrEnum, auto
 
 from sqlalchemy.orm import Mapped
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +31,17 @@ class ContainerConfig:
 
     def replace(self, changes: dict) -> None:
         return replace(self, **changes)
+
+
+class ServiceStatus(StrEnum):
+    SUBMITTED = auto()
+    PENDING = auto()
+    STARTING = auto()
+    HEALTHY = auto()
+    UNHEALTHY = auto()
+    STOPPED = auto()
+    TIMEOUT = auto()
+    FAILED = auto()
 
 
 class Service(UUIDAuditBase):
@@ -105,7 +117,7 @@ class Service(UUIDAuditBase):
             )
             if container_options["provider"] == "docker":
                 job_id = res.decode("utf-8").strip().split()[-1][:12]
-            self.status = "SUBMITTED"
+            self.status = ServiceStatus.SUBMITTED
             self.job_id = job_id
         elif self.job_type == "slurm":
             logger.debug(f"Generating job script and writing to {config.HOME_DIR}.")
@@ -150,7 +162,7 @@ class Service(UUIDAuditBase):
 
             job_id = res.decode("utf-8").strip().split()[-1]
 
-            self.status = "SUBMITTED"
+            self.status = ServiceStatus.SUBMITTED
             self.job_id = job_id
         elif self.job_type == "ec2":
             raise NotImplementedError
@@ -380,7 +392,7 @@ class Service(UUIDAuditBase):
                         " status."
                     )
                     if self.status in [
-                        "SUBMITTED",
+                        ServiceStatus.SUBMITTED,
                         "PENDING",
                         "STARTING",
                     ]:

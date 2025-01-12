@@ -48,7 +48,7 @@ class BlackfishConfig:
     Therefore, it's possible for the CLI config and app config to be out of sync.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.HOST = os.getenv("BLACKFISH_HOST", DEFAULT_HOST)
         self.PORT = int(os.getenv("BLACKFISH_PORT", DEFAULT_PORT))
         self.STATIC_DIR = Path(os.getenv("BLACKFISH_STATIC_DIR", DEFAULT_STATIC_DIR))

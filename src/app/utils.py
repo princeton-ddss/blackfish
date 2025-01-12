@@ -186,8 +186,7 @@ def get_model_dir(
                     return os.path.join(backup_dir, model_dir)
             spinner.text = ""
             spinner.fail(
-                f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on"
-                f" {profile.host}."
+                f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on localhost."
             )
         return None
 

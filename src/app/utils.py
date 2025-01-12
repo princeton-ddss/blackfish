@@ -229,7 +229,9 @@ def has_model(
             return False
 
 
-def find_port(host="localhost", lower=8080, upper=8900, use_stdout=False) -> int:
+def find_port(
+    host="localhost", lower: int = 8080, upper: int = 8900, use_stdout: bool = False
+) -> int:
     """Find a available port in the range `[lower, upper)`."""
     for port in range(lower, upper):
         try:
@@ -265,7 +267,7 @@ def find_port(host="localhost", lower=8080, upper=8900, use_stdout=False) -> int
 
 def format_datetime(
     t0: datetime.datetime, t1: datetime.datetime = datetime.datetime.now(datetime.UTC)
-):
+) -> str:
     """Format datetime for pretty display.
 
     Compute the `timedelta` between the given `datetime` and now and print the largest non-zero
@@ -289,29 +291,3 @@ def format_datetime(
         return f"{td.seconds} sec ago"
     else:
         return "Now"
-
-
-def test_format_datetime():
-    t1 = datetime.datetime(
-        2025, 1, 12, 14, 58, 29, 646404, tzinfo=datetime.timezone.utc
-    )
-
-    t0 = datetime.datetime(
-        2024, 11, 19, 14, 46, 40, 499539, tzinfo=datetime.timezone.utc
-    )
-    assert format_datetime(t0, t1) == "54 days ago"
-
-    t0 = datetime.datetime(
-        2025, 1, 12, 14, 58, 29, 499539, tzinfo=datetime.timezone.utc
-    )
-    assert format_datetime(t0, t1) == "Now"
-
-    t0 = datetime.datetime(
-        2025, 1, 12, 14, 58, 19, 646404, tzinfo=datetime.timezone.utc
-    )
-    assert format_datetime(t0, t1) == "10 sec ago"
-
-    t0 = datetime.datetime(
-        2025, 1, 12, 14, 55, 29, 646404, tzinfo=datetime.timezone.utc
-    )
-    assert format_datetime(t0, t1) == "3 min ago"

@@ -93,6 +93,18 @@ class EC2JobConfig(JobConfig): ...
 class Job: ...
 
 
+def parse_state(res: bytes):
+    if res == b"":
+        return JobState.MISSING
+
+    lowered = res.decode("utf-8").strip().lower()
+
+    if "cancelled" in lowered:
+        return JobState.CANCELLED
+    else:
+        return JobState(lowered)
+
+
 @dataclass
 class SlurmJob(Job):
     """A light-weight Slurm job dataclass."""
@@ -109,7 +121,7 @@ class SlurmJob(Job):
     def is_local(self) -> bool:
         return self.host == "localhost"
 
-    def update(self) -> Optional[str]:
+    def update(self, silent: bool = False) -> Optional[str]:
         """Attempt to update the job state from Slurm accounting and return the new
         state (or current state if the update fails).
 
@@ -118,7 +130,8 @@ class SlurmJob(Job):
 
         This method logs a warning if the update fails, but does not raise an exception.
         """
-        logger.debug(f"Updating job state (job_id={self.job_id}).")
+        if not silent:
+            logger.debug(f"Updating job state (job_id={self.job_id}).")
         try:
             if self.is_local():
                 res = subprocess.check_output(
@@ -153,31 +166,30 @@ class SlurmJob(Job):
                     ]
                 )
 
-            new_state = (
-                JobState.MISSING
-                if res == b""
-                else JobState(res.decode("utf-8").strip().lower())
-            )
-            logger.debug(
-                f"The current job state is: {new_state} (job_id=${self.job_id})"
-            )
+            new_state = parse_state(res)
+            if not silent:
+                logger.debug(
+                    f"The current job state is: {new_state} (job_id=${self.job_id})"
+                )
             if (
                 self.state in [None, JobState.MISSING, JobState.PENDING]
                 and new_state == JobState.RUNNING
                 and self.node is None
                 and self.port is None
             ):
-                logger.debug(
-                    f"Job state updated from {self.state} to RUNNING"
-                    f" (job_id={self.job_id}). Fetching node and port."
-                )
+                if not silent:
+                    logger.debug(
+                        f"Job state updated from {self.state} to RUNNING"
+                        f" (job_id={self.job_id}). Fetching node and port."
+                    )
                 self.fetch_node()
                 self.fetch_port()
             elif self.state is not None and self.state != new_state:
-                logger.debug(
-                    f"Job state updated from {self.state} to {new_state}"
-                    f" (job_id={self.job_id})."
-                )
+                if not silent:
+                    logger.debug(
+                        f"Job state updated from {self.state} to {new_state}"
+                        f" (job_id={self.job_id})."
+                    )
             self.state = new_state
         except subprocess.CalledProcessError as e:
             logger.warning(
@@ -337,8 +349,9 @@ class LocalJob(Job):
     )
     options: Optional[JobConfig] = None
 
-    def update(self):
-        logger.debug(f"Updating job state (job_id={self.job_id})")
+    def update(self, silent: bool = False):
+        if not silent:
+            logger.debug(f"Updating job state (job_id={self.job_id})")
         try:
             if self.provider == "docker":
                 res = subprocess.check_output(
@@ -349,19 +362,17 @@ class LocalJob(Job):
                         "--format='{{ .State.Status }}'",  # or {{ json .State }}
                     ]
                 )
-                new_state = (
-                    JobState.MISSING
-                    if res == b""
-                    else JobState(res.decode("utf-8").strip().strip("'").lower())
-                )
-                logger.debug(
-                    f"The current job state is: {new_state} (job_id={self.job_id})"
-                )
-                if self.state is not None and self.state != new_state:
+                new_state = parse_state(res)
+                if not silent:
                     logger.debug(
-                        f"Job state updated from {self.state} to {new_state}"
-                        f" (job_id={self.job_id})"
+                        f"The current job state is: {new_state} (job_id={self.job_id})"
                     )
+                if self.state is not None and self.state != new_state:
+                    if not silent:
+                        logger.debug(
+                            f"Job state updated from {self.state} to {new_state}"
+                            f" (job_id={self.job_id})"
+                        )
                 self.state = new_state
             elif self.provider == "apptainer":
                 res = subprocess.check_output(
@@ -373,14 +384,16 @@ class LocalJob(Job):
                 else:
                     new_state = JobState.RUNNING
 
-                logger.debug(
-                    f"The current job state is: {new_state} (job_id={self.job_id})"
-                )
-                if self.state is not None and self.state != new_state:
+                if not silent:
                     logger.debug(
-                        f"Job state updated from {self.state} to {new_state}"
-                        f" (job_id={self.job_id})."
+                        f"The current job state is: {new_state} (job_id={self.job_id})"
                     )
+                if self.state is not None and self.state != new_state:
+                    if not silent:
+                        logger.debug(
+                            f"Job state updated from {self.state} to {new_state}"
+                            f" (job_id={self.job_id})."
+                        )
                 self.state = new_state
         except subprocess.CalledProcessError as e:
             logger.warning(

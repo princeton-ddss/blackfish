@@ -1,5 +1,6 @@
 import os
 import socket
+import datetime
 from typing import Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
@@ -261,3 +262,57 @@ def find_port(host="localhost", lower=8080, upper=8900, use_stdout=False) -> int
                         f"Failed to bind port {port} on host {host}. Trying next port."
                     )
     raise OSError(f"OSError: no ports available in range {lower}-{upper}")
+
+
+def format_datetime(
+    t0: datetime.datetime, t1: datetime.datetime = datetime.datetime.now(datetime.UTC)
+):
+    """Format datetime for pretty display.
+
+    Compute the `timedelta` between the given `datetime` and now and print the largest non-zero
+    unit of time down to seconds, e.g.,
+
+    `timedelta(days=0, seconds=180, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0)`
+
+    becomes "3 minutes ago", while
+
+    `timedelta(days=0, seconds=180, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0)`
+
+    becomes "Now".
+    """
+
+    td = t1 - t0
+    if td.days > 0:
+        return f"{td.days} days ago"
+    elif td.seconds > 60:
+        return f"{td.seconds // 60} min ago"
+    elif td.seconds > 0:
+        return f"{td.seconds} sec ago"
+    else:
+        return "Now"
+
+
+def test_format_datetime():
+    t1 = datetime.datetime(
+        2025, 1, 12, 14, 58, 29, 646404, tzinfo=datetime.timezone.utc
+    )
+
+    t0 = datetime.datetime(
+        2024, 11, 19, 14, 46, 40, 499539, tzinfo=datetime.timezone.utc
+    )
+    assert format_datetime(t0, t1) == "54 days ago"
+
+    t0 = datetime.datetime(
+        2025, 1, 12, 14, 58, 29, 499539, tzinfo=datetime.timezone.utc
+    )
+    assert format_datetime(t0, t1) == "Now"
+
+    t0 = datetime.datetime(
+        2025, 1, 12, 14, 58, 19, 646404, tzinfo=datetime.timezone.utc
+    )
+    assert format_datetime(t0, t1) == "10 sec ago"
+
+    t0 = datetime.datetime(
+        2025, 1, 12, 14, 55, 29, 646404, tzinfo=datetime.timezone.utc
+    )
+    assert format_datetime(t0, t1) == "3 min ago"

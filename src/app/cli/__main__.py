@@ -286,18 +286,27 @@ def details(service_id):  # pragma: no cover
     from datetime import datetime
     import json
     from app.services.base import Service
+    from app.job import SlurmJob, LocalJob
 
-    res = requests.get(
-        f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
-    )  # fresh data 🥬
+    with yaspin(text="Fetching service...") as spinner:
+        res = requests.get(
+            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
+        )  # fresh data 🥬
+        spinner.text = ""
+        if not res.ok:
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to fetch service {service_id} (status={res.status_code})."
+            )
+            return
+        else:
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Found service {service_id}")
 
     body = res.json()
     body["created_at"] = datetime.fromisoformat(body["created_at"])
     body["updated_at"] = datetime.fromisoformat(body["updated_at"])
     service = Service(**body)
-
     if service is not None:
-        job = service.get_job()
+        job = service.get_job(silent=True)
         data = {
             "image": service.image,
             "model": service.model,
@@ -311,10 +320,10 @@ def details(service_id):  # pragma: no cover
             "connection": {
                 "host": service.host,
                 "port": service.port,
-                # "remote_port": service.remote_port,
             },
         }
-        if service.job_type == "slurm":
+
+        if isinstance(job, SlurmJob):
             data["job"] = {
                 "job_id": job.job_id,
                 "host": job.host,
@@ -324,7 +333,7 @@ def details(service_id):  # pragma: no cover
                 "name": job.name,
                 "state": job.state,
             }
-        if service.job_type == "local":
+        elif isinstance(job, LocalJob):
             data["job"] = {
                 "job_id": job.job_id,
                 "name": job.name,
@@ -332,7 +341,8 @@ def details(service_id):  # pragma: no cover
             }
         else:
             raise NotImplementedError
-        click.echo(json.dumps(data))
+        click.echo(json.dumps(data, indent=4))
+
     else:
         click.echo(f"Service {service} not found.")
 
@@ -351,6 +361,8 @@ def ls(filters):  # pragma: no cover
     """List services"""
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
+    from datetime import datetime
+    from app.utils import format_datetime
 
     tab = PrettyTable(
         field_names=[
@@ -363,7 +375,6 @@ def ls(filters):  # pragma: no cover
             "PORT",
             "NAME",
             "PROFILE",
-            "MOUNTS",
         ]
     )
     tab.set_style(PLAIN_COLUMNS)
@@ -395,16 +406,15 @@ def ls(filters):  # pragma: no cover
     for service in services:
         tab.add_row(
             [
-                service["id"],
+                service["id"][:13],
                 service["image"],
                 service["model"],
-                service["created_at"],  # TODO: format (e.g., 5 min ago)
-                service["updated_at"],  # TODO: format (e.g., 5 min ago)
-                service["status"],
+                format_datetime(datetime.fromisoformat(service["created_at"])),
+                format_datetime(datetime.fromisoformat(service["updated_at"])),
+                service["status"].upper(),
                 service["port"],
                 service["name"],
                 service["profile"],
-                service["mounts"],
             ]
         )
     click.echo(tab)

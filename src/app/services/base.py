@@ -525,13 +525,13 @@ class Service(UUIDAuditBase):
 
         self.port = None
 
-    def get_job(self, provider: str = None) -> Job:
+    def get_job(self, provider: str = None, silent: bool = False) -> Job:
         """Fetch the Slurm job backing the service."""
         if self.job_type == "slurm":
             job = SlurmJob(self.job_id, self.user, self.host)
         elif self.job_type == "local":
             job = LocalJob(self.job_id, provider)
-        job.update()
+        job.update(silent=silent)
         return job
 
     def launch_cmd(self, container_options: dict, job_options: dict) -> str:

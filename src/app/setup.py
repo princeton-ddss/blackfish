@@ -39,7 +39,7 @@ def create_local_home_dir(home_dir: str) -> None:
             )
 
 
-def create_remote_home_dir(remote_type, host, user, home_dir) -> None:
+def create_remote_home_dir(remote_type, host: str, user: str, home_dir) -> None:
     """Attempt to construct root directory to store core application data *remotely* and
     raise an exception if creation fails and the directory does not already exist.
 
@@ -104,7 +104,7 @@ def check_local_cache_exists(cache_dir):
         raise Exception
 
 
-def check_remote_cache_exists(remote_type, host, user, cache_dir):
+def check_remote_cache_exists(remote_type, host: str, user: str, cache_dir):
     """Check that the remote cache directory exists and raise and exception if not."""
     with yaspin(text="Looking for remote cache") as spinner:
         try:

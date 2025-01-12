@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+from enum import StrEnum, auto
+from typing import Optional
 import subprocess
 from copy import deepcopy
 
@@ -12,18 +14,23 @@ DEFAULT_DEBUG = 1  # True
 DEFAULT_DEV_MODE = 1  # True
 
 
-def get_container_provider():
+class ContainerProvider(StrEnum):
+    DOCKER = auto()
+    APPTAINER = auto()
+
+
+def get_container_provider() -> Optional[ContainerProvider]:
     """Determine which container platform to use: Docker (preferred) or Apptainer.
 
     Raises an exception if neither container platform is available.
     """
     try:
         _ = subprocess.run(["which", "docker"], check=True, capture_output=True)
-        return "docker"
+        return ContainerProvider.DOCKER
     except subprocess.CalledProcessError:
         try:
             _ = subprocess.run(["which", "apptainer"], check=True, capture_output=True)
-            return "apptainer"
+            return ContainerProvider.APPTAINER
         except subprocess.CalledProcessError:
             print(
                 "No supported container platforms available. Please install one of:"

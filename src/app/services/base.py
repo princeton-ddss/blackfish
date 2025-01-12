@@ -17,6 +17,7 @@ from litestar.datastructures import State
 from app.job import Job, JobState, SlurmJob, LocalJob
 from app.logger import logger
 from app.utils import find_port
+from app.config import ContainerProvider
 
 
 @dataclass
@@ -98,13 +99,13 @@ class Service(UUIDAuditBase):
             container_options["provider"] = config.CONTAINER_PROVIDER
             with open(os.path.join(config.HOME_DIR, "start.sh"), "w") as f:
                 try:
-                    if container_options["provider"] == "apptainer":
+                    if container_options["provider"] == ContainerProvider.APPTAINER:
                         logger.debug("The container provider is Apptainer.")
                         job_id = str(uuid.uuid4())
                         script = self.launch_script(
                             container_options, job_options, job_id
                         )
-                    elif container_options["provider"] == "docker":
+                    elif container_options["provider"] == ContainerProvider.DOCKER:
                         logger.debug("The container provider is Docker.")
                         script = self.launch_script(container_options, job_options)
                     f.write(script)
@@ -114,7 +115,7 @@ class Service(UUIDAuditBase):
             res = subprocess.check_output(
                 ["bash", os.path.join(config.HOME_DIR, "start.sh")]
             )
-            if container_options["provider"] == "docker":
+            if container_options["provider"] == ContainerProvider.DOCKER:
                 job_id = res.decode("utf-8").strip().split()[-1][:12]
             self.status = ServiceStatus.SUBMITTED
             self.job_id = job_id

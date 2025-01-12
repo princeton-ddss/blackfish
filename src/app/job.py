@@ -7,6 +7,7 @@ from dataclasses import dataclass, asdict, replace
 from enum import StrEnum, auto
 from typing import Optional, Self
 from app.logger import logger
+from app.config import ContainerProvider
 
 
 class JobState(StrEnum):
@@ -342,7 +343,7 @@ class LocalJob(Job):
     """A light-weight local job dataclass."""
 
     job_id: int
-    provider: str  # docker or apptainer
+    provider: ContainerProvider  # docker or apptainer
     name: Optional[str] = None
     state: Optional[str] = (
         None  # "created", "running", "restarting", "exited", "paused", "dead"
@@ -353,7 +354,7 @@ class LocalJob(Job):
         if not silent:
             logger.debug(f"Updating job state (job_id={self.job_id})")
         try:
-            if self.provider == "docker":
+            if self.provider == ContainerProvider.DOCKER:
                 res = subprocess.check_output(
                     [
                         "docker",
@@ -374,7 +375,7 @@ class LocalJob(Job):
                             f" (job_id={self.job_id})"
                         )
                 self.state = new_state
-            elif self.provider == "apptainer":
+            elif self.provider == ContainerProvider.APPTAINER:
                 res = subprocess.check_output(
                     ["apptainer", "instance", "list", "--json", f"{self.job_id}"]
                 )
@@ -406,11 +407,11 @@ class LocalJob(Job):
     def cancel(self) -> None:
         try:
             logger.debug(f"Canceling job {self.job_id}")
-            if self.provider == "docker":
+            if self.provider == ContainerProvider.DOCKER:
                 subprocess.check_output(
                     ["docker", "container", "stop", f"{self.job_id}"]
                 )
-            elif self.provider == "apptainer":
+            elif self.provider == ContainerProvider.APPTAINER:
                 subprocess.check_output(
                     ["apptainer", "instance", "stop", f"{self.job_id}"]
                 )

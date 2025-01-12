@@ -670,27 +670,22 @@ async def proxy_service(
     """
 
     if streaming:
-        logger.info("Streaming proxy response.")
 
         async def generator() -> AsyncGenerator:
             url = f"http://localhost:{port}/{cmd}"
             headers = {"Content-Type": "application/json"}
-            logger.debug(f"data={data}, type={type(data)}")
             with requests.post(url, json=data, headers=headers, stream=True) as res:
                 for x in res.iter_content(chunk_size=None):
                     if x:
-                        logger.debug(f"x={x}\n\n")
                         yield x
 
         return Stream(generator)
     else:
-        logger.debug(f"data={data}, type={type(data)}")
         res = await asyncpost(
             f"http://localhost:{port}/{cmd}",
             json.dumps(data),
             {"Content-Type": "application/json"},
         )
-        logger.debug(f"res={res}")
         return res
 
 

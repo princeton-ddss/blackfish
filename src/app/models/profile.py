@@ -1,15 +1,13 @@
 from dataclasses import dataclass
+from typing import Union
 from configparser import ConfigParser
 import os
 
 from app.logger import logger
 
 
-class BlackfishProfile: ...
-
-
 @dataclass
-class SlurmProfile(BlackfishProfile):
+class SlurmProfile:
     name: str
     host: str
     user: str
@@ -21,13 +19,16 @@ class SlurmProfile(BlackfishProfile):
 
 
 @dataclass
-class LocalProfile(BlackfishProfile):
+class LocalProfile:
     name: str
     home_dir: str
     cache_dir: str
 
     def is_local(self):
         return True
+
+
+BlackfishProfile = Union[SlurmProfile, LocalProfile]
 
 
 class ProfileNotFoundException(Exception):

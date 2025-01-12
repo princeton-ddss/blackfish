@@ -97,7 +97,7 @@ def parse_state(res: bytes):
     if res == b"":
         return JobState.MISSING
 
-    lowered = res.decode("utf-8").strip().lower()
+    lowered = res.decode("utf-8").strip().strip("'").lower()
 
     if "cancelled" in lowered:
         return JobState.CANCELLED

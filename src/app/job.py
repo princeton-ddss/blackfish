@@ -5,7 +5,7 @@ import subprocess
 from dataclasses import dataclass, asdict, replace
 
 from enum import StrEnum, auto
-from typing import Optional
+from typing import Optional, Self
 from app.logger import logger
 
 
@@ -51,7 +51,7 @@ class JobConfig:
             for k, v in filter(lambda item: item[1] is not None, asdict(self).items())
         }
 
-    def replace(self, changes: dict) -> None:
+    def replace(self, changes: dict) -> Self:
         return replace(self, **changes)
 
 

@@ -104,9 +104,7 @@ class AuthMiddleware(MiddlewareProtocol):
             await self.app(scope, receive, send)
 
 
-def auth_guard(
-    connection: ASGIConnection, _: BaseRouteHandler
-) -> Optional[NotAuthorizedException]:
+def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:
     if connection.session is None:
         logger.debug("from auth_guard: session is None => NotAuthorizedException")
         raise NotAuthorizedException
@@ -146,7 +144,10 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
         raise NotFoundException(detail=f"Service {service_id} not found") from e
 
 
-def model_info(profile: Profile) -> Tuple[str, str]:
+ModelInfoResult = dict[str, str]
+
+
+def model_info(profile: Profile) -> Tuple[ModelInfoResult, ModelInfoResult]:
     if not profile.is_local():
         logger.error("Profile should be local.")
         raise Exception("Profile should be local.")
@@ -168,7 +169,9 @@ def model_info(profile: Profile) -> Tuple[str, str]:
     return cache_info, home_info
 
 
-def remote_model_info(profile: Profile, sftp: SFTPClient) -> Tuple[str, str]:
+def remote_model_info(
+    profile: Profile, sftp: SFTPClient
+) -> Tuple[ModelInfoResult, ModelInfoResult]:
     if not isinstance(profile, SlurmProfile):
         raise Exception("Profile should be a SlurmProfile.")
 
@@ -513,7 +516,7 @@ class StopServiceRequest:
     failed: bool = False
 
 
-def build_service(data: ServiceRequest):
+def build_service(data: ServiceRequest) -> Optional[Service]:
     """Convert a service request into a service object based on the requested image."""
 
     if data.image == "text_generation":
@@ -544,21 +547,23 @@ def build_service(data: ServiceRequest):
 @post("/api/services", dto=ServiceRequestDTO, guards=ENDPOINT_GUARDS)
 async def run_service(
     data: ServiceRequest, session: AsyncSession, state: State
-) -> Service:
+) -> Optional[Service]:
     try:
         service = build_service(data)
     except Exception as e:
         logger.error(e)
-    try:
-        await service.start(
-            session,
-            state,
-            container_options=data.container_options,
-            job_options=data.job_options,
-        )
-    except Exception as e:
-        logger.error(f"Unable to start service. Error: {e}")
-        return InternalServerException()
+
+    if service is not None:
+        try:
+            await service.start(
+                session,
+                state,
+                container_options=data.container_options,
+                job_options=data.job_options,
+            )
+        except Exception as e:
+            logger.error(f"Unable to start service. Error: {e}")
+            raise InternalServerException()
 
     return service
 

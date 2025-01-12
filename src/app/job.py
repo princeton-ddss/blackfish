@@ -4,12 +4,12 @@ import json
 import subprocess
 from dataclasses import dataclass, asdict, replace
 
-from enum import Enum, auto
+from enum import StrEnum, auto
 from typing import Optional
 from app.logger import logger
 
 
-class JobState(Enum):
+class JobState(StrEnum):
     BOOT_FAIL = auto()  # Job terminated due to launch failure (BF)
     CANCELLED = (
         auto()
@@ -25,6 +25,7 @@ class JobState(Enum):
         auto()
     )  # Job terminated due to failure of one or more allocated nodes (NF)
     OUT_OF_MEMORY = auto()  # Job experienced out of memory error (OOM)
+    CREATED = auto()
     PENDING = auto()  # Job is awaiting resource allocation (PD)
     PREEMPTED = auto()  # Job terminated due to preemption (PR)
     RUNNING = auto()  # Job currently has an allocation (R)
@@ -37,6 +38,8 @@ class JobState(Enum):
     TIMEOUT = auto()  # Job terminated upon reaching its time limit (TO)
     RESTARTING = auto()
     PAUSED = auto()
+    EXITED = auto()
+    MISSING = auto()
 
 
 @dataclass
@@ -325,7 +328,7 @@ class LocalJob(Job):
     provider: str  # docker or apptainer
     name: Optional[str] = None
     state: Optional[str] = (
-        None  # "created", "running", "restarting", "exited", "paused", "dead",
+        None  # "created", "running", "restarting", "exited", "paused", "dead"
     )
     options: Optional[JobConfig] = None
 
@@ -344,17 +347,17 @@ class LocalJob(Job):
                 new_state = (
                     JobState.MISSING
                     if res == b""
-                    else res.decode("utf-8").strip().strip("'").upper()
+                    else res.decode("utf-8").strip().strip("'").lower()
                 )
                 logger.debug(
-                    f"The current job state is: {new_state} (job_id={self.job_id})"
+                    f"The current job state is: {new_state.upper()} (job_id={self.job_id})"
                 )
                 if self.state is not None and self.state != new_state:
                     logger.debug(
-                        f"Job state updated from {self.state} to {new_state}"
+                        f"Job state updated from {self.state.upper()} to {new_state.upper()}"
                         f" (job_id={self.job_id})"
                     )
-                self.state = new_state
+                self.state = JobState(new_state)
             elif self.provider == "apptainer":
                 res = subprocess.check_output(
                     ["apptainer", "instance", "list", "--json", f"{self.job_id}"]
@@ -366,11 +369,11 @@ class LocalJob(Job):
                     new_state = JobState.RUNNING
 
                 logger.debug(
-                    f"The current job state is: {new_state} (job_id={self.job_id})"
+                    f"The current job state is: {new_state.upper()} (job_id={self.job_id})"
                 )
                 if self.state is not None and self.state != new_state:
                     logger.debug(
-                        f"Job state updated from {self.state} to {new_state}"
+                        f"Job state updated from {self.state} to {new_state.upper()}"
                         f" (job_id={self.job_id})."
                     )
                 self.state = new_state

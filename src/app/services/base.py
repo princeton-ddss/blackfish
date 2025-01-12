@@ -56,7 +56,6 @@ class Service(UUIDAuditBase):
     user: Mapped[Optional[str]]
     host: Mapped[str]
     port: Mapped[Optional[int]]
-    # TODO: remote_port: Mapped[Optional[int]]
     job_type: Mapped[str]
     job_id: Mapped[Optional[str]]
     grace_period: Mapped[Optional[int]] = 180

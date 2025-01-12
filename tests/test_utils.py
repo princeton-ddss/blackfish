@@ -1,7 +1,11 @@
+import os
 from unittest import mock
 
 from app import utils
 from app.models.profile import SlurmProfile
+
+
+os.environ["COLUMNS"] = "300"
 
 
 profile = SlurmProfile(

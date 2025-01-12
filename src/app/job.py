@@ -93,7 +93,7 @@ class EC2JobConfig(JobConfig): ...
 class Job: ...
 
 
-def parse_state(res: bytes):
+def parse_state(res: bytes) -> JobState:
     if res == b"":
         return JobState.MISSING
 
@@ -115,7 +115,7 @@ class SlurmJob(Job):
     name: Optional[str] = None
     node: Optional[str] = None
     port: Optional[int] = None
-    state: Optional[str] = None
+    state: Optional[JobState] = None
     options: Optional[JobConfig] = None
 
     def is_local(self) -> bool:
@@ -297,7 +297,7 @@ class SlurmJob(Job):
         logger.debug(f"waiting for job {self.job_id} to start")
         time.sleep(period)  # wait for slurm to accept job
         while True:
-            self.update_state()
+            self.update()
             if self.state == JobState.MISSING:
                 logger.debug(
                     f"job {self.job_id} state is missing. Re-trying in"
@@ -349,7 +349,7 @@ class LocalJob(Job):
     )
     options: Optional[JobConfig] = None
 
-    def update(self, silent: bool = False):
+    def update(self, silent: bool = False) -> Optional[str]:
         if not silent:
             logger.debug(f"Updating job state (job_id={self.job_id})")
         try:

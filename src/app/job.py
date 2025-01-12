@@ -4,28 +4,39 @@ import json
 import subprocess
 from dataclasses import dataclass, asdict, replace
 
-from enum import Enum
+from enum import Enum, auto
 from typing import Optional
 from app.logger import logger
 
 
 class JobState(Enum):
-    "BOOT_FAIL"  # Job terminated due to launch failure (BF)
-
-    "CANCELLED"  # Job was explicitly cancelled by the user or system administrator (CA)
-    "COMPLETED"  # Job terminated all processes on all nodes with exit code of zero (CD)
-    "DEADLINE"  # Job terminated on deadline (DL)
-    "FAILED"  # Job terminated with non-zero exit code or other failure condition (F)
-    "NODE_FAIL"  # Job terminated due to failure of one or more allocated nodes (NF)
-    "OUT_OF_MEMORY"  # Job experienced out of memory error (OOM)
-    "PENDING"  # Job is awaiting resource allocation (PD)
-    "PREEMPTED"  # Job terminated due to preemption (PR)
-    "RUNNING"  # Job currently has an allocation (R)
-    "REQUEUED"  # Job was requeued (RQ)
-    "RESIZING"  # Job is about to change size (RS)
-    "REVOKED"  # Sibling removed from cluster due to other cluster starting the job (RV)
-    "SUSPENDED"  # Job has an allocation, but execution has been suspended (S)
-    "TIMEOUT"  # Job terminated upon reaching its time limit (TO)
+    BOOT_FAIL = auto()  # Job terminated due to launch failure (BF)
+    CANCELLED = (
+        auto()
+    )  # Job was explicitly cancelled by the user or system administrator (CA)
+    COMPLETED = (
+        auto()
+    )  # Job terminated all processes on all nodes with exit code of zero (CD)
+    DEADLINE = auto()  # Job terminated on deadline (DL)
+    FAILED = (
+        auto()
+    )  # Job terminated with non-zero exit code or other failure condition (F)
+    NODE_FAIL = (
+        auto()
+    )  # Job terminated due to failure of one or more allocated nodes (NF)
+    OUT_OF_MEMORY = auto()  # Job experienced out of memory error (OOM)
+    PENDING = auto()  # Job is awaiting resource allocation (PD)
+    PREEMPTED = auto()  # Job terminated due to preemption (PR)
+    RUNNING = auto()  # Job currently has an allocation (R)
+    REQUEUED = auto()  # Job was requeued (RQ)
+    RESIZING = auto()  # Job is about to change size (RS)
+    REVOKED = (
+        auto()
+    )  # Sibling removed from cluster due to other cluster starting the job (RV)
+    SUSPENDED = auto()  # Job has an allocation, but execution has been suspended (S)
+    TIMEOUT = auto()  # Job terminated upon reaching its time limit (TO)
+    RESTARTING = auto()
+    PAUSED = auto()
 
 
 @dataclass
@@ -138,13 +149,13 @@ class SlurmJob(Job):
                     ]
                 )
 
-            new_state = "MISSING" if res == b"" else res.decode("utf-8").strip()
+            new_state = JobState.MISSING if res == b"" else res.decode("utf-8").strip()
             logger.debug(
                 f"The current job state is: {new_state} (job_id=${self.job_id})"
             )
             if (
-                self.state in [None, "MISSING", "PENDING"]
-                and new_state == "RUNNING"
+                self.state in [None, JobState.MISSING, JobState.PENDING]
+                and new_state == JobState.RUNNING
                 and self.node is None
                 and self.port is None
             ):
@@ -267,16 +278,16 @@ class SlurmJob(Job):
         time.sleep(period)  # wait for slurm to accept job
         while True:
             self.update_state()
-            if self.state == "MISSING":
+            if self.state == JobState.MISSING:
                 logger.debug(
                     f"job {self.job_id} state is missing. Re-trying in"
                     f" {period} seconds."
                 )
-            elif self.state == "PENDING":
+            elif self.state == JobState.PENDING:
                 logger.debug(
                     f"job {self.job_id} is pending. Re-trying in {period} seconds."
                 )
-            elif self.state == "RUNNING":
+            elif self.state == JobState.RUNNING:
                 logger.debug(f"job {self.job_id} is running.")
                 self.fetch_node()
                 self.fetch_port()
@@ -331,7 +342,7 @@ class LocalJob(Job):
                     ]
                 )
                 new_state = (
-                    "MISSING"
+                    JobState.MISSING
                     if res == b""
                     else res.decode("utf-8").strip().strip("'").upper()
                 )
@@ -350,9 +361,9 @@ class LocalJob(Job):
                 )
                 body = json.loads(res)
                 if body["instances"] == []:
-                    new_state = "STOPPED"
+                    new_state = JobState.STOPPED
                 else:
-                    new_state = "RUNNING"
+                    new_state = JobState.RUNNING
 
                 logger.debug(
                     f"The current job state is: {new_state} (job_id={self.job_id})"

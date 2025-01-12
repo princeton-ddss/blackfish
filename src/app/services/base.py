@@ -14,7 +14,7 @@ from advanced_alchemy.base import UUIDAuditBase
 
 from litestar.datastructures import State
 
-from app.job import Job, SlurmJob, LocalJob
+from app.job import Job, JobState, SlurmJob, LocalJob
 from app.logger import logger
 from app.utils import find_port
 
@@ -199,7 +199,11 @@ class Service(UUIDAuditBase):
 
         logger.info(f"Stopping service {self.id}")
 
-        if self.status in ["STOPPED", "TIMEOUT", "FAILED"]:
+        if self.status in [
+            ServiceStatus.STOPPED,
+            ServiceStatus.TIMEOUT,
+            ServiceStatus.FAILED,
+        ]:
             logger.warning(
                 f"Service is already stopped (status={self.status}). Aborting stop."
             )
@@ -223,11 +227,11 @@ class Service(UUIDAuditBase):
             raise Exception  # TODO: JobTypeError
 
         if timeout:
-            self.status = "TIMEOUT"
+            self.status = ServiceStatus.TIMEOUT
         elif failed:
-            self.status = "FAILED"
+            self.status = ServiceStatus.FAILED
         else:
-            self.status = "STOPPED"
+            self.status = ServiceStatus.STOPPED
 
     async def refresh(self, session: AsyncSession, config: State):
         """Update the service status. Assumes running in an attached state.
@@ -267,9 +271,9 @@ class Service(UUIDAuditBase):
             f"Checking status of service {self.id}. Current status is {self.status}."
         )
         if self.status in [
-            "STOPPED",
-            "TIMEOUT",
-            "FAILED",
+            ServiceStatus.STOPPED,
+            ServiceStatus.TIMEOUT,
+            ServiceStatus.FAILED,
         ]:
             logger.debug(
                 f"Service {self.id} is no longer running. Aborting status refresh."
@@ -284,34 +288,34 @@ class Service(UUIDAuditBase):
 
         if self.job_type == "local":
             job = self.get_job(config.CONTAINER_PROVIDER)
-            if job.state == "CREATED":
+            if job.state == JobState.CREATED:
                 logger.debug(
                     f"Service {self.id} has not started. Setting status to PENDING."
                 )
-                self.status = "PENDING"
-                return "PENDING"
-            elif job.state == "MISSING":
+                self.status = ServiceStatus.PENDING
+                return ServiceStatus.PENDING
+            elif job.state == JobState.MISSING:
                 logger.warning(
                     f"Service {self.id} has no job state (this service is likely"
                     " new or has expired). Aborting status update."
                 )
                 return self.status
-            elif job.state == "EXITED":
+            elif job.state == JobState.EXITED:
                 logger.debug(
                     f"Service {self.id} has a cancelled job. Setting status to"
                     " STOPPED and stopping the service."
                 )
                 await self.stop(session, config)
-                return "STOPPED"
-            elif job.state == "RUNNING":
+                return ServiceStatus.STOPPED
+            elif job.state == JobState.RUNNING:
                 res = await self.ping()
                 if res["ok"]:
                     logger.debug(
                         f"Service {self.id} responded normally. Setting status to"
                         " HEALTHY."
                     )
-                    self.status = "HEALTHY"
-                    return "HEALTHY"
+                    self.status = ServiceStatus.HEALTHY
+                    return ServiceStatus.HEALTHY
                 else:
                     logger.debug(
                         f"Service {self.id} did not respond normally. Determining"
@@ -327,16 +331,16 @@ class Service(UUIDAuditBase):
                             f"Service {self.id} grace period exceeded. Setting"
                             "status to UNHEALTHY."
                         )
-                        self.status = "UNHEALTHY"
-                        return "UNHEALTHY"
+                        self.status = ServiceStatus.UNHEALTHY
+                        return ServiceStatus.UNHEALTHY
                     else:
                         logger.debug(
                             f"Service {self.id} is still starting. Setting"
                             " status to STARTING."
                         )
-                        self.status = "STARTING"
-                        return "STARTING"
-            elif job.state in ["RESTARTING", "PAUSED"]:
+                        self.status = ServiceStatus.STARTING
+                        return ServiceStatus.STARTING
+            elif job.state in [JobState.RESTARTING, JobState.PAUSED]:
                 raise NotImplementedError
             else:
                 logger.debug(
@@ -346,36 +350,36 @@ class Service(UUIDAuditBase):
                 await self.stop(
                     session, config, failed=True
                 )  # stop will push to database
-                return "FAILED"
+                return ServiceStatus.FAILED
         elif self.job_type == "slurm":
             job = self.get_job()
-            if job.state == "PENDING":
+            if job.state == JobState.PENDING:
                 logger.debug(
                     f"Service {self.id} has not started. Setting status to PENDING."
                 )
-                self.status = "PENDING"
-                return "PENDING"
-            elif job.state == "MISSING":
+                self.status = ServiceStatus.PENDING
+                return ServiceStatus.PENDING
+            elif job.state == JobState.MISSING:
                 logger.warning(
                     f"Service {self.id} has no job state (this service is likely"
                     " new or has expired). Aborting status update."
                 )
                 return self.status
-            elif job.state is not None and "CANCELLED" in job.state:
+            elif job.state == JobState.CANCELLED:
                 logger.debug(
                     f"Service {self.id} has a cancelled job. Setting status to"
                     " STOPPED and stopping the service."
                 )
                 await self.stop(session, config)
-                return "STOPPED"
-            elif job.state == "TIMEOUT":
+                return ServiceStatus.STOPPED
+            elif job.state == JobState.TIMEOUT:
                 logger.debug(
                     f"Service {self.id} has a timed out job. Setting status to"
                     " TIMEOUT and stopping the service."
                 )
                 await self.stop(session, config, timeout=True)
-                return "TIMEOUT"
-            elif job.state == "RUNNING":
+                return ServiceStatus.TIMEOUT
+            elif job.state == JobState.RUNNING:
                 if self.port is None:
                     await self.open_tunnel(session)
                 res = await self.ping()
@@ -384,8 +388,8 @@ class Service(UUIDAuditBase):
                         f"Service {self.id} responded normally. Setting status to"
                         " HEALTHY."
                     )
-                    self.status = "HEALTHY"
-                    return "HEALTHY"
+                    self.status = ServiceStatus.HEALTHY
+                    return ServiceStatus.HEALTHY
                 else:
                     logger.debug(
                         f"Service {self.id} did not respond normally. Determining"
@@ -393,8 +397,8 @@ class Service(UUIDAuditBase):
                     )
                     if self.status in [
                         ServiceStatus.SUBMITTED,
-                        "PENDING",
-                        "STARTING",
+                        ServiceStatus.PENDING,
+                        ServiceStatus.STARTING,
                     ]:
                         if self.created_at is None:
                             raise Exception("Service is missing value `created_at`.")
@@ -405,22 +409,22 @@ class Service(UUIDAuditBase):
                                 f"Service {self.id} grace period exceeded. Setting"
                                 " status to UNHEALTHY."
                             )
-                            self.status = "UNHEALTHY"
-                            return "UNHEALTHY"
+                            self.status = ServiceStatus.UNHEALTHY
+                            return ServiceStatus.UNHEALTHY
                         else:
                             logger.debug(
                                 f"Service {self.id} is still starting. Setting"
                                 " status to STARTING."
                             )
-                            self.status = "STARTING"
-                            return "STARTING"
+                            self.status = ServiceStatus.STARTING
+                            return ServiceStatus.STARTING
                     else:
                         logger.debug(
                             f"Service {self.id} is no longer starting. Setting"
                             " status to UNHEALTHY."
                         )
-                        self.status = "UNHEALTHY"
-                        return "UNHEALTHY"
+                        self.status = ServiceStatus.UNHEALTHY
+                        return ServiceStatus.UNHEALTHY
             else:
                 logger.debug(
                     f"Service {self.id} has a failed job"
@@ -429,7 +433,7 @@ class Service(UUIDAuditBase):
                 await self.stop(
                     session, config, failed=True
                 )  # stop will push to database
-                return "FAILED"
+                return ServiceStatus.FAILED
         elif self.job_type == "ec2":
             raise NotImplementedError
         else:

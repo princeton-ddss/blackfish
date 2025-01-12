@@ -57,7 +57,7 @@ from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.response import File
 
 from app.logger import logger
-from app.services.base import Service
+from app.services.base import Service, ServiceStatus
 from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
@@ -629,7 +629,11 @@ async def fetch_services(
 async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
     service = await get_service(service_id, session)
     await service.refresh(session, state)
-    if service.status in ["STOPPED", "TIMEOUT", "FAILED"]:
+    if service.status in [
+        ServiceStatus.STOPPED,
+        ServiceStatus.TIMEOUT,
+        ServiceStatus.FAILED,
+    ]:
         query = sa.delete(Service).where(Service.id == service_id)
         await session.execute(query)
     else:

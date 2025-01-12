@@ -1,7 +1,7 @@
 import subprocess
 from unittest import mock
 
-from app.job import SlurmJob
+from app.job import JobState, SlurmJob
 
 
 @mock.patch.object(SlurmJob, "fetch_port")
@@ -11,7 +11,7 @@ def test_update_none(mock_check_output, mock_fetch_node, mock_fetch_port):
     mock_check_output.return_value = b""
     job = SlurmJob(job_id=1, user="test", host="test")
     job.update()
-    assert job.state == "MISSING"
+    assert job.state == JobState.MISSING
     mock_fetch_node.assert_not_called()
     mock_fetch_port.assert_not_called()
 
@@ -23,7 +23,7 @@ def test_update_no_change(mock_check_output, mock_fetch_node, mock_fetch_port):
     mock_check_output.return_value = b"RUNNING"
     job = SlurmJob(job_id=1, user="test", host="test", state="RUNNING")
     job.update()
-    assert job.state == "RUNNING"
+    assert job.state == JobState.RUNNING
     mock_fetch_node.assert_not_called()
     mock_fetch_port.assert_not_called()
 
@@ -35,7 +35,7 @@ def test_update_change(mock_check_output, mock_fetch_node, mock_fetch_port):
     mock_check_output.return_value = b"RUNNING"
     job = SlurmJob(job_id=1, user="test", host="test", state="PENDING")
     job.update()
-    assert job.state == "RUNNING"
+    assert job.state == JobState.RUNNING
     mock_fetch_node.assert_called()
     mock_fetch_port.assert_called()
 

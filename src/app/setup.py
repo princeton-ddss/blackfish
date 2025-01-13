@@ -7,7 +7,7 @@ import app
 from app.logger import logger
 
 
-def create_local_home_dir(home_dir: str) -> None:
+def create_local_home_dir(home_dir: str | os.PathLike[str]) -> None:
     """Attempt to construct root directory to store core application data and raise an
     exception if creation fails and the directory does not already exist.
 
@@ -39,72 +39,71 @@ def create_local_home_dir(home_dir: str) -> None:
             )
 
 
-def create_remote_home_dir(remote_type, host: str, user: str, home_dir) -> None:
+def create_remote_home_dir(
+    host: str, user: str, home_dir: str | os.PathLike[str]
+) -> None:
     """Attempt to construct root directory to store core application data *remotely* and
     raise an exception if creation fails and the directory does not already exist.
 
     This method should called run when a new remote profile is created.
     """
-    if remote_type == "slurm":
-        with yaspin(
-            text=f"Setting up remote home directory for user {user} at {host}"
-        ) as spinner:
+
+    with yaspin(
+        text=f"Setting up remote home directory for user {user} at {host}"
+    ) as spinner:
+        try:
+            res = subprocess.check_output(
+                [
+                    "ssh",
+                    f"{user}@{host}",
+                    f"""if [ -d {home_dir} ]; then echo 1; fi""",
+                ]
+            )
+            remote_exists = res.decode("utf-8").strip()
+        except Exception as e:
+            spinner.text = ""
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home: {e}."
+            )
+            raise Exception
+        if not remote_exists == "1":
             try:
-                res = subprocess.check_output(
-                    [
-                        "ssh",
-                        f"{user}@{host}",
-                        f"""if [ -d {home_dir} ]; then echo 1; fi""",
-                    ]
+                _ = subprocess.check_output(
+                    ["ssh", f"{user}@{host}", "mkdir", home_dir]
                 )
-                remote_exists = res.decode("utf-8").strip()
+                _ = subprocess.check_output(
+                    ["ssh", f"{user}@{host}", "mkdir", f"{home_dir}/models"]
+                )
+                _ = subprocess.check_output(
+                    ["ssh", f"{user}@{host}", "mkdir", f"{home_dir}/images"]
+                )
+                spinner.text = ""
+                spinner.ok(f"{LogSymbols.SUCCESS.value} Done!")
             except Exception as e:
                 spinner.text = ""
                 spinner.fail(
-                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home:"
-                    f" {e}."
+                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote: {e}."
                 )
-                raise Exception
-            if not remote_exists == "1":
-                try:
-                    _ = subprocess.check_output(
-                        ["ssh", f"{user}@{host}", "mkdir", home_dir]
-                    )
-                    _ = subprocess.check_output(
-                        ["ssh", f"{user}@{host}", "mkdir", f"{home_dir}/models"]
-                    )
-                    _ = subprocess.check_output(
-                        ["ssh", f"{user}@{host}", "mkdir", f"{home_dir}/images"]
-                    )
-                    spinner.text = ""
-                    spinner.ok(f"{LogSymbols.SUCCESS.value} Done!")
-                except Exception as e:
-                    spinner.text = ""
-                    spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote:"
-                        f" {e}."
-                    )
-            else:
-                spinner.text = ""
-                spinner.ok(
-                    f"{LogSymbols.SUCCESS.value} Blackfish remote home directory"
-                    " already exists."
-                )
-    else:
-        raise NotImplementedError
+        else:
+            spinner.text = ""
+            spinner.ok(
+                f"{LogSymbols.SUCCESS.value} Blackfish remote home directory"
+                " already exists."
+            )
 
 
-def check_local_cache_exists(cache_dir):
+def check_local_cache_exists(cache_dir: str | os.PathLike[str]) -> None:
     """Check that the local cache directory exists and raise and exception if not."""
     if os.path.exists(cache_dir):
         print(f"{LogSymbols.SUCCESS.value} Blackfish cache directory already exists.")
-        return True
     else:
         print(f"{LogSymbols.ERROR.value} Unable to find local cache dir {cache_dir}.")
         raise Exception
 
 
-def check_remote_cache_exists(remote_type, host: str, user: str, cache_dir):
+def check_remote_cache_exists(
+    host: str, user: str, cache_dir: str | os.PathLike[str]
+) -> None:
     """Check that the remote cache directory exists and raise and exception if not."""
     with yaspin(text="Looking for remote cache") as spinner:
         try:

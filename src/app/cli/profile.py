@@ -50,12 +50,8 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
                     return False
             else:
                 try:
-                    create_remote_home_dir(
-                        "slurm", host=host, user=user, home_dir=home_dir
-                    )
-                    check_remote_cache_exists(
-                        "slurm", host=host, user=user, cache_dir=cache_dir
-                    )
+                    create_remote_home_dir(host=host, user=user, home_dir=home_dir)
+                    check_remote_cache_exists(host=host, user=user, cache_dir=cache_dir)
                 except Exception:
                     print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
                     return False
@@ -127,10 +123,8 @@ def _update_profile_(
             cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
             cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
             try:
-                create_remote_home_dir("slurm", host=host, user=user, home_dir=home_dir)
-                check_remote_cache_exists(
-                    "slurm", host=host, user=user, cache_dir=cache_dir
-                )
+                create_remote_home_dir(host=host, user=user, home_dir=home_dir)
+                check_remote_cache_exists(host=host, user=user, cache_dir=cache_dir)
             except Exception:
                 print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
                 return

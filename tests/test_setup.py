@@ -22,7 +22,7 @@ def test_create_local_home_dir_missing_root(tmp_path):
 
 
 def test_check_local_cache_exists_existing_dir(tmp_path):
-    assert check_local_cache_exists(tmp_path)
+    check_local_cache_exists(tmp_path)
 
 
 def test_check_local_cache_exists_missing_dir(tmp_path):

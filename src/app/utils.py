@@ -230,7 +230,10 @@ def has_model(
 
 
 def find_port(
-    host="localhost", lower: int = 8080, upper: int = 8900, use_stdout: bool = False
+    host: str = "localhost",
+    lower: int = 8080,
+    upper: int = 8900,
+    use_stdout: bool = False,
 ) -> int:
     """Find a available port in the range `[lower, upper)`."""
     for port in range(lower, upper):

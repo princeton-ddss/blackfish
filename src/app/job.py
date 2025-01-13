@@ -5,7 +5,7 @@ import subprocess
 from dataclasses import dataclass, asdict, replace
 
 from enum import StrEnum, auto
-from typing import Optional, Self
+from typing import Optional, Self, Any
 from app.logger import logger
 from app.config import ContainerProvider
 
@@ -46,13 +46,13 @@ class JobState(StrEnum):
 
 @dataclass
 class JobConfig:
-    def data(self) -> dict:
+    def data(self) -> dict[str, Any]:
         return {
             k: v
             for k, v in filter(lambda item: item[1] is not None, asdict(self).items())
         }
 
-    def replace(self, changes: dict) -> Self:
+    def replace(self, changes: dict[str, Any]) -> Self:
         return replace(self, **changes)
 
 
@@ -292,7 +292,7 @@ class SlurmJob(Job):
 
         return self.port
 
-    def wait(self, period: int = 5) -> dict:
+    def wait(self, period: int = 5) -> dict[str, bool]:
         """Wait for the job to start, re-checking the job's status every `period` seconds."""
 
         logger.debug(f"waiting for job {self.job_id} to start")

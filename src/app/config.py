@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from enum import StrEnum, auto
-from typing import Optional
+from typing import Optional, Any
 import subprocess
 from copy import deepcopy
 
@@ -66,7 +66,7 @@ class BlackfishConfig:
         inner = ", ".join([f"{k}: {v}" for k, v in self.__dict__.items()])
         return f"BlackfishConfig({inner})"
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, Any]:
         return deepcopy(self.__dict__)
 
 

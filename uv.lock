@@ -180,6 +180,8 @@ dependencies = [
     { name = "prettytable" },
     { name = "psutil" },
     { name = "requests" },
+    { name = "types-paramiko" },
+    { name = "types-requests" },
     { name = "uvicorn" },
     { name = "yaspin" },
 ]
@@ -188,18 +190,20 @@ dependencies = [
 requires-dist = [
     { name = "advanced-alchemy", specifier = ">=0.27.1" },
     { name = "aiohttp", specifier = ">=3.11.11" },
-    { name = "aiosqlite", specifier = ">=0.20.0" },
-    { name = "colorlog", specifier = ">=6.9.0" },
+    { name = "aiosqlite", specifier = ">=0.20" },
+    { name = "colorlog", specifier = ">=6.9" },
     { name = "fabric", specifier = ">=3.2.2" },
     { name = "huggingface-hub", specifier = ">=0.27.1" },
     { name = "jinja2", specifier = ">=3.1.5" },
-    { name = "litestar", specifier = ">=2.14.0" },
+    { name = "litestar", specifier = ">=2.14" },
     { name = "log-symbols", specifier = ">=0.0.14" },
-    { name = "prettytable", specifier = ">=3.12.0" },
+    { name = "prettytable", specifier = ">=3.12" },
     { name = "psutil", specifier = ">=6.1.1" },
     { name = "requests", specifier = ">=2.32.3" },
-    { name = "uvicorn", specifier = ">=0.34.0" },
-    { name = "yaspin", specifier = ">=3.1.0" },
+    { name = "types-paramiko", specifier = ">=3.5.0.20240928" },
+    { name = "types-requests", specifier = ">=2.32.0.20241016" },
+    { name = "uvicorn", specifier = ">=0.34" },
+    { name = "yaspin", specifier = ">=3.1" },
 ]
 
 [[package]]
@@ -1040,6 +1044,30 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/30/dc54f88dd4a2b5dc8a0279bdd7270e735851848b762aeb1c1184ed1f6b14/tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2", size = 78540 },
+]
+
+[[package]]
+name = "types-paramiko"
+version = "3.5.0.20240928"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ae/00/733b05fa97328becc7606301d9ae4c7ec7ec9e92324b8420208e397f3ac7/types-paramiko-3.5.0.20240928.tar.gz", hash = "sha256:79dd9b2ee510b76a3b60d8ac1f3f348c45fcecf01347ca79e14db726bbfc442d", size = 23213 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/e5/afb514829e7184e7518a62c014dc364f7a9d47f9112ff26c63835cbf0de5/types_paramiko-3.5.0.20240928-py3-none-any.whl", hash = "sha256:cda0aff4905fe8efe4b5448331a80e943d42a796bd4beb77a3eed3485bc96a85", size = 34016 },
+]
+
+[[package]]
+name = "types-requests"
+version = "2.32.0.20241016"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fa/3c/4f2a430c01a22abd49a583b6b944173e39e7d01b688190a5618bd59a2e22/types-requests-2.32.0.20241016.tar.gz", hash = "sha256:0d9cad2f27515d0e3e3da7134a1b6f28fb97129d86b867f24d9c726452634d95", size = 18065 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/01/485b3026ff90e5190b5e24f1711522e06c79f4a56c8f4b95848ac072e20f/types_requests-2.32.0.20241016-py3-none-any.whl", hash = "sha256:4195d62d6d3e043a4eaaf08ff8a62184584d2e8684e9d2aa178c7915a7da3747", size = 15836 },
 ]
 
 [[package]]

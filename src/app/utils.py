@@ -1,3 +1,4 @@
+from fnmatch import fnmatch
 import os
 import socket
 from typing import Optional
@@ -267,3 +268,64 @@ def find_port(host="127.0.0.1", lower=8080, upper=8900, use_stdout=False) -> int
                         f"Failed to bind port {port} on host {host}. Trying next port."
                     )
     raise OSError(f"OSError: no ports available in range {lower}-{upper}")
+
+
+def get_images(profile: BlackfishProfile) -> list[str]:
+    """Return a list of image files available to a given profile."""
+
+    if isinstance(profile, SlurmRemote):
+        matched_files = set()
+        with yaspin(text=f"Searching {profile.host} for available images") as spinner:
+            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+                for dir in [profile.cache_dir, profile.home_dir]:
+                    spinner.text = f"Checking directory: {dir}"
+                    files = sftp.listdir(os.path.join(dir, "images"))
+                    matched_files.update([f for f in files if fnmatch(f, "*.sif")])
+            spinner.text = ""
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(matched_files)} images.")
+        return list(matched_files)
+
+    elif isinstance(profile, LocalProfile):
+        matched_files = set()
+        with yaspin(text=f"Searching {profile.host} for available images") as spinner:
+            for dir in [profile.cache_dir, profile.home_dir]:
+                spinner.text = f"Checking directory: {dir}"
+                files = os.listdir(os.path.join(dir, "images"))
+                matched_files.update([f for f in files if fnmatch(f, "*.sif")])
+            spinner.text = ""
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(matched_files)} images.")
+        return list(matched_files)
+
+    else:
+        raise NotImplementedError
+
+
+def has_image(
+    image: str,
+    image_tag: str,
+    profile: BlackfishProfile,
+) -> bool:
+    """Check if the image file exists for the given profile.
+
+    Args:
+        image:
+            Task image name (e.g., "text_generation", "speech_recognition").
+        profile:
+            Blackfish profile to search for the image file.
+        image_tag:
+            The version of the image file (e.g., "2.3.0"). If not provided,
+            the function searches for any available versions.
+
+    Returns:
+        bool
+    """
+    image_file = f"{image.replace('_', '-')}-inference_{image_tag}.sif"
+
+    with yaspin(text=f"Searching {profile.host} for available images") as spinner:
+        spinner.text = ""
+        if image_file in get_images(profile):
+            spinner.ok(f"{LogSymbols.SUCCESS.value} Matching image found.")
+            return True
+        else:
+            spinner.fail(f"{LogSymbols.ERROR.value} Matching image not found.")
+            return False

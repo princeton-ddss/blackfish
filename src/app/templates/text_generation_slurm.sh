@@ -2,7 +2,7 @@
 {% block command %}
 apptainer run {{ ' --nv' if job_config.gres > 0 else '' }}\
   --bind {{ container_config.model_dir }}:/data \
-  {{ job_config.cache_dir }}/images/text-generation-inference_2.3.0.sif \
+  {{ job_config.cache_dir }}/images/text-generation-inference_{{ container_config.image_tag }}.sif \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port $port \
 {%- if 'revision' in container_config %}

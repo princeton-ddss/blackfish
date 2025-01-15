@@ -5,13 +5,13 @@ docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
   -p {{ container_config.port }}:{{ container_config.port }} \
   -v {{ container_config.model_dir }}:/data \
   --name {{ name }} \
-  ghcr.io/huggingface/text-generation-inference:2.3.0 \
+  ghcr.io/huggingface/text-generation-inference:{{ container_config.image_tag }} \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port {{ container_config.port }} \
 {%- elif container_config.provider == 'apptainer' %}
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ container_config.model_dir }}:/data \
-  {{ job_config.cache_dir }}/images/text-generation-inference_2.3.0.sif \
+  {{ job_config.cache_dir }}/images/text-generation-inference_{{ container_config.image_tag }}.sif \
   {{ name }} \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port {{ container_config.port }} \

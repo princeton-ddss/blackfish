@@ -21,6 +21,7 @@ from app.utils import find_port
 @dataclass
 class ContainerConfig:
     provider: Optional[str] = "apptainer"
+    image_tag: str
 
     def data(self) -> dict:
         return {

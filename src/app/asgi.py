@@ -37,7 +37,7 @@ from litestar.exceptions import (
     HTTPException,
     ValidationException,
 )
-from litestar.status_codes import HTTP_409_CONFLICT
+from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 from litestar.config.cors import CORSConfig
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
@@ -59,7 +59,7 @@ from app.services.base import Service
 from app.services.speech_recognition import SpeechRecognition
 from app.services.text_generation import TextGeneration
 from app.config import config as blackfish_config
-from app.utils import find_port
+from app.utils import find_port, has_image
 from app.models.profile import (
     init_profile,
     import_profiles,
@@ -543,6 +543,44 @@ def build_service(data: ServiceRequest):
 async def run_service(
     data: ServiceRequest, session: AsyncSession, state: State
 ) -> Service:
+    profiles = serialize_profiles(state.HOME_DIR)
+    profile = next(p for p in profiles if p.name == data.profile)
+
+    # TODO: Check if the image is compatible with the model
+    pass
+
+    # TODO: Expose `image_tag` as a request parameter.
+    # NOTE: We need to decide whether to make this a required parameter
+    # or an optional one (with a default value). If latter, where should
+    # we set the default value, which may differ depending on the service
+    # image (i.e., "text-generation")?
+    if data.image == "text_generation":
+        data.container_options["image_tag"] = "2.3.0"
+    elif data.image == "speech_recognition":
+        data.container_options["image_tag"] = "0.1.2"
+    else:
+        raise ClientException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail=f"Service image should be one of: {SERVICE_TYPES}",
+        )
+
+    # Check if the image is available
+    if has_image(data.image, data.container_options["image_tag"], profile) is False:
+        if state.CONTAINER_PROVIDER == "docker":
+            # TODO: Check if the image exists in GitHub Container Registry.
+            # NOTE: This requires we know the registry name (e.g., huggingface),
+            # which may require use of some hard-coded mapping.
+            # NOTE: We also need to decide what action to take if the image
+            # exists in GitHub Container Registry.
+            pass
+
+        raise NotFoundException(
+            detail=(
+                f"Unable to find a <{data.image}> image with "
+                f"tag <{data.image_tag}> for profile <{profile}>"
+            )
+        )
+
     try:
         service = build_service(data)
     except Exception as e:

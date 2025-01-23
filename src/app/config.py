@@ -15,8 +15,8 @@ DEFAULT_DEV_MODE = 1  # True
 
 
 class ContainerProvider(StrEnum):
-    DOCKER = auto()
-    APPTAINER = auto()
+    Docker = auto()
+    Apptainer = auto()
 
 
 def get_container_provider() -> Optional[ContainerProvider]:
@@ -26,11 +26,11 @@ def get_container_provider() -> Optional[ContainerProvider]:
     """
     try:
         _ = subprocess.run(["which", "docker"], check=True, capture_output=True)
-        return ContainerProvider.DOCKER
+        return ContainerProvider.Docker
     except subprocess.CalledProcessError:
         try:
             _ = subprocess.run(["which", "apptainer"], check=True, capture_output=True)
-            return ContainerProvider.APPTAINER
+            return ContainerProvider.Apptainer
         except subprocess.CalledProcessError:
             print(
                 "No supported container platforms available. Please install one of:"

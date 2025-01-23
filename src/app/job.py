@@ -2,29 +2,23 @@ import os
 import time
 import json
 import subprocess
-from dataclasses import dataclass, asdict, replace
+from dataclasses import dataclass
 
 from enum import StrEnum, auto
-from typing import Optional, Self, Any
+from typing import Optional, Union
 from app.logger import logger
 from app.config import ContainerProvider
 
 
 class JobState(StrEnum):
-    BOOT_FAIL = auto()  # Job terminated due to launch failure (BF)
-    CANCELLED = (
-        auto()
-    )  # Job was explicitly cancelled by the user or system administrator (CA)
+    BOOT_FAIL = auto()  # terminated due to launch failure (BF)
+    CANCELLED = auto()  # explicitly cancelled by the user or system administrator (CA)
     COMPLETED = (
         auto()
-    )  # Job terminated all processes on all nodes with exit code of zero (CD)
-    DEADLINE = auto()  # Job terminated on deadline (DL)
-    FAILED = (
-        auto()
-    )  # Job terminated with non-zero exit code or other failure condition (F)
-    NODE_FAIL = (
-        auto()
-    )  # Job terminated due to failure of one or more allocated nodes (NF)
+    )  # terminated all processes on all nodes with exit code of zero (CD)
+    DEADLINE = auto()  # terminated on deadline (DL)
+    FAILED = auto()  # terminated with non-zero exit code or other failure condition (F)
+    NODE_FAIL = auto()  # terminated due to failure of one or more allocated nodes (NF)
     OUT_OF_MEMORY = auto()  # Job experienced out of memory error (OOM)
     CREATED = auto()
     PENDING = auto()  # Job is awaiting resource allocation (PD)
@@ -32,11 +26,9 @@ class JobState(StrEnum):
     RUNNING = auto()  # Job currently has an allocation (R)
     REQUEUED = auto()  # Job was requeued (RQ)
     RESIZING = auto()  # Job is about to change size (RS)
-    REVOKED = (
-        auto()
-    )  # Sibling removed from cluster due to other cluster starting the job (RV)
-    SUSPENDED = auto()  # Job has an allocation, but execution has been suspended (S)
-    TIMEOUT = auto()  # Job terminated upon reaching its time limit (TO)
+    REVOKED = auto()  # removed from cluster due to other cluster starting the job (RV)
+    SUSPENDED = auto()  # has an allocation, but execution has been suspended (S)
+    TIMEOUT = auto()  # terminated upon reaching its time limit (TO)
     RESTARTING = auto()
     PAUSED = auto()
     EXITED = auto()
@@ -44,20 +36,24 @@ class JobState(StrEnum):
     STOPPED = auto()
 
 
+class JobScheduler(StrEnum):
+    Slurm = auto()
+
+
+# @dataclass
+# class JobConfig:
+#     def data(self) -> dict[str, Any]:
+#         return {
+#             k: v
+#             for k, v in filter(lambda item: item[1] is not None, asdict(self).items())
+#         }
+
+#     def replace(self, changes: dict[str, Any]) -> Self:
+#         return replace(self, **changes)
+
+
 @dataclass
-class JobConfig:
-    def data(self) -> dict[str, Any]:
-        return {
-            k: v
-            for k, v in filter(lambda item: item[1] is not None, asdict(self).items())
-        }
-
-    def replace(self, changes: dict[str, Any]) -> Self:
-        return replace(self, **changes)
-
-
-@dataclass
-class LocalJobConfig(JobConfig):
+class LocalJobConfig:
     """Job configuration for running a service locally."""
 
     user: Optional[str] = None
@@ -68,26 +64,26 @@ class LocalJobConfig(JobConfig):
 
 
 @dataclass
-class SlurmJobConfig(JobConfig):
+class SlurmJobConfig:
     """Job configuration for running a service as a Slurm job."""
 
-    host: Optional[str] = None
-    user: Optional[str] = None
-    name: Optional[str] = "blackfish"
-    time: Optional[str] = "00:15:00"
-    nodes: Optional[int] = 1
-    ntasks_per_node: Optional[int] = 8
-    mem: Optional[int] = 16
-    gres: Optional[int] = 0  # i.e., gpu:<gres>
+    # host: str
+    # user: str
+    # home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
+    # cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish
+
+    name: Optional[str]
+    time: str = "00:30:00"
+    nodes: int = 1
+    ntasks_per_node: int = 8
+    mem: int = 16
+    gres: int = 0  # i.e., gpu:<gres>
     partition: Optional[str] = None  # e.g., mig
     constraint: Optional[str] = None  # e.g., gpu80
-    home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
-    cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish
-    model_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish/models
+    # model_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish/models
 
 
-@dataclass
-class EC2JobConfig(JobConfig): ...
+JobConfig = Union[LocalJobConfig, SlurmJobConfig]
 
 
 @dataclass
@@ -122,7 +118,7 @@ class SlurmJob(Job):
     def is_local(self) -> bool:
         return self.host == "localhost"
 
-    def update(self, silent: bool = False) -> Optional[str]:
+    def update(self, verbose: bool = False) -> Optional[str]:
         """Attempt to update the job state from Slurm accounting and return the new
         state (or current state if the update fails).
 
@@ -131,7 +127,7 @@ class SlurmJob(Job):
 
         This method logs a warning if the update fails, but does not raise an exception.
         """
-        if not silent:
+        if verbose:
             logger.debug(f"Updating job state (job_id={self.job_id}).")
         try:
             if self.is_local():
@@ -168,7 +164,7 @@ class SlurmJob(Job):
                 )
 
             new_state = parse_state(res)
-            if not silent:
+            if verbose:
                 logger.debug(
                     f"The current job state is: {new_state} (job_id=${self.job_id})"
                 )
@@ -178,7 +174,7 @@ class SlurmJob(Job):
                 and self.node is None
                 and self.port is None
             ):
-                if not silent:
+                if verbose:
                     logger.debug(
                         f"Job state updated from {self.state} to RUNNING"
                         f" (job_id={self.job_id}). Fetching node and port."
@@ -186,7 +182,7 @@ class SlurmJob(Job):
                 self.fetch_node()
                 self.fetch_port()
             elif self.state is not None and self.state != new_state:
-                if not silent:
+                if verbose:
                     logger.debug(
                         f"Job state updated from {self.state} to {new_state}"
                         f" (job_id={self.job_id})."
@@ -350,11 +346,11 @@ class LocalJob(Job):
     )
     options: Optional[JobConfig] = None
 
-    def update(self, silent: bool = False) -> Optional[str]:
-        if not silent:
+    def update(self, verbose: bool = False) -> Optional[str]:
+        if verbose:
             logger.debug(f"Updating job state (job_id={self.job_id})")
         try:
-            if self.provider == ContainerProvider.DOCKER:
+            if self.provider == ContainerProvider.Docker:
                 res = subprocess.check_output(
                     [
                         "docker",
@@ -364,18 +360,18 @@ class LocalJob(Job):
                     ]
                 )
                 new_state = parse_state(res)
-                if not silent:
+                if verbose:
                     logger.debug(
                         f"The current job state is: {new_state} (job_id={self.job_id})"
                     )
                 if self.state is not None and self.state != new_state:
-                    if not silent:
+                    if verbose:
                         logger.debug(
                             f"Job state updated from {self.state} to {new_state}"
                             f" (job_id={self.job_id})"
                         )
                 self.state = new_state
-            elif self.provider == ContainerProvider.APPTAINER:
+            elif self.provider == ContainerProvider.Apptainer:
                 res = subprocess.check_output(
                     ["apptainer", "instance", "list", "--json", f"{self.job_id}"]
                 )
@@ -385,12 +381,12 @@ class LocalJob(Job):
                 else:
                     new_state = JobState.RUNNING
 
-                if not silent:
+                if verbose:
                     logger.debug(
                         f"The current job state is: {new_state} (job_id={self.job_id})"
                     )
                 if self.state is not None and self.state != new_state:
-                    if not silent:
+                    if verbose:
                         logger.debug(
                             f"Job state updated from {self.state} to {new_state}"
                             f" (job_id={self.job_id})."
@@ -407,11 +403,11 @@ class LocalJob(Job):
     def cancel(self) -> None:
         try:
             logger.debug(f"Canceling job {self.job_id}")
-            if self.provider == ContainerProvider.DOCKER:
+            if self.provider == ContainerProvider.Docker:
                 subprocess.check_output(
                     ["docker", "container", "stop", f"{self.job_id}"]
                 )
-            elif self.provider == ContainerProvider.APPTAINER:
+            elif self.provider == ContainerProvider.Apptainer:
                 subprocess.check_output(
                     ["apptainer", "instance", "stop", f"{self.job_id}"]
                 )

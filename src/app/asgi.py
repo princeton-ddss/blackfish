@@ -2,12 +2,14 @@ import os
 from os import urandom
 import json
 import aiohttp
+from aiohttp.typedefs import StrOrURL
 import requests
 from datetime import datetime
 from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional, Tuple, Any
+from enum import StrEnum
 import asyncio
 import itertools
 from pathlib import Path
@@ -58,9 +60,9 @@ from litestar.response import File
 
 from app.logger import logger
 from app.services.base import Service, ServiceStatus
-from app.services.speech_recognition import SpeechRecognition
-from app.services.text_generation import TextGeneration
-from app.config import config as blackfish_config
+from app.services.speech_recognition import SpeechRecognition, SpeechRecognitionConfig
+from app.services.text_generation import TextGeneration, TextGenerationConfig
+from app.config import config as blackfish_config, ContainerProvider
 from app.utils import find_port
 from app.models.profile import (
     init_profile,
@@ -71,10 +73,12 @@ from app.models.profile import (
     modify_profile,
     remove_profile,
     SlurmProfile,
+    LocalProfile,
     BlackfishProfile as Profile,
     ProfileNotFoundException,
 )
 from app.models.model import Model
+from app.job import LocalJobConfig, SlurmJobConfig, JobScheduler
 
 
 # --- Auth ---
@@ -83,7 +87,7 @@ AUTH_TOKEN = b64encode(urandom(32)).decode("utf-8")
 
 class AuthMiddleware(MiddlewareProtocol):
     def __init__(self, app: ASGIApp) -> None:
-        super().__init__(app)
+        super().__init__()
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -105,9 +109,6 @@ class AuthMiddleware(MiddlewareProtocol):
 
 
 def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:
-    if connection.session is None:
-        logger.debug("from auth_guard: session is None => NotAuthorizedException")
-        raise NotAuthorizedException
     token = connection.session.get("token")
     if token is None:
         logger.debug("from auth_guard: session.token is None => NotAuthorizedException")
@@ -491,18 +492,32 @@ async def get_ports(request: Request) -> int:
     return find_port()
 
 
+class Task(StrEnum):
+    TextGeneration = "text_generation"
+    SpeechRecognition = "speech_recognition"
+
+
 @dataclass
 class ServiceRequest:
-    name: str  # TODO: optional w/ default by name generator
-    image: str
+    name: str
+    image: Task
     model: str
-    profile: str
-    job_type: str
+    # container_options: Union[TextGenerationConfig, SpeechRecognitionConfig] # or ContainerConfig?
+    # job_options: Union[LocalJobConfig, SlurmJobConfig]
     container_options: dict
     job_options: dict
-    user: Optional[str] = None
-    host: Optional[str] = "localhost"
-    port: Optional[str] = None
+
+    profile: str
+    host: str
+    user: Optional[str] = None  # optional for local services
+    home_dir: Optional[str] = None
+    cache_dir: Optional[str] = None
+
+    scheduler: Optional[JobScheduler] = None  # only needed for remote services
+    provider: Optional[ContainerProvider] = None  # only needed for local services
+    mount: Optional[str] = None
+
+    grace_period: Optional[int] = 180
 
 
 class ServiceRequestDTO(DataclassDTO[ServiceRequest]):
@@ -510,8 +525,63 @@ class ServiceRequestDTO(DataclassDTO[ServiceRequest]):
 
 
 @dataclass
+class LocalTextGenerationServiceRequest:
+    name: str
+    repo_id: str
+    profile: LocalProfile
+    container_config: TextGenerationConfig
+    job_config: LocalJobConfig
+    provider: ContainerProvider
+    mount: Optional[str] = None
+    grace_period: int = 180  # seconds
+
+
+@dataclass
+class SlurmTextGenerationServiceRequest:
+    name: str
+    repo_id: str
+    container_config: TextGenerationConfig
+    job_config: SlurmJobConfig
+    profile: SlurmProfile
+    mount: Optional[str] = None
+    grace_period: int = 180  # seconds
+
+
+@dataclass
+class LocalSpeechRecognitionServiceRequest:
+    name: str
+    repo_id: str
+    profile: LocalProfile
+    container_config: SpeechRecognitionConfig
+    job_config: LocalJobConfig
+    provider: ContainerProvider
+    mount: Optional[str] = None
+    grace_period: int = 180  # seconds
+
+
+@dataclass
+class SlurmSpeechRecognitionServiceRequest:
+    name: str
+    repo_id: str
+    container_config: SpeechRecognitionConfig
+    job_config: SlurmJobConfig
+    profile: SlurmProfile
+    mount: Optional[str] = None
+    grace_period: int = 180  # seconds
+
+
+@dataclass
+class GenericServiceRequest[T, S, U]:
+    name: str
+    container_config: T
+    job_config: S
+    profile: U
+    mount: Optional[str] = None
+    grace_period: int = 180
+
+
+@dataclass
 class StopServiceRequest:
-    delay: int = 0
     timeout: bool = False
     failed: bool = False
 
@@ -519,40 +589,56 @@ class StopServiceRequest:
 def build_service(data: ServiceRequest) -> Optional[Service]:
     """Convert a service request into a service object based on the requested image."""
 
-    if data.image == "text_generation":
-        return TextGeneration(
-            name=data.name,  # optional
-            image=data.image,
-            model=data.model,
-            profile=data.profile,
-            user=data.user,  # optional (required to run remote services)
-            host=data.host,  # optional (required to run remote services)
-            job_type=data.job_type,
-        )
-    elif data.image == "speech_recognition":
-        return SpeechRecognition(
-            name=data.name,  # optional
-            image=data.image,
-            model=data.model,
-            profile=data.profile,
-            user=data.user,  # optional (required to run remote services)
-            host=data.host,  # optional (required to run remote services)
-            job_type=data.job_type,
-            mounts=data.container_options["input_dir"],
-        )
+    logger.debug("Building service...")
+
+    try:
+        # data = ServiceRequest(**data)
+        logger.debug(f"Constructed request: {data}")
+        kwargs = {
+            "name": data.name,
+            "model": data.model,
+            "profile": data.profile,
+            "user": data.user,
+            "host": data.host,
+            "home_dir": data.home_dir,
+            "cache_dir": data.cache_dir,
+            "scheduler": data.scheduler,
+            "provider": data.provider,
+            "grace_period": data.grace_period,
+            "mount": data.mount,
+        }
+    except Exception as e:
+        logger.error(f"{e}")
+
+    logger.debug(f"kwargs={kwargs}")
+
+    if data.image == Task.TextGeneration:
+        try:
+            return TextGeneration(**kwargs)
+        except Exception as e:
+            logger.error(f"{e}")
+    elif data.image == Task.SpeechRecognition:
+        try:
+            service = SpeechRecognition(**kwargs)
+            logger.debug(f"service={service}")
+            return service
+        except Exception as e:
+            logger.error(f"{e}")
     else:
-        raise Exception(f"Service image should be one of: {SERVICE_TYPES}")
+        logger.error(f"Service image should be one of: {[t.value for t in Task]}")
 
 
 @post("/api/services", dto=ServiceRequestDTO, guards=ENDPOINT_GUARDS)
+# @post("/api/services", guards=ENDPOINT_GUARDS)
 async def run_service(
-    data: ServiceRequest, session: AsyncSession, state: State
+    data: ServiceRequest,
+    session: AsyncSession,
+    state: State,
+    # data: Any, session: AsyncSession, state: State
 ) -> Optional[Service]:
-    try:
-        service = build_service(data)
-    except Exception as e:
-        logger.error(e)
-
+    logger.debug(f"Received data: {data}")
+    service = build_service(data)
+    logger.debug(f"Constructed service: {service}")
     if service is not None:
         try:
             await service.start(
@@ -562,8 +648,158 @@ async def run_service(
                 job_options=data.job_options,
             )
         except Exception as e:
-            logger.error(f"Unable to start service. Error: {e}")
-            raise InternalServerException()
+            detail = f"Unable to start service. Error: {e}"
+            logger.error(detail)
+            raise InternalServerException(detail=detail)
+
+    return service
+
+
+def build_service_endpoints():
+    """Create endpoints to run each profile-task combination."""
+    pass
+
+
+@post("/api/services/slurm/text-generation", guards=ENDPOINT_GUARDS)
+async def run_slurm_text_generation_service(
+    data: SlurmTextGenerationServiceRequest,
+    session: AsyncSession,
+    state: State,
+) -> Optional[TextGeneration]:
+    try:
+        service = TextGeneration(
+            name=data.name,
+            image=Task.TextGeneration,
+            model=data.repo_id,
+            profile=data.profile.name,
+            host=data.profile.host,
+            user=data.profile.user,
+            home_dir=data.profile.home_dir,
+            cache_dir=data.profile.cache_dir,
+            scheduler=JobScheduler.Slurm,
+            mount=data.mount,
+            grace_period=data.grace_period,
+        )
+    except Exception as e:
+        logger.error(f"{e}")
+
+    try:
+        await service.start(
+            session,
+            state,
+            container_options=data.container_config,
+            job_options=data.job_config,
+        )
+    except Exception as e:
+        detail = f"Unable to start service. Error: {e}"
+        logger.error(detail)
+        raise InternalServerException(detail=detail)
+
+    return service
+
+
+@post("/api/services/local/text-generation", guards=ENDPOINT_GUARDS)
+async def run_local_text_generation_service(
+    data: LocalTextGenerationServiceRequest,
+    session: AsyncSession,
+    state: State,
+) -> Optional[TextGeneration]:
+    service = TextGeneration(
+        name=data.name,
+        image=Task.TextGeneration,
+        model=data.repo_id,
+        profile=data.profile.name,
+        host="localhost",
+        home_dir=data.profile.home_dir,
+        cache_dir=data.profile.cache_dir,
+        provider=data.provider,
+        mount=data.mount,
+        grace_period=data.grace_period,
+    )
+
+    try:
+        await service.start(
+            session,
+            state,
+            container_options=data.container_config,
+            job_options=data.job_config,
+        )
+    except Exception as e:
+        detail = f"Unable to start service. Error: {e}"
+        logger.error(detail)
+        raise InternalServerException(detail=detail)
+
+    return service
+
+
+@post("/api/services/slurm/speech-recognition", guards=ENDPOINT_GUARDS)
+async def run_slurm_speech_recognition_service(
+    data: SlurmSpeechRecognitionServiceRequest,
+    session: AsyncSession,
+    state: State,
+) -> Optional[SpeechRecognition]:
+    try:
+        service = SpeechRecognition(
+            name=data.name,
+            image=Task.SpeechRecognition,
+            model=data.repo_id,
+            profile=data.profile.name,
+            host=data.profile.host,
+            user=data.profile.user,
+            home_dir=data.profile.home_dir,
+            cache_dir=data.profile.cache_dir,
+            scheduler=JobScheduler.Slurm,
+            mount=data.mount,
+            grace_period=data.grace_period,
+        )
+    except Exception as e:
+        logger.error(f"{e}")
+
+    try:
+        await service.start(
+            session,
+            state,
+            container_options=data.container_config,
+            job_options=data.job_config,
+        )
+    except Exception as e:
+        detail = f"Unable to start service. Error: {e}"
+        logger.error(detail)
+        raise InternalServerException(detail=detail)
+
+    return service
+
+
+@post("/api/services/local/speech-recognition", guards=ENDPOINT_GUARDS)
+async def run_local_speech_recognition_service(
+    data: LocalSpeechRecognitionServiceRequest,
+    session: AsyncSession,
+    state: State,
+) -> Optional[SpeechRecognition]:
+    service = SpeechRecognition(
+        name=data.name,
+        image=Task.SpeechRecognition,
+        model=data.repo_id,
+        profile=data.profile.name,
+        host="localhost",
+        home_dir=data.profile.home_dir,
+        cache_dir=data.profile.cache_dir,
+        provider=data.provider,
+        mount=data.mount,
+        grace_period=data.grace_period,
+    )
+
+    try:
+        await service.start(
+            session,
+            state,
+            container_options=data.container_config,
+            job_options=data.job_config,
+        )
+    except Exception as e:
+        detail = f"Unable to start service. Error: {e}"
+        logger.error(detail)
+        raise InternalServerException(detail=detail)
 
     return service
 
@@ -572,11 +808,12 @@ async def run_service(
 async def stop_service(
     service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
-    service = await get_service(service_id, session)
-    await service.stop(
-        session, state, delay=data.delay, timeout=data.timeout, failed=data.failed
-    )
+    try:
+        service = await get_service(service_id, session)
+    except Exception as e:
+        logger.error(f"Failed to fetch service: {e}.")
 
+    await service.stop(session, state, timeout=data.timeout, failed=data.failed)
     return service
 
 
@@ -584,7 +821,10 @@ async def stop_service(
 async def refresh_service(
     service_id: str, session: AsyncSession, state: State
 ) -> Service:
-    service = await get_service(service_id, session)
+    try:
+        service = await get_service(service_id, session)
+    except Exception as e:
+        logger.error(f"Failed to fetch service: {e}")
     try:
         await service.refresh(session, state)
     except Exception as e:
@@ -605,22 +845,17 @@ async def fetch_services(
     name: Optional[str] = None,
     profile: Optional[str] = None,
 ) -> list[Service]:
-    query_params = {}
-    if id is not None:
-        query_params["id"] = id
-    if image is not None:
-        query_params["image"] = image
-    if model is not None:
-        query_params["model"] = model
-    if status is not None:
-        query_params["status"] = status
-    if port is not None:
-        query_params["port"] = port
-    if name is not None:
-        query_params["name"] = name
-    if profile is not None:
-        query_params["profile"] = profile
+    query_params = {
+        "id": id,
+        "image": image,
+        "model": model,
+        "status": status,
+        "port": port,
+        "name": name,
+        "profile": profile,
+    }
 
+    query_params = {k: v for k, v in query_params.items() if v is not None}
     query = sa.select(Service).filter_by(**query_params)
     res = await session.execute(query)
     services = res.scalars().all()
@@ -632,7 +867,10 @@ async def fetch_services(
 
 @delete("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
-    service = await get_service(service_id, session)
+    try:
+        service = await get_service(service_id, session)
+    except Exception as e:
+        logger.error(f"Failed to fetch service: {e}")
     await service.refresh(session, state)
     if service.status in [
         ServiceStatus.STOPPED,
@@ -648,13 +886,13 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
         # TODO: return failure status code and message
 
 
-async def asyncget(url):
+async def asyncget(url: StrOrURL) -> Any:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             return await response.json()
 
 
-async def asyncpost(url, data, headers):
+async def asyncpost(url: StrOrURL, data: Any, headers: Any) -> Any:
     async with aiohttp.ClientSession() as session:
         async with session.post(url, data=data, headers=headers) as response:
             return await response.json()
@@ -778,7 +1016,7 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
 async def create_profile(data: dict) -> Profile:
     raise NotImplementedError
 
-    try:
+    try:  # type: ignore
         init_profile(blackfish_config.HOME_DIR, data)
     except Exception as e:
         raise HTTPException(detail=f"Unable to create profile: {e}")
@@ -811,13 +1049,13 @@ async def read_profile(name: str) -> Profile:
 @put("/api/profiles", guards=ENDPOINT_GUARDS)
 async def update_profile(profile: Profile) -> Profile:
     raise NotImplementedError
-    return modify_profile(blackfish_config.HOME_DIR, profile)
+    return modify_profile(blackfish_config.HOME_DIR, profile)  # type: ignore
 
 
 @delete("/api/profiles/{name: str}")
 async def delete_profile(name: str) -> None:
     raise NotImplementedError
-    try:
+    try:  # type: ignore
         return remove_profile(blackfish_config.HOME_DIR, name)
     except ProfileNotFoundException as e:
         raise NotFoundException(detail=f"{e}")
@@ -900,6 +1138,10 @@ app = Litestar(
         get_files,
         get_audio,
         run_service,
+        run_slurm_text_generation_service,
+        run_slurm_speech_recognition_service,
+        run_local_text_generation_service,
+        run_local_speech_recognition_service,
         stop_service,
         refresh_service,
         fetch_services,

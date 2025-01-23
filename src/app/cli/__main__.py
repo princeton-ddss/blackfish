@@ -3,6 +3,7 @@ import requests
 import os
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
+from typing import cast
 
 from app.cli.services.text_generation import run_text_generation
 from app.cli.services.speech_recognition import run_speech_recognition
@@ -151,25 +152,25 @@ def start(reload: bool) -> None:  # pragma: no cover
 @click.option(
     "--time",
     type=str,
-    default=None,
+    default="00:30:00",
     help="The duration to run the service for, e.g., 1:00 (one hour).",
 )
 @click.option(
     "--ntasks_per_node",
     type=int,
-    default=None,
+    default=8,
     help="The number of tasks per compute node.",
 )
 @click.option(
     "--mem",
     type=int,
-    default=None,
+    default=16,
     help="The memory required per compute node in GB, e.g., 16 (G).",
 )
 @click.option(
     "--gres",
     type=int,
-    default=None,
+    default=0,
     help="The number of GPU devices required per compute node, e.g., 1.",
 )
 @click.option(
@@ -205,12 +206,14 @@ def run(
     ctx.obj = {
         "config": config,
         "profile": profile,
-        "time": time,
-        "ntasks_per_node": ntasks_per_node,
-        "mem": mem,
-        "gres": gres,
-        "partition": partition,
-        "constraint": constraint,
+        "resources": {
+            "time": time,
+            "ntasks_per_node": ntasks_per_node,
+            "mem": mem,
+            "gres": gres,
+            "partition": partition,
+            "constraint": constraint,
+        },
     }
 
 
@@ -411,7 +414,7 @@ def ls(filters):  # pragma: no cover
                 service["model"],
                 format_datetime(datetime.fromisoformat(service["created_at"])),
                 format_datetime(datetime.fromisoformat(service["updated_at"])),
-                service["status"].upper(),
+                service["status"].upper() if service["status"] is not None else None,
                 service["port"],
                 service["name"],
                 service["profile"],
@@ -669,6 +672,139 @@ def models_remove(
         except Exception as e:
             spinner.text = ""
             spinner.fail(f"{LogSymbols.ERROR.value} Failed to remove model: {e}")
+
+
+@main.group()
+def database():  # pragma: no cover
+    """View and manage available models."""
+    pass
+
+
+@database.command(
+    name="make-migrations",
+    help="Create a new migration revision.",
+)
+@click.option("-m", "--message", default=None, help="Revision message")
+@click.option(
+    "--autogenerate/--no-autogenerate",
+    default=True,
+    help="Automatically populate revision with detected changes",
+)
+@click.option(
+    "--sql",
+    is_flag=True,
+    default=False,
+    help="Export to `.sql` instead of writing to the database.",
+)
+@click.option(
+    "--head",
+    default="head",
+    help="Specify head revision to use as base for new revision.",
+)
+@click.option(
+    "--splice",
+    is_flag=True,
+    default=False,
+    help='Allow a non-head revision as the "head" to splice onto',
+)
+@click.option(
+    "--branch-label",
+    default=None,
+    help="Specify a branch label to apply to the new revision",
+)
+@click.option(
+    "--version-path",
+    default=None,
+    help="Specify specific path from config for version file",
+)
+@click.option("--rev-id", default=None, help="Specify a ID to use for revision.")
+@click.option(
+    "--no-prompt",
+    help="Do not prompt for confirmation before executing the command.",
+    type=bool,
+    default=False,
+    required=False,
+    show_default=True,
+    is_flag=True,
+)
+def create_revision(
+    message: str | None,
+    autogenerate: bool,
+    sql: bool,
+    head: str,
+    splice: bool,
+    branch_label: str | None,
+    version_path: str | None,
+    rev_id: str | None,
+    no_prompt: bool,
+) -> None:
+    """Create a new database revision. Copied from advanced_alchemy CLI."""
+    from rich.prompt import Prompt
+    from rich import get_console
+
+    from advanced_alchemy.extensions.litestar import (
+        AlembicCommands as _AlembicCommands,
+        SQLAlchemyInitPlugin,
+    )
+    from alembic.migration import MigrationContext
+    from alembic.operations.ops import MigrationScript, UpgradeOps
+    from litestar import Litestar
+
+    from app.asgi import app
+
+    class AlembicCommands(_AlembicCommands):
+        def __init__(self, app: Litestar) -> None:
+            self._app = app
+            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # noqa: SLF001
+            self.config = self._get_alembic_command_config()
+
+    alembic_commands = AlembicCommands(app=app)
+
+    console = get_console()
+
+    def process_revision_directives(
+        context: MigrationContext,  # noqa: ARG001
+        revision: tuple[str],  # noqa: ARG001
+        directives: list[MigrationScript],
+    ) -> None:
+        """Handle revision directives."""
+        if autogenerate and cast("UpgradeOps", directives[0].upgrade_ops).is_empty():
+            console.rule(
+                "[magenta]The generation of a migration file is being skipped because it would result in an empty file.",
+                style="magenta",
+                align="left",
+            )
+            console.rule(
+                "[magenta]More information can be found here. https://alembic.sqlalchemy.org/en/latest/autogenerate.html#what-does-autogenerate-detect-and-what-does-it-not-detect",
+                style="magenta",
+                align="left",
+            )
+            console.rule(
+                "[magenta]If you intend to create an empty migration file, use the --no-autogenerate option.",
+                style="magenta",
+                align="left",
+            )
+            directives.clear()
+
+    console.rule("[yellow]Starting database upgrade process[/]", align="left")
+    if message is None:
+        message = (
+            "autogenerated"
+            if no_prompt
+            else Prompt.ask("Please enter a message describing this revision")
+        )
+
+    alembic_commands.revision(
+        message=message,
+        autogenerate=autogenerate,
+        sql=sql,
+        head=head,
+        splice=splice,
+        branch_label=branch_label,
+        version_path=version_path,
+        rev_id=rev_id,
+        process_revision_directives=process_revision_directives,  # type: ignore[arg-type]
+    )
 
 
 if __name__ == "__main__":

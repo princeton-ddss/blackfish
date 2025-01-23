@@ -1,9 +1,12 @@
+from typing import Optional, Tuple
 import rich_click as click
 import requests
 from random import randint
+from yaspin import yaspin
+from log_symbols.symbols import LogSymbols
 
-from app.services.text_generation import TextGeneration
-from app.models.profile import serialize_profiles, SlurmProfile
+from app.services.text_generation import TextGeneration, TextGenerationConfig
+from app.models.profile import serialize_profile, BlackfishProfile, SlurmProfile
 from app.utils import (
     find_port,
     get_models,
@@ -11,14 +14,69 @@ from app.utils import (
     get_latest_commit,
     get_model_dir,
 )
-from yaspin import yaspin
-from log_symbols.symbols import LogSymbols
+from app.config import BlackfishConfig
+from app.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
+
+
+def try_get_model_info(
+    profile: BlackfishProfile, repo_id: str, revision: Optional[str] = None
+) -> Optional[Tuple[str, str]]:
+    if repo_id in get_models(profile):
+        if revision is None:
+            revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
+            click.echo(
+                f"{LogSymbols.WARNING.value} No revision provided. Using latest"
+                f" available commit {revision}."
+            )
+
+        model_dir = get_model_dir(repo_id, revision, profile)
+        if model_dir is None:
+            click.echo(
+                f"{LogSymbols.ERROR.value} The model directory for repo  {repo_id}[{revision}] could not be found for profile"
+                f" '{profile.name}'. These files may have been moved or there may be a issue with permissions. You can try adding the model using `blackfish model add`."
+            )
+            return
+    else:
+        click.echo(
+            f"{LogSymbols.ERROR.value} Model {repo_id} is unavailable for profile"
+            f" '{profile.name}'. You can try adding it using `blackfish model add`."
+        )
+        return
+
+    return model_dir, revision
+
+
+def build_service(
+    name: str,
+    repo_id: str,
+    profile: BlackfishProfile,
+    container_config: TextGenerationConfig,
+    job_config: JobConfig,
+) -> TextGeneration:
+    service = TextGeneration(
+        name=name,
+        model=repo_id,
+        profile=profile.name,
+        host="localhost",
+    )
+
+    click.echo("-" * 80)
+    click.echo(f"Name: {name}")
+    click.echo("Service: text-generation")
+    click.echo(f"Model: {repo_id}")
+    click.echo(f"Profile: {profile.name}")
+    click.echo("Host: localhost")
+    click.echo(f"Provider: {container_config.provider}")
+    click.echo("-" * 80)
+    click.echo(service.render_job_script(container_config, job_config))
+
+    return service
 
 
 # blackfish run [OPTIONS] text-generation [OPTIONS]
 @click.command()
 @click.argument(
-    "model",
+    "repo_id",
     required=True,
     type=str,
 )
@@ -94,7 +152,7 @@ from log_symbols.symbols import LogSymbols
 @click.pass_context
 def run_text_generation(
     ctx,
-    model,
+    repo_id,
     name,
     revision,
     # quantize,
@@ -104,31 +162,30 @@ def run_text_generation(
     max_total_tokens,
     dry_run,
 ):  # pragma: no cover
-    """Start a text generation service hosting MODEL, where MODEL is specified as a repo ID, e.g., openai/whisper-tiny.
+    """Start a text generation service hosting a model provided by REPO_ID, e.g., openai/whisper-tiny.
 
     See https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher for additional option details.
     """
 
-    config = ctx.obj.get("config")
-    profiles = serialize_profiles(config.HOME_DIR)
-    profile = next(p for p in profiles if p.name == ctx.obj.get("profile", "default"))
+    config: BlackfishConfig = ctx.obj.get("config")
+    profile = serialize_profile(config.HOME_DIR, ctx.obj.get("profile", "default"))
 
-    if model in get_models(profile):
+    if repo_id in get_models(profile):
         if revision is None:
-            revision = get_latest_commit(model, get_revisions(model, profile))
-            model_dir = get_model_dir(model, revision, profile)
+            revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
+            model_dir = get_model_dir(repo_id, revision, profile)
             click.echo(
                 f"{LogSymbols.WARNING.value} No revision provided. Using latest"
                 f" available commit {revision}."
             )
         else:
-            model_dir = get_model_dir(model, revision, profile)
+            model_dir = get_model_dir(repo_id, revision, profile)
             if model_dir is None:
                 return
 
     else:
         click.echo(
-            f"{LogSymbols.ERROR.value} Unable to find {model} for profile"
+            f"{LogSymbols.ERROR.value} Unable to find {repo_id} for profile"
             f" '{profile.name}'."
         )
         return
@@ -136,48 +193,47 @@ def run_text_generation(
     if name is None:
         name = f"blackfish-{randint(10_000, 20_000)}"
 
-    container_options = {"model_dir": model_dir}
-    if revision is not None:
-        container_options["revision"] = revision
-    if disable_custom_kernels is not None:
-        container_options["disable_custom_kernels"] = disable_custom_kernels
-    if sharded is not None:
-        container_options["sharded"] = sharded
-    # if quantize is not None:
-    #     container_options["quantize"] = quantize
-    if max_input_length is not None:
-        container_options["max_input_length"] = max_input_length
-    if max_total_tokens is not None:
-        container_options["max_total_tokens"] = max_total_tokens
-
-    job_options = {k: v for k, v in ctx.obj.items() if v is not None}
-    del job_options["profile"]
-    del job_options["config"]
-
     if isinstance(profile, SlurmProfile):
-        job_options["user"] = profile.user
-        job_options["home_dir"] = profile.home_dir
-        job_options["cache_dir"] = profile.cache_dir
+        container_config = TextGenerationConfig(
+            provider=None,
+            port=None,
+            model_dir=model_dir,
+            revision=revision,
+            sharded=sharded,
+            max_input_length=max_input_length,
+            max_total_tokens=max_total_tokens,
+        )
+
+        job_config = SlurmJobConfig(
+            name=name,
+            host=profile.host,
+            user=profile.user,
+            home_dir=profile.home_dir,
+            cache_dir=profile.cache_dir,
+            **{k: v for k, v in ctx.obj.get("resources") if k is not None},
+        )
 
         if dry_run:
             service = TextGeneration(
                 name=name,
-                model=model,
+                model=repo_id,
                 profile=profile.name,
-                job_type="slurm",
                 host=profile.host,
                 user=profile.user,
+                home_dir=profile.home_dir,
+                cache_dir=profile.cache_dir,
+                scheduler=JobScheduler.Slurm,
             )
             click.echo("-" * 80)
             click.echo(f"Name: {name}")
-            click.echo("Service: text-generate")
-            click.echo(f"Model: {model}")
+            click.echo("Service: text-generation")
+            click.echo(f"Model: {repo_id}")
             click.echo(f"Profile: {profile.name}")
-            click.echo("Type: slurm")
+            click.echo(f"Scheduler: {service.scheduler}")
             click.echo(f"Host: {profile.host}")
             click.echo(f"User: {profile.user}")
             click.echo("-" * 80)
-            click.echo(service.launch_script(container_options, job_options))
+            click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
@@ -185,13 +241,12 @@ def run_text_generation(
                     json={
                         "name": name,
                         "image": "text_generation",
-                        "model": model,
+                        "model": repo_id,
                         "profile": profile.name,
-                        "job_type": "slurm",
                         "host": profile.host,
                         "user": profile.user,
-                        "container_options": container_options,
-                        "job_options": job_options,
+                        "container_options": container_config,
+                        "job_options": job_config,
                     },
                 )
                 spinner.text = ""
@@ -206,30 +261,39 @@ def run_text_generation(
                         f" {res.status_code} - {res.reason}"
                     )
     else:
-        container_options["port"] = find_port(use_stdout=True)
-        job_options["home_dir"] = profile.home_dir
-        job_options["cache_dir"] = profile.cache_dir
+        container_config = TextGenerationConfig(
+            provider=config.CONTAINER_PROVIDER,
+            port=find_port(use_stdout=True),
+            model_dir=model_dir,
+            revision=revision,
+            sharded=sharded,
+            # quantize=quantize,
+            max_input_length=max_input_length,
+            max_total_tokens=max_total_tokens,
+        )
+
+        job_config = LocalJobConfig(
+            home_dir=profile.home_dir,
+            cache_dir=profile.cache_dir,
+            gres=ctx.obj.get("resources").get("gres"),
+        )
 
         if dry_run:
             service = TextGeneration(
                 name=name,
-                model=model,
+                model=repo_id,
                 profile=profile.name,
-                job_type="local",
                 host="localhost",
             )
             click.echo("-" * 80)
             click.echo(f"Name: {name}")
-            click.echo("Service: text-generate")
-            click.echo(f"Model: {model}")
+            click.echo("Service: text-generation")
+            click.echo(f"Model: {repo_id}")
             click.echo(f"Profile: {profile.name}")
-            click.echo(f"Type: {service.job_type}")
             click.echo("Host: localhost")
-            click.echo(f"Provider: {container_options['provider']}")
+            click.echo(f"Provider: {container_config.provider}")
             click.echo("-" * 80)
-            click.echo(
-                service.launch_script(container_options, job_options, job_id="test")
-            )
+            click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
@@ -237,12 +301,11 @@ def run_text_generation(
                     json={
                         "name": name,
                         "image": "text_generation",
-                        "model": model,
+                        "model": repo_id,
                         "profile": profile.name,
-                        "job_type": "local",
                         "host": "localhost",
-                        "container_options": container_options,
-                        "job_options": job_options,
+                        "container_options": container_config,
+                        "job_options": job_config,
                     },
                 )
                 spinner.text = ""

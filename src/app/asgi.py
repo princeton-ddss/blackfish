@@ -21,13 +21,13 @@ from paramiko.sftp_client import SFTPClient
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import Result
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
 from litestar.datastructures import State
 from litestar.dto import DTOConfig, DataclassDTO
 from advanced_alchemy.extensions.litestar import (
-    AsyncSessionConfig,
     SQLAlchemyAsyncConfig,
     SQLAlchemyPlugin,
     AlembicAsyncConfig,
@@ -66,9 +66,8 @@ from app.config import config as blackfish_config, ContainerProvider
 from app.utils import find_port
 from app.models.profile import (
     init_profile,
-    import_profiles,
     serialize_profiles,
-    import_profile,
+    serialize_profile,
     write_profile,
     modify_profile,
     remove_profile,
@@ -421,35 +420,6 @@ async def logout(request: Request) -> Redirect:
     return Redirect("/login")
 
 
-def listdir(
-    path: str,
-    page: Optional[int] = None,
-    page_size: int = 100,
-    hidden: bool = False,
-) -> dict:
-    if page is None:
-        # try:
-        #     items = os.scandir(path)
-        # except PermissionError:
-        #     raise PermissionError
-        items = os.scandir(path)
-        if not hidden:
-            items = filter(lambda x: not x.name.startswith("."), items)
-        return [
-            FileStats(
-                name=item.name,
-                path=item.path,
-                is_dir=item.is_dir(),
-                size=item.stat().st_size,
-                created_at=datetime.fromtimestamp(item.stat().st_ctime),
-                modified_at=datetime.fromtimestamp(item.stat().st_mtime),
-            )
-            for item in items
-        ]
-    else:
-        pass  # TODO: return the `page`-th set of `page_size` items
-
-
 @dataclass
 class FileStats:
     name: str
@@ -460,31 +430,50 @@ class FileStats:
     modified_at: datetime
 
 
+def listdir(path: str, hidden: bool = False) -> list[FileStats]:
+    scan_iter = os.scandir(path)
+    if not hidden:
+        items = list(filter(lambda x: not x.name.startswith("."), scan_iter))
+    else:
+        items = list(scan_iter)
+    return [
+        FileStats(
+            name=item.name,
+            path=item.path,
+            is_dir=item.is_dir(),
+            size=item.stat().st_size,
+            created_at=datetime.fromtimestamp(item.stat().st_ctime),
+            modified_at=datetime.fromtimestamp(item.stat().st_mtime),
+        )
+        for item in items
+    ]
+
+
 @get("/api/files", guards=ENDPOINT_GUARDS)
 async def get_files(
     path: str,
-    page: Optional[int] = None,
-    page_size: int = 100,
     hidden: bool = False,
 ) -> list[FileStats] | HTTPException:
     if os.path.isdir(path):
         try:
-            return listdir(path, page=page, page_size=page_size, hidden=hidden)
+            return listdir(path, hidden=hidden)
         except PermissionError:
             logger.debug("Permission error raised")
             raise NotAuthorizedException(f"User not authorized to access {path}")
     else:
         logger.debug("Not found error")
-        raise NotFoundException(f"Path {path} does not exist.")
+        raise NotFoundException(detail=f"Path {path} does not exist.")
 
 
 @get("/api/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
-async def get_audio(path: str) -> File:
+async def get_audio(path: str) -> File | None:
     if os.path.isfile(path):
         if path.endswith(".wav") or path.endswith(".mp3"):
             return File(path=path)
         else:
             raise ValidationException("Path should specify a .wav or .mp3 file.")
+    else:
+        raise NotFoundException(f"{path} not found.")
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)
@@ -503,10 +492,8 @@ class ServiceRequest:
     name: str
     image: Task
     model: str
-    # container_options: Union[TextGenerationConfig, SpeechRecognitionConfig] # or ContainerConfig?
-    # job_options: Union[LocalJobConfig, SlurmJobConfig]
-    container_options: dict
-    job_options: dict
+    container_options: dict[str, Any]
+    job_options: dict[str, Any]
 
     profile: str
     host: str
@@ -590,43 +577,24 @@ class StopServiceRequest:
 def build_service(data: ServiceRequest) -> Optional[Service]:
     """Convert a service request into a service object based on the requested image."""
 
-    logger.debug("Building service...")
-
-    try:
-        # data = ServiceRequest(**data)
-        logger.debug(f"Constructed request: {data}")
-        kwargs = {
-            "name": data.name,
-            "model": data.model,
-            "profile": data.profile,
-            "user": data.user,
-            "host": data.host,
-            "home_dir": data.home_dir,
-            "cache_dir": data.cache_dir,
-            "scheduler": data.scheduler,
-            "provider": data.provider,
-            "grace_period": data.grace_period,
-            "mount": data.mount,
-        }
-    except Exception as e:
-        logger.error(f"{e}")
-
-    logger.debug(f"kwargs={kwargs}")
+    kwargs = {
+        "name": data.name,
+        "model": data.model,
+        "profile": data.profile,
+        "user": data.user,
+        "host": data.host,
+        "home_dir": data.home_dir,
+        "cache_dir": data.cache_dir,
+        "scheduler": data.scheduler,
+        "provider": data.provider,
+        "grace_period": data.grace_period,
+        "mount": data.mount,
+    }
 
     if data.image == Task.TextGeneration:
-        try:
-            return TextGeneration(**kwargs)
-        except Exception as e:
-            logger.error(f"{e}")
+        return TextGeneration(**kwargs)
     elif data.image == Task.SpeechRecognition:
-        try:
-            service = SpeechRecognition(**kwargs)
-            logger.debug(f"service={service}")
-            return service
-        except Exception as e:
-            logger.error(f"{e}")
-    else:
-        logger.error(f"Service image should be one of: {[t.value for t in Task]}")
+        return SpeechRecognition(**kwargs)
 
 
 @post("/api/services", dto=ServiceRequestDTO, guards=ENDPOINT_GUARDS)
@@ -635,7 +603,6 @@ async def run_service(
     data: ServiceRequest,
     session: AsyncSession,
     state: State,
-    # data: Any, session: AsyncSession, state: State
 ) -> Optional[Service]:
     logger.debug(f"Received data: {data}")
     service = build_service(data)
@@ -656,7 +623,7 @@ async def run_service(
     return service
 
 
-def build_service_endpoints():
+def build_service_endpoints() -> None:
     """Create endpoints to run each profile-task combination."""
     pass
 
@@ -863,7 +830,7 @@ async def fetch_services(
 
     await asyncio.gather(*[s.refresh(session, state) for s in services])
 
-    return services
+    return list(services)
 
 
 @delete("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
@@ -943,12 +910,7 @@ async def get_models(
 ) -> list[Model]:
     profiles = serialize_profiles(state.HOME_DIR)
 
-    query_filter = {}
-    if profile is not None:
-        query_filter["profile"] = profile
-    if image is not None:
-        query_filter["image"] = image
-
+    res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
         if profile is not None:
             models = await find_models(next(p for p in profiles if p.name == profile))
@@ -956,8 +918,8 @@ async def get_models(
                 "Deleting existing models WHERE model.profile == '{profile}'..."
             )
             try:
-                query = sa.delete(Model).where(Model.profile == profile)
-                await session.execute(query)
+                delete_query = sa.delete(Model).where(Model.profile == profile)
+                await session.execute(delete_query)
             except Exception as e:
                 logger.error(f"Failed to execute query: {e}")
         else:
@@ -965,8 +927,8 @@ async def get_models(
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
             logger.debug("Deleting all existing models...")
             try:
-                query = sa.delete(Model)
-                await session.execute(query)
+                delete_all_query = sa.delete(Model)
+                await session.execute(delete_all_query)
             except Exception as e:
                 logger.error(f"Failed to execute query: {e}")
         logger.debug("Inserting refreshed models...")
@@ -976,15 +938,22 @@ async def get_models(
         except Exception as e:
             logger.error(f"Failed to execute transaction: {e}")
         if image is not None:
-            return filter(lambda x: x.image == image, models)
+            return list(filter(lambda x: x.image == image, models))
         else:
             return models
     else:
         logger.info("Querying model table...")
-        query = sa.select(Model).filter_by(**query_filter)
+
+        query_filter = {}
+        if profile is not None:
+            query_filter["profile"] = profile
+        if image is not None:
+            query_filter["image"] = image
+
+        select_query = sa.select(Model).filter_by(**query_filter)
         try:
-            res = await session.execute(query)
-            return res.scalars().all()
+            res = await session.execute(select_query)
+            return list(res.scalars().all())
         except Exception as e:
             logger.error(f"Failed to execute query: {e}")
             return []
@@ -1014,7 +983,7 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
 
 
 @post("/api/profiles", guards=ENDPOINT_GUARDS)
-async def create_profile(data: dict) -> Profile:
+async def create_profile(data: dict[str, Any]) -> Profile:
     raise NotImplementedError
 
     try:  # type: ignore
@@ -1031,20 +1000,23 @@ async def create_profile(data: dict) -> Profile:
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
-        return import_profiles(blackfish_config.HOME_DIR)
+        return serialize_profiles(blackfish_config.HOME_DIR)
     except FileNotFoundError:
         raise NotFoundException(detail="Profiles config not found.")
 
 
 @get("/api/profiles/{name: str}", guards=ENDPOINT_GUARDS)
-async def read_profile(name: str) -> Profile:
+async def read_profile(name: str) -> Profile | None:
     try:
-        profile = import_profile(blackfish_config.HOME_DIR, name)
-        if profile is None:
-            raise NotFoundException(detail="Profile not found.")
+        profile = serialize_profile(blackfish_config.HOME_DIR, name)
+    except Exception as e:
+        raise InternalServerException(detail=f"Failed to serialize profile: {e}.")
+
+    if profile is not None:
         return profile
-    except FileNotFoundError:
-        raise NotFoundException(detail="Profiles config not found.")
+    else:
+        logger.error("Profile not found.")
+        raise NotFoundException(detail="Profile not found.")
 
 
 @put("/api/profiles", guards=ENDPOINT_GUARDS)
@@ -1063,8 +1035,6 @@ async def delete_profile(name: str) -> None:
 
 
 # --- Config ---
-session_config = AsyncSessionConfig(expire_on_commit=False)
-
 BASE_DIR = module_to_os_path("app")
 
 db_config = SQLAlchemyAsyncConfig(

@@ -17,6 +17,7 @@ from app.cli.profile import (
 )
 from app.config import config
 from app.logger import logger
+from app.cli.classes import ServiceOptions
 
 
 # blackfish
@@ -188,6 +189,16 @@ def start(reload: bool) -> None:  # pragma: no cover
 @click.option(
     "--profile", "-p", type=str, default="default", help="The Blackfish profile to use."
 )
+@click.option(
+    "--mount", "-m", type=str, default=None, help="An optional directory to mount."
+)
+@click.option(
+    "--grace_period",
+    "-g",
+    type=str,
+    default=180,
+    help="Time (s) to wait before setting service health to 'unhealthy'.",
+)
 @click.pass_context
 def run(
     ctx,
@@ -198,11 +209,18 @@ def run(
     partition,
     constraint,
     profile,
+    mount,
+    grace_period,
 ):  # pragma: no cover
     """Run an inference service.
 
     The format of options approximately follows that of Slurm's `sbatch` command.
     """
+
+    from app.models.profile import serialize_profile
+
+    profile = serialize_profile(config.HOME_DIR, profile)
+
     ctx.obj = {
         "config": config,
         "profile": profile,
@@ -214,6 +232,10 @@ def run(
             "partition": partition,
             "constraint": constraint,
         },
+        "options": ServiceOptions(
+            mount=mount,
+            grace_period=grace_period,
+        ),
     }
 
 

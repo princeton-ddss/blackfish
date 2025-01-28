@@ -593,6 +593,7 @@ class Service(UUIDAuditBase):
         job_script = template.render(
             name=self.name,
             model=self.model,
+            provider=self.provider,
             profile=self.get_profile(),
             container_config=container_config,
             job_config=job_config,

@@ -14,9 +14,9 @@ import asyncio
 import itertools
 from pathlib import Path
 from secrets import compare_digest
-
 from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
+from pydantic import BaseModel
 
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -26,7 +26,6 @@ from sqlalchemy import Result
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
 from litestar.datastructures import State
-from litestar.dto import DTOConfig, DataclassDTO
 from advanced_alchemy.extensions.litestar import (
     SQLAlchemyAsyncConfig,
     SQLAlchemyPlugin,
@@ -77,7 +76,7 @@ from app.models.profile import (
     ProfileNotFoundException,
 )
 from app.models.model import Model
-from app.job import LocalJobConfig, SlurmJobConfig, JobScheduler
+from app.job import JobConfig, LocalJobConfig, SlurmJobConfig, JobScheduler
 
 
 # --- Auth ---
@@ -107,7 +106,7 @@ class AuthMiddleware(MiddlewareProtocol):
             await self.app(scope, receive, send)
 
 
-def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:
+def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:  # type: ignore
     token = connection.session.get("token")
     if token is None:
         logger.debug("from auth_guard: session.token is None => NotAuthorizedException")
@@ -352,7 +351,7 @@ async def dashboard() -> Template:
 
 
 @get(path="/login")
-async def dashboard_login(request: Request) -> Template | Redirect:
+async def dashboard_login(request: Request) -> Template | Redirect:  # type: ignore
     token = request.session.get("token")
     if token is not None:
         if compare_digest(token, AUTH_TOKEN):
@@ -393,7 +392,7 @@ class LoginPayload:
 
 
 @post("/api/login")
-async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
+async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:  # type: ignore
     token = request.session.get("token")
     if token is not None:
         if compare_digest(token, AUTH_TOKEN):
@@ -412,7 +411,7 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
 
 
 @post("/api/logout", guards=ENDPOINT_GUARDS)
-async def logout(request: Request) -> Redirect:
+async def logout(request: Request) -> Redirect:  # type: ignore
     token = request.session.get("token")
     if token is not None:
         request.set_session({"token": None})
@@ -477,9 +476,12 @@ async def get_audio(path: str) -> File | None:
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)
-async def get_ports(request: Request) -> int:
+async def get_ports(request: Request) -> int:  # type: ignore
     """Find an available port on the server. This endpoint allows a UI to run local services."""
     return find_port()
+
+
+ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
 
 
 class Task(StrEnum):
@@ -487,29 +489,16 @@ class Task(StrEnum):
     SpeechRecognition = "speech_recognition"
 
 
-@dataclass
-class ServiceRequest:
+class ServiceRequest(BaseModel):
     name: str
     image: Task
-    model: str
-    container_options: dict[str, Any]
-    job_options: dict[str, Any]
-
-    profile: str
-    host: str
-    user: Optional[str] = None  # optional for local services
-    home_dir: Optional[str] = None
-    cache_dir: Optional[str] = None
-
-    scheduler: Optional[JobScheduler] = None  # only needed for remote services
-    provider: Optional[ContainerProvider] = None  # only needed for local services
+    repo_id: str
+    profile: Profile
+    container_config: ContainerConfig
+    job_config: JobConfig
+    provider: Optional[ContainerProvider] = None
     mount: Optional[str] = None
-
-    grace_period: Optional[int] = 180
-
-
-class ServiceRequestDTO(DataclassDTO[ServiceRequest]):
-    config = DTOConfig()
+    grace_period: int = 180  # seconds
 
 
 @dataclass
@@ -559,16 +548,6 @@ class SlurmSpeechRecognitionServiceRequest:
 
 
 @dataclass
-class GenericServiceRequest[T, S, U]:
-    name: str
-    container_config: T
-    job_config: S
-    profile: U
-    mount: Optional[str] = None
-    grace_period: int = 180
-
-
-@dataclass
 class StopServiceRequest:
     timeout: bool = False
     failed: bool = False
@@ -577,43 +556,81 @@ class StopServiceRequest:
 def build_service(data: ServiceRequest) -> Optional[Service]:
     """Convert a service request into a service object based on the requested image."""
 
-    kwargs = {
-        "name": data.name,
-        "model": data.model,
-        "profile": data.profile,
-        "user": data.user,
-        "host": data.host,
-        "home_dir": data.home_dir,
-        "cache_dir": data.cache_dir,
-        "scheduler": data.scheduler,
-        "provider": data.provider,
-        "grace_period": data.grace_period,
-        "mount": data.mount,
-    }
+    try:
+        if data.image == Task.TextGeneration:
+            if isinstance(data.profile, LocalProfile):
+                return TextGeneration(
+                    name=data.name,
+                    model=data.repo_id,
+                    profile=data.profile.name,
+                    host="localhost",
+                    home_dir=data.profile.home_dir,
+                    cache_dir=data.profile.cache_dir,
+                    provider=data.provider,
+                    mount=data.mount,
+                    grace_period=data.grace_period,
+                )
+            else:
+                return TextGeneration(
+                    name=data.name,
+                    model=data.repo_id,
+                    profile=data.profile.name,
+                    host=data.profile.host,
+                    user=data.profile.user,
+                    home_dir=data.profile.home_dir,
+                    cache_dir=data.profile.cache_dir,
+                    scheduler=JobScheduler.Slurm,
+                    mount=data.mount,
+                    grace_period=data.grace_period,
+                )
+        elif data.image == Task.SpeechRecognition:
+            if isinstance(data.profile, LocalProfile):
+                return SpeechRecognition(
+                    name=data.name,
+                    image=Task.SpeechRecognition,
+                    model=data.repo_id,
+                    profile=data.profile.name,
+                    host="localhost",
+                    home_dir=data.profile.home_dir,
+                    cache_dir=data.profile.cache_dir,
+                    provider=data.provider,
+                    mount=data.mount,
+                    grace_period=data.grace_period,
+                )
+            else:
+                return SpeechRecognition(
+                    name=data.name,
+                    image=Task.SpeechRecognition,
+                    model=data.repo_id,
+                    profile=data.profile.name,
+                    host=data.profile.host,
+                    user=data.profile.user,
+                    home_dir=data.profile.home_dir,
+                    cache_dir=data.profile.cache_dir,
+                    scheduler=JobScheduler.Slurm,
+                    mount=data.mount,
+                    grace_period=data.grace_period,
+                )
+    except Exception:
+        return None
 
-    if data.image == Task.TextGeneration:
-        return TextGeneration(**kwargs)
-    elif data.image == Task.SpeechRecognition:
-        return SpeechRecognition(**kwargs)
 
-
-@post("/api/services", dto=ServiceRequestDTO, guards=ENDPOINT_GUARDS)
-# @post("/api/services", guards=ENDPOINT_GUARDS)
+@post("/api/services", guards=ENDPOINT_GUARDS)
 async def run_service(
     data: ServiceRequest,
     session: AsyncSession,
     state: State,
 ) -> Optional[Service]:
-    logger.debug(f"Received data: {data}")
+    logger.debug(f"data={data}")
     service = build_service(data)
-    logger.debug(f"Constructed service: {service}")
+
     if service is not None:
         try:
             await service.start(
                 session,
                 state,
-                container_options=data.container_options,
-                job_options=data.job_options,
+                container_options=data.container_config,
+                job_options=data.job_config,
             )
         except Exception as e:
             detail = f"Unable to start service. Error: {e}"
@@ -882,7 +899,7 @@ async def proxy_service(
 
     if streaming:
 
-        async def generator() -> AsyncGenerator:
+        async def generator() -> AsyncGenerator:  # type: ignore
             url = f"http://localhost:{port}/{cmd}"
             headers = {"Content-Type": "application/json"}
             with requests.post(url, json=data, headers=headers, stream=True) as res:

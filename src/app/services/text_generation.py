@@ -14,7 +14,6 @@ from app.logger import logger
 @dataclass
 class TextGenerationConfig(ContainerConfig):
     model_dir: Optional[str] = None
-    quantize: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None
     sharded: Optional[Literal["true", "false"]] = None
@@ -32,7 +31,7 @@ class TextGenerationConfig(ContainerConfig):
     max_total_tokens: Optional[int] = None
     max_batch_size: Optional[int] = None
     disable_custom_kernels: bool = False
-    port: Optional[int] = None
+    port: Optional[int] = 8080
 
 
 @dataclass

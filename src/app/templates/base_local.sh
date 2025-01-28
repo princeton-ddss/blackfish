@@ -1,4 +1,4 @@
-{% block prelude %}
-{% endblock %}
+#!/bin/bash
+
 {%- block command %}
 {% endblock %}

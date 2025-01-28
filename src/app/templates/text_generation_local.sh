@@ -1,6 +1,6 @@
 {% extends "base_local.sh" %}
 {% block command %}
-{%- if container_config.provider == "docker" %}
+{%- if provider == "docker" %}
 docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
   -p {{ container_config.port }}:{{ container_config.port }} \
   -v {{ container_config.model_dir }}:/data \
@@ -8,10 +8,10 @@ docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
   ghcr.io/huggingface/text-generation-inference:2.3.0 \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port {{ container_config.port }} \
-{%- elif container_config.provider == 'apptainer' %}
+{%- elif provider == 'apptainer' %}
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ container_config.model_dir }}:/data \
-  {{ job_config.cache_dir }}/images/text-generation-inference_2.3.0.sif \
+  {{ profile.cache_dir }}/images/text-generation-inference_2.3.0.sif \
   {{ name }} \
   --model-id /data/snapshots/{{ container_config['revision'] }} \
   --port {{ container_config.port }} \

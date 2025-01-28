@@ -56,21 +56,13 @@ class JobScheduler(StrEnum):
 class LocalJobConfig:
     """Job configuration for running a service locally."""
 
-    user: Optional[str] = None
-    home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
-    cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
-    model_dir: Optional[str] = None  # e.g., /scratch/gpfs/models
+    name: Optional[str] = None
     gres: Optional[bool] = False
 
 
 @dataclass
 class SlurmJobConfig:
     """Job configuration for running a service as a Slurm job."""
-
-    # host: str
-    # user: str
-    # home_dir: Optional[str] = None  # e.g., /home/{user}/.blackfish
-    # cache_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish
 
     name: Optional[str]
     time: str = "00:30:00"
@@ -80,7 +72,6 @@ class SlurmJobConfig:
     gres: int = 0  # i.e., gpu:<gres>
     partition: Optional[str] = None  # e.g., mig
     constraint: Optional[str] = None  # e.g., gpu80
-    # model_dir: Optional[str] = None  # e.g., /scratch/gpfs/{user}/.blackfish/models
 
 
 JobConfig = Union[LocalJobConfig, SlurmJobConfig]

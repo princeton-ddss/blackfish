@@ -7,9 +7,8 @@ from log_symbols.symbols import LogSymbols
 from dataclasses import asdict
 
 from app.services.speech_recognition import SpeechRecognition, SpeechRecognitionConfig
-from app.models.profile import serialize_profiles, SlurmProfile
+from app.models.profile import BlackfishProfile, SlurmProfile
 from app.utils import (
-    find_port,
     get_models,
     get_revisions,
     get_latest_commit,
@@ -17,6 +16,7 @@ from app.utils import (
 )
 from app.config import BlackfishConfig
 from app.job import JobScheduler, SlurmJobConfig, LocalJobConfig
+from app.cli.classes import ServiceOptions
 
 
 # blackfish run [OPTIONS] speech-recognition [OPTIONS]
@@ -25,11 +25,6 @@ from app.job import JobScheduler, SlurmJobConfig, LocalJobConfig
     "repo_id",
     required=True,
     type=str,
-)
-@click.argument(
-    "input_dir",
-    type=str,
-    required=True,
 )
 @click.option(
     "--name",
@@ -59,19 +54,20 @@ from app.job import JobScheduler, SlurmJobConfig, LocalJobConfig
 def run_speech_recognition(
     ctx,
     repo_id,
-    input_dir,
     name,
     revision,
     dry_run,
 ):  # pragma: no cover
-    """Start a speech recognition service hosting MODEL with access to INPUT_DIR on the service host. MODEL is specified as a repo ID, e.g., openai/whisper-tiny.
+    """Start a speech recognition service hosting MODEL. MODEL is specified as a repo ID, e.g., openai/whisper-tiny. The model has access to files via a mounted directory, which defaults to the profile's
+    Blackfish home directory (e.g., $HOME/.blackfish). To use a custom directory, users should provide a
+    value for the `blackfish run` `MOUNT` option.
 
     See https://github.com/princeton-ddss/speech-recognition-inference for additional option details.
     """
 
     config: BlackfishConfig = ctx.obj.get("config")
-    profiles = serialize_profiles(config.HOME_DIR)
-    profile = next(p for p in profiles if p.name == ctx.obj.get("profile", "default"))
+    profile: BlackfishProfile = ctx.obj.get("profile")
+    options: ServiceOptions = ctx.obj.get("options")
 
     if repo_id in get_models(profile):
         if revision is None:
@@ -85,7 +81,6 @@ def run_speech_recognition(
             model_dir = get_model_dir(repo_id, revision, profile)
             if model_dir is None:
                 return
-
     else:
         click.echo(
             f"{LogSymbols.ERROR.value} Unable to find {repo_id} for profile"
@@ -94,24 +89,21 @@ def run_speech_recognition(
         return
 
     if name is None:
-        name = f"blackfish-{randint(10_000, 20_000)}"
+        name = f"blackfish-{randint(10_000, 99_999)}"
+
+    if options.mount is None:
+        options.mount = profile.home_dir
+
+    container_config = SpeechRecognitionConfig(
+        model_id=repo_id,
+        model_dir=os.path.dirname(model_dir),
+        input_dir=options.mount,
+        revision=revision,
+    )
 
     if isinstance(profile, SlurmProfile):
-        container_config = SpeechRecognitionConfig(
-            provider=None,
-            port=None,
-            model_id=repo_id,
-            model_dir=os.path.dirname(model_dir),
-            input_dir=input_dir,
-            revision=revision,
-        )
-
         job_config = SlurmJobConfig(
             name=name,
-            host=profile.host,
-            user=profile.user,
-            home_dir=profile.home_dir,
-            cache_dir=profile.cache_dir,
             **{k: v for k, v in ctx.obj.get("resources").items() if k is not None},
         )
 
@@ -125,31 +117,34 @@ def run_speech_recognition(
                 home_dir=profile.home_dir,
                 cache_dir=profile.cache_dir,
                 scheduler=JobScheduler.Slurm,
-                mount=container_config.input_dir,
+                mount=options.mount,
+                grace_period=options.grace_period,
             )
-            click.echo("-" * 80)
-            click.echo(f"Name: {name}")
-            click.echo("Service: speech-recognition")
-            click.echo(f"Model: {repo_id}")
-            click.echo(f"Profile: {profile.name}")
-            click.echo(f"Scheduler: {service.scheduler}")
-            click.echo(f"Host: {profile.host}")
-            click.echo(f"User: {profile.user}")
-            click.echo("-" * 80)
+            click.echo("\n🚧 Rendering job script for service:\n")
+            click.echo(f"> name: {name}")
+            click.echo(f"> model: {repo_id}")
+            click.echo(f"> profile: {profile.name}")
+            click.echo(f"> host: {profile.host}")
+            click.echo(f"> user: {profile.user}")
+            click.echo(f"> home_dir: {profile.home_dir}")
+            click.echo(f"> cache_dir: {profile.cache_dir}")
+            click.echo(f"> scheduler: {service.scheduler}")
+            click.echo(f"> mount: {options.mount}")
+            click.echo(f"> grace_period: {options.grace_period}")
+            click.echo("\n👇 Here's the job script 👇\n")
             click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services",
+                    f"http://{config.HOST}:{config.PORT}/api/services/slurm/speech-recognition",
                     json={
                         "name": name,
-                        "image": "speech_recognition",
-                        "model": repo_id,
-                        "profile": profile.name,
-                        "host": profile.host,
-                        "user": profile.user,
-                        "container_options": asdict(container_config),
-                        "job_options": asdict(job_config),
+                        "repo_id": repo_id,
+                        "profile": asdict(profile),
+                        "container_config": asdict(container_config),
+                        "job_config": asdict(job_config),
+                        "mount": options.mount,
+                        "grace_period": options.grace_period,
                     },
                 )
                 spinner.text = ""
@@ -164,18 +159,8 @@ def run_speech_recognition(
                         f" {res.status_code} - {res.reason}"
                     )
     else:
-        container_config = SpeechRecognitionConfig(
-            provider=config.CONTAINER_PROVIDER,
-            port=find_port(use_stdout=True),
-            model_id=repo_id,
-            model_dir=os.path.dirname(model_dir),
-            input_dir=input_dir,
-            revision=revision,
-        )
-
         job_config = LocalJobConfig(
-            home_dir=profile.home_dir,
-            cache_dir=profile.cache_dir,
+            name=name,
             gres=ctx.obj.get("resources").get("gres"),
         )
 
@@ -185,31 +170,38 @@ def run_speech_recognition(
                 model=repo_id,
                 profile=profile.name,
                 host="localhost",
-                mount=container_config.input_dir,
+                home_dir=profile.home_dir,
+                cache_dir=profile.cache_dir,
+                provider=config.CONTAINER_PROVIDER,
+                mount=options.mount,
+                grace_period=options.grace_period,
             )
-            click.echo("-" * 80)
-            click.echo(f"Name: {name}")
-            click.echo("Service: speech-recognition")
-            click.echo(f"Model: {repo_id}")
-            click.echo(f"Profile: {profile.name}")
-            click.echo(f"Host: {service.host}")
-            click.echo(f"Provider: {container_config.provider}")
-            click.echo("-" * 80)
+            click.echo("\n🚧 Rendering job script for service:\n")
+            click.echo(f"> name: {name}")
+            click.echo(f"> task: {service.image}")
+            click.echo(f"> model: {repo_id}")
+            click.echo(f"> profile: {profile.name}")
+            click.echo(f"> home_dir: {profile.home_dir}")
+            click.echo(f"> cache_dir: {profile.cache_dir}")
+            click.echo(f"> provider: {config.CONTAINER_PROVIDER}")
+            click.echo(f"> mount: {options.mount}")
+            click.echo(f"> grace_period: {options.grace_period}")
+            click.echo("\n👇 Here's the job script 👇\n")
             click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
-                data = {
-                    "name": name,
-                    "repo_id": repo_id,
-                    "profile": asdict(profile),
-                    "container_config": asdict(container_config),
-                    "job_config": asdict(job_config),
-                    "provider": container_config.provider,
-                }
                 res = requests.post(
-                    # f"http://{config.HOST}:{config.PORT}/api/services",
                     f"http://{config.HOST}:{config.PORT}/api/services/local/speech-recognition",
-                    json=data,
+                    json={
+                        "name": name,
+                        "repo_id": repo_id,
+                        "profile": asdict(profile),
+                        "container_config": asdict(container_config),
+                        "job_config": asdict(job_config),
+                        "provider": config.CONTAINER_PROVIDER,
+                        "mount": options.mount,
+                        "grace_period": options.grace_period,
+                    },
                 )
                 spinner.text = ""
                 if res.ok:

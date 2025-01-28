@@ -4,11 +4,11 @@ import requests
 from random import randint
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
+from dataclasses import asdict
 
 from app.services.text_generation import TextGeneration, TextGenerationConfig
-from app.models.profile import serialize_profile, BlackfishProfile, SlurmProfile
+from app.models.profile import BlackfishProfile, SlurmProfile
 from app.utils import (
-    find_port,
     get_models,
     get_revisions,
     get_latest_commit,
@@ -16,6 +16,7 @@ from app.utils import (
 )
 from app.config import BlackfishConfig
 from app.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
+from app.cli.classes import ServiceOptions
 
 
 def try_get_model_info(
@@ -98,17 +99,6 @@ def build_service(
         " downloaded) revision is used by default."
     ),
 )
-# @click.option(
-#     "--quantize",
-#     "-q",
-#     type=str,
-#     required=False,
-#     default=None,
-#     help=(
-#         "Quantize the model. Supported values: awq (4bit), gptq (4-bit), bitsandbytes"
-#         " (8-bit)."
-#     ),
-# )
 @click.option(
     "--disable-custom-kernels",
     is_flag=True,
@@ -155,7 +145,6 @@ def run_text_generation(
     repo_id,
     name,
     revision,
-    # quantize,
     disable_custom_kernels,
     sharded,
     max_input_length,
@@ -168,7 +157,8 @@ def run_text_generation(
     """
 
     config: BlackfishConfig = ctx.obj.get("config")
-    profile = serialize_profile(config.HOME_DIR, ctx.obj.get("profile", "default"))
+    profile: BlackfishProfile = ctx.obj.get("profile")
+    options: ServiceOptions = ctx.obj.get("options")
 
     if repo_id in get_models(profile):
         if revision is None:
@@ -182,7 +172,6 @@ def run_text_generation(
             model_dir = get_model_dir(repo_id, revision, profile)
             if model_dir is None:
                 return
-
     else:
         click.echo(
             f"{LogSymbols.ERROR.value} Unable to find {repo_id} for profile"
@@ -191,26 +180,21 @@ def run_text_generation(
         return
 
     if name is None:
-        name = f"blackfish-{randint(10_000, 20_000)}"
+        name = f"blackfish-{randint(10_000, 99_999)}"
+
+    container_config = TextGenerationConfig(
+        model_dir=model_dir,
+        revision=revision,
+        sharded=sharded,
+        max_input_length=max_input_length,
+        max_total_tokens=max_total_tokens,
+        disable_custom_kernels=disable_custom_kernels,
+    )
 
     if isinstance(profile, SlurmProfile):
-        container_config = TextGenerationConfig(
-            provider=None,
-            port=None,
-            model_dir=model_dir,
-            revision=revision,
-            sharded=sharded,
-            max_input_length=max_input_length,
-            max_total_tokens=max_total_tokens,
-        )
-
         job_config = SlurmJobConfig(
             name=name,
-            host=profile.host,
-            user=profile.user,
-            home_dir=profile.home_dir,
-            cache_dir=profile.cache_dir,
-            **{k: v for k, v in ctx.obj.get("resources") if k is not None},
+            **{k: v for k, v in ctx.obj.get("resources").items() if k is not None},
         )
 
         if dry_run:
@@ -223,30 +207,34 @@ def run_text_generation(
                 home_dir=profile.home_dir,
                 cache_dir=profile.cache_dir,
                 scheduler=JobScheduler.Slurm,
+                mount=options.mount,
+                grace_period=options.grace_period,
             )
-            click.echo("-" * 80)
-            click.echo(f"Name: {name}")
-            click.echo("Service: text-generation")
-            click.echo(f"Model: {repo_id}")
-            click.echo(f"Profile: {profile.name}")
-            click.echo(f"Scheduler: {service.scheduler}")
-            click.echo(f"Host: {profile.host}")
-            click.echo(f"User: {profile.user}")
-            click.echo("-" * 80)
+            click.echo("\n🚧 Rendering job script for service:\n")
+            click.echo(f"> name: {name}")
+            click.echo(f"> model: {repo_id}")
+            click.echo(f"> profile: {profile.name}")
+            click.echo(f"> host: {profile.host}")
+            click.echo(f"> user: {profile.user}")
+            click.echo(f"> home_dir: {profile.home_dir}")
+            click.echo(f"> cache_dir: {profile.cache_dir}")
+            click.echo(f"> scheduler: {service.scheduler}")
+            click.echo(f"> mount: {options.mount}")
+            click.echo(f"> grace_period: {options.grace_period}")
+            click.echo("\n👇 Here's the job script 👇\n")
             click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services",
+                    f"http://{config.HOST}:{config.PORT}/api/services/slurm/text-generation",
                     json={
                         "name": name,
-                        "image": "text_generation",
-                        "model": repo_id,
-                        "profile": profile.name,
-                        "host": profile.host,
-                        "user": profile.user,
-                        "container_options": container_config,
-                        "job_options": job_config,
+                        "repo_id": repo_id,
+                        "profile": asdict(profile),
+                        "container_config": asdict(container_config),
+                        "job_config": asdict(job_config),
+                        "mount": options.mount,
+                        "grace_period": options.grace_period,
                     },
                 )
                 spinner.text = ""
@@ -261,20 +249,8 @@ def run_text_generation(
                         f" {res.status_code} - {res.reason}"
                     )
     else:
-        container_config = TextGenerationConfig(
-            provider=config.CONTAINER_PROVIDER,
-            port=find_port(use_stdout=True),
-            model_dir=model_dir,
-            revision=revision,
-            sharded=sharded,
-            # quantize=quantize,
-            max_input_length=max_input_length,
-            max_total_tokens=max_total_tokens,
-        )
-
         job_config = LocalJobConfig(
-            home_dir=profile.home_dir,
-            cache_dir=profile.cache_dir,
+            name=name,
             gres=ctx.obj.get("resources").get("gres"),
         )
 
@@ -284,28 +260,37 @@ def run_text_generation(
                 model=repo_id,
                 profile=profile.name,
                 host="localhost",
+                home_dir=profile.home_dir,
+                cache_dir=profile.cache_dir,
+                provider=config.CONTAINER_PROVIDER,
+                mount=options.mount,
+                grace_period=options.grace_period,
             )
-            click.echo("-" * 80)
-            click.echo(f"Name: {name}")
-            click.echo("Service: text-generation")
-            click.echo(f"Model: {repo_id}")
-            click.echo(f"Profile: {profile.name}")
-            click.echo("Host: localhost")
-            click.echo(f"Provider: {container_config.provider}")
-            click.echo("-" * 80)
+            click.echo("\n🚧 Rendering job script for service:\n")
+            click.echo(f"> name: {name}")
+            click.echo(f"> task: {service.image}")
+            click.echo(f"> model: {repo_id}")
+            click.echo(f"> profile: {profile.name}")
+            click.echo(f"> home_dir: {profile.home_dir}")
+            click.echo(f"> cache_dir: {profile.cache_dir}")
+            click.echo(f"> provider: {config.CONTAINER_PROVIDER}")
+            click.echo(f"> mount: {options.mount}")
+            click.echo(f"> grace_period: {options.grace_period}")
+            click.echo("\n👇 Here's the job script 👇\n")
             click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services",
+                    f"http://{config.HOST}:{config.PORT}/api/services/local/text-generation",
                     json={
                         "name": name,
-                        "image": "text_generation",
-                        "model": repo_id,
-                        "profile": profile.name,
-                        "host": "localhost",
-                        "container_options": container_config,
-                        "job_options": job_config,
+                        "repo_id": repo_id,
+                        "profile": asdict(profile),
+                        "container_config": asdict(container_config),
+                        "job_config": asdict(job_config),
+                        "provider": config.CONTAINER_PROVIDER,
+                        "mount": options.mount,
+                        "grace_period": options.grace_period,
                     },
                 )
                 spinner.text = ""

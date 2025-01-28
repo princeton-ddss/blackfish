@@ -120,10 +120,11 @@ def serialize_profiles(home_dir: str) -> list[BlackfishProfile]:
             )
         else:
             pass
+
     return profiles
 
 
-def serialize_profile(home_dir: str, name: str) -> BlackfishProfile:
+def serialize_profile(home_dir: str, name: str) -> BlackfishProfile | None:
     """Parse a profile from profile.cfg."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
@@ -153,7 +154,7 @@ def serialize_profile(home_dir: str, name: str) -> BlackfishProfile:
             else:
                 raise ProfileTypeException(profile["type"])
 
-    raise ProfileNotFoundException(name)
+    return None
 
 
 def import_profiles(home_dir: str) -> list[dict]:
@@ -195,7 +196,7 @@ def import_profiles(home_dir: str) -> list[dict]:
 
 
 def import_profile(home_dir: str, name: str) -> dict:
-    """Parse profile from profile.ini."""
+    """Parse profile from profile.cfg."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
     if not os.path.isfile(profiles_path):

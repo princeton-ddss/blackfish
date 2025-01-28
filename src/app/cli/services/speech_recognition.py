@@ -45,6 +45,13 @@ from app.cli.classes import ServiceOptions
     ),
 )
 @click.option(
+    "--port",
+    "-p",
+    type=int,
+    default=8080,
+    help="Run server on the given port.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -56,6 +63,7 @@ def run_speech_recognition(
     repo_id,
     name,
     revision,
+    port,
     dry_run,
 ):  # pragma: no cover
     """Start a speech recognition service hosting MODEL. MODEL is specified as a repo ID, e.g., openai/whisper-tiny. The model has access to files via a mounted directory, which defaults to the profile's
@@ -95,6 +103,7 @@ def run_speech_recognition(
         options.mount = profile.home_dir
 
     container_config = SpeechRecognitionConfig(
+        port=port,
         model_id=repo_id,
         model_dir=os.path.dirname(model_dir),
         input_dir=options.mount,

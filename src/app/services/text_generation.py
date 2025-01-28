@@ -1,8 +1,8 @@
 import requests
 from typing import Optional, Literal
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
-from app.services.base import Service, ContainerConfig
+from app.services.base import Service, BaseConfig
 from app.logger import logger
 
 
@@ -12,7 +12,7 @@ from app.logger import logger
 
 
 @dataclass
-class TextGenerationConfig(ContainerConfig):
+class TextGenerationConfig(BaseConfig):
     model_dir: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None
@@ -31,7 +31,6 @@ class TextGenerationConfig(ContainerConfig):
     max_total_tokens: Optional[int] = None
     max_batch_size: Optional[int] = None
     disable_custom_kernels: bool = False
-    port: Optional[int] = 8080
 
 
 @dataclass
@@ -60,17 +59,17 @@ class TextGeneration(Service):
         "polymorphic_identity": "text_generation",
     }
 
-    async def call(self, inputs: str, **kwargs) -> requests.Response:
-        logger.info(f"calling service {self.service_id}")
+    async def call(
+        self, inputs: str, params: TextGenerationParameters
+    ) -> requests.Response:
+        logger.info(f"calling service {self.id}")
         try:
             headers = {
                 "Content-Type": "application/json",
             }
             body = {
                 "inputs": inputs,
-                "parameters": TextGenerationParameters(**kwargs).model_dump(
-                    exclude_defaults=True
-                ),
+                "parameters": asdict(params),
             }
             res = requests.post(
                 f"http://localhost:{self.port}/generate", json=body, headers=headers

@@ -100,6 +100,13 @@ def build_service(
     ),
 )
 @click.option(
+    "--port",
+    "-p",
+    type=int,
+    default=8080,
+    help="Run server on the given port.",
+)
+@click.option(
     "--disable-custom-kernels",
     is_flag=True,
     required=False,
@@ -145,6 +152,7 @@ def run_text_generation(
     repo_id,
     name,
     revision,
+    port,
     disable_custom_kernels,
     sharded,
     max_input_length,
@@ -183,6 +191,7 @@ def run_text_generation(
         name = f"blackfish-{randint(10_000, 99_999)}"
 
     container_config = TextGenerationConfig(
+        port=port,
         model_dir=model_dir,
         revision=revision,
         sharded=sharded,

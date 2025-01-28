@@ -78,7 +78,12 @@ JobConfig = Union[LocalJobConfig, SlurmJobConfig]
 
 
 @dataclass
-class Job: ...
+class Job:
+    def cancel(self) -> None:
+        raise NotImplementedError()
+
+    def update(self, verbose: bool = False) -> Optional[str]:
+        raise NotImplementedError()
 
 
 def parse_state(res: bytes) -> JobState:
@@ -329,7 +334,7 @@ class SlurmJob(Job):
 class LocalJob(Job):
     """A light-weight local job dataclass."""
 
-    job_id: int
+    job_id: str
     provider: ContainerProvider  # docker or apptainer
     name: Optional[str] = None
     state: Optional[str] = (

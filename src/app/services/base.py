@@ -6,8 +6,8 @@ import psutil
 from datetime import datetime, timezone
 from typing import Optional
 import requests
-from dataclasses import dataclass, asdict, replace
 from enum import StrEnum, auto
+from dataclasses import dataclass
 
 from sqlalchemy.orm import Mapped
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,18 +25,8 @@ from app.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
 
 @dataclass
-class ContainerConfig:
-    # provider: Optional[ContainerProvider]  # "apptainer"
-    # port: Optional[int]  # None
-
-    def data(self) -> dict:
-        return {
-            k: v
-            for k, v in filter(lambda item: item[1] is not None, asdict(self).items())
-        }
-
-    def replace(self, changes: dict) -> None:
-        return replace(self, **changes)
+class BaseConfig:
+    port: int
 
 
 class ServiceStatus(StrEnum):
@@ -65,12 +55,12 @@ class Service(UUIDAuditBase):
 
     job_id: Mapped[Optional[str]]
     port: Mapped[Optional[int]]
-    status: Mapped[Optional[str]]
+    status: Mapped[Optional[ServiceStatus]]
 
     scheduler: Mapped[Optional[str]]
-    provider: Mapped[Optional[str]]
+    provider: Mapped[Optional[ContainerProvider]]
     mount: Mapped[Optional[str]]
-    grace_period: Mapped[Optional[int]]
+    grace_period: Mapped[int]
 
     __mapper_args__ = {
         "polymorphic_on": "image",
@@ -80,19 +70,23 @@ class Service(UUIDAuditBase):
     def __repr__(self) -> str:
         return f"Service(id={self.id}, name={self.name}, image={self.image}, model={self.model}, profile={self.profile}, host={self.host}, user={self.user}, home_dir={self.home_dir}, cache_dir={self.cache_dir}, job_id={self.job_id}, port={self.port}, status={self.status}, scheduler={self.scheduler}, provider={self.provider}, grace_period={self.grace_period}, mount={self.mount})"
 
-    def get_profile(self) -> BlackfishProfile:
+    def get_profile(self) -> Optional[BlackfishProfile]:
         if self.scheduler == JobScheduler.Slurm:
-            return SlurmProfile(
-                self.profile, self.host, self.user, self.home_dir, self.cache_dir
-            )
+            if self.user and self.home_dir and self.cache_dir:
+                return SlurmProfile(
+                    self.profile, self.host, self.user, self.home_dir, self.cache_dir
+                )
         else:
-            return LocalProfile(self.profile, self.home_dir, self.cache_dir)
+            if self.home_dir and self.cache_dir:
+                return LocalProfile(self.profile, self.home_dir, self.cache_dir)
+
+        return None
 
     async def start(
         self,
         session: AsyncSession,
         app_config: State,
-        container_options: ContainerConfig,
+        container_options: BaseConfig,
         job_options: JobConfig,
     ) -> None:
         """Start the service with provided Slurm job and container options. Assumes running in attached state.
@@ -133,12 +127,13 @@ class Service(UUIDAuditBase):
                     ["sbatch", os.path.join(app_config.HOME_DIR, "start.sh")]
                 )
             else:
-                logger.debug(
-                    f"Copying job script to {self.host}:{self.get_profile().home_dir}."
-                )
-                remote_script_dir = os.path.join(
-                    self.get_profile().home_dir, "jobs", self.id.hex
-                )
+                profile = self.get_profile()
+                if profile is None:
+                    logger.error("Failed to start service: profile is missing.")
+                    return
+
+                logger.debug(f"Copying job script to {self.host}:{profile.home_dir}.")
+                remote_script_dir = os.path.join(profile.home_dir, "jobs", self.id.hex)
 
                 try:
                     _ = subprocess.check_output(
@@ -190,14 +185,14 @@ class Service(UUIDAuditBase):
             )
             logger.debug(f"Generating launch script and writing to {script_path}.")
             os.makedirs(script_path.parent)
-            container_options.provider = app_config.CONTAINER_PROVIDER
 
             # TODO: find port within start.sh and set after start-up OR find_port here and pass to render_job_script
 
             self.port = container_options.port
+            self.provider = app_config.CONTAINER_PROVIDER
             with open(script_path, "w") as f:
                 try:
-                    match container_options.provider:
+                    match self.provider:
                         case ContainerProvider.Apptainer:
                             logger.debug("The container provider is Apptainer.")
                             job_id = str(uuid.uuid4())
@@ -218,7 +213,7 @@ class Service(UUIDAuditBase):
                 res = subprocess.check_output(["bash", script_path.as_posix()])
             except Exception as e:
                 logger.error(f"Failed to start service: {e}")
-            if container_options.provider == ContainerProvider.Docker:
+            if self.provider == ContainerProvider.Docker:
                 job_id = res.decode("utf-8").strip().split()[-1][:12]
             self.status = ServiceStatus.SUBMITTED
             self.job_id = job_id
@@ -267,7 +262,9 @@ class Service(UUIDAuditBase):
             )
 
         job = self.get_job(verbose=True)
-        job.cancel()
+        if job is not None:
+            job.cancel()
+
         if self.scheduler == JobScheduler.Slurm:
             await self.close_tunnel(session)
 
@@ -335,8 +332,8 @@ class Service(UUIDAuditBase):
 
         # The logic for cases below is quite similar and can be extracted into
         # reuseable functions in places, e.g., for running and failed jobs.
-        if self.scheduler == JobScheduler.Slurm:
-            job = self.get_job(verbose=True)
+        job = self.get_job(verbose=True)
+        if isinstance(job, SlurmJob):
             if job.state == JobState.PENDING:
                 logger.debug(
                     f"Service {self.id} has not started. Setting status to PENDING."
@@ -418,8 +415,7 @@ class Service(UUIDAuditBase):
                     session, app_config, failed=True
                 )  # stop will push to database
                 return ServiceStatus.FAILED
-        else:
-            job = self.get_job(verbose=True)
+        elif isinstance(job, LocalJob):
             if job.state == JobState.CREATED:
                 logger.debug(
                     f"Service {self.id} has not started. Setting status to PENDING."
@@ -484,7 +480,9 @@ class Service(UUIDAuditBase):
                 )  # stop will push to database
                 return ServiceStatus.FAILED
 
-    async def open_tunnel(self, job: Job) -> None:
+        return None
+
+    async def open_tunnel(self, job: SlurmJob) -> None:
         """Create an ssh tunnel to connect to the service. Assumes attached to session.
 
         After creation of the tunnel, the remote port is updated and recorded in the database.
@@ -574,18 +572,28 @@ class Service(UUIDAuditBase):
 
         self.port = None
 
-    def get_job(self, verbose: bool = False) -> Job:
+    def get_job(self, verbose: bool = False) -> Job | None:
         """Fetch the job backing the service."""
+
+        job: Job
+
         if self.scheduler == JobScheduler.Slurm:
-            job = SlurmJob(self.job_id, self.user, self.host)
+            if self.job_id and self.user:
+                job = SlurmJob(int(self.job_id), self.user, self.host)
+            else:
+                return None
         else:
-            job = LocalJob(self.job_id, self.provider)
+            if self.job_id and self.provider:
+                job = LocalJob(self.job_id, self.provider)
+            else:
+                return None
+
         job.update(verbose=verbose)
         return job
 
     def render_job_script(
         self,
-        container_config: ContainerConfig,
+        container_config: BaseConfig,
         job_config: JobConfig,
     ) -> str:
         env = Environment(loader=PackageLoader("app", "templates"))

@@ -2,17 +2,16 @@ import requests
 from typing import Union, Literal, Optional
 from dataclasses import dataclass
 
-from app.services.base import Service, ContainerConfig
+from app.services.base import Service, BaseConfig
 from app.logger import logger
 
 
 @dataclass
-class SpeechRecognitionConfig(ContainerConfig):
+class SpeechRecognitionConfig(BaseConfig):
     model_id: Optional[str]
     model_dir: Optional[str]
     input_dir: str
     revision: Optional[str] = None
-    port: Optional[int] = 8080
 
 
 class SpeechRecognition(Service):
@@ -29,7 +28,7 @@ class SpeechRecognition(Service):
         language: Union[str, None] = None,
         response_format: Literal["json", "text"] = "json",
     ) -> requests.Response:
-        logger.info(f"calling service {self.service_id}")
+        logger.info(f"calling service {self.id}")
         try:
             body = {
                 "audio_path": audio_path,

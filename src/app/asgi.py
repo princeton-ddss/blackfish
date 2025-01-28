@@ -376,10 +376,11 @@ async def speech_recognition() -> Template:
 
 # --- Endpoints ---
 @get("/api/info", guards=ENDPOINT_GUARDS)
-async def info(state: State) -> dict:
+async def info(state: State) -> dict[str, Any]:
     return {
         "HOST": state.HOST,
         "PORT": state.PORT,
+        "STATIC_DIR": state.STATIC_DIR,
         "HOME_DIR": state.HOME_DIR,
         "DEBUG": state.DEBUG,
         "DEV_MODE": state.DEV_MODE,

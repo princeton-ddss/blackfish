@@ -12,7 +12,7 @@ class SpeechRecognitionConfig(ContainerConfig):
     model_dir: Optional[str]
     input_dir: str
     revision: Optional[str] = None
-    port: Optional[int] = None
+    port: Optional[int] = 8080
 
 
 class SpeechRecognition(Service):

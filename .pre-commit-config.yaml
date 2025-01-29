@@ -6,9 +6,8 @@ ci:
 exclude: 'build/'
 
 repos:
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -20,7 +19,7 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: 1.0.0
+    rev: v2.5.0
     hooks:
       - id: pyproject-fmt
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -29,17 +28,36 @@ repos:
       - id: ruff
         args: ["--fix", "--show-fixes"]
       - id: ruff-format
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.0.1
-  #   hooks:
-  #     - id: mypy
-  #       files: src
-  #       args: []
-  #       additional_dependencies:
-  #         [
-  #           types-requests,
-  #           types-psutil
-  #         ]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        files: ^(src/)
+        args: [
+          --strict,
+          --ignore-missing-imports,
+        ]
+        additional_dependencies:
+          [
+            "advanced-alchemy>=0.27.1",
+            "aiohttp>=3.11.11",
+            "aiosqlite>=0.20",
+            "colorlog>=6.9",
+            "fabric>=3.2.2",
+            "huggingface-hub>=0.27.1",
+            "jinja2>=3.1.5",
+            "litestar>=2.14",
+            "log-symbols>=0.0.14",
+            "prettytable>=3.12",
+            "psutil>=6.1.1",
+            "pydantic>=2.10.6",
+            "requests>=2.32.3",
+            "types-paramiko>=3.5.0.20240928",
+            "types-psutil>=6.1.0.20241221",
+            "types-requests>=2.32.0.20241016",
+            "uvicorn>=0.34",
+            "yaspin>=3.1",
+          ]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.2
     hooks:

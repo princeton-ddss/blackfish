@@ -71,7 +71,7 @@ from app.models.profile import (
     BlackfishProfile as Profile,
 )
 from app.models.model import Model
-from app.job import JobConfig, LocalJobConfig, SlurmJobConfig, JobScheduler
+from app.job import JobConfig, JobScheduler
 
 
 # --- Auth ---
@@ -497,52 +497,6 @@ class ServiceRequest(BaseModel):
 
 
 @dataclass
-class LocalTextGenerationServiceRequest:
-    name: str
-    repo_id: str
-    profile: LocalProfile
-    container_config: TextGenerationConfig
-    job_config: LocalJobConfig
-    provider: ContainerProvider
-    mount: Optional[str] = None
-    grace_period: int = 180  # seconds
-
-
-@dataclass
-class SlurmTextGenerationServiceRequest:
-    name: str
-    repo_id: str
-    container_config: TextGenerationConfig
-    job_config: SlurmJobConfig
-    profile: SlurmProfile
-    mount: Optional[str] = None
-    grace_period: int = 180  # seconds
-
-
-@dataclass
-class LocalSpeechRecognitionServiceRequest:
-    name: str
-    repo_id: str
-    profile: LocalProfile
-    container_config: SpeechRecognitionConfig
-    job_config: LocalJobConfig
-    provider: ContainerProvider
-    mount: Optional[str] = None
-    grace_period: int = 180  # seconds
-
-
-@dataclass
-class SlurmSpeechRecognitionServiceRequest:
-    name: str
-    repo_id: str
-    container_config: SpeechRecognitionConfig
-    job_config: SlurmJobConfig
-    profile: SlurmProfile
-    mount: Optional[str] = None
-    grace_period: int = 180  # seconds
-
-
-@dataclass
 class StopServiceRequest:
     timeout: bool = False
     failed: bool = False
@@ -631,155 +585,6 @@ async def run_service(
             detail = f"Unable to start service. Error: {e}"
             logger.error(detail)
             raise InternalServerException(detail=detail)
-
-    return service
-
-
-def build_service_endpoints() -> None:
-    """Create endpoints to run each profile-task combination."""
-    pass
-
-
-@post("/api/services/slurm/text-generation", guards=ENDPOINT_GUARDS)
-async def run_slurm_text_generation_service(
-    data: SlurmTextGenerationServiceRequest,
-    session: AsyncSession,
-    state: State,
-) -> Optional[TextGeneration]:
-    try:
-        service = TextGeneration(
-            name=data.name,
-            image=Task.TextGeneration,
-            model=data.repo_id,
-            profile=data.profile.name,
-            host=data.profile.host,
-            user=data.profile.user,
-            home_dir=data.profile.home_dir,
-            cache_dir=data.profile.cache_dir,
-            scheduler=JobScheduler.Slurm,
-            mount=data.mount,
-            grace_period=data.grace_period,
-        )
-    except Exception as e:
-        logger.error(f"{e}")
-
-    try:
-        await service.start(
-            session,
-            state,
-            container_options=data.container_config,
-            job_options=data.job_config,
-        )
-    except Exception as e:
-        detail = f"Unable to start service. Error: {e}"
-        logger.error(detail)
-        raise InternalServerException(detail=detail)
-
-    return service
-
-
-@post("/api/services/local/text-generation", guards=ENDPOINT_GUARDS)
-async def run_local_text_generation_service(
-    data: LocalTextGenerationServiceRequest,
-    session: AsyncSession,
-    state: State,
-) -> Optional[TextGeneration]:
-    service = TextGeneration(
-        name=data.name,
-        image=Task.TextGeneration,
-        model=data.repo_id,
-        profile=data.profile.name,
-        host="localhost",
-        home_dir=data.profile.home_dir,
-        cache_dir=data.profile.cache_dir,
-        provider=data.provider,
-        mount=data.mount,
-        grace_period=data.grace_period,
-    )
-
-    try:
-        await service.start(
-            session,
-            state,
-            container_options=data.container_config,
-            job_options=data.job_config,
-        )
-    except Exception as e:
-        detail = f"Unable to start service. Error: {e}"
-        logger.error(detail)
-        raise InternalServerException(detail=detail)
-
-    return service
-
-
-@post("/api/services/slurm/speech-recognition", guards=ENDPOINT_GUARDS)
-async def run_slurm_speech_recognition_service(
-    data: SlurmSpeechRecognitionServiceRequest,
-    session: AsyncSession,
-    state: State,
-) -> Optional[SpeechRecognition]:
-    try:
-        service = SpeechRecognition(
-            name=data.name,
-            image=Task.SpeechRecognition,
-            model=data.repo_id,
-            profile=data.profile.name,
-            host=data.profile.host,
-            user=data.profile.user,
-            home_dir=data.profile.home_dir,
-            cache_dir=data.profile.cache_dir,
-            scheduler=JobScheduler.Slurm,
-            mount=data.mount,
-            grace_period=data.grace_period,
-        )
-    except Exception as e:
-        logger.error(f"{e}")
-
-    try:
-        await service.start(
-            session,
-            state,
-            container_options=data.container_config,
-            job_options=data.job_config,
-        )
-    except Exception as e:
-        detail = f"Unable to start service. Error: {e}"
-        logger.error(detail)
-        raise InternalServerException(detail=detail)
-
-    return service
-
-
-@post("/api/services/local/speech-recognition", guards=ENDPOINT_GUARDS)
-async def run_local_speech_recognition_service(
-    data: LocalSpeechRecognitionServiceRequest,
-    session: AsyncSession,
-    state: State,
-) -> Optional[SpeechRecognition]:
-    service = SpeechRecognition(
-        name=data.name,
-        image=Task.SpeechRecognition,
-        model=data.repo_id,
-        profile=data.profile.name,
-        host="localhost",
-        home_dir=data.profile.home_dir,
-        cache_dir=data.profile.cache_dir,
-        provider=data.provider,
-        mount=data.mount,
-        grace_period=data.grace_period,
-    )
-
-    try:
-        await service.start(
-            session,
-            state,
-            container_options=data.container_config,
-            job_options=data.job_config,
-        )
-    except Exception as e:
-        detail = f"Unable to start service. Error: {e}"
-        logger.error(detail)
-        raise InternalServerException(detail=detail)
 
     return service
 
@@ -1089,10 +894,6 @@ app = Litestar(
         get_files,
         get_audio,
         run_service,
-        run_slurm_text_generation_service,
-        run_slurm_speech_recognition_service,
-        run_local_text_generation_service,
-        run_local_speech_recognition_service,
         stop_service,
         refresh_service,
         fetch_services,

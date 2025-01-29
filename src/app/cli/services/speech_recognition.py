@@ -149,9 +149,10 @@ def run_speech_recognition(
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services/slurm/speech-recognition",
+                    f"http://{config.HOST}:{config.PORT}/api/services",
                     json={
                         "name": name,
+                        "image": "speech_recognition",
                         "repo_id": repo_id,
                         "profile": asdict(profile),
                         "container_config": asdict(container_config),
@@ -204,9 +205,10 @@ def run_speech_recognition(
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services/local/speech-recognition",
+                    f"http://{config.HOST}:{config.PORT}/api/services",
                     json={
                         "name": name,
+                        "image": "speech_recognition",
                         "repo_id": repo_id,
                         "profile": asdict(profile),
                         "container_config": asdict(container_config),

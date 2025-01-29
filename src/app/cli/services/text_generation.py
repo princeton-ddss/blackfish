@@ -213,6 +213,7 @@ def run_text_generation(
                     f"http://{config.HOST}:{config.PORT}/api/services/slurm/text-generation",
                     json={
                         "name": name,
+                        "image": "text_generation",
                         "repo_id": repo_id,
                         "profile": asdict(profile),
                         "container_config": asdict(container_config),
@@ -268,6 +269,7 @@ def run_text_generation(
                     f"http://{config.HOST}:{config.PORT}/api/services/local/text-generation",
                     json={
                         "name": name,
+                        "image": "text_generation",
                         "repo_id": repo_id,
                         "profile": asdict(profile),
                         "container_config": asdict(container_config),

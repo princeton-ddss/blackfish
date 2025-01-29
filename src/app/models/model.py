@@ -31,8 +31,8 @@ class RevisionNotFoundError(FileNotFoundError): ...
 
 
 def split(repo_id: str) -> Tuple[str, str]:
-    # TODO: validate input/output
-    return repo_id.split("/")
+    repo_id, revision = repo_id.split("/")
+    return repo_id, revision
 
 
 def remove_model(

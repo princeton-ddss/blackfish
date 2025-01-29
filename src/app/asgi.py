@@ -800,11 +800,9 @@ async def stop_service(
 @get("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def refresh_service(
     service_id: str, session: AsyncSession, state: State
-) -> Service:
-    try:
-        service = await get_service(service_id, session)
-    except Exception as e:
-        logger.error(f"Failed to fetch service: {e}")
+) -> Optional[Service]:
+    service = await get_service(service_id, session)
+
     try:
         await service.refresh(session, state)
     except Exception as e:

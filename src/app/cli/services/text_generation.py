@@ -1,5 +1,6 @@
 from typing import Optional, Tuple
 import rich_click as click
+from rich_click import Context
 import requests
 from random import randint
 from yaspin import yaspin
@@ -36,42 +37,15 @@ def try_get_model_info(
                 f"{LogSymbols.ERROR.value} The model directory for repo  {repo_id}[{revision}] could not be found for profile"
                 f" '{profile.name}'. These files may have been moved or there may be a issue with permissions. You can try adding the model using `blackfish model add`."
             )
-            return
+            return None
     else:
         click.echo(
             f"{LogSymbols.ERROR.value} Model {repo_id} is unavailable for profile"
             f" '{profile.name}'. You can try adding it using `blackfish model add`."
         )
-        return
+        return None
 
     return model_dir, revision
-
-
-def build_service(
-    name: str,
-    repo_id: str,
-    profile: BlackfishProfile,
-    container_config: TextGenerationConfig,
-    job_config: JobConfig,
-) -> TextGeneration:
-    service = TextGeneration(
-        name=name,
-        model=repo_id,
-        profile=profile.name,
-        host="localhost",
-    )
-
-    click.echo("-" * 80)
-    click.echo(f"Name: {name}")
-    click.echo("Service: text-generation")
-    click.echo(f"Model: {repo_id}")
-    click.echo(f"Profile: {profile.name}")
-    click.echo("Host: localhost")
-    click.echo(f"Provider: {container_config.provider}")
-    click.echo("-" * 80)
-    click.echo(service.render_job_script(container_config, job_config))
-
-    return service
 
 
 # blackfish run [OPTIONS] text-generation [OPTIONS]
@@ -109,7 +83,6 @@ def build_service(
 @click.option(
     "--disable-custom-kernels",
     is_flag=True,
-    required=False,
     default=True,
     help=(
         "Disable custom CUDA kernels. Custom CUDA kernels are not guaranteed to run on"
@@ -118,7 +91,7 @@ def build_service(
 )
 @click.option(
     "--sharded",
-    type=str,
+    type=bool,
     required=False,
     default=None,
     help=(
@@ -148,17 +121,17 @@ def build_service(
 )
 @click.pass_context
 def run_text_generation(
-    ctx,
-    repo_id,
-    name,
-    revision,
-    port,
-    disable_custom_kernels,
-    sharded,
-    max_input_length,
-    max_total_tokens,
-    dry_run,
-):  # pragma: no cover
+    ctx: Context,
+    repo_id: str,
+    name: Optional[str],
+    revision: Optional[str],
+    port: int,
+    disable_custom_kernels: bool,
+    sharded: Optional[bool],
+    max_input_length: Optional[int],
+    max_total_tokens: Optional[int],
+    dry_run: bool,
+) -> None:  # pragma: no cover
     """Start a text generation service hosting a model provided by REPO_ID, e.g., openai/whisper-tiny.
 
     See https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher for additional option details.
@@ -199,6 +172,8 @@ def run_text_generation(
         max_total_tokens=max_total_tokens,
         disable_custom_kernels=disable_custom_kernels,
     )
+
+    job_config: JobConfig
 
     if isinstance(profile, SlurmProfile):
         job_config = SlurmJobConfig(
@@ -313,46 +288,3 @@ def run_text_generation(
                         f"{LogSymbols.ERROR.value} Failed to start service:"
                         f" {res.status_code} - {res.reason}"
                     )
-
-
-# blackfish fetch text-generation [OPTIONS] SERVICE INPUT
-@click.argument("service_id", type=str, required=True)
-@click.argument("inputs", type=str, required=True)
-@click.option("--best_of", type=int, default=None)
-@click.option("--decoder_input_details", type=bool, default=True)
-@click.option("--details", type=bool, default=True)
-@click.option("--do_sample", type=bool, default=False)
-@click.option("--max_new_tokens", type=int, default=None)
-@click.option("--repetition_penalty", type=float, default=1.03)
-@click.option("--return_full_text", type=bool, default=False)
-@click.option("--seed", type=int, default=None)
-@click.option("--stop", type=list, default=[])
-@click.option("--temperature", type=float, default=None)
-@click.option("--top_k", type=int, default=None)
-@click.option("--top_n_tokens", type=int, default=None)
-@click.option("--top_p", type=float, default=None)
-@click.option("--truncate", type=int, default=None)
-@click.option("--typical_p", type=float, default=None)
-@click.option("--watermark", type=bool, default=False)
-def fetch_text_generate(
-    service_id,
-    input,
-    best_of,
-    decoder_input_details,
-    details,
-    do_sample,
-    max_new_tokens,
-    repetition_penalty,
-    return_full_text,
-    seed,
-    stop,
-    temperature,
-    top_k,
-    top_n_tokens,
-    top_p,
-    truncate,
-    typical_p,
-    watermark,
-):  # pragma: no cover
-    """Fetch results from a text-generation service"""
-    raise NotImplementedError

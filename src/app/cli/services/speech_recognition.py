@@ -1,5 +1,7 @@
 import os
+from typing import Optional
 import rich_click as click
+from rich_click import Context
 import requests
 from random import randint
 from yaspin import yaspin
@@ -15,7 +17,7 @@ from app.utils import (
     get_model_dir,
 )
 from app.config import BlackfishConfig
-from app.job import JobScheduler, SlurmJobConfig, LocalJobConfig
+from app.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
 from app.cli.classes import ServiceOptions
 
 
@@ -59,13 +61,13 @@ from app.cli.classes import ServiceOptions
 )
 @click.pass_context
 def run_speech_recognition(
-    ctx,
-    repo_id,
-    name,
-    revision,
-    port,
-    dry_run,
-):  # pragma: no cover
+    ctx: Context,
+    repo_id: str,
+    name: Optional[str],
+    revision: Optional[str],
+    port: int,
+    dry_run: bool,
+) -> None:  # pragma: no cover
     """Start a speech recognition service hosting MODEL. MODEL is specified as a repo ID, e.g., openai/whisper-tiny. The model has access to files via a mounted directory, which defaults to the profile's
     Blackfish home directory (e.g., $HOME/.blackfish). To use a custom directory, users should provide a
     value for the `blackfish run` `MOUNT` option.
@@ -105,10 +107,12 @@ def run_speech_recognition(
     container_config = SpeechRecognitionConfig(
         port=port,
         model_id=repo_id,
-        model_dir=os.path.dirname(model_dir),
+        model_dir=os.path.dirname(model_dir),  # type: ignore
         input_dir=options.mount,
         revision=revision,
     )
+
+    job_config: JobConfig
 
     if isinstance(profile, SlurmProfile):
         job_config = SlurmJobConfig(

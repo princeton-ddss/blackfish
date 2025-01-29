@@ -1,7 +1,9 @@
 from typing import Optional
 import rich_click as click
+from rich_click import Context
 import configparser
 import os
+from enum import StrEnum
 from log_symbols.symbols import LogSymbols
 
 from app.setup import (
@@ -12,7 +14,12 @@ from app.setup import (
 )
 
 
-def _create_profile_(default_home: str, default_name: str = "default") -> None:
+class ProfileType(StrEnum):
+    Slurm = "slurm"
+    Local = "local"
+
+
+def _create_profile_(default_home: str, default_name: str = "default") -> bool:
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles.cfg")
 
@@ -25,43 +32,28 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
             " deleting or modifying this profile instead."
         )
         return False
-    else:
-        profile_type = input("> type [slurm]: ")
-        profile_type = "slurm" if profile_type == "" else profile_type
-        if profile_type == "slurm":
-            host = input("> host [localhost]: ")
-            host = "localhost" if host == "" else host
+
+    while True:
+        try:
+            profile_type = ProfileType[input("> type [slurm or local]: ")]
+            break
+        except Exception:
+            print(f"Profile type should be one of: {list(ProfileType.__members__)}.")
+
+    if profile_type == ProfileType.Slurm:
+        host = input("> host [localhost]: ")
+        host = "localhost" if host == "" else host
+        user = input("> user: ")
+        while user == "":
+            print("User is required.")
             user = input("> user: ")
-            while user == "":
-                print("User is required.")
-                user = input("> user: ")
-            home_dir = input(f"> home [/home/{user}/.blackfish]: ")
-            home_dir = f"/home/{user}/.blackfish" if home_dir == "" else home_dir
+        home_dir = input(f"> home [/home/{user}/.blackfish]: ")
+        home_dir = f"/home/{user}/.blackfish" if home_dir == "" else home_dir
+        cache_dir = input("> cache: ")
+        while cache_dir == "":
+            print("Cache directory is required.")
             cache_dir = input("> cache: ")
-            while cache_dir == "":
-                print("Cache directory is required.")
-                cache_dir = input("> cache: ")
-            if host == "localhost":
-                try:
-                    create_local_home_dir(home_dir)
-                    check_local_cache_exists(cache_dir)
-                except Exception:
-                    print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
-                    return False
-            else:
-                try:
-                    create_remote_home_dir(host=host, user=user, home_dir=home_dir)
-                    check_remote_cache_exists(host=host, user=user, cache_dir=cache_dir)
-                except Exception:
-                    print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
-                    return False
-        elif profile_type == "local":
-            home_dir = input(f"> home [{default_home}]: ")
-            home_dir = default_home if home_dir == "" else home_dir
-            cache_dir = input("> cache: ")
-            while cache_dir == "":
-                print("Cache directory is required.")
-                cache_dir = input("> cache: ")
+        if host == "localhost":
             try:
                 create_local_home_dir(home_dir)
                 check_local_cache_exists(cache_dir)
@@ -69,9 +61,13 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
                 print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
                 return False
         else:
-            raise NotImplementedError
+            try:
+                create_remote_home_dir(host=host, user=user, home_dir=home_dir)
+                check_remote_cache_exists(host=host, user=user, cache_dir=cache_dir)
+            except Exception:
+                print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
+                return False
 
-    if profile_type == "slurm":
         profiles[name] = {
             "type": "slurm",
             "user": user,
@@ -79,14 +75,26 @@ def _create_profile_(default_home: str, default_name: str = "default") -> None:
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
-    elif profile_type == "local":
+
+    elif profile_type == ProfileType.Local:
+        home_dir = input(f"> home [{default_home}]: ")
+        home_dir = default_home if home_dir == "" else home_dir
+        cache_dir = input("> cache: ")
+        while cache_dir == "":
+            print("Cache directory is required.")
+            cache_dir = input("> cache: ")
+        try:
+            create_local_home_dir(home_dir)
+            check_local_cache_exists(cache_dir)
+        except Exception:
+            print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
+            return False
+
         profiles[name] = {
             "type": "local",
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
-    else:
-        raise NotImplementedError
 
     with open(os.path.join(default_home, "profiles.cfg"), "w") as f:
         profiles.write(f)
@@ -166,7 +174,7 @@ def _update_profile_(
 
 @click.command()
 @click.pass_context
-def create_profile(ctx):  # pragma: no cover
+def create_profile(ctx: Context) -> None:  # pragma: no cover
     """Create a new profile. Fails if the profile name already exists."""
 
     _create_profile_(ctx.obj.get("home_dir"))
@@ -177,7 +185,7 @@ def create_profile(ctx):  # pragma: no cover
     "--name", type=str, default="default", help="The name of the profile to display."
 )
 @click.pass_context
-def show_profile(ctx, name):  # pragma: no cover
+def show_profile(ctx: Context, name: str) -> None:  # pragma: no cover
     """Display a profile."""
 
     default_home = ctx.obj.get("home_dir")
@@ -208,7 +216,7 @@ def show_profile(ctx, name):  # pragma: no cover
 
 @click.command()
 @click.pass_context
-def list_profiles(ctx):  # pragma: no cover
+def list_profiles(ctx: Context) -> None:  # pragma: no cover
     """Display all available profiles."""
 
     default_home = ctx.obj.get("home_dir")
@@ -241,7 +249,7 @@ def list_profiles(ctx):  # pragma: no cover
     "--name", type=str, default="default", help="The name of the profile to modify."
 )
 @click.pass_context
-def update_profile(ctx, name):  # pragma: no cover
+def update_profile(ctx: Context, name: str) -> None:  # pragma: no cover
     """Update a profile.
 
     This command does not permit changes to a profile's name or type. If you wish
@@ -257,7 +265,7 @@ def update_profile(ctx, name):  # pragma: no cover
     "--name", type=str, default="default", help="The name of the profile to delete."
 )
 @click.pass_context
-def delete_profile(ctx, name: str):  # pragma: no cover
+def delete_profile(ctx: Context, name: str) -> None:  # pragma: no cover
     """Delete a profile.
 
     This command does not clean up the profile's remote or local resources because

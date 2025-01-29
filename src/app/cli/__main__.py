@@ -1,9 +1,10 @@
 import rich_click as click
+from rich_click import Context
 import requests
 import os
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
-from typing import cast
+from typing import Optional, cast
 
 from app.cli.services.text_generation import run_text_generation
 from app.cli.services.speech_recognition import run_speech_recognition
@@ -34,7 +35,7 @@ def main() -> None:  # pragma: no cover
     default=config.HOME_DIR,
     help="The location to store Blackfish application data.",
 )
-def init(home_dir: str | None) -> None:  # pragma: no cover
+def init(home_dir: str) -> None:  # pragma: no cover
     """Setup Blackfish.
 
     Creates all files and directories to run Blackfish.
@@ -60,7 +61,7 @@ def init(home_dir: str | None) -> None:  # pragma: no cover
 
 @main.group()
 @click.pass_context
-def profile(ctx):  # pragma: no cover
+def profile(ctx: Context) -> None:  # pragma: no cover
     """Manage profiles.
 
         Profiles determine how services are deployed and what assets (i.e., models) are available.
@@ -123,7 +124,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     class AlembicCommands(_AlembicCommands):
         def __init__(self, app: Litestar) -> None:
             self._app = app
-            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # noqa: SLF001
+            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # type: ignore # noqa: SLF001
             self.config = self._get_alembic_command_config()
 
     alembic_commands = AlembicCommands(app=app)
@@ -195,23 +196,23 @@ def start(reload: bool) -> None:  # pragma: no cover
 @click.option(
     "--grace_period",
     "-g",
-    type=str,
+    type=int,
     default=180,
     help="Time (s) to wait before setting service health to 'unhealthy'.",
 )
 @click.pass_context
 def run(
-    ctx,
-    time,
-    ntasks_per_node,
-    mem,
-    gres,
-    partition,
-    constraint,
-    profile,
-    mount,
-    grace_period,
-):  # pragma: no cover
+    ctx: Context,
+    time: str,
+    ntasks_per_node: int,
+    mem: int,
+    gres: int,
+    partition: Optional[str],
+    constraint: Optional[str],
+    profile: str,
+    mount: Optional[str],
+    grace_period: int,
+) -> None:  # pragma: no cover
     """Run an inference service.
 
     The format of options approximately follows that of Slurm's `sbatch` command.
@@ -219,11 +220,9 @@ def run(
 
     from app.models.profile import serialize_profile
 
-    profile = serialize_profile(config.HOME_DIR, profile)
-
     ctx.obj = {
         "config": config,
-        "profile": profile,
+        "profile": serialize_profile(config.HOME_DIR, profile),
         "resources": {
             "time": time,
             "ntasks_per_node": ntasks_per_node,
@@ -253,7 +252,7 @@ run.add_command(run_speech_recognition, "speech-recognition")
     type=str,
     required=True,
 )
-def stop(service_id, delay) -> None:  # pragma: no cover
+def stop(service_id: str, delay: int) -> None:  # pragma: no cover
     """Stop one or more services"""
 
     with yaspin(text="Stopping service...") as spinner:
@@ -264,7 +263,7 @@ def stop(service_id, delay) -> None:  # pragma: no cover
             },
         )
         spinner.text = ""
-        if not res.ok is not None:
+        if not res.ok:
             spinner.fail(
                 f"{LogSymbols.ERROR.value} Failed to stop service {service_id}."
             )
@@ -286,7 +285,7 @@ def stop(service_id, delay) -> None:  # pragma: no cover
     default=False,
     help="Force the removal of a running service",
 )
-def rm(service_id, force) -> None:  # pragma: no cover
+def rm(service_id: str, force: bool) -> None:  # pragma: no cover
     """Remove one or more services"""
 
     with yaspin(text="Deleting service...") as spinner:
@@ -305,7 +304,7 @@ def rm(service_id, force) -> None:  # pragma: no cover
 # blackfish details [OPTIONS] SERVICE
 @main.command()
 @click.argument("service_id", required=True, type=str)
-def details(service_id):  # pragma: no cover
+def details(service_id: str) -> None:  # pragma: no cover
     """Show detailed service information"""
 
     from datetime import datetime
@@ -330,46 +329,42 @@ def details(service_id):  # pragma: no cover
     body["created_at"] = datetime.fromisoformat(body["created_at"])
     body["updated_at"] = datetime.fromisoformat(body["updated_at"])
     service = Service(**body)
-    if service is not None:
-        job = service.get_job(silent=True)
-        data = {
-            "image": service.image,
-            "model": service.model,
-            "profile": service.profile,
-            "created_at": service.created_at.isoformat().replace("+00:00", "Z"),
-            "name": service.name,
-            "status": {
-                "value": service.status,
-                "updated_at": service.updated_at.isoformat().replace("+00:00", "Z"),
-            },
-            "connection": {
-                "host": service.host,
-                "port": service.port,
-            },
+    job = service.get_job()
+    data = {
+        "image": service.image,
+        "model": service.model,
+        "profile": service.profile,
+        "created_at": service.created_at.isoformat().replace("+00:00", "Z"),
+        "name": service.name,
+        "status": {
+            "value": service.status,
+            "updated_at": service.updated_at.isoformat().replace("+00:00", "Z"),
+        },
+        "connection": {
+            "host": service.host,
+            "port": service.port,
+        },
+    }
+
+    if isinstance(job, SlurmJob):
+        data["job"] = {
+            "job_id": job.job_id,
+            "host": job.host,
+            "user": job.user,
+            "node": job.node,
+            "port": job.port,
+            "name": job.name,
+            "state": job.state,
         }
-
-        if isinstance(job, SlurmJob):
-            data["job"] = {
-                "job_id": job.job_id,
-                "host": job.host,
-                "user": job.user,
-                "node": job.node,
-                "port": job.port,
-                "name": job.name,
-                "state": job.state,
-            }
-        elif isinstance(job, LocalJob):
-            data["job"] = {
-                "job_id": job.job_id,
-                "name": job.name,
-                "state": job.state,
-            }
-        else:
-            raise NotImplementedError
-        click.echo(json.dumps(data, indent=4))
-
+    elif isinstance(job, LocalJob):
+        data["job"] = {
+            "job_id": job.job_id,
+            "name": job.name,
+            "state": job.state,
+        }
     else:
-        click.echo(f"Service {service} not found.")
+        raise NotImplementedError
+    click.echo(json.dumps(data, indent=4))
 
 
 # blackfish ls [OPTIONS]
@@ -382,7 +377,7 @@ def details(service_id):  # pragma: no cover
         " image=text_generation,status=SUBMITTED"
     ),
 )
-def ls(filters):  # pragma: no cover
+def ls(filters: Optional[str]) -> None:  # pragma: no cover
     """List services"""
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
@@ -445,42 +440,8 @@ def ls(filters):  # pragma: no cover
     click.echo(tab)
 
 
-# # blackfish fetch
-# @main.group(name="fetch")
-# def fetch():  # pragma: no cover
-#     """Fetch results from a service"""
-#     pass
-
-
-# fetch.add_command(fetch_text_generate, "fetch_text_generate")
-# fetch.add_command(fetch_speech_recognition, "fetch_speech_recognition")
-
-
-# blackfish image
-# @main.group()
-# def image():  # pragma: no cover
-#     """View information about available images"""
-#     pass
-
-
-# blackfish image ls [OPTIONS]
-# @image.command(name="ls")
-# @click.option("--filter", type=str)
-# def image_ls(filter):  # pragma: no cover
-#     """List images"""
-#     pass
-
-
-# blackfish image details IMAGE
-# @image.command(name="details")
-# @click.argument("image", type=str, required=True)
-# def image_details(image):  # pragma: no cover
-#     """Show detailed image information"""
-#     pass
-
-
 @main.group()
-def model():  # pragma: no cover
+def model() -> None:  # pragma: no cover
     """View and manage available models."""
     pass
 
@@ -510,7 +471,9 @@ def model():  # pragma: no cover
     default=False,
     help="Refresh the list of available models.",
 )
-def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
+def models_ls(
+    profile: Optional[str], image: Optional[str], refresh: bool
+) -> None:  # pragma: no cover
     """Show available (downloaded) models."""
 
     from prettytable import PrettyTable, PLAIN_COLUMNS
@@ -584,7 +547,7 @@ def models_ls(profile: str, image: str, refresh: bool):  # pragma: no cover
     ),
 )
 def models_add(
-    repo_id: str, profile: str, revision: str | None, use_cache: bool
+    repo_id: str, profile: str, revision: Optional[str], use_cache: bool
 ) -> None:
     """Download a model to make it available.
 
@@ -594,9 +557,13 @@ def models_add(
     from app.models.model import add_model
     from app.models.profile import serialize_profile, SlurmProfile
 
-    profile = serialize_profile(config.HOME_DIR, profile)
-    if isinstance(profile, SlurmProfile):
-        if not profile.is_local():
+    profile_obj = serialize_profile(config.HOME_DIR, profile)
+    if profile_obj is None:
+        print(f"{LogSymbols.ERROR.value} Failed to load profile 😔.")
+        return
+
+    if isinstance(profile_obj, SlurmProfile):
+        if not profile_obj.is_local():
             print(
                 f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for"
                 " local profiles 😔."
@@ -605,7 +572,7 @@ def models_add(
 
     try:
         model, path = add_model(
-            repo_id, profile=profile, revision=revision, use_cache=use_cache
+            repo_id, profile=profile_obj, revision=revision, use_cache=use_cache
         )
         print(
             f"{LogSymbols.SUCCESS.value} Successfully downloaded model {repo_id} to"
@@ -626,7 +593,7 @@ def models_add(
             },
         )
         spinner.text = ""
-        if not res.ok is not None:
+        if not res.ok:
             spinner.fail(
                 f"{LogSymbols.ERROR.value} Failed to insert model"
                 f" {repo_id} ({res.status_code}: {res.reason})"
@@ -668,16 +635,20 @@ def models_add(
     ),
 )
 def models_remove(
-    repo_id: str, profile: str, revision: str | None, use_cache: bool
+    repo_id: str, profile: str, revision: Optional[str], use_cache: bool
 ) -> None:
     """Remove model files."""
 
     from app.models.model import remove_model
     from app.models.profile import serialize_profile, SlurmProfile
 
-    profile = serialize_profile(config.HOME_DIR, profile)
-    if isinstance(profile, SlurmProfile):
-        if not profile.is_local():
+    profile_obj = serialize_profile(config.HOME_DIR, profile)
+    if profile_obj is None:
+        print(f"{LogSymbols.ERROR.value} Failed to serialize profile 😔.")
+        return
+
+    if isinstance(profile_obj, SlurmProfile):
+        if not profile_obj.is_local():
             print(
                 f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for"
                 " local profiles 😔."
@@ -687,7 +658,7 @@ def models_remove(
     with yaspin(text="Removing model...") as spinner:
         try:
             remove_model(
-                repo_id, profile=profile, revision=revision, use_cache=use_cache
+                repo_id, profile=profile_obj, revision=revision, use_cache=use_cache
             )
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Removed model {repo_id}")
@@ -697,7 +668,7 @@ def models_remove(
 
 
 @main.group()
-def database():  # pragma: no cover
+def database() -> None:  # pragma: no cover
     """View and manage available models."""
     pass
 
@@ -777,7 +748,7 @@ def create_revision(
     class AlembicCommands(_AlembicCommands):
         def __init__(self, app: Litestar) -> None:
             self._app = app
-            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # noqa: SLF001
+            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # type: ignore # noqa: SLF001
             self.config = self._get_alembic_command_config()
 
     alembic_commands = AlembicCommands(app=app)

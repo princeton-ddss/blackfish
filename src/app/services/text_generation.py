@@ -1,5 +1,5 @@
 import requests
-from typing import Optional, Literal
+from typing import Optional
 from dataclasses import dataclass, asdict
 
 from app.services.base import Service, BaseConfig
@@ -16,7 +16,7 @@ class TextGenerationConfig(BaseConfig):
     model_dir: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None
-    sharded: Optional[Literal["true", "false"]] = None
+    sharded: Optional[bool] = None
     num_shard: Optional[int] = None
     quantize: Optional[str] = None
     speculate: Optional[int] = None

@@ -64,16 +64,11 @@ from app.services.text_generation import TextGeneration, TextGenerationConfig
 from app.config import config as blackfish_config, ContainerProvider
 from app.utils import find_port
 from app.models.profile import (
-    init_profile,
     serialize_profiles,
     serialize_profile,
-    write_profile,
-    modify_profile,
-    remove_profile,
     SlurmProfile,
     LocalProfile,
     BlackfishProfile as Profile,
-    ProfileNotFoundException,
 )
 from app.models.model import Model
 from app.job import JobConfig, LocalJobConfig, SlurmJobConfig, JobScheduler
@@ -999,21 +994,6 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
     await session.execute(query)
 
 
-@post("/api/profiles", guards=ENDPOINT_GUARDS)
-async def create_profile(data: dict[str, Any]) -> Profile:
-    raise NotImplementedError
-
-    try:  # type: ignore
-        init_profile(blackfish_config.HOME_DIR, data)
-    except Exception as e:
-        raise HTTPException(detail=f"Unable to create profile: {e}")
-
-    try:
-        return write_profile(blackfish_config.HOME_DIR, data)
-    except Exception as e:
-        raise HTTPException(detail=f"Failed to create profile: {e}")
-
-
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
@@ -1034,21 +1014,6 @@ async def read_profile(name: str) -> Profile | None:
     else:
         logger.error("Profile not found.")
         raise NotFoundException(detail="Profile not found.")
-
-
-@put("/api/profiles", guards=ENDPOINT_GUARDS)
-async def update_profile(profile: Profile) -> Profile:
-    raise NotImplementedError
-    return modify_profile(blackfish_config.HOME_DIR, profile)  # type: ignore
-
-
-@delete("/api/profiles/{name: str}")
-async def delete_profile(name: str) -> None:
-    raise NotImplementedError
-    try:  # type: ignore
-        return remove_profile(blackfish_config.HOME_DIR, name)
-    except ProfileNotFoundException as e:
-        raise NotFoundException(detail=f"{e}")
 
 
 # --- Config ---
@@ -1139,11 +1104,8 @@ app = Litestar(
         get_model,
         get_models,
         delete_model,
-        create_profile,
         read_profiles,
         read_profile,
-        update_profile,
-        delete_profile,
         next_server,
         img_server,
     ],

@@ -519,7 +519,7 @@ def build_service(data: ServiceRequest) -> Optional[Service]:
                     mount=data.mount,
                     grace_period=data.grace_period,
                 )
-            else:
+            elif isinstance(data.profile, SlurmProfile):
                 return TextGeneration(
                     name=data.name,
                     model=data.repo_id,
@@ -546,7 +546,7 @@ def build_service(data: ServiceRequest) -> Optional[Service]:
                     mount=data.mount,
                     grace_period=data.grace_period,
                 )
-            else:
+            elif isinstance(data.profile, SlurmProfile):
                 return SpeechRecognition(
                     name=data.name,
                     image=Task.SpeechRecognition,

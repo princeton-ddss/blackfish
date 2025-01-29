@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 import json
 import shutil
 from pathlib import Path
@@ -89,7 +89,7 @@ def add_model(
     profile: Profile,
     revision: str | None = None,
     use_cache: bool = False,
-) -> Tuple[Model, str]:
+) -> Optional[Tuple[Model, str]]:
     """Download a model from Hugging Face and makes it available to Blackfish.
 
     This method only works for *local* profiles, i.e., the model files can only be
@@ -138,7 +138,11 @@ def add_model(
 
     res = model_info(repo_id=repo_id)
 
-    pipeline = res.card_data.get("pipeline_tag")  # e.g., "text-generation"
+    if res.card_data is not None:
+        pipeline = res.card_data.get("pipeline_tag")  # e.g., "text-generation"
+    else:
+        print(f"{LogSymbols.ERROR.value} No card data available for repo {repo_id}.")
+        return None
 
     try:
         with open(cache_dir.joinpath("info.json"), mode="r") as f:

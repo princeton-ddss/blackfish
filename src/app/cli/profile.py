@@ -35,7 +35,7 @@ def _create_profile_(default_home: str, default_name: str = "default") -> bool:
 
     while True:
         try:
-            profile_type = ProfileType[input("> type [slurm or local]: ")]
+            profile_type = ProfileType[input("> type [slurm or local]: ").capitalize()]
             break
         except Exception:
             print(f"Profile type should be one of: {list(ProfileType.__members__)}.")

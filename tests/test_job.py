@@ -21,7 +21,7 @@ def test_update_none(mock_check_output, mock_fetch_node, mock_fetch_port):
 @mock.patch("subprocess.check_output")
 def test_update_no_change(mock_check_output, mock_fetch_node, mock_fetch_port):
     mock_check_output.return_value = b"RUNNING"
-    job = SlurmJob(job_id=1, user="test", host="test", state="RUNNING")
+    job = SlurmJob(job_id=1, user="test", host="test", state=JobState.RUNNING)
     job.update()
     assert job.state == JobState.RUNNING
     mock_fetch_node.assert_not_called()
@@ -33,7 +33,7 @@ def test_update_no_change(mock_check_output, mock_fetch_node, mock_fetch_port):
 @mock.patch("subprocess.check_output")
 def test_update_change(mock_check_output, mock_fetch_node, mock_fetch_port):
     mock_check_output.return_value = b"RUNNING"
-    job = SlurmJob(job_id=1, user="test", host="test", state="PENDING")
+    job = SlurmJob(job_id=1, user="test", host="test", state=JobState.PENDING)
     job.update()
     assert job.state == JobState.RUNNING
     mock_fetch_node.assert_called()

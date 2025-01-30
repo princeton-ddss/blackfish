@@ -2,9 +2,6 @@
 {% block command %}
 
 XDG_RUNTIME_DIR=""
-node=$(hostname -s)
-user=$(whoami)
-cluster="della-gpu"
 
 apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ container_config.input_dir }}:/data/audio \

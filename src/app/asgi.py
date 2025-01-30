@@ -8,12 +8,13 @@ from datetime import datetime
 from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple, Any
-from enum import StrEnum
+from typing import Optional, Tuple, Any, Type
 import asyncio
 import itertools
 from pathlib import Path
 from secrets import compare_digest
+from importlib import import_module
+
 from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
 from pydantic import BaseModel
@@ -58,9 +59,10 @@ from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.response import File
 
 from app.logger import logger
+from app import services
 from app.services.base import Service, ServiceStatus
-from app.services.speech_recognition import SpeechRecognition, SpeechRecognitionConfig
-from app.services.text_generation import TextGeneration, TextGenerationConfig
+from app.services.speech_recognition import SpeechRecognitionConfig
+from app.services.text_generation import TextGenerationConfig
 from app.config import config as blackfish_config, ContainerProvider
 from app.utils import find_port
 from app.models.profile import (
@@ -73,6 +75,25 @@ from app.models.profile import (
 from app.models.model import Model
 from app.job import JobConfig, JobScheduler
 
+
+def load_service_classes() -> dict[str, Type[Service]]:
+    service_classes: dict[str, Type[Service]] = {}
+    directory = Path(services.__path__[0])
+    for file in directory.glob("*.py"):
+        if not file.stem.startswith("_") and not file.stem == "base":
+            module = import_module(f"app.{directory.stem}.{file.stem}")
+            for k, v in module.__dict__.items():
+                if isinstance(v, type) and v.__bases__[0] == Service:
+                    service_classes[file.stem] = v
+                    logger.info(f"Added class {k} to service class dictionary.")
+
+    return service_classes
+
+
+service_classes = load_service_classes()
+
+
+ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
 
 # --- Auth ---
 AUTH_TOKEN = b64encode(urandom(32)).decode("utf-8")
@@ -109,9 +130,6 @@ def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:  # type
     if not compare_digest(token, AUTH_TOKEN):
         logger.debug("from auth_guard: invalid token => NotAuthorizedException")
         raise NotAuthorizedException
-
-
-SERVICE_TYPES = ["text_generation", "speech_recognition"]
 
 
 PAGE_MIDDLEWARE = [] if blackfish_config.DEV_MODE else [AuthMiddleware]
@@ -476,17 +494,9 @@ async def get_ports(request: Request) -> int:  # type: ignore
     return find_port()
 
 
-ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
-
-
-class Task(StrEnum):
-    TextGeneration = "text_generation"
-    SpeechRecognition = "speech_recognition"
-
-
 class ServiceRequest(BaseModel):
     name: str
-    image: Task
+    image: str
     repo_id: str
     profile: Profile
     container_config: ContainerConfig
@@ -505,62 +515,29 @@ class StopServiceRequest:
 def build_service(data: ServiceRequest) -> Optional[Service]:
     """Convert a service request into a service object based on the requested image."""
 
-    try:
-        if data.image == Task.TextGeneration:
-            if isinstance(data.profile, LocalProfile):
-                return TextGeneration(
-                    name=data.name,
-                    model=data.repo_id,
-                    profile=data.profile.name,
-                    host="localhost",
-                    home_dir=data.profile.home_dir,
-                    cache_dir=data.profile.cache_dir,
-                    provider=data.provider,
-                    mount=data.mount,
-                    grace_period=data.grace_period,
-                )
-            elif isinstance(data.profile, SlurmProfile):
-                return TextGeneration(
-                    name=data.name,
-                    model=data.repo_id,
-                    profile=data.profile.name,
-                    host=data.profile.host,
-                    user=data.profile.user,
-                    home_dir=data.profile.home_dir,
-                    cache_dir=data.profile.cache_dir,
-                    scheduler=JobScheduler.Slurm,
-                    mount=data.mount,
-                    grace_period=data.grace_period,
-                )
-        elif data.image == Task.SpeechRecognition:
-            if isinstance(data.profile, LocalProfile):
-                return SpeechRecognition(
-                    name=data.name,
-                    image=Task.SpeechRecognition,
-                    model=data.repo_id,
-                    profile=data.profile.name,
-                    host="localhost",
-                    home_dir=data.profile.home_dir,
-                    cache_dir=data.profile.cache_dir,
-                    provider=data.provider,
-                    mount=data.mount,
-                    grace_period=data.grace_period,
-                )
-            elif isinstance(data.profile, SlurmProfile):
-                return SpeechRecognition(
-                    name=data.name,
-                    image=Task.SpeechRecognition,
-                    model=data.repo_id,
-                    profile=data.profile.name,
-                    host=data.profile.host,
-                    user=data.profile.user,
-                    home_dir=data.profile.home_dir,
-                    cache_dir=data.profile.cache_dir,
-                    scheduler=JobScheduler.Slurm,
-                    mount=data.mount,
-                    grace_period=data.grace_period,
-                )
-    except Exception:
+    ServiceClass = service_classes.get(data.image)
+    if ServiceClass is not None:
+        flattened = {
+            "name": data.name,
+            "model": data.repo_id,
+            "profile": data.profile.name,
+            "home_dir": data.profile.home_dir,
+            "cache_dir": data.profile.cache_dir,
+            "mount": data.mount,
+            "grace_period": data.grace_period,
+        }
+        if isinstance(data.profile, LocalProfile):
+            flattened["host"] = "localhost"
+            flattened["provider"] = data.provider
+        if isinstance(data.profile, SlurmProfile):
+            flattened["host"] = data.profile.host
+            flattened["user"] = data.profile.user
+            flattened["scheduler"] = JobScheduler.Slurm
+
+        return ServiceClass(**flattened)
+
+    else:
+        logger.error(f"build_service received unrecognized image {data.image}")
         return None
 
 
@@ -570,9 +547,7 @@ async def run_service(
     session: AsyncSession,
     state: State,
 ) -> Optional[Service]:
-    logger.debug(f"data={data}")
     service = build_service(data)
-
     if service is not None:
         try:
             await service.start(
@@ -666,7 +641,9 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
         logger.warning(
             f"Service is still running (status={service.status}). Aborting delete."
         )
-        # TODO: return failure status code and message
+        raise ClientException(
+            detail=f"Service is still running (status={service.status})"
+        )
 
 
 async def asyncget(url: StrOrURL) -> Any:

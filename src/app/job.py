@@ -40,23 +40,10 @@ class JobScheduler(StrEnum):
     Slurm = auto()
 
 
-# @dataclass
-# class JobConfig:
-#     def data(self) -> dict[str, Any]:
-#         return {
-#             k: v
-#             for k, v in filter(lambda item: item[1] is not None, asdict(self).items())
-#         }
-
-#     def replace(self, changes: dict[str, Any]) -> Self:
-#         return replace(self, **changes)
-
-
 @dataclass
 class LocalJobConfig:
     """Job configuration for running a service locally."""
 
-    name: Optional[str] = None
     gres: Optional[bool] = False
 
 

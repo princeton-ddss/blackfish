@@ -245,23 +245,18 @@ run.add_command(run_speech_recognition, "speech-recognition")
 
 # blackfish stop [OPTIONS] SERVICE [SERVICE...]
 @main.command()
-@click.option(
-    "--delay", type=int, default=0, help="Seconds to wait before stopping the service"
-)
 @click.argument(
     "service_id",
     type=str,
     required=True,
 )
-def stop(service_id: str, delay: int) -> None:  # pragma: no cover
+def stop(service_id: str) -> None:  # pragma: no cover
     """Stop one or more services"""
 
     with yaspin(text="Stopping service...") as spinner:
         res = requests.put(
             f"http://{config.HOST}:{config.PORT}/api/services/{service_id}/stop",
-            json={
-                "delay": delay,
-            },
+            json={},
         )
         spinner.text = ""
         if not res.ok:

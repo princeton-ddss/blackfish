@@ -5,6 +5,7 @@ import os
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 from typing import Optional, cast
+from dataclasses import asdict
 
 from app.cli.services.text_generation import run_text_generation
 from app.cli.services.speech_recognition import run_speech_recognition
@@ -330,19 +331,21 @@ def details(service_id: str) -> None:  # pragma: no cover
     body["updated_at"] = datetime.fromisoformat(body["updated_at"])
     service = Service(**body)
     job = service.get_job()
+    profile = service.get_profile()
     data = {
+        "name": service.name,
         "image": service.image,
         "model": service.model,
-        "profile": service.profile,
-        "created_at": service.created_at.isoformat().replace("+00:00", "Z"),
-        "name": service.name,
+        "profile": asdict(profile) if profile is not None else None,
         "status": {
             "value": service.status,
+            "created_at": service.created_at.isoformat().replace("+00:00", "Z"),
             "updated_at": service.updated_at.isoformat().replace("+00:00", "Z"),
         },
         "connection": {
             "host": service.host,
             "port": service.port,
+            "mount": service.mount,
         },
     }
 
@@ -361,6 +364,7 @@ def details(service_id: str) -> None:  # pragma: no cover
             "job_id": job.job_id,
             "name": job.name,
             "state": job.state,
+            "provider": service.provider,
         }
     else:
         raise NotImplementedError

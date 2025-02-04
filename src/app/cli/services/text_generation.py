@@ -274,7 +274,6 @@ def run_text_generation(
                         "profile": asdict(profile),
                         "container_config": asdict(container_config),
                         "job_config": asdict(job_config),
-                        "provider": config.CONTAINER_PROVIDER,
                         "mount": options.mount,
                         "grace_period": options.grace_period,
                     },

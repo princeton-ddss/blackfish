@@ -108,7 +108,6 @@ def run_speech_recognition(
         port=port,
         model_id=repo_id,
         model_dir=os.path.dirname(model_dir),  # type: ignore
-        input_dir=options.mount,
         revision=revision,
     )
 
@@ -213,7 +212,6 @@ def run_speech_recognition(
                         "profile": asdict(profile),
                         "container_config": asdict(container_config),
                         "job_config": asdict(job_config),
-                        "provider": config.CONTAINER_PROVIDER,
                         "mount": options.mount,
                         "grace_period": options.grace_period,
                     },

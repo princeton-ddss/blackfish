@@ -63,7 +63,7 @@ from app import services
 from app.services.base import Service, ServiceStatus
 from app.services.speech_recognition import SpeechRecognitionConfig
 from app.services.text_generation import TextGenerationConfig
-from app.config import config as blackfish_config, ContainerProvider
+from app.config import config as blackfish_config
 from app.utils import find_port
 from app.models.profile import (
     serialize_profiles,
@@ -501,7 +501,6 @@ class ServiceRequest(BaseModel):
     profile: Profile
     container_config: ContainerConfig
     job_config: JobConfig
-    provider: Optional[ContainerProvider] = None
     mount: Optional[str] = None
     grace_period: int = 180  # seconds
 
@@ -528,7 +527,7 @@ def build_service(data: ServiceRequest) -> Optional[Service]:
         }
         if isinstance(data.profile, LocalProfile):
             flattened["host"] = "localhost"
-            flattened["provider"] = data.provider
+            flattened["provider"] = blackfish_config.CONTAINER_PROVIDER
         if isinstance(data.profile, SlurmProfile):
             flattened["host"] = data.profile.host
             flattened["user"] = data.profile.user

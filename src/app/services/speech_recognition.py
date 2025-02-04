@@ -8,9 +8,7 @@ from app.logger import logger
 
 @dataclass
 class SpeechRecognitionConfig(BaseConfig):
-    model_id: Optional[str]
     model_dir: Optional[str]
-    input_dir: str
     revision: Optional[str] = None
 
 

@@ -106,7 +106,6 @@ def run_speech_recognition(
 
     container_config = SpeechRecognitionConfig(
         port=port,
-        model_id=repo_id,
         model_dir=os.path.dirname(model_dir),  # type: ignore
         revision=revision,
     )
@@ -173,7 +172,6 @@ def run_speech_recognition(
                     )
     else:
         job_config = LocalJobConfig(
-            name=name,
             gres=ctx.obj.get("resources").get("gres"),
         )
 

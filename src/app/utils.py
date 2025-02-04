@@ -288,6 +288,8 @@ def format_datetime(
     td = t1 - t0
     if td.days > 0:
         return f"{td.days} days ago"
+    elif td.seconds > 3600:
+        return f"{td.seconds // 3600} hours ago"
     elif td.seconds > 60:
         return f"{td.seconds // 60} min ago"
     elif td.seconds > 0:

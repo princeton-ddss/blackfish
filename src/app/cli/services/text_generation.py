@@ -235,7 +235,6 @@ def run_text_generation(
                     )
     else:
         job_config = LocalJobConfig(
-            name=name,
             gres=ctx.obj.get("resources").get("gres"),
         )
 

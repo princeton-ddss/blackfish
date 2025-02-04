@@ -572,7 +572,7 @@ async def stop_service(
     except Exception as e:
         logger.error(f"Failed to fetch service: {e}.")
 
-    await service.stop(session, state, timeout=data.timeout, failed=data.failed)
+    await service.stop(session, timeout=data.timeout, failed=data.failed)
     return service
 
 
@@ -628,7 +628,9 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
         service = await get_service(service_id, session)
     except Exception as e:
         logger.error(f"Failed to fetch service: {e}")
+
     await service.refresh(session, state)
+
     if service.status in [
         ServiceStatus.STOPPED,
         ServiceStatus.TIMEOUT,
@@ -636,6 +638,9 @@ async def delete_service(service_id: str, session: AsyncSession, state: State) -
     ]:
         query = sa.delete(Service).where(Service.id == service_id)
         await session.execute(query)
+        job = service.get_job()
+        if job is not None:
+            job.remove()
     else:
         logger.warning(
             f"Service is still running (status={service.status}). Aborting delete."

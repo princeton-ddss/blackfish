@@ -227,7 +227,6 @@ class Service(UUIDAuditBase):
     async def stop(
         self,
         session: AsyncSession,
-        app_config: State,
         timeout: bool = False,
         failed: bool = False,
     ) -> None:
@@ -351,14 +350,14 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a cancelled job. Setting status to"
                     " STOPPED and stopping the service."
                 )
-                await self.stop(session, app_config)
+                await self.stop(session)
                 return ServiceStatus.STOPPED
             elif job.state == JobState.TIMEOUT:
                 logger.debug(
                     f"Service {self.id} has a timed out job. Setting status to"
                     " TIMEOUT and stopping the service."
                 )
-                await self.stop(session, app_config, timeout=True)
+                await self.stop(session, timeout=True)
                 return ServiceStatus.TIMEOUT
             elif job.state == JobState.RUNNING:
                 if self.port is None:
@@ -411,9 +410,7 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
-                await self.stop(
-                    session, app_config, failed=True
-                )  # stop will push to database
+                await self.stop(session, failed=True)  # stop will push to database
                 return ServiceStatus.FAILED
         elif isinstance(job, LocalJob):
             if job.state == JobState.CREATED:
@@ -433,7 +430,7 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a cancelled job. Setting status to"
                     " STOPPED and stopping the service."
                 )
-                await self.stop(session, app_config)
+                await self.stop(session)
                 return ServiceStatus.STOPPED
             elif job.state == JobState.RUNNING:
                 res = await self.ping()
@@ -475,9 +472,7 @@ class Service(UUIDAuditBase):
                     f"Service {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
-                await self.stop(
-                    session, app_config, failed=True
-                )  # stop will push to database
+                await self.stop(session, failed=True)  # stop will push to database
                 return ServiceStatus.FAILED
 
         return None

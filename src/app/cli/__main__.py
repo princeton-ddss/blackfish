@@ -274,14 +274,7 @@ def stop(service_id: str) -> None:  # pragma: no cover
     required=True,
     type=str,
 )
-@click.option(
-    "--force",
-    "-f",
-    is_flag=True,
-    default=False,
-    help="Force the removal of a running service",
-)
-def rm(service_id: str, force: bool) -> None:  # pragma: no cover
+def rm(service_id: str) -> None:  # pragma: no cover
     """Remove one or more services"""
 
     with yaspin(text="Deleting service...") as spinner:

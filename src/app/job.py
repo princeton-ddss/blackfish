@@ -72,6 +72,9 @@ class Job:
     def update(self, verbose: bool = False) -> Optional[str]:
         raise NotImplementedError()
 
+    def remove(self) -> None:
+        raise NotImplementedError()
+
 
 def parse_state(res: bytes) -> JobState:
     if res == b"":
@@ -316,6 +319,9 @@ class SlurmJob(Job):
                 f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
             )
 
+    def remove(self) -> None:
+        pass
+
 
 @dataclass
 class LocalJob(Job):
@@ -397,4 +403,16 @@ class LocalJob(Job):
         except subprocess.CalledProcessError as e:
             logger.warning(
                 f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
+            )
+
+    def remove(self) -> None:
+        try:
+            logger.debug(f"Removing job {self.job_id}")
+            if self.provider == ContainerProvider.Docker:
+                subprocess.check_output(["docker", "container", "rm", f"{self.job_id}"])
+            elif self.provider == ContainerProvider.Apptainer:
+                logger.info("Nothing to remove (provider is Apptainer). Skipping.")
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to remove job (job_id={self.job_id}, code={e.returncode})."
             )

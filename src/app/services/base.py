@@ -26,7 +26,7 @@ from app.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
 @dataclass
 class BaseConfig:
-    port: int
+    port: Optional[int]
 
 
 class ServiceStatus(StrEnum):
@@ -605,6 +605,7 @@ class Service(UUIDAuditBase):
             profile=self.get_profile(),
             container_config=container_config,
             job_config=job_config,
+            mount=self.mount,
         )
 
         return job_script

@@ -11,6 +11,7 @@ class SlurmProfile:
     user: str
     home_dir: str
     cache_dir: str
+    type: str = "slurm"
 
     def is_local(self) -> bool:
         return self.host == "localhost"
@@ -21,6 +22,7 @@ class LocalProfile:
     name: str
     home_dir: str
     cache_dir: str
+    type: str = "local"
 
     def is_local(self) -> bool:
         return True

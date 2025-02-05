@@ -709,7 +709,13 @@ async def get_models(
     res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
         if profile is not None:
-            models = await find_models(next(p for p in profiles if p.name == profile))
+            matched = next((p for p in profiles if p.name == profile), None)
+            if matched is None:
+                logger.warning(
+                    f"Profile '{profile}' not found. Returning an empty list."
+                )
+                return list()
+            models = await find_models(matched)
             logger.debug(
                 "Deleting existing models WHERE model.profile == '{profile}'..."
             )

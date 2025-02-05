@@ -494,6 +494,12 @@ def models_ls(
     tab.set_style(PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
+
+    if len(res.json()) == 0:
+        click.echo(
+            f"{LogSymbols.WARNING.value} No models found. Is '{profile}' a profile on this host?"
+        )
+
     for model in res.json():
         tab.add_row(
             [
@@ -549,13 +555,15 @@ def models_add(
     from app.models.model import add_model
     from app.models.profile import serialize_profile, SlurmProfile
 
-    profile_obj = serialize_profile(config.HOME_DIR, profile)
-    if profile_obj is None:
-        print(f"{LogSymbols.ERROR.value} Failed to load profile 😔.")
+    matched = serialize_profile(config.HOME_DIR, profile)
+    if matched is None:
+        click.echo(
+            f"{LogSymbols.ERROR.value} Profile not found 😔. To view a list of available profiles, use `blackfish profile ls`."
+        )
         return
 
-    if isinstance(profile_obj, SlurmProfile):
-        if not profile_obj.is_local():
+    if isinstance(matched, SlurmProfile):
+        if not matched.is_local():
             print(
                 f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for"
                 " local profiles 😔."
@@ -564,7 +572,7 @@ def models_add(
 
     try:
         model_data = add_model(
-            repo_id, profile=profile_obj, revision=revision, use_cache=use_cache
+            repo_id, profile=matched, revision=revision, use_cache=use_cache
         )
         if model_data is not None:
             model, path = model_data
@@ -639,13 +647,15 @@ def models_remove(
     from app.models.model import remove_model
     from app.models.profile import serialize_profile, SlurmProfile
 
-    profile_obj = serialize_profile(config.HOME_DIR, profile)
-    if profile_obj is None:
-        print(f"{LogSymbols.ERROR.value} Failed to serialize profile 😔.")
+    matched = serialize_profile(config.HOME_DIR, profile)
+    if matched is None:
+        click.echo(
+            f"{LogSymbols.ERROR.value} Profile not found 😔. To view a list of available profiles, use `blackfish profile ls`."
+        )
         return
 
-    if isinstance(profile_obj, SlurmProfile):
-        if not profile_obj.is_local():
+    if isinstance(matched, SlurmProfile):
+        if not matched.is_local():
             print(
                 f"{LogSymbols.ERROR.value} Sorry—Blackfish can only manage models for"
                 " local profiles 😔."
@@ -655,7 +665,7 @@ def models_remove(
     with yaspin(text="Removing model...") as spinner:
         try:
             remove_model(
-                repo_id, profile=profile_obj, revision=revision, use_cache=use_cache
+                repo_id, profile=matched, revision=revision, use_cache=use_cache
             )
             spinner.text = ""
             spinner.ok(f"{LogSymbols.SUCCESS.value} Removed model {repo_id}")

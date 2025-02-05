@@ -138,8 +138,14 @@ def run_text_generation(
     """
 
     config: BlackfishConfig = ctx.obj.get("config")
-    profile: BlackfishProfile = ctx.obj.get("profile")
+    profile: BlackfishProfile | None = ctx.obj.get("profile")
     options: ServiceOptions = ctx.obj.get("options")
+
+    if profile is None:
+        click.echo(
+            f"{LogSymbols.ERROR.value} Profile not found 😔. To view a list of available profiles, use `blackfish profile ls`."
+        )
+        return
 
     if repo_id in get_models(profile):
         if revision is None:

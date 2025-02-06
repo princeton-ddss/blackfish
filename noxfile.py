@@ -6,7 +6,7 @@ nox.options.default_venv_backend = "uv|virtualenv"
 
 @nox.session(python=["3.12"])
 def tests(session: nox.Session) -> None:
-    session.install("pytest")
+    session.install("pytest", "uv")
     session.install("-e", ".")
     session.run("pytest", "-v", "tests")
 
@@ -20,3 +20,10 @@ def lint(session: nox.Session) -> None:
         "--all-files",
         "--show-diff-on-failure",
     )
+
+
+@nox.session(default=False)
+def docs(session: nox.Session) -> None:
+    session.install("mkdocs-material", "mkdocstrings", "mkdocs-swagger-ui-tag")
+    session.install("e", ".")
+    session.run("mkdocs", "build")

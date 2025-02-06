@@ -12,6 +12,7 @@ concurrency:
 permissions:
   contents: write
 jobs:
+
   build:
     name: Build distribution 📦
     runs-on: ${{ matrix.os }}

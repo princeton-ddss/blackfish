@@ -5,7 +5,7 @@ requires = [
 ]
 
 [project]
-name = "blackfish"
+name = "blackfish-ai"
 version = "0.1.0"
 description = "An open-source AI-as-a-Service platform."
 readme = "README.md"

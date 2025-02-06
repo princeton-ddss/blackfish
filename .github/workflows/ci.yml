@@ -13,7 +13,9 @@ permissions:
   contents: write
 jobs:
   build:
+    name: Build distribution 📦
     runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -21,6 +23,7 @@ jobs:
         python-version:
           - "3.12"
           - "3.13"
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,9 +32,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          allow-preleases: true
-      - name: Set up uv
+      - name: Install uv (latest)
         uses: astral-sh/setup-uv@v5
+      - name: Build wheel
+        run: uv build
+      - name: Store distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -45,6 +55,7 @@ jobs:
           python -m pip install --disable-pip-version-check .
       - name: Lint
         run: nox --non-interactive --error-on-missing-interpreter --session "lint"
+
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -62,6 +73,7 @@ jobs:
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
+
   docs:
     runs-on: ubuntu-latest
     steps:
@@ -82,17 +94,25 @@ jobs:
             mkdocs-material-
       - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag
       - run: mkdocs gh-deploy --force
-  deploy:
+
+  publish:
+    name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    environment:
+      name: pypi
+      url: https://pypi.org/p/blackfish-ai
+    permissions:
+      id-token: write
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Build sdist and wheel
-        run: pipx run build
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
+    - name: Download distributions
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}

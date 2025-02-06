@@ -1,9 +1,9 @@
-name: ci
+name: CI
 on:
   push:
-    branches: ["master", "dev"]
+    branches: ["master"]
   pull_request:
-    branches: ["master", "dev"]
+    branches: ["master"]
 env:
   FORCE_COLOR: "1"
 concurrency:
@@ -12,6 +12,26 @@ concurrency:
 permissions:
   contents: write
 jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-13]
+        python-version:
+          - "3.12"
+          - "3.13"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-preleases: true
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -42,7 +62,7 @@ jobs:
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
-  deploy:
+  docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,3 +82,17 @@ jobs:
             mkdocs-material-
       - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag
       - run: mkdocs gh-deploy --force
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build sdist and wheel
+        run: pipx run build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

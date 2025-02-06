@@ -39,7 +39,37 @@ dependencies = [
   "uvicorn>=0.34",
   "yaspin>=3.1",
 ]
+optional-dependencies.uv = [
+  "uv>=0.5.18",
+]
+urls.bug-tracker = "https://github.com/princeton-ddss/blackfish/issues"
+urls.documentation = "https://princeton-ddss.github.io/blackfish/"
 scripts.blackfish = "app.cli.__main__:main"
+
+[dependency-groups]
+dev = [
+  { include-group = "docs" },
+  { include-group = "test" },
+]
+test = [
+  "pytest>=8",
+]
+
+docs = [
+  "mkdocs-material",
+  "mkdocs-swagger-ui-tag",
+  "mkdocstrings",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = [ "src/app" ]
+
+[tool.pyproject-fmt]
+max_supported_python = "3.13"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+show_error_codes = true
+warn_unreachable = true
+ignore_missing_imports = true

@@ -261,7 +261,7 @@ def stop(service_id: str) -> None:  # pragma: no cover
         spinner.text = ""
         if not res.ok:
             spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to stop service {service_id}."
+                f"{LogSymbols.ERROR.value} Failed to stop service {service_id} (status={res.status_code})"
             )
         else:
             spinner.ok(f"{LogSymbols.SUCCESS.value} Stopped service {service_id}")
@@ -284,7 +284,7 @@ def rm(service_id: str) -> None:  # pragma: no cover
         spinner.text = ""
         if not res.ok:
             spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to stop service {service_id}."
+                f"{LogSymbols.ERROR.value} Failed to remove service {service_id} (status={res.status_code})"
             )
         else:
             spinner.ok(f"{LogSymbols.SUCCESS.value} Removed service {service_id}")

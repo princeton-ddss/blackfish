@@ -144,7 +144,7 @@ else:
 
 
 # --- Utils ---
-async def get_service(service_id: str, session: AsyncSession) -> Service:
+async def get_service(service_id: str, session: AsyncSession) -> Service | None:
     """Query a single service ID from the application database and raise a `NotFoundException`
     if the service is missing.
     """
@@ -152,8 +152,9 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
     res = await session.execute(query)
     try:
         return res.scalar_one()
-    except NoResultFound as e:
-        raise NotFoundException(detail=f"Service {service_id} not found") from e
+    except NoResultFound:
+        logger.error(f"Service {service_id} not found.")
+        return None
 
 
 ModelInfoResult = dict[str, str]
@@ -567,10 +568,9 @@ async def run_service(
 async def stop_service(
     service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
-    try:
-        service = await get_service(service_id, session)
-    except Exception as e:
-        logger.error(f"Failed to fetch service: {e}.")
+    service = await get_service(service_id, session)
+    if service is None:
+        raise NotFoundException(detail="Service not found")
 
     await service.stop(session, timeout=data.timeout, failed=data.failed)
     return service
@@ -581,12 +581,10 @@ async def refresh_service(
     service_id: str, session: AsyncSession, state: State
 ) -> Optional[Service]:
     service = await get_service(service_id, session)
+    if service is None:
+        raise NotFoundException(detail="Service not found")
 
-    try:
-        await service.refresh(session, state)
-    except Exception as e:
-        logger.error(f"Failed to refresh service: {e}")
-
+    await service.refresh(session, state)
     return service
 
 
@@ -624,10 +622,9 @@ async def fetch_services(
 
 @delete("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
-    try:
-        service = await get_service(service_id, session)
-    except Exception as e:
-        logger.error(f"Failed to fetch service: {e}")
+    service = await get_service(service_id, session)
+    if service is None:
+        raise NotFoundException(detail="Service not found")
 
     await service.refresh(session, state)
 

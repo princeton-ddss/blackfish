@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import rich_click as click
 from rich_click import Context
 import requests

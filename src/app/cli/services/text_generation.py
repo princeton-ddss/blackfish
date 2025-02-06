@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional, Tuple
 import rich_click as click
 from rich_click import Context

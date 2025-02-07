@@ -48,17 +48,12 @@ scripts.blackfish = "app.cli.__main__:main"
 
 [dependency-groups]
 dev = [
-  { include-group = "docs" },
-  { include-group = "test" },
-]
-test = [
-  "pytest>=8",
-]
-
-docs = [
-  "mkdocs-material",
-  "mkdocs-swagger-ui-tag",
-  "mkdocstrings",
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.6.2",
+  "mkdocs-swagger-ui-tag>=0.6.11",
+  "mkdocstrings[python]>=0.28",
+  "nox>=2024.10.9",
+  "pytest>=8.3.4",
 ]
 
 [tool.hatch.build.targets.wheel]

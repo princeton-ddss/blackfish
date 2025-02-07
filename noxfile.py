@@ -24,6 +24,8 @@ def lint(session: nox.Session) -> None:
 
 @nox.session(default=False)
 def docs(session: nox.Session) -> None:
-    session.install("mkdocs-material", "mkdocstrings", "mkdocs-swagger-ui-tag")
+    session.install(
+        "mkdocs", "mkdocs-material", "mkdocstrings[python]", "mkdocs-swagger-ui-tag"
+    )
     session.install("e", ".")
     session.run("mkdocs", "build")

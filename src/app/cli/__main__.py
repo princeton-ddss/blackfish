@@ -371,12 +371,21 @@ def details(service_id: str) -> None:  # pragma: no cover
         " image=text_generation,status=SUBMITTED"
     ),
 )
-def ls(filters: Optional[str]) -> None:  # pragma: no cover
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="Include all services, i.e., including inactive ones.",
+)
+def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     """List services"""
 
+    from typing import Any
     from prettytable import PrettyTable, PLAIN_COLUMNS
     from datetime import datetime
     from app.utils import format_datetime
+    from app.services.base import ServiceStatus
 
     tab = PrettyTable(
         field_names=[
@@ -416,21 +425,35 @@ def ls(filters: Optional[str]) -> None:  # pragma: no cover
             )
             return
 
+    def is_active(service: Any) -> bool:
+        return service["status"] in [
+            ServiceStatus.SUBMITTED,
+            ServiceStatus.PENDING,
+            ServiceStatus.HEALTHY,
+            ServiceStatus.UNHEALTHY,
+            ServiceStatus.STARTING,
+        ]
+
     services = res.json()
     for service in services:
-        tab.add_row(
-            [
-                service["id"][:13],
-                service["image"],
-                service["model"],
-                format_datetime(datetime.fromisoformat(service["created_at"])),
-                format_datetime(datetime.fromisoformat(service["updated_at"])),
-                service["status"].upper() if service["status"] is not None else None,
-                service["port"],
-                service["name"],
-                service["profile"],
-            ]
-        )
+        if is_active(service) or all:
+            tab.add_row(
+                [
+                    service["id"][:13],
+                    service["image"],
+                    service["model"],
+                    format_datetime(datetime.fromisoformat(service["created_at"])),
+                    format_datetime(datetime.fromisoformat(service["updated_at"])),
+                    (
+                        service["status"].upper()
+                        if service["status"] is not None
+                        else None
+                    ),
+                    service["port"],
+                    service["name"],
+                    service["profile"],
+                ]
+            )
     click.echo(tab)
 
 

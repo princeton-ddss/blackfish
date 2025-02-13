@@ -199,7 +199,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "advanced-alchemy", specifier = ">=0.27.1" },
+    { name = "advanced-alchemy", specifier = ">=0.27.1,<0.28.0" },
     { name = "aiohttp", specifier = ">=3.11.11" },
     { name = "aiosqlite", specifier = ">=0.20" },
     { name = "colorlog", specifier = ">=6.9" },

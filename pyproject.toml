@@ -20,7 +20,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-  "advanced-alchemy>=0.27.1",
+  "advanced-alchemy>=0.27.1,<0.28",
   "aiohttp>=3.11.11",
   "aiosqlite>=0.20",
   "colorlog>=6.9",

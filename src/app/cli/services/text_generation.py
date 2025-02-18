@@ -218,7 +218,7 @@ def run_text_generation(
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services/slurm/text-generation",
+                    f"http://{config.HOST}:{config.PORT}/api/services",
                     json={
                         "name": name,
                         "image": "text_generation",
@@ -273,7 +273,7 @@ def run_text_generation(
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services/local/text-generation",
+                    f"http://{config.HOST}:{config.PORT}/api/services",
                     json={
                         "name": name,
                         "image": "text_generation",

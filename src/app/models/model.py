@@ -5,13 +5,14 @@ import json
 import shutil
 from pathlib import Path
 from log_symbols.symbols import LogSymbols
-from huggingface_hub import snapshot_download, model_info, scan_cache_dir
+from huggingface_hub import snapshot_download, model_info, scan_cache_dir, ModelInfo
 from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy.orm import Mapped
 from app.models.profile import BlackfishProfile as Profile
 
 
 PIPELINE_IMAGES = {
+    None: "unspecified",
     "automatic-speech-recognition": "speech-recognition",
     "text-generation": "text-generation",
 }
@@ -86,6 +87,16 @@ def remove_model(
         f.write(json.dumps(data))
 
 
+def get_pipeline(res: ModelInfo) -> str | None:
+    if res.pipeline_tag is not None:
+        return res.pipeline_tag
+    if res.card_data is not None:
+        pipeline: str | None = res.card_data.get("pipeline_tag", None)
+        return pipeline
+
+    return None
+
+
 def add_model(
     repo_id: str,
     profile: Profile,
@@ -137,14 +148,8 @@ def add_model(
     )
 
     revision = path.split("/")[-1]
-
     res = model_info(repo_id=repo_id)
-
-    if res.card_data is not None:
-        pipeline = res.card_data.get("pipeline_tag")  # e.g., "text-generation"
-    else:
-        print(f"{LogSymbols.ERROR.value} No card data available for repo {repo_id}.")
-        return None
+    pipeline = get_pipeline(res)  # e.g., "text-generation"
 
     try:
         with open(cache_dir.joinpath("info.json"), mode="r") as f:
@@ -155,8 +160,6 @@ def add_model(
         )
         data = dict()
 
-    if repo_id not in data.keys():
-        data[repo_id] = {}
     data[repo_id] = PIPELINE_IMAGES[pipeline]
 
     with open(f"{cache_dir}/info.json", mode="w") as f:

@@ -4,29 +4,30 @@ An open source machine learning as a service ("MLaaS") platform.
 ## Description
 Blackfish provides a low-to-no-code solution for researchers to access and manage
 machine learning "services"—machine learning models that perform specific
-tasks, such as text generation, image classification, speech detection, etc. With
-Blackfish, a researcher that needs to perform an ML task can start a service to perform
-the task by choosing from a list of available models. Blackfish will start an API
-running that model and ensure that the service is reachable. Once the service is
-up an running, researchers can submit requests through the command line, user interface,
-or directly to the API. The researcher can change the service (i.e., switch models), start
-another service or stop services as needed.
+tasks, such as text generation, speech detection or object recognition. To use Blackfish,
+a researcher selects a model that performs the ML task of interest and describes how to
+run the service, i.e., which cluster to use, how many GPUs are required, etc.
+Blackfish then starts an API running the model and ensures that the service is reachable.
+Once the service is available, the researcher can submit requests directly to the API or
+via the Blackfish user interface.
 
-### HPC Clusters
-Blackfish is geared towards academic researchers with access to a High Performance
+### Open Source
+Blackfish is designed to run open source models and/or models for which the researcher has access to model snapshots. In the future, we may also support interactions with private services, such as ChatGPT, but our main focus is on open source models that are freely available from, e.g., the Hugging Face model hub.
+
+### High-Performance Computing
+Blackfish is geared towards researchers with access to a High-Performance
 Computing (HPC) cluster (or any cluster with a Slurm job scheduler). Below, we describe
 a few typical ways in which researchers might want to use it.
 
-#### Option 1: Local Mode
+#### Option 1: Local-to-Remote
 Researchers can install Blackfish on their laptop and interact with services running
-on a remote cluster. Under this setup, the researcher can pass data from their laptop to
-requests to services running on the cluster. This is convenient if the researcher hasn't
-transferred their data to the cluster and wants to collect results on their laptop. For tasks
-that involve running inference on relatively large individual data points (e.g., videos),
-the costs of transferring data across the network may be prohibitive for large datasets.
+on a remote cluster. Using this setup, a researcher starts remote services from their laptop and sends requests from their laptop to services running on the cluster. This is convenient if the researcher hasn't
+transferred their data to the cluster and/or wants to collect results on their laptop. For tasks
+that involve running inference on relatively large individual data points (e.g., videos), or large datasets,
+the costs of transferring data across the network may make this an unattractive option.
 
-#### Option 2: Remote Mode
-In that case, researchers might want to consider running Blackfish on the same system as
+#### Option 2: Remote-to-Remote
+Instead, researchers might consider running Blackfish on the same system as
 their services. There are two ways to accomplish this on an HPC cluster: either run
 Blackfish on a login node, or run it on a compute node. By starting the application on a
 login node, researchers can run as many *concurrent* services as they wish in separate
@@ -35,49 +36,87 @@ must run on the resources requested by that job. This limits the number services
 the researcher can interact with *at the same time*, but allows the application to be
 accessed from a browser if the cluster supports Open OnDemand.
 
+#### Option 3: OnDemand
+With the help of cluster administrators, Blackfish can also be setup to run via [Open OnDemand](https://openondemand.org/). This option provides users installation-free access to Blackfish. For details, see the [blackfish-ondemand](https://github.com/princeton-ddss/blackfish-ondemand) repo.
+
 ## Installation
-Blackfish is a `pip`-installable python package. To keep things clean, we recommend
-installing Blackfish to its own environment:
+Blackfish is a `pip`-installable python package. We recommend
+installing Blackfish to its own virtual environment:
 ```shell
-python -m venv env
+python -m venv .venv
 source env/bin/activate
-pip install blackfish
+pip install blackfish-ml
 ```
 
-For development, clone the package's repo and pip install:
+For development, clone the package's repo and `pip` install:
 ```shell
-git clone ...
-python -m venv env
+git clone https://github.com/princeton-ddss/blackfish.git
+python -m venv .venv
 source env/bin/activate
 cd blackfish && pip install -e .
 ```
 
+To check if everything worked, type
+```shell
+source .venv/bin/activate
+which blackfish
+```
+This command should return the path of the installed application.
+
+Before you begin using Blackfish, you'll need to initialize the application. To do so, type
+```shell
+blackfish init
+```
+This command will prompt you to provide details for a Blackfish "profile". A typical default profile should look something like the following:
+```toml
+name: default
+type: slurm
+host: della.princeton.edu
+user: <user_id>
+home: <home_dir>/.blackfish
+cache: <scratch_dir>/.blackfish
+```
+Additional details of profiles can be found [here](https://princeton-ddss.github.io/blackfish/getting_started/#profiles).
+
 ## Usage
-Their are two ways that reseachers can interact with Blackfish: in a browser, via the user
+There are two ways that reseachers can interact with Blackfish: in a browser, via the user
 interface, or at the command-line using the Blackfish CLI. In either case, the starting
 point is to type
 ```shell
 blackfish start
 ```
-in the command-line. If this is your first time starting the application, then you'll need
-to answer a few prompts to set things up. Once you're setup, the application will launch.
+in the command-line. This command launches the Blackfish API that both the UI and CLI interact interact with. If the API launches successfully, you should see something like the following in your terminal:
+```shell
+➜ blackfish start
+INFO:     Added class SpeechRecognition to service class dictionary. [2025-02-24 11:55:06.639]
+INFO:     Added class TextGeneration to service class dictionary. [2025-02-24 11:55:06.639]
+WARNING:  Blackfish is running in debug mode. API endpoints are unprotected. In a production
+          environment, set BLACKFISH_DEV_MODE=0 to require user authentication. [2025-02-24 11:55:06.639]
+INFO:     Upgrading database... [2025-02-24 11:55:06.915]
+WARNING:  Current configuration will not reload as not all conditions are met, please refer to documentation.
+INFO:     Started server process [58591]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://localhost:8000 (Press CTRL+C to quit)
+```
+
 At this point, we need to decide how we want to interact with Blackfish. The UI is available
 in your browser by heading over to `http://localhost:8000`. It's large self-explanatory, so
 let's instead take a look at the CLI.
 
 ### CLI
-Open a new terminal tab/window. First, let's see what type of services are available.
+Open a new terminal tab/window. First, let's see what services are available.
 ```shell
 blackfish run --help
 ```
-This command displays a list of available commands. One of these is called `text-generate`.
+The output displays a list of available "commands". One of these is called `text-generation`.
 This is a service that generates text given a input prompt. There are a variety of models
-that we might use to perform this task, so let's check out what's available on Blackfish:
+that we might use to perform this task, so let's see what models are available to us:
 ```shell
-blackfish image ls --filter name=text-generate
+blackfish model ls --image=text-generation
 ```
 
-This command returns a list of models that we can pass to the `blackfish run text-generate`
+This command outputs a list of models that we can pass to the `blackfish run text-generation`
 command. One of these should be `bigscience/bloom560m`. (The exact list you see will depend
 on your application settings/deployment). Let's spin it up:
 ```shell
@@ -302,4 +341,44 @@ the trick. Setting up SSH keys is as simple as running the following on your loc
 ```
 ssh-keygen -t rsa # generates ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa
 ssh-copy-id <user>@<host> # answer yes to transfer the public key
+```
+
+
+## Development
+
+### Updating `build`
+Blackfish ships with a copy of the built user interface so that users can run the user interface with having to install `npm`. To update the UI, you need:
+
+1. Build the UI
+Run `npm run build` in the `blackfish-ui` repo. The output of this command will be in `build/out`:
+```shell
+➜ tree build -d 1
+build
+└── out
+    ├── _next
+    │   ├── ssm_XfrOvugkYGVtNQ8ps
+    │   └── static
+    │       ├── chunks
+    │       │   ├── app
+    │       │   │   ├── _not-found
+    │       │   │   ├── dashboard
+    │       │   │   ├── login
+    │       │   │   ├── speech-recognition
+    │       │   │   └── text-generation
+    │       │   └── pages
+    │       ├── css
+    │       ├── media
+    │       └
+```
+2. Copy `blackfish-ui/build/out` to `blackfish/src/build`
+```
+cp -R build/out/* ~/GitHub/blackfish/src/build
+```
+
+3. Commit the change
+```
+git add .
+git commit
+# Add a useful message that includes the head of the UI, e.g.,
+# Update UI to blackfish-ui@7943376
 ```

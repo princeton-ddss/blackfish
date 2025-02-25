@@ -622,31 +622,126 @@ async def fetch_services(
     return list(services)
 
 
-@delete("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
-async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
-    service = await get_service(service_id, session)
-    if service is None:
-        raise NotFoundException(detail="Service not found")
+@delete("/api/services", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_service(
+    session: AsyncSession,
+    state: State,
+    id: Optional[str] = None,
+    image: Optional[str] = None,
+    model: Optional[str] = None,
+    status: Optional[str] = None,
+    port: Optional[int] = None,
+    name: Optional[str] = None,
+    profile: Optional[str] = None,
+) -> list[dict[str, str]]:
+    query_params = {
+        "id": id,
+        "image": image,
+        "model": model,
+        "status": status,
+        "port": port,
+        "name": name,
+        "profile": profile,
+    }
 
-    await service.refresh(session, state)
+    query_params = {k: v for k, v in query_params.items() if v is not None}
+    query = sa.select(Service).filter_by(**query_params)
+    query_res = await session.execute(query)
+    services = query_res.scalars().all()
 
-    if service.status in [
-        ServiceStatus.STOPPED,
-        ServiceStatus.TIMEOUT,
-        ServiceStatus.FAILED,
-    ]:
-        query = sa.delete(Service).where(Service.id == service_id)
-        await session.execute(query)
-        job = service.get_job()
-        if job is not None:
-            job.remove()
-    else:
+    if len(services) == 0:
         logger.warning(
-            f"Service is still running (status={service.status}). Aborting delete."
+            f"The query parameters {query_params} did not match any services."
         )
-        raise ClientException(
-            detail=f"Service is still running (status={service.status})"
+        return []
+
+    await asyncio.gather(*[s.refresh(session, state) for s in services])
+
+    res = []
+    for service in services:
+        if service.status in [
+            ServiceStatus.STOPPED,
+            ServiceStatus.TIMEOUT,
+            ServiceStatus.FAILED,
+        ]:
+            logger.debug(f"Queueing service {service.id} for deletion")
+            deletion = sa.delete(Service).where(Service.id == service.id)
+            try:
+                await session.execute(deletion)
+            except Exception as e:
+                raise InternalServerException(
+                    detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
+                )
+            try:
+                job = service.get_job()
+                if job is not None:
+                    job.remove()
+            except Exception as e:
+                logger.warning(
+                    f"Unable to remove job for service {service.id.hex}: {e}"
+                )
+            res.append(
+                {
+                    "id": service.id.hex,
+                    "status": "ok",
+                }
+            )
+        else:
+            logger.warning(
+                f"Service is still running (status={service.status}). Aborting delete."
+            )
+            res.append(
+                {
+                    "id": service.id.hex,
+                    "status": "error",
+                    "message": "Service is still running",
+                }
+            )
+
+    return res
+
+
+@delete("/api/services/prune", guards=ENDPOINT_GUARDS, status_code=200)
+async def prune_services(session: AsyncSession, state: State) -> int:
+    query = sa.select(Service).where(
+        Service.status.in_(
+            [
+                ServiceStatus.STOPPED,
+                ServiceStatus.TIMEOUT,
+                ServiceStatus.FAILED,
+            ]
         )
+    )
+    res = await session.execute(query)
+    services = res.scalars().all()
+
+    if len(services) == 0:
+        return 0
+
+    await asyncio.gather(*[s.refresh(session, state) for s in services])
+
+    count = 0
+    for service in services:
+        logger.debug(f"Queueing service {service.id} for deletion")
+        deletion = sa.delete(Service).where(Service.id == service.id)
+        try:
+            await session.execute(deletion)
+        except Exception as e:
+            raise InternalServerException(
+                detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
+            )
+        try:
+            job = service.get_job()
+            if job is not None:
+                job.remove()
+        except Exception as e:
+            logger.warning(f"Unable to remove job for service {service.id.hex}: {e}")
+            raise InternalServerException(
+                detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
+            )
+        count += 1
+
+    return count
 
 
 async def asyncget(url: StrOrURL) -> Any:
@@ -884,6 +979,7 @@ app = Litestar(
         refresh_service,
         fetch_services,
         delete_service,
+        prune_services,
         proxy_service,
         create_model,
         get_model,

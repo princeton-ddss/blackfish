@@ -271,25 +271,79 @@ def stop(service_id: str) -> None:  # pragma: no cover
 
 # blackfish rm [OPTIONS] SERVICE [SERVICE...]
 @main.command()
-@click.argument(
-    "service_id",
-    required=True,
+@click.option(
+    "--filters",
     type=str,
+    help=(
+        "A list of comma-separated filtering criteria, e.g.,"
+        " image=text_generation,status=SUBMITTED"
+    ),
 )
-def rm(service_id: str) -> None:  # pragma: no cover
+def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
     """Remove one or more services"""
+
+    params: dict[str, str] | None
+    if filters is not None:
+        try:
+            params = {k: v for k, v in map(lambda x: x.split("="), filters.split(","))}
+        except Exception as e:
+            click.echo(f"Unable to parse filter: {e}")
+            return
+    else:
+        params = None
 
     with yaspin(text="Deleting service...") as spinner:
         res = requests.delete(
-            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
+            f"http://{config.HOST}:{config.PORT}/api/services",
+            params=params,
         )
         spinner.text = ""
         if not res.ok:
             spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to remove service {service_id} (status={res.status_code})"
+                f"{LogSymbols.ERROR.value} Failed to remove services (status={res.status_code})"
             )
         else:
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Removed service {service_id}")
+            data = res.json()
+            if len(data) == 0:
+                spinner.ok(
+                    f"{LogSymbols.ERROR.value} Query did not match any services."
+                )
+                return
+            oks = [x for x in data if x["status"] == "ok"]
+            errors = [x for x in data if x["status"] == "error"]
+            spinner.ok(
+                f"{LogSymbols.SUCCESS.value} Removed {len(oks)} {'service' if len(oks) == 1 else 'services'}."
+            )
+            if len(errors) > 0:
+                click.echo(
+                    f"{LogSymbols.ERROR.value} Failed to delete {len(errors)} {'service' if len(errors) == 1 else 'services'}."
+                )
+                for error in errors:
+                    click.echo(f"- {error['id']} - {error['message']}")
+
+
+@main.command()
+def prune() -> None:  # pragma: no cover
+    """Remove all inactive services."""
+
+    confirmation = input(
+        "This action will delete ALL inactive services. Are you sure you wish to proceed? (Y/n) "
+    )
+    if not confirmation.lower() == "y":
+        return
+
+    with yaspin(text="Deleting service...") as spinner:
+        res = requests.delete(f"http://{config.HOST}:{config.PORT}/api/services/prune")
+        spinner.text = ""
+        if not res.ok:
+            spinner.fail(
+                f"{LogSymbols.ERROR.value} Failed to prune services (status={res.status_code})"
+            )
+        else:
+            count = res.json()
+            spinner.ok(
+                f"{LogSymbols.SUCCESS.value} Removed {count} {'service' if count == 1 else 'services'}."
+            )
 
 
 # blackfish details [OPTIONS] SERVICE
@@ -371,12 +425,21 @@ def details(service_id: str) -> None:  # pragma: no cover
         " image=text_generation,status=SUBMITTED"
     ),
 )
-def ls(filters: Optional[str]) -> None:  # pragma: no cover
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="Include all services, i.e., including inactive ones.",
+)
+def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     """List services"""
 
+    from typing import Any
     from prettytable import PrettyTable, PLAIN_COLUMNS
     from datetime import datetime
     from app.utils import format_datetime
+    from app.services.base import ServiceStatus
 
     tab = PrettyTable(
         field_names=[
@@ -416,21 +479,35 @@ def ls(filters: Optional[str]) -> None:  # pragma: no cover
             )
             return
 
+    def is_active(service: Any) -> bool:
+        return service["status"] in [
+            ServiceStatus.SUBMITTED,
+            ServiceStatus.PENDING,
+            ServiceStatus.HEALTHY,
+            ServiceStatus.UNHEALTHY,
+            ServiceStatus.STARTING,
+        ]
+
     services = res.json()
     for service in services:
-        tab.add_row(
-            [
-                service["id"][:13],
-                service["image"],
-                service["model"],
-                format_datetime(datetime.fromisoformat(service["created_at"])),
-                format_datetime(datetime.fromisoformat(service["updated_at"])),
-                service["status"].upper() if service["status"] is not None else None,
-                service["port"],
-                service["name"],
-                service["profile"],
-            ]
-        )
+        if is_active(service) or all:
+            tab.add_row(
+                [
+                    service["id"][:13],
+                    service["image"],
+                    service["model"],
+                    format_datetime(datetime.fromisoformat(service["created_at"])),
+                    format_datetime(datetime.fromisoformat(service["updated_at"])),
+                    (
+                        service["status"].upper()
+                        if service["status"] is not None
+                        else None
+                    ),
+                    service["port"],
+                    service["name"],
+                    service["profile"],
+                ]
+            )
     click.echo(tab)
 
 

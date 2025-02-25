@@ -68,8 +68,8 @@ from app.services.text_generation import TextGenerationConfig
 from app.config import config as blackfish_config
 from app.utils import find_port
 from app.models.profile import (
-    serialize_profiles,
-    serialize_profile,
+    deserialize_profiles,
+    deserialize_profile,
     SlurmProfile,
     LocalProfile,
     BlackfishProfile as Profile,
@@ -798,7 +798,7 @@ async def get_models(
     image: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
-    profiles = serialize_profiles(state.HOME_DIR)
+    profiles = deserialize_profiles(state.HOME_DIR)
 
     res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
@@ -881,7 +881,7 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
-        return serialize_profiles(blackfish_config.HOME_DIR)
+        return deserialize_profiles(blackfish_config.HOME_DIR)
     except FileNotFoundError:
         raise NotFoundException(detail="Profiles config not found.")
 
@@ -889,9 +889,9 @@ async def read_profiles() -> list[Profile]:
 @get("/api/profiles/{name: str}", guards=ENDPOINT_GUARDS)
 async def read_profile(name: str) -> Profile | None:
     try:
-        profile = serialize_profile(blackfish_config.HOME_DIR, name)
+        profile = deserialize_profile(blackfish_config.HOME_DIR, name)
     except Exception as e:
-        raise InternalServerException(detail=f"Failed to serialize profile: {e}.")
+        raise InternalServerException(detail=f"Failed to deserialize profile: {e}.")
 
     if profile is not None:
         return profile

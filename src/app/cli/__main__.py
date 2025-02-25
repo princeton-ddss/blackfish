@@ -221,11 +221,11 @@ def run(
     The format of options approximately follows that of Slurm's `sbatch` command.
     """
 
-    from app.models.profile import serialize_profile
+    from app.models.profile import deserialize_profile
 
     ctx.obj = {
         "config": config,
-        "profile": serialize_profile(config.HOME_DIR, profile),
+        "profile": deserialize_profile(config.HOME_DIR, profile),
         "resources": {
             "time": time,
             "ntasks_per_node": ntasks_per_node,
@@ -632,9 +632,9 @@ def models_add(
     """
 
     from app.models.model import add_model
-    from app.models.profile import serialize_profile, SlurmProfile
+    from app.models.profile import deserialize_profile, SlurmProfile
 
-    matched = serialize_profile(config.HOME_DIR, profile)
+    matched = deserialize_profile(config.HOME_DIR, profile)
     if matched is None:
         click.echo(
             f"{LogSymbols.ERROR.value} Profile not found 😔. To view a list of available profiles, use `blackfish profile ls`."
@@ -724,9 +724,9 @@ def models_remove(
     """Remove model files."""
 
     from app.models.model import remove_model
-    from app.models.profile import serialize_profile, SlurmProfile
+    from app.models.profile import deserialize_profile, SlurmProfile
 
-    matched = serialize_profile(config.HOME_DIR, profile)
+    matched = deserialize_profile(config.HOME_DIR, profile)
     if matched is None:
         click.echo(
             f"{LogSymbols.ERROR.value} Profile not found 😔. To view a list of available profiles, use `blackfish profile ls`."

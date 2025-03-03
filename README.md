@@ -1,9 +1,9 @@
 # Blackfish [WIP]
 Blackfish is an open source "ML-as-a-Service" (MLaaS) platform that helps researchers
 use state-of-the-art, open source artificial intelligence and machine learning models.
-With Blackfish, researchers can spin up their own version of popular public cloud services (e.g., ChatGPT, Amazon Transcribe, etc.) using high-performance computing (HPC) resources already available on their campus.[^1]
+With Blackfish, researchers can spin up their own version of popular public cloud services (e.g., ChatGPT, Amazon Transcribe, etc.) using high-performance computing (HPC) resources already available on their campus.
 
-The primary goal of Blackfish is to facilitate transparent and reproducible[^2] research based on open source machine learning and artificial intelligence. We do this by providing mechanisms to run *specific* models with user-defined configurations. For academic research, open source models have several advantages over closed source models. First, they are free, whereas large-scale projects using public cloud options might cost $10K to $100K for [similar quality results](). Second, with open source models you know *exactly* what model you are using and you can easily provide a copy of that model to other researchers. Closed source models can and *do* change without notice. Third, using open-source models allows complete transparency into how *your* data is being used. Q.E.D.
+The primary goal of Blackfish is to facilitate transparent and reproducible research based on open source machine learning and artificial intelligence. We do this by providing mechanisms to run *specific* models with user-defined configurations. For academic research, open source models have several advantages over closed source models. First, they are free, whereas large-scale projects using public cloud options might cost $10K to $100K for [similar quality results](). Second, with open source models you know *exactly* what model you are using and you can easily provide a copy of that model to other researchers. Closed source models can and *do* change without notice. Third, using open-source models allows complete transparency into how *your* data is being used. Q.E.D.
 
 ## Why Blackfish?
 
@@ -47,12 +47,12 @@ blackfish init
 ```
 at the command line. This command will prompt you to provide details for a Blackfish *profile*. A typical default profile will look something like this:
 ```toml
-name: default
-type: slurm
-host: della.princeton.edu
-user: dannyboy
-home: /home/dannyboy/.blackfish
-cache: /scratch/gpfs/shared/.blackfish
+name=default
+type=slurm
+host=della.princeton.edu
+user=dannyboy
+home=/home/dannyboy/.blackfish
+cache=/scratch/gpfs/shared/.blackfish
 ```
 For further details on profiles, refer to our [documentation](https://princeton-ddss.github.io/blackfish/getting_started/#profiles).
 

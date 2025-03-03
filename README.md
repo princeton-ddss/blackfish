@@ -46,7 +46,7 @@ Before you begin using Blackfish, you'll need to initialize the application. To 
 blackfish init
 ```
 at the command line. This command will prompt you to provide details for a Blackfish *profile*. A typical default profile will look something like this:
-```toml
+```shell
 name=default
 type=slurm
 host=della.princeton.edu

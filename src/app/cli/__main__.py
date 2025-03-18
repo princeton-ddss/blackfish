@@ -40,8 +40,8 @@ def main() -> None:  # pragma: no cover
     help="The location to store Blackfish application data.",
 )
 @click.option(
-    "--type",
-    "-t",
+    "--schema",
+    "-s",
     type=str,
     default=None,
     help="The type to use for an auto-generated default profile ('slurm' or 'local').",

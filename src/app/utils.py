@@ -137,7 +137,7 @@ def get_model_dir(
                         spinner.text = ""
                         spinner.ok(
                             f"{LogSymbols.SUCCESS.value} Found model"
-                            f" {repo_id}[{revision}] in {default_dir}."
+                            f" {repo_id}[{revision}] in cache directory."
                         )
                         return os.path.join(default_dir, model_dir)
                 backup_dir = os.path.join(profile.home_dir, "models")
@@ -149,7 +149,7 @@ def get_model_dir(
                         spinner.text = ""
                         spinner.ok(
                             f"{LogSymbols.SUCCESS.value} Found model"
-                            f" {repo_id}[{revision}] in {backup_dir}."
+                            f" {repo_id}[{revision}] in home directory."
                         )
                         return os.path.join(backup_dir, model_dir)
             spinner.text = ""
@@ -169,7 +169,7 @@ def get_model_dir(
                     spinner.text = ""
                     spinner.ok(
                         f"{LogSymbols.SUCCESS.value} Found model"
-                        f" {repo_id}[{revision}] in {default_dir}."
+                        f" {repo_id}[{revision}] in cache directory."
                     )
                     return os.path.join(default_dir, model_dir)
             backup_dir = os.path.join(profile.home_dir, "models")
@@ -181,7 +181,7 @@ def get_model_dir(
                     spinner.text = ""
                     spinner.ok(
                         f"{LogSymbols.SUCCESS.value} Found model"
-                        f" {repo_id}[{revision}] in {backup_dir}."
+                        f" {repo_id}[{revision}] in home directory."
                     )
                     return os.path.join(backup_dir, model_dir)
             spinner.text = ""

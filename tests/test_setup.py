@@ -33,3 +33,9 @@ def test_local_auto_setup(tmp_path):
     p = tmp_path / ".blackfish"
     create_local_home_dir(p)
     _auto_profile_(p, "default", "local", None, None, home_dir=p, cache_dir=p)
+
+
+def test_slurm_auto_setup(tmp_path):
+    p = tmp_path / ".blackfish"
+    create_local_home_dir(p)
+    _auto_profile_(p, "default", "slurm", "localhost", "test", home_dir=p, cache_dir=p)

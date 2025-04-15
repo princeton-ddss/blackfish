@@ -1,5 +1,5 @@
 import requests
-from typing import Optional
+from typing import Optional, Any
 from dataclasses import dataclass, asdict
 
 from app.services.base import Service, BaseConfig
@@ -31,6 +31,7 @@ class TextGenerationConfig(BaseConfig):
     max_total_tokens: Optional[int] = None
     max_batch_size: Optional[int] = None
     disable_custom_kernels: bool = False
+    launch_kwargs: Optional[dict[str, Any]] = None
 
 
 @dataclass

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 import rich_click as click
 from rich_click import Context
 import requests
@@ -124,6 +124,7 @@ def try_get_model_info(
 @click.pass_context
 def run_text_generation(
     ctx: Context,
+    /,
     repo_id: str,
     name: Optional[str],
     revision: Optional[str],
@@ -133,6 +134,7 @@ def run_text_generation(
     max_input_length: Optional[int],
     max_total_tokens: Optional[int],
     dry_run: bool,
+    **kwargs: dict[str, Any],
 ) -> None:  # pragma: no cover
     """Start a text generation service hosting a model provided by REPO_ID, e.g., openai/whisper-tiny.
 
@@ -179,6 +181,7 @@ def run_text_generation(
         max_input_length=max_input_length,
         max_total_tokens=max_total_tokens,
         disable_custom_kernels=disable_custom_kernels,
+        launch_kwargs=kwargs,
     )
 
     job_config: JobConfig

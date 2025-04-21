@@ -29,6 +29,7 @@ from app.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 @dataclass
 class BaseConfig:
     port: Optional[int]
+    # host: Optional[str]
 
 
 class ServiceStatus(StrEnum):

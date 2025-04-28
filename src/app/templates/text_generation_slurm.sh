@@ -5,6 +5,7 @@ apptainer instance run {{ '--nv' if job_config.gres else '' }} \
   {{ profile.cache_dir }}/images/vllm-openai_v0.8.3.sif \
   {{ name }} \
   --model /data/snapshots/{{ container_config['revision'] }} \
+  --trust-remote-code \
   --port $port \
   --revision {{ container_config.revision }}
   {{ container_config.launch_kwargs }}

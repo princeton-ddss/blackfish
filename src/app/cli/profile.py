@@ -12,6 +12,7 @@ from app.setup import (
     create_local_home_dir,
     check_local_cache_exists,
 )
+from app.models.profile import SlurmProfile, LocalProfile
 
 
 class ProfileType(StrEnum):
@@ -19,9 +20,9 @@ class ProfileType(StrEnum):
     Local = "local"
 
 
-def _create_profile_(default_home: str, default_name: str = "default") -> bool:
+def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
     profiles = configparser.ConfigParser()
-    profiles.read(f"{default_home}/profiles.cfg")
+    profiles.read(f"{app_dir}/profiles.cfg")
 
     name = input(f"> name [{default_name}]: ")
     name = default_name if name == "" else name
@@ -77,8 +78,8 @@ def _create_profile_(default_home: str, default_name: str = "default") -> bool:
         }
 
     elif profile_type == ProfileType.Local:
-        home_dir = input(f"> home [{default_home}]: ")
-        home_dir = default_home if home_dir == "" else home_dir
+        home_dir = input(f"> home [{app_dir}]: ")
+        home_dir = app_dir if home_dir == "" else home_dir
         cache_dir = input("> cache: ")
         while cache_dir == "":
             print("Cache directory is required.")
@@ -96,9 +97,119 @@ def _create_profile_(default_home: str, default_name: str = "default") -> bool:
             "cache_dir": cache_dir,
         }
 
-    with open(os.path.join(default_home, "profiles.cfg"), "w") as f:
+    with open(os.path.join(app_dir, "profiles.cfg"), "w") as f:
         profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Created profile {name}.")
+        return True
+
+
+def _auto_profile_(
+    app_dir: str,
+    name: str | None,
+    schema: str,
+    host: str | None,
+    user: str | None,
+    home_dir: str | None,
+    cache_dir: str | None,
+) -> bool:
+    profiles = configparser.ConfigParser()
+    profiles.read(f"{home_dir}/profiles.cfg")
+
+    if name in profiles:
+        print(
+            f"{LogSymbols.ERROR.value} Profile '{name}' already exists. Try"
+            " deleting or modifying this profile instead."
+        )
+        return False
+
+    if schema.capitalize() not in list(ProfileType.__members__):
+        print(
+            f"{LogSymbols.ERROR.value} Profile type should be one of: {list(ProfileType.__members__)}."
+        )
+        return False
+    else:
+        profile_type = ProfileType[schema.capitalize()]
+
+    profile: LocalProfile | SlurmProfile
+    if profile_type == ProfileType.Slurm:
+        if name is None:
+            raise ValueError("'name' is required.")
+        if host is None:
+            raise ValueError("'host' is required.")
+        if user is None:
+            raise ValueError("'user' is required.")
+        if home_dir is None:
+            raise ValueError("'home_dir' is required.")
+        if cache_dir is None:
+            raise ValueError("'cache_dir' is required.")
+        try:
+            profile = SlurmProfile(
+                name=name, host=host, user=user, home_dir=home_dir, cache_dir=cache_dir
+            )
+        except Exception as e:
+            print(f"{LogSymbols.ERROR.value} Failed to construct profile: {e}")
+            return False
+
+        if host == "localhost":
+            try:
+                create_local_home_dir(profile.home_dir)
+                check_local_cache_exists(profile.cache_dir)
+            except Exception as e:
+                print(
+                    f"{LogSymbols.ERROR.value} Failed to set up local Slurm profile: {e}"
+                )
+                return False
+        else:
+            try:
+                create_remote_home_dir(
+                    host=profile.host, user=profile.user, home_dir=profile.home_dir
+                )
+                check_remote_cache_exists(
+                    host=profile.host, user=profile.user, cache_dir=profile.cache_dir
+                )
+            except Exception as e:
+                print(
+                    f"{LogSymbols.ERROR.value} Failed to set up remote Slurm profile: {e}"
+                )
+                return False
+
+        profiles[profile.name] = {
+            "type": "slurm",
+            "user": profile.user,
+            "host": profile.host,
+            "home_dir": profile.home_dir,
+            "cache_dir": profile.cache_dir,
+        }
+
+    elif profile_type == ProfileType.Local:
+        if name is None:
+            raise ValueError("'name' is required.")
+        if home_dir is None:
+            raise ValueError("'home_dir' is required.")
+        if cache_dir is None:
+            raise ValueError("'cache_dir' is required.")
+        try:
+            profile = LocalProfile(name=name, home_dir=home_dir, cache_dir=cache_dir)
+        except Exception as e:
+            print(f"{LogSymbols.ERROR.value} Failed to construct profile: {e}")
+            return False
+
+        try:
+            create_local_home_dir(profile.home_dir)
+            check_local_cache_exists(profile.cache_dir)
+        except Exception as e:
+            print(f"{LogSymbols.ERROR.value} Failed to set up local profile: {e}")
+            return False
+
+        profiles[name] = {
+            "type": "local",
+            "home_dir": profile.home_dir,
+            "cache_dir": profile.cache_dir,
+        }
+
+    with open(os.path.join(app_dir, "profiles.cfg"), "w") as f:
+        profiles.write(f)
+        print(f"{LogSymbols.SUCCESS.value} Created profile {profile.name}.")
         return True
 
 

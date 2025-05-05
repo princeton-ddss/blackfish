@@ -41,5 +41,10 @@ dependencies = [
 ]
 scripts.blackfish = "app.cli.__main__:main"
 
+[dependency-groups]
+dev = [
+  "locust>=2.33.2",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = [ "src/app" ]

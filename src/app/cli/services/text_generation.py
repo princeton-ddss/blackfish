@@ -30,7 +30,7 @@ def try_get_model_info(
             revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
             click.echo(
                 f"{LogSymbols.WARNING.value} No revision provided. Using latest"
-                f" available commit {revision}."
+                f" available commit: {revision}."
             )
 
         model_dir = get_model_dir(repo_id, revision, profile)
@@ -152,11 +152,11 @@ def run_text_generation(
     if repo_id in get_models(profile):
         if revision is None:
             revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
-            model_dir = get_model_dir(repo_id, revision, profile)
             click.echo(
                 f"{LogSymbols.WARNING.value} No revision provided. Using latest"
-                f" available commit {revision}."
+                f" available commit: {revision}."
             )
+            model_dir = get_model_dir(repo_id, revision, profile)
         else:
             model_dir = get_model_dir(repo_id, revision, profile)
             if model_dir is None:

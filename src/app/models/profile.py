@@ -18,6 +18,18 @@ class SlurmProfile:
     def is_local(self) -> bool:
         return self.host == "localhost"
 
+    def __post_init__(self) -> None:
+        if self.name is None:
+            raise ValueError("Field 'name' is required.")
+        if self.host is None:
+            raise ValueError("Field 'host' is required.")
+        if self.user is None:
+            raise ValueError("Field 'user' is required.")
+        if self.home_dir is None:
+            raise ValueError("Field 'home_dir' is required.")
+        if self.cache_dir is None:
+            raise ValueError("Field 'cache_dir' is required.")
+
 
 @dataclass
 class LocalProfile:
@@ -28,6 +40,14 @@ class LocalProfile:
 
     def is_local(self) -> bool:
         return True
+
+    def __post_init__(self) -> None:
+        if self.name is None:
+            raise ValueError("Field 'name' is required.")
+        if self.home_dir is None:
+            raise ValueError("Field 'home_dir' is required.")
+        if self.cache_dir is None:
+            raise ValueError("Field 'cache_dir' is required.")
 
 
 BlackfishProfile = Union[SlurmProfile, LocalProfile]

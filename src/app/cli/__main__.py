@@ -33,32 +33,95 @@ def main() -> None:  # pragma: no cover
 
 @main.command()
 @click.option(
-    "--home_dir",
+    "--app_dir",
+    "-r",
     type=str,
     default=config.HOME_DIR,
     help="The location to store Blackfish application data.",
 )
-def init(home_dir: str) -> None:  # pragma: no cover
+@click.option(
+    "--schema",
+    "-s",
+    type=str,
+    default=None,
+    help="The schema to use for an auto-generated default profile ('slurm' or 'local').",
+)
+@click.option(
+    "--host",
+    "-h",
+    type=str,
+    default=None,
+    help="The host used to run services for an auto-generated default profile. E.g., 'localhost', 'della.princeton.edu, etc.",
+)
+@click.option(
+    "--user",
+    "-u",
+    type=str,
+    default=None,
+    help="The username for remote authentication of an auto-generated default profile.",
+)
+@click.option(
+    "--home_dir",
+    "-d",
+    type=str,
+    default=None,
+    help="The home directory to use for an auto-generated default profile.",
+)
+@click.option(
+    "--cache_dir",
+    "-c",
+    type=str,
+    default=None,
+    help="The cache directory to use for an auto-generated default profile.",
+)
+@click.option(
+    "--auto",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="Automatically configure a default profile.",
+)
+def init(
+    app_dir: str,
+    schema: str | None,
+    host: str | None,
+    user: str | None,
+    home_dir: str | None,
+    cache_dir: str | None,
+    auto: bool,
+) -> None:  # pragma: no cover
     """Setup Blackfish.
 
     Creates all files and directories to run Blackfish.
     """
 
     from app.setup import create_local_home_dir
-    from app.cli.profile import _create_profile_
+    from app.cli.profile import _auto_profile_, _create_profile_
     import configparser
 
-    create_local_home_dir(home_dir)
+    create_local_home_dir(app_dir)
 
     profiles = configparser.ConfigParser()
-    profiles.read(f"{home_dir}/profiles.cfg")
+    profiles.read(f"{app_dir}/profiles.cfg")
     if "default" not in profiles:
-        print("Let's set up a profile:")
-        success = _create_profile_(home_dir)
+        success = False
+        if auto and schema:
+            success = _auto_profile_(
+                app_dir=app_dir,
+                name="default",
+                schema=schema,
+                host=host,
+                user=user,
+                home_dir=home_dir,
+                cache_dir=cache_dir,
+            )
+        else:
+            print("Let's set up a profile:")
+            success = _create_profile_(app_dir)
         if success:
             print("🎉 All done—let's fish!")
     else:
-        print(f"{LogSymbols.SUCCESS.value} Default profile exists.")
+        print(f"{LogSymbols.SUCCESS.value} Default profile already exists.")
         print("🎉 Looks good—let's fish!")
 
 

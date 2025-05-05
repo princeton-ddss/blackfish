@@ -44,7 +44,7 @@ def main() -> None:  # pragma: no cover
     "-s",
     type=str,
     default=None,
-    help="The type to use for an auto-generated default profile ('slurm' or 'local').",
+    help="The schema to use for an auto-generated default profile ('slurm' or 'local').",
 )
 @click.option(
     "--host",

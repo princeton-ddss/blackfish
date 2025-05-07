@@ -583,13 +583,19 @@ class Service(UUIDAuditBase):
         job: Job
 
         if self.scheduler == JobScheduler.Slurm:
-            if self.job_id and self.user:
-                job = SlurmJob(int(self.job_id), self.user, self.host)
+            if self.job_id and self.user and self.home_dir:
+                job = SlurmJob(
+                    job_id=int(self.job_id),
+                    user=self.user,
+                    host=self.host,
+                    name=self.name,
+                    home_dir=self.home_dir,
+                )
             else:
                 return None
         else:
             if self.job_id and self.provider:
-                job = LocalJob(self.job_id, self.provider)
+                job = LocalJob(self.job_id, self.provider, self.name)
             else:
                 return None
 
@@ -604,6 +610,7 @@ class Service(UUIDAuditBase):
         env = Environment(loader=PackageLoader("app", "templates"))
         template = env.get_template(f"{self.image}_{self.scheduler or 'local'}.sh")
         job_script = template.render(
+            uuid=self.id,
             name=self.name,
             model=self.model,
             provider=self.provider,

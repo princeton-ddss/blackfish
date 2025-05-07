@@ -128,11 +128,14 @@ class Service(UUIDAuditBase):
                 res = subprocess.check_output(
                     [
                         "sbatch",
-                        os.path.join(
-                            app_config.HOME_DIR, "jobs", self.id.hex, "start.sh"
-                        ),
+                        "--chdir",
+                        script_path.parent,
+                        script_path,
                     ]
                 )
+                job_id = res.decode("utf-8").strip().split()[-1]
+                self.status = ServiceStatus.SUBMITTED
+                self.job_id = job_id
             else:
                 profile = self.get_profile()
                 if profile is None:

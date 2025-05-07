@@ -126,7 +126,12 @@ class Service(UUIDAuditBase):
             if self.host == "localhost":
                 logger.debug("Submitting slurm job locally.")
                 res = subprocess.check_output(
-                    ["sbatch", os.path.join(app_config.HOME_DIR, "start.sh")]
+                    [
+                        "sbatch",
+                        os.path.join(
+                            app_config.HOME_DIR, "jobs", self.id.hex, "start.sh"
+                        ),
+                    ]
                 )
             else:
                 profile = self.get_profile()

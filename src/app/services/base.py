@@ -589,7 +589,7 @@ class Service(UUIDAuditBase):
                     user=self.user,
                     host=self.host,
                     name=self.name,
-                    data_dir=os.path.join(self.home_dir, self.id.hex),
+                    data_dir=os.path.join(self.home_dir, "jobs", self.id.hex),
                 )
             else:
                 return None

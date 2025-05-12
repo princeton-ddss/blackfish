@@ -6,24 +6,24 @@
 #SBATCH --ntasks-per-node={{ job_config.ntasks_per_node }}
 #SBATCH --mem={{ job_config.mem }}G
 #SBATCH --time={{ job_config.time }}
-{%- if job_config.gres > 0 %}
+{%- if job_config.gres %}
 #SBATCH --gres=gpu:{{ job_config.gres }}
 {% endif %}
-{%- if 'constraint' in job_config %}
+{%- if job_config.constraint %}
 #SBATCH --constraint={{ job_config.constraint }}
 {% endif %}
-{%- if 'partition' in job_config %}
+{%- if job_config.partition %}
 #SBATCH --partition={{ job_config.partition }}
 {% endif %}
 {%- endblock %}
 {% block prelude %}
-export APPTAINER_CACHEDIR=/scratch/gpfs/{{ job_config.user }}/APPTAINER_CACHE
+export APPTAINER_CACHEDIR=/scratch/gpfs/{{ profile.user }}/APPTAINER_CACHE
 export APPTAINER_TMPDIR=/tmp
 {% raw %}
 port=$(comm -23 <(seq 8080 8899 | sort) <(ss -Htan | awk '{{print $4}}' | cut -d':' -f2 | sort -u) | shuf | head -n 1)
 {% endraw %}
-mkdir {{ job_config.home_dir }}/$SLURM_JOB_ID
-mkdir {{ job_config.home_dir }}/$SLURM_JOB_ID/$port
+mkdir {{ profile.home_dir }}/jobs/{{ uuid }}/$SLURM_JOB_ID
+mkdir {{ profile.home_dir }}/jobs/{{ uuid }}/$SLURM_JOB_ID/$port
 {% endblock %}
 {%- block command %}
 {% endblock %}

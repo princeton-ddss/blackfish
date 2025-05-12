@@ -131,14 +131,6 @@ async def run_migrations_online() -> None:
             future=True,
         ),
     )
-    if connectable is None:
-        msg = (
-            "Could not get engine from config.  Please ensure your `alembic.ini`"
-            " according to the official Alembic documentation."
-        )
-        raise RuntimeError(
-            msg,
-        )
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

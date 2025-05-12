@@ -16,8 +16,8 @@ class CustomFormatter(colorlog.ColoredFormatter):
 
 
 if app_config.DEBUG:
-    handler = colorlog.StreamHandler()
-    formatter = CustomFormatter(
+    stream_handler = colorlog.StreamHandler()
+    custom_formatter = CustomFormatter(
         (
             "%(log_color)s%(levelname)s%(white)s:%(separator)s%(message)s"
             " %(thin)s[%(asctime)s.%(msecs)03d]"
@@ -31,19 +31,19 @@ if app_config.DEBUG:
         },
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    handler.setFormatter(formatter)
-    handler.setLevel(logging.DEBUG)
+    stream_handler.setFormatter(custom_formatter)
+    stream_handler.setLevel(logging.DEBUG)
     logger = colorlog.getLogger("blackfish")
-    logger.addHandler(handler)
+    logger.addHandler(stream_handler)
     logger.setLevel(logging.DEBUG)
 else:
-    handler = logging.FileHandler(f"{os.path.join(app_config.HOME_DIR, 'logs')}")
+    file_handler = logging.FileHandler(f"{os.path.join(app_config.HOME_DIR, 'logs')}")
     formatter = logging.Formatter(
         "[%(asctime)s.%(msecs)03d] %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    handler.setFormatter(formatter)
-    handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
     logger = colorlog.getLogger("blackfish")
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
+    logger.addHandler(file_handler)
+    logger.setLevel(logging.INFO)

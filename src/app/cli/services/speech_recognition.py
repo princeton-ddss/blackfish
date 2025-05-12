@@ -1,32 +1,34 @@
+from __future__ import annotations
+
 import os
+from typing import Optional
 import rich_click as click
+from rich_click import Context
 import requests
 from random import randint
+from yaspin import yaspin
+from log_symbols.symbols import LogSymbols
+from dataclasses import asdict
 
-from app.services.speech_recognition import SpeechRecognition
-from app.models.profile import serialize_profiles, SlurmRemote, LocalProfile
+from app.services.speech_recognition import SpeechRecognition, SpeechRecognitionConfig
+from app.models.profile import BlackfishProfile, SlurmProfile
 from app.utils import (
-    find_port,
     get_models,
     get_revisions,
     get_latest_commit,
     get_model_dir,
 )
-from yaspin import yaspin
-from log_symbols.symbols import LogSymbols
+from app.config import BlackfishConfig
+from app.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
+from app.cli.classes import ServiceOptions
 
 
 # blackfish run [OPTIONS] speech-recognition [OPTIONS]
 @click.command()
 @click.argument(
-    "model",
+    "repo_id",
     required=True,
     type=str,
-)
-@click.argument(
-    "input_dir",
-    type=str,
-    required=True,
 )
 @click.option(
     "--name",
@@ -47,6 +49,13 @@ from log_symbols.symbols import LogSymbols
     ),
 )
 @click.option(
+    "--port",
+    "-p",
+    type=int,
+    default=8080,
+    help="Run server on the given port.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -54,83 +63,95 @@ from log_symbols.symbols import LogSymbols
 )
 @click.pass_context
 def run_speech_recognition(
-    ctx,
-    model,
-    input_dir,
-    name,
-    revision,
-    dry_run,
-):  # pragma: no cover
-    """Start a speech recognition service hosting MODEL with access to INPUT_DIR on the service host. MODEL is specified as a repo ID, e.g., openai/whisper-tiny.
+    ctx: Context,
+    repo_id: str,
+    name: Optional[str],
+    revision: Optional[str],
+    port: int,
+    dry_run: bool,
+) -> None:  # pragma: no cover
+    """Start a speech recognition service hosting MODEL. MODEL is specified as a repo ID, e.g., openai/whisper-tiny. The model has access to files via a mounted directory, which defaults to the profile's
+    Blackfish home directory (e.g., $HOME/.blackfish). To use a custom directory, users should provide a
+    value for the `blackfish run` `MOUNT` option.
 
     See https://github.com/princeton-ddss/speech-recognition-inference for additional option details.
     """
 
-    config = ctx.obj.get("config")
-    profiles = serialize_profiles(config.HOME_DIR)
-    profile = next(p for p in profiles if p.name == ctx.obj.get("profile", "default"))
+    config: BlackfishConfig = ctx.obj.get("config")
+    profile: BlackfishProfile | None = ctx.obj.get("profile")
+    options: ServiceOptions = ctx.obj.get("options")
 
-    if model in get_models(profile):
+    if profile is None:
+        click.echo(
+            f"{LogSymbols.ERROR.value} Profile not found 😔. To view a list of available profiles, use `blackfish profile ls`."
+        )
+        return
+
+    if repo_id in get_models(profile):
         if revision is None:
-            revision = get_latest_commit(model, get_revisions(model, profile))
-            model_dir = get_model_dir(model, revision, profile)
+            revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
             click.echo(
                 f"{LogSymbols.WARNING.value} No revision provided. Using latest"
-                f" available commit {revision}."
+                f" available commit: {revision}."
             )
+            model_dir = get_model_dir(repo_id, revision, profile)
         else:
-            model_dir = get_model_dir(model, revision, profile)
+            model_dir = get_model_dir(repo_id, revision, profile)
             if model_dir is None:
                 return
-
     else:
         click.echo(
-            f"{LogSymbols.ERROR.value} Unable to find {model} for profile"
+            f"{LogSymbols.ERROR.value} Unable to find {repo_id} for profile"
             f" '{profile.name}'."
         )
         return
 
     if name is None:
-        name = f"blackfish-{randint(10_000, 20_000)}"
+        name = f"blackfish-{randint(10_000, 99_999)}"
 
-    # Put input_dir and revision in container_options
-    container_options = {"model_dir": os.path.dirname(model_dir)}
-    if input_dir is None:
-        raise Exception("Input directory is required.")
-    else:
-        container_options["input_dir"] = input_dir
-    if revision is not None:
-        container_options["revision"] = revision
+    if options.mount is None:
+        options.mount = profile.home_dir
 
-    job_options = {k: v for k, v in ctx.obj.items() if v is not None}
-    del job_options["profile"]
-    del job_options["config"]
+    container_config = SpeechRecognitionConfig(
+        port=port,
+        model_dir=os.path.dirname(model_dir),  # type: ignore
+        revision=revision,
+    )
 
-    if isinstance(profile, SlurmRemote):
-        job_options["user"] = profile.user
-        job_options["home_dir"] = profile.home_dir
-        job_options["cache_dir"] = profile.cache_dir
+    job_config: JobConfig
+
+    if isinstance(profile, SlurmProfile):
+        job_config = SlurmJobConfig(
+            name=name,
+            **{k: v for k, v in ctx.obj.get("resources").items() if k is not None},
+        )
 
         if dry_run:
             service = SpeechRecognition(
                 name=name,
-                model=model,
+                model=repo_id,
                 profile=profile.name,
-                job_type="slurm",
                 host=profile.host,
                 user=profile.user,
-                mounts=container_options["input_dir"],
+                home_dir=profile.home_dir,
+                cache_dir=profile.cache_dir,
+                scheduler=JobScheduler.Slurm,
+                mount=options.mount,
+                grace_period=options.grace_period,
             )
-            click.echo("-" * 80)
-            click.echo(f"Name: {name}")
-            click.echo("Service: speech-recognition")
-            click.echo(f"Model: {model}")
-            click.echo(f"Profile: {profile.name}")
-            click.echo("Type: slurm")
-            click.echo(f"Host: {profile.host}")
-            click.echo(f"User: {profile.user}")
-            click.echo("-" * 80)
-            click.echo(service.launch_script(container_options, job_options))
+            click.echo("\n🚧 Rendering job script for service:\n")
+            click.echo(f"> name: {name}")
+            click.echo(f"> model: {repo_id}")
+            click.echo(f"> profile: {profile.name}")
+            click.echo(f"> host: {profile.host}")
+            click.echo(f"> user: {profile.user}")
+            click.echo(f"> home_dir: {profile.home_dir}")
+            click.echo(f"> cache_dir: {profile.cache_dir}")
+            click.echo(f"> scheduler: {service.scheduler}")
+            click.echo(f"> mount: {options.mount}")
+            click.echo(f"> grace_period: {options.grace_period}")
+            click.echo("\n👇 Here's the job script 👇\n")
+            click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
                 res = requests.post(
@@ -138,65 +159,12 @@ def run_speech_recognition(
                     json={
                         "name": name,
                         "image": "speech_recognition",
-                        "model": model,
-                        "profile": profile.name,
-                        "job_type": "slurm",
-                        "host": profile.host,
-                        "user": profile.user,
-                        "container_options": container_options,
-                        "job_options": job_options,
-                    },
-                )
-                spinner.text = ""
-                if res.ok:
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Started service:"
-                        f" {res.json()['id']}"
-                    )
-                else:
-                    spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to start service:"
-                        f" {res.status_code} - {res.reason}"
-                    )
-    elif isinstance(profile, LocalProfile):
-        container_options["port"] = find_port(use_stdout=True)
-        job_options["home_dir"] = profile.home_dir
-        job_options["cache_dir"] = profile.cache_dir
-
-        if dry_run:
-            service = SpeechRecognition(
-                name=name,
-                model=model,
-                profile=profile.name,
-                job_type="local",
-                host="localhost",
-                mounts=container_options["input_dir"],
-            )
-            click.echo("-" * 80)
-            click.echo(f"Name: {name}")
-            click.echo("Service: speech-recognition")
-            click.echo(f"Model: {model}")
-            click.echo(f"Profile: {profile.name}")
-            click.echo("Type: local")
-            click.echo("Host: localhost")
-            click.echo(f"Provider: {container_options['provider']}")
-            click.echo("-" * 80)
-            click.echo(
-                service.launch_script(container_options, job_options, job_id="test")
-            )
-        else:
-            with yaspin(text="Starting service...") as spinner:
-                res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services",
-                    json={
-                        "name": name,
-                        "image": "speech_recognition",
-                        "model": model,
-                        "profile": profile.name,
-                        "job_type": "local",
-                        "host": "localhost",
-                        "container_options": container_options,
-                        "job_options": job_options,
+                        "repo_id": repo_id,
+                        "profile": asdict(profile),
+                        "container_config": asdict(container_config),
+                        "job_config": asdict(job_config),
+                        "mount": options.mount,
+                        "grace_period": options.grace_period,
                     },
                 )
                 spinner.text = ""
@@ -211,4 +179,57 @@ def run_speech_recognition(
                         f" {res.status_code} - {res.reason}"
                     )
     else:
-        raise NotImplementedError
+        job_config = LocalJobConfig(
+            gres=ctx.obj.get("resources").get("gres"),
+        )
+
+        if dry_run:
+            service = SpeechRecognition(
+                name=name,
+                model=repo_id,
+                profile=profile.name,
+                host="localhost",
+                home_dir=profile.home_dir,
+                cache_dir=profile.cache_dir,
+                provider=config.CONTAINER_PROVIDER,
+                mount=options.mount,
+                grace_period=options.grace_period,
+            )
+            click.echo("\n🚧 Rendering job script for service:\n")
+            click.echo(f"> name: {name}")
+            click.echo(f"> task: {service.image}")
+            click.echo(f"> model: {repo_id}")
+            click.echo(f"> profile: {profile.name}")
+            click.echo(f"> home_dir: {profile.home_dir}")
+            click.echo(f"> cache_dir: {profile.cache_dir}")
+            click.echo(f"> provider: {config.CONTAINER_PROVIDER}")
+            click.echo(f"> mount: {options.mount}")
+            click.echo(f"> grace_period: {options.grace_period}")
+            click.echo("\n👇 Here's the job script 👇\n")
+            click.echo(service.render_job_script(container_config, job_config))
+        else:
+            with yaspin(text="Starting service...") as spinner:
+                res = requests.post(
+                    f"http://{config.HOST}:{config.PORT}/api/services",
+                    json={
+                        "name": name,
+                        "image": "speech_recognition",
+                        "repo_id": repo_id,
+                        "profile": asdict(profile),
+                        "container_config": asdict(container_config),
+                        "job_config": asdict(job_config),
+                        "mount": options.mount,
+                        "grace_period": options.grace_period,
+                    },
+                )
+                spinner.text = ""
+                if res.ok:
+                    spinner.ok(
+                        f"{LogSymbols.SUCCESS.value} Started service:"
+                        f" {res.json()['id']}"
+                    )
+                else:
+                    spinner.fail(
+                        f"{LogSymbols.ERROR.value} Failed to start service:"
+                        f" {res.status_code} - {res.reason}"
+                    )

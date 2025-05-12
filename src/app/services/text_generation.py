@@ -1,11 +1,8 @@
 import requests
-from typing import Optional, Literal
-from dataclasses import dataclass
+from typing import Optional
+from dataclasses import dataclass, asdict
 
-from jinja2 import Environment, PackageLoader
-
-from app.services.base import Service, ContainerConfig
-from app.job import LocalJobConfig, SlurmJobConfig, EC2JobConfig
+from app.services.base import Service, BaseConfig
 from app.logger import logger
 
 
@@ -15,13 +12,11 @@ from app.logger import logger
 
 
 @dataclass
-class TextGenerationConfig(ContainerConfig):
+class TextGenerationConfig(BaseConfig):
     model_dir: Optional[str] = None
-    port: Optional[int] = None
-    quantize: Optional[str] = None
     revision: Optional[str] = None
     validation_workers: Optional[int] = None
-    sharded: Optional[Literal["true", "false"]] = None
+    sharded: Optional[bool] = None
     num_shard: Optional[int] = None
     quantize: Optional[str] = None
     speculate: Optional[int] = None
@@ -64,54 +59,22 @@ class TextGeneration(Service):
         "polymorphic_identity": "text_generation",
     }
 
-    def launch_script(
-        self, container_options: dict, job_options: dict, job_id: str = None
-    ) -> str:
-        if self.job_type == "local":
-            job_config = LocalJobConfig().replace(job_options)
-        elif self.job_type == "slurm":
-            job_config = SlurmJobConfig().replace(job_options)
-        elif self.job_type == "ec2":
-            job_config = EC2JobConfig().replace(job_options)
-
-        container_config = TextGenerationConfig(**container_options)
-
-        env = Environment(loader=PackageLoader("app", "templates"))
-        template = env.get_template(f"text_generation_{self.job_type}.sh")
-        job_script = template.render(
-            model=self.model,
-            name=self.name,
-            job_config=job_config.data(),
-            container_config=container_config.data(),
-            job_id=job_id,
-        )
-
-        return job_script
-
-    async def call(self, inputs: str, **kwargs) -> requests.Response:
-        logger.info(f"calling service {self.service_id}")
+    async def call(
+        self, inputs: str, params: TextGenerationParameters
+    ) -> requests.Response:
+        logger.info(f"calling service {self.id}")
         try:
             headers = {
                 "Content-Type": "application/json",
             }
             body = {
                 "inputs": inputs,
-                "parameters": TextGenerationParameters(**kwargs).model_dump(
-                    exclude_defaults=True
-                ),
+                "parameters": asdict(params),
             }
             res = requests.post(
-                f"http://127.0.0.1:{self.port}/generate", json=body, headers=headers
+                f"http://localhost:{self.port}/generate", json=body, headers=headers
             )
         except Exception as e:
             raise e
 
         return res
-
-    async def ping(self) -> dict:
-        logger.debug(f"Pinging service {self.id}")
-        try:
-            res = requests.get(f"http://127.0.0.1:{self.port}/health")
-            return {"ok": res.ok}
-        except Exception as e:
-            return {"ok": False, "error": e}

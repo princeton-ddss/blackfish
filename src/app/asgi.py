@@ -1,29 +1,35 @@
+from __future__ import annotations
+
 import os
 from os import urandom
 import json
+import aiohttp
+from aiohttp.typedefs import StrOrURL
+import requests
 from datetime import datetime
 from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any, Type
 import asyncio
 import itertools
 from pathlib import Path
 from secrets import compare_digest
+from importlib import import_module
 
 from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
+from pydantic import BaseModel
 
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import Result
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
 from litestar.datastructures import State
-from litestar.dto import DTOConfig, DataclassDTO
 from advanced_alchemy.extensions.litestar import (
-    AsyncSessionConfig,
     SQLAlchemyAsyncConfig,
     SQLAlchemyPlugin,
     AlembicAsyncConfig,
@@ -44,7 +50,7 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 from litestar.static_files import create_static_files_router
 from litestar.template.config import TemplateConfig
 from litestar.contrib.jinja import JinjaTemplateEngine
-from litestar.response import Template, Redirect
+from litestar.response import Template, Redirect, Stream
 from litestar.connection import ASGIConnection
 from litestar.handlers.base import BaseRouteHandler
 from litestar.response.redirect import ASGIRedirectResponse
@@ -55,26 +61,41 @@ from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.response import File
 
 from app.logger import logger
-from app.services.base import Service
-from app.services.speech_recognition import SpeechRecognition
-from app.services.text_generation import TextGeneration
+from app import services
+from app.services.base import Service, ServiceStatus
+from app.services.speech_recognition import SpeechRecognitionConfig
+from app.services.text_generation import TextGenerationConfig
 from app.config import config as blackfish_config
 from app.utils import find_port
 from app.models.profile import (
-    init_profile,
-    import_profiles,
     serialize_profiles,
-    import_profile,
-    write_profile,
-    modify_profile,
-    remove_profile,
-    SlurmRemote,
+    serialize_profile,
+    SlurmProfile,
     LocalProfile,
     BlackfishProfile as Profile,
-    ProfileNotFoundException,
 )
 from app.models.model import Model
+from app.job import JobConfig, JobScheduler
 
+
+def load_service_classes() -> dict[str, Type[Service]]:
+    service_classes: dict[str, Type[Service]] = {}
+    directory = Path(services.__path__[0])
+    for file in directory.glob("*.py"):
+        if not file.stem.startswith("_") and not file.stem == "base":
+            module = import_module(f"app.{directory.stem}.{file.stem}")
+            for k, v in module.__dict__.items():
+                if isinstance(v, type) and v.__bases__[0] == Service:
+                    service_classes[file.stem] = v
+                    logger.info(f"Added class {k} to service class dictionary.")
+
+    return service_classes
+
+
+service_classes = load_service_classes()
+
+
+ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
 
 # --- Auth ---
 AUTH_TOKEN = b64encode(urandom(32)).decode("utf-8")
@@ -82,7 +103,7 @@ AUTH_TOKEN = b64encode(urandom(32)).decode("utf-8")
 
 class AuthMiddleware(MiddlewareProtocol):
     def __init__(self, app: ASGIApp) -> None:
-        super().__init__(app)
+        super().__init__()
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -103,12 +124,7 @@ class AuthMiddleware(MiddlewareProtocol):
             await self.app(scope, receive, send)
 
 
-def auth_guard(
-    connection: ASGIConnection, _: BaseRouteHandler
-) -> Optional[NotAuthorizedException]:
-    if connection.session is None:
-        logger.debug("from auth_guard: session is None => NotAuthorizedException")
-        raise NotAuthorizedException
+def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:  # type: ignore
     token = connection.session.get("token")
     if token is None:
         logger.debug("from auth_guard: session.token is None => NotAuthorizedException")
@@ -116,9 +132,6 @@ def auth_guard(
     if not compare_digest(token, AUTH_TOKEN):
         logger.debug("from auth_guard: invalid token => NotAuthorizedException")
         raise NotAuthorizedException
-
-
-SERVICE_TYPES = ["text_generation", "speech_recognition"]
 
 
 PAGE_MIDDLEWARE = [] if blackfish_config.DEV_MODE else [AuthMiddleware]
@@ -133,7 +146,7 @@ else:
 
 
 # --- Utils ---
-async def get_service(service_id: str, session: AsyncSession) -> Service:
+async def get_service(service_id: str, session: AsyncSession) -> Service | None:
     """Query a single service ID from the application database and raise a `NotFoundException`
     if the service is missing.
     """
@@ -141,13 +154,18 @@ async def get_service(service_id: str, session: AsyncSession) -> Service:
     res = await session.execute(query)
     try:
         return res.scalar_one()
-    except NoResultFound as e:
-        raise NotFoundException(detail=f"Service {service_id} not found") from e
+    except NoResultFound:
+        logger.error(f"Service {service_id} not found.")
+        return None
 
 
-def model_info(profile: Profile) -> Tuple[str, str]:
-    if not isinstance(profile, LocalProfile):
-        raise Exception("Profile should be a LocalProfile.")
+ModelInfoResult = dict[str, str]
+
+
+def model_info(profile: Profile) -> Tuple[ModelInfoResult, ModelInfoResult]:
+    if not profile.is_local():
+        logger.error("Profile should be local.")
+        raise Exception("Profile should be local.")
 
     cache_dir = Path(*[profile.cache_dir, "models", "info.json"])
     try:
@@ -166,8 +184,10 @@ def model_info(profile: Profile) -> Tuple[str, str]:
     return cache_info, home_info
 
 
-def remote_model_info(profile: Profile, sftp: SFTPClient) -> Tuple[str, str]:
-    if not isinstance(profile, SlurmRemote):
+def remote_model_info(
+    profile: Profile, sftp: SFTPClient
+) -> Tuple[ModelInfoResult, ModelInfoResult]:
+    if not isinstance(profile, SlurmProfile):
         raise Exception("Profile should be a SlurmProfile.")
 
     cache_dir = os.path.join(profile.cache_dir, "models", "info.json")
@@ -196,11 +216,12 @@ async def find_models(profile: Profile) -> list[Model]:
     """
     models = []
     revisions = []
-    if isinstance(profile, SlurmRemote):
+    if isinstance(profile, SlurmProfile) and not profile.is_local():
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
-        with Connection(
-            host=profile.host, user=profile.user
-        ) as conn, conn.sftp() as sftp:
+        with (
+            Connection(host=profile.host, user=profile.user) as conn,
+            conn.sftp() as sftp,
+        ):
             cache_info, home_info = remote_model_info(profile, sftp=sftp)
             cache_dir = os.path.join(profile.cache_dir, "models")
             logger.debug(f"Searching cache directory {cache_dir}")
@@ -266,7 +287,7 @@ async def find_models(profile: Profile) -> list[Model]:
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
             return models
-    elif isinstance(profile, LocalProfile):
+    else:
         cache_info, home_info = model_info(profile)
         cache_dir = os.path.join(profile.cache_dir, "models")
         logger.debug(f"Searching cache directory {cache_dir}")
@@ -324,6 +345,7 @@ async def find_models(profile: Profile) -> list[Model]:
                                 repo=repo,
                                 profile=profile.name,
                                 revision=revision,
+                                image=image,
                                 model_dir=os.path.join(home_dir, model_dir),
                             )
                         )
@@ -331,8 +353,6 @@ async def find_models(profile: Profile) -> list[Model]:
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
         return list(models)
-    else:
-        raise NotImplementedError
 
 
 # --- Pages ---
@@ -347,7 +367,7 @@ async def dashboard() -> Template:
 
 
 @get(path="/login")
-async def dashboard_login(request: Request) -> Template | Redirect:
+async def dashboard_login(request: Request) -> Template | Redirect:  # type: ignore
     token = request.session.get("token")
     if token is not None:
         if compare_digest(token, AUTH_TOKEN):
@@ -370,10 +390,11 @@ async def speech_recognition() -> Template:
 
 # --- Endpoints ---
 @get("/api/info", guards=ENDPOINT_GUARDS)
-async def info(state: State) -> dict:
+async def info(state: State) -> dict[str, Any]:
     return {
         "HOST": state.HOST,
         "PORT": state.PORT,
+        "STATIC_DIR": state.STATIC_DIR,
         "HOME_DIR": state.HOME_DIR,
         "DEBUG": state.DEBUG,
         "DEV_MODE": state.DEV_MODE,
@@ -387,7 +408,7 @@ class LoginPayload:
 
 
 @post("/api/login")
-async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
+async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:  # type: ignore
     token = request.session.get("token")
     if token is not None:
         if compare_digest(token, AUTH_TOKEN):
@@ -406,41 +427,12 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:
 
 
 @post("/api/logout", guards=ENDPOINT_GUARDS)
-async def logout(request: Request) -> Redirect:
+async def logout(request: Request) -> Redirect:  # type: ignore
     token = request.session.get("token")
     if token is not None:
         request.set_session({"token": None})
         logger.debug("from logout: reset session => redirect /login")
     return Redirect("/login")
-
-
-def listdir(
-    path: str,
-    page: Optional[int] = None,
-    page_size: int = 100,
-    hidden: bool = False,
-) -> dict:
-    if page is None:
-        # try:
-        #     items = os.scandir(path)
-        # except PermissionError:
-        #     raise PermissionError
-        items = os.scandir(path)
-        if not hidden:
-            items = filter(lambda x: not x.name.startswith("."), items)
-        return [
-            FileStats(
-                name=item.name,
-                path=item.path,
-                is_dir=item.is_dir(),
-                size=item.stat().st_size,
-                created_at=datetime.fromtimestamp(item.stat().st_ctime),
-                modified_at=datetime.fromtimestamp(item.stat().st_mtime),
-            )
-            for item in items
-        ]
-    else:
-        pass  # TODO: return the `page`-th set of `page_size` items
 
 
 @dataclass
@@ -453,110 +445,123 @@ class FileStats:
     modified_at: datetime
 
 
+def listdir(path: str, hidden: bool = False) -> list[FileStats]:
+    scan_iter = os.scandir(path)
+    if not hidden:
+        items = list(filter(lambda x: not x.name.startswith("."), scan_iter))
+    else:
+        items = list(scan_iter)
+    return [
+        FileStats(
+            name=item.name,
+            path=item.path,
+            is_dir=item.is_dir(),
+            size=item.stat().st_size,
+            created_at=datetime.fromtimestamp(item.stat().st_ctime),
+            modified_at=datetime.fromtimestamp(item.stat().st_mtime),
+        )
+        for item in items
+    ]
+
+
 @get("/api/files", guards=ENDPOINT_GUARDS)
 async def get_files(
     path: str,
-    page: Optional[int] = None,
-    page_size: int = 100,
     hidden: bool = False,
 ) -> list[FileStats] | HTTPException:
     if os.path.isdir(path):
         try:
-            return listdir(path, page=page, page_size=page_size, hidden=hidden)
+            return listdir(path, hidden=hidden)
         except PermissionError:
             logger.debug("Permission error raised")
             raise NotAuthorizedException(f"User not authorized to access {path}")
     else:
         logger.debug("Not found error")
-        raise NotFoundException(f"Path {path} does not exist.")
+        raise NotFoundException(detail=f"Path {path} does not exist.")
 
 
 @get("/api/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
-async def get_audio(path: str) -> File:
+async def get_audio(path: str) -> File | None:
     if os.path.isfile(path):
         if path.endswith(".wav") or path.endswith(".mp3"):
             return File(path=path)
         else:
             raise ValidationException("Path should specify a .wav or .mp3 file.")
+    else:
+        raise NotFoundException(f"{path} not found.")
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)
-async def get_ports(request: Request) -> int:
+async def get_ports(request: Request) -> int:  # type: ignore
     """Find an available port on the server. This endpoint allows a UI to run local services."""
     return find_port()
 
 
-@dataclass
-class ServiceRequest:
-    name: str  # TODO: optional w/ default by name generator
+class ServiceRequest(BaseModel):
+    name: str
     image: str
-    model: str
-    profile: str
-    job_type: str
-    container_options: dict
-    job_options: dict
-    user: Optional[str] = None
-    host: Optional[str] = "localhost"
-    port: Optional[str] = None
-
-
-class ServiceRequestDTO(DataclassDTO[ServiceRequest]):
-    config = DTOConfig()
+    repo_id: str
+    profile: Profile
+    container_config: ContainerConfig
+    job_config: JobConfig
+    mount: Optional[str] = None
+    grace_period: int = 180  # seconds
 
 
 @dataclass
 class StopServiceRequest:
-    delay: int = 0
     timeout: bool = False
     failed: bool = False
 
 
-def build_service(data: ServiceRequest):
+def build_service(data: ServiceRequest) -> Optional[Service]:
     """Convert a service request into a service object based on the requested image."""
 
-    if data.image == "text_generation":
-        return TextGeneration(
-            name=data.name,  # optional
-            image=data.image,
-            model=data.model,
-            profile=data.profile,
-            user=data.user,  # optional (required to run remote services)
-            host=data.host,  # optional (required to run remote services)
-            job_type=data.job_type,
-        )
-    elif data.image == "speech_recognition":
-        return SpeechRecognition(
-            name=data.name,  # optional
-            image=data.image,
-            model=data.model,
-            profile=data.profile,
-            user=data.user,  # optional (required to run remote services)
-            host=data.host,  # optional (required to run remote services)
-            job_type=data.job_type,
-            mounts=data.container_options["input_dir"],
-        )
+    ServiceClass = service_classes.get(data.image)
+    if ServiceClass is not None:
+        flattened = {
+            "name": data.name,
+            "model": data.repo_id,
+            "profile": data.profile.name,
+            "home_dir": data.profile.home_dir,
+            "cache_dir": data.profile.cache_dir,
+            "mount": data.mount,
+            "grace_period": data.grace_period,
+        }
+        if isinstance(data.profile, LocalProfile):
+            flattened["host"] = "localhost"
+            flattened["provider"] = blackfish_config.CONTAINER_PROVIDER
+        if isinstance(data.profile, SlurmProfile):
+            flattened["host"] = data.profile.host
+            flattened["user"] = data.profile.user
+            flattened["scheduler"] = JobScheduler.Slurm
+
+        return ServiceClass(**flattened)
+
     else:
-        raise Exception(f"Service image should be one of: {SERVICE_TYPES}")
+        logger.error(f"build_service received unrecognized image {data.image}")
+        return None
 
 
-@post("/api/services", dto=ServiceRequestDTO, guards=ENDPOINT_GUARDS)
+@post("/api/services", guards=ENDPOINT_GUARDS)
 async def run_service(
-    data: ServiceRequest, session: AsyncSession, state: State
-) -> Service:
-    try:
-        service = build_service(data)
-    except Exception as e:
-        logger.error(e)
-    try:
-        await service.start(
-            session,
-            state,
-            container_options=data.container_options,
-            job_options=data.job_options,
-        )
-    except Exception as e:
-        logger.error(f"Unable to start service. Error: {e}")
-        return InternalServerException()
+    data: ServiceRequest,
+    session: AsyncSession,
+    state: State,
+) -> Optional[Service]:
+    service = build_service(data)
+    if service is not None:
+        try:
+            await service.start(
+                session,
+                state,
+                container_options=data.container_config,
+                job_options=data.job_config,
+            )
+        except Exception as e:
+            detail = f"Unable to start service. Error: {e}"
+            logger.error(detail)
+            raise InternalServerException(detail=detail)
 
     return service
 
@@ -566,23 +571,22 @@ async def stop_service(
     service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
     service = await get_service(service_id, session)
-    await service.stop(
-        session, state, delay=data.delay, timeout=data.timeout, failed=data.failed
-    )
+    if service is None:
+        raise NotFoundException(detail="Service not found")
 
+    await service.stop(session, timeout=data.timeout, failed=data.failed)
     return service
 
 
 @get("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def refresh_service(
     service_id: str, session: AsyncSession, state: State
-) -> Service:
+) -> Optional[Service]:
     service = await get_service(service_id, session)
-    try:
-        await service.refresh(session, state)
-    except Exception as e:
-        logger.error(f"Failed to refresh service: {e}")
+    if service is None:
+        raise NotFoundException(detail="Service not found")
 
+    await service.refresh(session, state)
     return service
 
 
@@ -598,43 +602,192 @@ async def fetch_services(
     name: Optional[str] = None,
     profile: Optional[str] = None,
 ) -> list[Service]:
-    query_params = {}
-    if id is not None:
-        query_params["id"] = id
-    if image is not None:
-        query_params["image"] = image
-    if model is not None:
-        query_params["model"] = model
-    if status is not None:
-        query_params["status"] = status
-    if port is not None:
-        query_params["port"] = port
-    if name is not None:
-        query_params["name"] = name
-    if profile is not None:
-        query_params["profile"] = profile
+    query_params = {
+        "id": id,
+        "image": image,
+        "model": model,
+        "status": status,
+        "port": port,
+        "name": name,
+        "profile": profile,
+    }
 
+    query_params = {k: v for k, v in query_params.items() if v is not None}
     query = sa.select(Service).filter_by(**query_params)
     res = await session.execute(query)
     services = res.scalars().all()
 
     await asyncio.gather(*[s.refresh(session, state) for s in services])
 
-    return services
+    return list(services)
 
 
-@delete("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
-async def delete_service(service_id: str, session: AsyncSession, state: State) -> None:
-    service = await get_service(service_id, session)
-    await service.refresh(session, state)
-    if service.status in ["STOPPED", "TIMEOUT", "FAILED"]:
-        query = sa.delete(Service).where(Service.id == service_id)
-        await session.execute(query)
-    else:
+@delete("/api/services", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_service(
+    session: AsyncSession,
+    state: State,
+    id: Optional[str] = None,
+    image: Optional[str] = None,
+    model: Optional[str] = None,
+    status: Optional[str] = None,
+    port: Optional[int] = None,
+    name: Optional[str] = None,
+    profile: Optional[str] = None,
+) -> list[dict[str, str]]:
+    query_params = {
+        "id": id,
+        "image": image,
+        "model": model,
+        "status": status,
+        "port": port,
+        "name": name,
+        "profile": profile,
+    }
+
+    query_params = {k: v for k, v in query_params.items() if v is not None}
+    query = sa.select(Service).filter_by(**query_params)
+    query_res = await session.execute(query)
+    services = query_res.scalars().all()
+
+    if len(services) == 0:
         logger.warning(
-            f"Service is still running (status={service.status}). Aborting delete."
+            f"The query parameters {query_params} did not match any services."
         )
-        # TODO: return failure status code and message
+        return []
+
+    await asyncio.gather(*[s.refresh(session, state) for s in services])
+
+    res = []
+    for service in services:
+        if service.status in [
+            ServiceStatus.STOPPED,
+            ServiceStatus.TIMEOUT,
+            ServiceStatus.FAILED,
+        ]:
+            logger.debug(f"Queueing service {service.id} for deletion")
+            deletion = sa.delete(Service).where(Service.id == service.id)
+            try:
+                await session.execute(deletion)
+            except Exception as e:
+                raise InternalServerException(
+                    detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
+                )
+            try:
+                job = service.get_job()
+                if job is not None:
+                    job.remove()
+            except Exception as e:
+                logger.warning(
+                    f"Unable to remove job for service {service.id.hex}: {e}"
+                )
+            res.append(
+                {
+                    "id": service.id.hex,
+                    "status": "ok",
+                }
+            )
+        else:
+            logger.warning(
+                f"Service is still running (status={service.status}). Aborting delete."
+            )
+            res.append(
+                {
+                    "id": service.id.hex,
+                    "status": "error",
+                    "message": "Service is still running",
+                }
+            )
+
+    return res
+
+
+@delete("/api/services/prune", guards=ENDPOINT_GUARDS, status_code=200)
+async def prune_services(session: AsyncSession, state: State) -> int:
+    query = sa.select(Service).where(
+        Service.status.in_(
+            [
+                ServiceStatus.STOPPED,
+                ServiceStatus.TIMEOUT,
+                ServiceStatus.FAILED,
+            ]
+        )
+    )
+    res = await session.execute(query)
+    services = res.scalars().all()
+
+    if len(services) == 0:
+        return 0
+
+    await asyncio.gather(*[s.refresh(session, state) for s in services])
+
+    count = 0
+    for service in services:
+        logger.debug(f"Queueing service {service.id} for deletion")
+        deletion = sa.delete(Service).where(Service.id == service.id)
+        try:
+            await session.execute(deletion)
+        except Exception as e:
+            raise InternalServerException(
+                detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
+            )
+        try:
+            job = service.get_job()
+            if job is not None:
+                job.remove()
+        except Exception as e:
+            logger.warning(f"Unable to remove job for service {service.id.hex}: {e}")
+            raise InternalServerException(
+                detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
+            )
+        count += 1
+
+    return count
+
+
+async def asyncget(url: StrOrURL) -> Any:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.json()
+
+
+async def asyncpost(url: StrOrURL, data: Any, headers: Any) -> Any:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data, headers=headers) as response:
+            return await response.json()
+
+
+@post("/proxy/{port:int}/{cmd:str}", guards=ENDPOINT_GUARDS)
+async def proxy_service(
+    data: dict[Any, Any],
+    port: int,
+    cmd: str,
+    streaming: Optional[bool],
+    session: AsyncSession,
+    state: State,
+) -> Any | Stream:
+    """Call a service via proxy and return the response.
+
+    Setting query parameter `streaming` to `True` streams the response.
+    """
+
+    if streaming:
+
+        async def generator() -> AsyncGenerator:  # type: ignore
+            url = f"http://localhost:{port}/{cmd}"
+            headers = {"Content-Type": "application/json"}
+            with requests.post(url, json=data, headers=headers, stream=True) as res:
+                for x in res.iter_content(chunk_size=None):
+                    if x:
+                        yield x
+
+        return Stream(generator)
+    else:
+        res = await asyncpost(
+            f"http://localhost:{port}/{cmd}",
+            json.dumps(data),
+            {"Content-Type": "application/json"},
+        )
+        return res
 
 
 @get("/api/models", guards=ENDPOINT_GUARDS)
@@ -647,21 +800,22 @@ async def get_models(
 ) -> list[Model]:
     profiles = serialize_profiles(state.HOME_DIR)
 
-    query_filter = {}
-    if profile is not None:
-        query_filter["profile"] = profile
-    if image is not None:
-        query_filter["image"] = image
-
+    res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
         if profile is not None:
-            models = await find_models(next(p for p in profiles if p.name == profile))
+            matched = next((p for p in profiles if p.name == profile), None)
+            if matched is None:
+                logger.warning(
+                    f"Profile '{profile}' not found. Returning an empty list."
+                )
+                return list()
+            models = await find_models(matched)
             logger.debug(
                 "Deleting existing models WHERE model.profile == '{profile}'..."
             )
             try:
-                query = sa.delete(Model).where(Model.profile == profile)
-                await session.execute(query)
+                delete_query = sa.delete(Model).where(Model.profile == profile)
+                await session.execute(delete_query)
             except Exception as e:
                 logger.error(f"Failed to execute query: {e}")
         else:
@@ -669,8 +823,8 @@ async def get_models(
             models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
             logger.debug("Deleting all existing models...")
             try:
-                query = sa.delete(Model)
-                await session.execute(query)
+                delete_all_query = sa.delete(Model)
+                await session.execute(delete_all_query)
             except Exception as e:
                 logger.error(f"Failed to execute query: {e}")
         logger.debug("Inserting refreshed models...")
@@ -680,15 +834,22 @@ async def get_models(
         except Exception as e:
             logger.error(f"Failed to execute transaction: {e}")
         if image is not None:
-            return filter(lambda x: x.image == image, models)
+            return list(filter(lambda x: x.image == image, models))
         else:
             return models
     else:
         logger.info("Querying model table...")
-        query = sa.select(Model).filter_by(**query_filter)
+
+        query_filter = {}
+        if profile is not None:
+            query_filter["profile"] = profile
+        if image is not None:
+            query_filter["image"] = image
+
+        select_query = sa.select(Model).filter_by(**query_filter)
         try:
-            res = await session.execute(query)
-            return res.scalars().all()
+            res = await session.execute(select_query)
+            return list(res.scalars().all())
         except Exception as e:
             logger.error(f"Failed to execute query: {e}")
             return []
@@ -717,58 +878,29 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
     await session.execute(query)
 
 
-@post("/api/profiles", guards=ENDPOINT_GUARDS)
-async def create_profile(data: dict) -> Profile:
-    raise NotImplementedError
-
-    try:
-        init_profile(blackfish_config.HOME_DIR, data)
-    except Exception as e:
-        raise HTTPException(detail=f"Unable to create profile: {e}")
-
-    try:
-        return write_profile(blackfish_config.HOME_DIR, data)
-    except Exception as e:
-        raise HTTPException(detail=f"Failed to create profile: {e}")
-
-
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
-        return import_profiles(blackfish_config.HOME_DIR)
+        return serialize_profiles(blackfish_config.HOME_DIR)
     except FileNotFoundError:
         raise NotFoundException(detail="Profiles config not found.")
 
 
 @get("/api/profiles/{name: str}", guards=ENDPOINT_GUARDS)
-async def read_profile(name: str) -> Profile:
+async def read_profile(name: str) -> Profile | None:
     try:
-        profile = import_profile(blackfish_config.HOME_DIR, name)
-        if profile is None:
-            raise NotFoundException(detail="Profile not found.")
+        profile = serialize_profile(blackfish_config.HOME_DIR, name)
+    except Exception as e:
+        raise InternalServerException(detail=f"Failed to serialize profile: {e}.")
+
+    if profile is not None:
         return profile
-    except FileNotFoundError:
-        raise NotFoundException(detail="Profiles config not found.")
-
-
-@put("/api/profiles", guards=ENDPOINT_GUARDS)
-async def update_profile(profile: Profile) -> Profile:
-    raise NotImplementedError
-    return modify_profile(blackfish_config.HOME_DIR, profile)
-
-
-@delete("/api/profiles/{name: str}")
-async def delete_profile(name: str) -> None:
-    raise NotImplementedError
-    try:
-        return remove_profile(blackfish_config.HOME_DIR, name)
-    except ProfileNotFoundException as e:
-        raise NotFoundException(detail=f"{e}")
+    else:
+        logger.error("Profile not found.")
+        raise NotFoundException(detail="Profile not found.")
 
 
 # --- Config ---
-session_config = AsyncSessionConfig(expire_on_commit=False)
-
 BASE_DIR = module_to_os_path("app")
 
 db_config = SQLAlchemyAsyncConfig(
@@ -797,7 +929,7 @@ async def session_provider(
 
 
 cors_config = CORSConfig(
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -810,18 +942,22 @@ openapi_config = OpenAPIConfig(
 )
 
 template_config = TemplateConfig(
-    directory=Path(__file__).parent.parent / "build",
+    directory=blackfish_config.STATIC_DIR / "build",
     engine=JinjaTemplateEngine,
 )
 
 session_config = CookieBackendConfig(secret=urandom(16))
 
 next_server = create_static_files_router(
-    path="_next", directories=["src/build/_next"], html_mode=True
+    path="_next",
+    directories=[blackfish_config.STATIC_DIR / "build" / "_next"],
+    html_mode=True,
 )
 
 img_server = create_static_files_router(
-    path="img", directories=["src/build/img"], html_mode=True
+    path="img",
+    directories=[blackfish_config.STATIC_DIR / "build" / "img"],
+    html_mode=True,
 )
 
 
@@ -843,15 +979,14 @@ app = Litestar(
         refresh_service,
         fetch_services,
         delete_service,
+        prune_services,
+        proxy_service,
         create_model,
         get_model,
         get_models,
         delete_model,
-        create_profile,
         read_profiles,
         read_profile,
-        update_profile,
-        delete_profile,
         next_server,
         img_server,
     ],

@@ -95,6 +95,7 @@ class SlurmJob(Job):
     job_id: int
     user: str
     host: str
+    data_dir: str
     name: Optional[str] = None
     node: Optional[str] = None
     port: Optional[int] = None
@@ -248,9 +249,7 @@ class SlurmJob(Job):
                 res = subprocess.check_output(
                     [
                         "ls",
-                        os.path.join(
-                            "/", "home", self.user, ".blackfish", str(self.job_id)
-                        ),
+                        os.path.join(self.data_dir, str(self.job_id)),
                     ]
                 )
             else:
@@ -259,9 +258,7 @@ class SlurmJob(Job):
                         "ssh",
                         f"{self.user}@{self.host}",
                         "ls",
-                        os.path.join(
-                            "/", "home", self.user, ".blackfish", str(self.job_id)
-                        ),
+                        os.path.join(self.data_dir, str(self.job_id)),
                     ]
                 )
             self.port = None if res == b"" else int(res.decode("utf-8").strip())

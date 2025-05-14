@@ -135,10 +135,7 @@ def get_model_dir(
                         os.path.join(default_dir, model_dir, "snapshots")
                     ):
                         spinner.text = ""
-                        spinner.ok(
-                            f"{LogSymbols.SUCCESS.value} Found model"
-                            f" {repo_id}[{revision}] in {default_dir}."
-                        )
+                        spinner.ok(f"{LogSymbols.SUCCESS.value} Found model {repo_id}!")
                         return os.path.join(default_dir, model_dir)
                 backup_dir = os.path.join(profile.home_dir, "models")
                 spinner.text = f"Looking in backup directory {backup_dir}"
@@ -147,10 +144,7 @@ def get_model_dir(
                         os.path.join(backup_dir, model_dir, "snapshots")
                     ):
                         spinner.text = ""
-                        spinner.ok(
-                            f"{LogSymbols.SUCCESS.value} Found model"
-                            f" {repo_id}[{revision}] in {backup_dir}."
-                        )
+                        spinner.ok(f"{LogSymbols.SUCCESS.value} Found model {repo_id}!")
                         return os.path.join(backup_dir, model_dir)
             spinner.text = ""
             spinner.fail(
@@ -167,10 +161,7 @@ def get_model_dir(
                     os.path.join(default_dir, model_dir, "snapshots")
                 ):
                     spinner.text = ""
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Found model"
-                        f" {repo_id}[{revision}] in {default_dir}."
-                    )
+                    spinner.ok(f"{LogSymbols.SUCCESS.value} Found model {repo_id}!")
                     return os.path.join(default_dir, model_dir)
             backup_dir = os.path.join(profile.home_dir, "models")
             spinner.text = f"Looking in backup directory {backup_dir}"
@@ -179,10 +170,7 @@ def get_model_dir(
                     os.path.join(backup_dir, model_dir, "snapshots")
                 ):
                     spinner.text = ""
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Found model"
-                        f" {repo_id}[{revision}] in {backup_dir}."
-                    )
+                    spinner.ok(f"{LogSymbols.SUCCESS.value} Found model {repo_id}!")
                     return os.path.join(backup_dir, model_dir)
             spinner.text = ""
             spinner.fail(

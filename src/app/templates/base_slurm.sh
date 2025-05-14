@@ -22,8 +22,8 @@ export APPTAINER_TMPDIR=/tmp
 {% raw %}
 port=$(comm -23 <(seq 8080 8899 | sort) <(ss -Htan | awk '{{print $4}}' | cut -d':' -f2 | sort -u) | shuf | head -n 1)
 {% endraw %}
-mkdir {{ profile.home_dir }}/$SLURM_JOB_ID
-mkdir {{ profile.home_dir }}/$SLURM_JOB_ID/$port
+mkdir {{ profile.home_dir }}/jobs/{{ uuid }}/$SLURM_JOB_ID
+mkdir {{ profile.home_dir }}/jobs/{{ uuid }}/$SLURM_JOB_ID/$port
 {% endblock %}
 {%- block command %}
 {% endblock %}

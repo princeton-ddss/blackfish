@@ -127,8 +127,16 @@ class Service(UUIDAuditBase):
             if self.host == "localhost":
                 logger.debug("Submitting slurm job locally.")
                 res = subprocess.check_output(
-                    ["sbatch", os.path.join(app_config.HOME_DIR, "start.sh")]
+                    [
+                        "sbatch",
+                        "--chdir",
+                        script_path.parent,
+                        script_path,
+                    ]
                 )
+                job_id = res.decode("utf-8").strip().split()[-1]
+                self.status = ServiceStatus.SUBMITTED
+                self.job_id = job_id
             else:
                 profile = self.get_profile()
                 if profile is None:
@@ -576,13 +584,19 @@ class Service(UUIDAuditBase):
         job: Job
 
         if self.scheduler == JobScheduler.Slurm:
-            if self.job_id and self.user:
-                job = SlurmJob(int(self.job_id), self.user, self.host)
+            if self.job_id and self.user and self.home_dir:
+                job = SlurmJob(
+                    job_id=int(self.job_id),
+                    user=self.user,
+                    host=self.host,
+                    name=self.name,
+                    data_dir=os.path.join(self.home_dir, "jobs", self.id.hex),
+                )
             else:
                 return None
         else:
             if self.job_id and self.provider:
-                job = LocalJob(self.job_id, self.provider)
+                job = LocalJob(self.job_id, self.provider, self.name)
             else:
                 return None
 
@@ -597,6 +611,7 @@ class Service(UUIDAuditBase):
         env = Environment(loader=PackageLoader("app", "templates"))
         template = env.get_template(f"{self.image}_{self.scheduler or 'local'}.sh")
         job_script = template.render(
+            uuid=self.id.hex,
             name=self.name,
             model=self.model,
             provider=self.provider,

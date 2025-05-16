@@ -2,7 +2,7 @@
 {% block command %}
 apptainer instance run {{ '--nv' if job_config.gres else '' }} \
   --bind {{ container_config.model_dir }}:/data \
-  {{ profile.cache_dir }}/images/vllm-openai_v0.8.3.sif \
+  {{ profile.cache_dir }}/images/vllm-openai_v0.8.5.sif \
   {{ name }} \
   --model /data/snapshots/{{ container_config['revision'] }} \
   --trust-remote-code \

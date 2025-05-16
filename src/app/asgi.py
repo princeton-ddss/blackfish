@@ -756,10 +756,14 @@ async def asyncpost(url: StrOrURL, data: Any, headers: Any) -> Any:
             return await response.json()
 
 
-@post("/proxy/{port:int}/{cmd:str}", guards=ENDPOINT_GUARDS)
+@post(
+    ["/proxy/{port:int}/{cmd:str}", "/proxy/{port:int}/{ver:str}/{cmd:str}"],
+    guards=ENDPOINT_GUARDS,
+)
 async def proxy_service(
     data: dict[Any, Any],
     port: int,
+    ver: Optional[str],
     cmd: str,
     streaming: Optional[bool],
     session: AsyncSession,
@@ -770,10 +774,14 @@ async def proxy_service(
     Setting query parameter `streaming` to `True` streams the response.
     """
 
+    if ver is not None:
+        url = f"http://localhost:{port}/{ver}/{cmd}"
+    else:
+        url = f"http://localhost:{port}/{cmd}"
+
     if streaming:
 
         async def generator() -> AsyncGenerator:  # type: ignore
-            url = f"http://localhost:{port}/{cmd}"
             headers = {"Content-Type": "application/json"}
             with requests.post(url, json=data, headers=headers, stream=True) as res:
                 for x in res.iter_content(chunk_size=None):
@@ -783,7 +791,7 @@ async def proxy_service(
         return Stream(generator)
     else:
         res = await asyncpost(
-            f"http://localhost:{port}/{cmd}",
+            url,
             json.dumps(data),
             {"Content-Type": "application/json"},
         )

@@ -757,7 +757,10 @@ async def asyncpost(url: StrOrURL, data: Any, headers: Any) -> Any:
 
 
 @post(
-    ["/proxy/{port:int}/{cmd:str}", "/proxy/{port:int}/{ver:str}/{cmd:str}"],
+    [
+        "/proxy/{port:int}/{cmd:str}",
+        "/proxy/{port:int}/{ver:str}/{cmd:path}",
+    ],
     guards=ENDPOINT_GUARDS,
 )
 async def proxy_service(
@@ -775,7 +778,7 @@ async def proxy_service(
     """
 
     if ver is not None:
-        url = f"http://localhost:{port}/{ver}/{cmd}"
+        url = f"http://localhost:{port}/{ver}{cmd}"
     else:
         url = f"http://localhost:{port}/{cmd}"
 

@@ -677,8 +677,7 @@ def models_ls(
 )
 @click.option(
     "-c",
-    "--use_cache",
-    type=bool,
+    "--use-cache",
     is_flag=True,
     default=False,
     help=(
@@ -772,8 +771,7 @@ def models_add(
 )
 @click.option(
     "-c",
-    "--use_cache",
-    type=bool,
+    "--use-cache",
     is_flag=True,
     default=False,
     help=(

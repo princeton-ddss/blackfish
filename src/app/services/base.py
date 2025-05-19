@@ -565,17 +565,24 @@ class Service(UUIDAuditBase):
         ps = [p for p in psutil.process_iter() if p.name() == "ssh"]
         for p in ps:
             pid = p.pid
-            cs = p.connections()
+            try:
+                cs = p.net_connections()
+            except psutil.AccessDenied:
+                logger.warning(f"Access denied to process {p}.")
+                continue
             for c in cs:
                 if c.laddr.port == self.port:
                     try:
                         p.kill()
                         logger.info(f"Closed tunnel on port {self.port} (pid={pid})")
+                        self.port = None
+                        return
                     except psutil.NoSuchProcess as e:
                         logger.warning(
                             f"Failed to kill process {pid}: (sqlite.Error) {e}"
                         )
 
+        logger.warning(f"Failed to close tunnel on port {self.port} (pid={pid}). Setting port to None.")
         self.port = None
 
     def get_job(self, verbose: bool = False) -> Job | None:

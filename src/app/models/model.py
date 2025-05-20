@@ -12,8 +12,20 @@ from app.models.profile import BlackfishProfile as Profile
 
 
 PIPELINE_IMAGES = {
-    None: "unspecified",
+    None: "none",
+    # audio
     "automatic-speech-recognition": "speech-recognition",
+    # computer vision
+    "image-classification": "image-classification",
+    "object-detection": "object-detection",
+    "video-classification": "video-classification",
+    # multimodel
+    "image-text-to-text": "image-text-to-text",
+    "audio-text-to-text": "audio-text-to-text",
+    "video-text-to-text": "video-text-to-text",
+    "any-to-any": "any-to-any",
+    # natural language processing
+    "text-classification": "text-classification",
     "text-generation": "text-generation",
 }
 

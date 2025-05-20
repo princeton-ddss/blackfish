@@ -27,6 +27,7 @@ PIPELINE_IMAGES = {
     # natural language processing
     "text-classification": "text-classification",
     "text-generation": "text-generation",
+    "text-to-image": "text-to-image",
 }
 
 

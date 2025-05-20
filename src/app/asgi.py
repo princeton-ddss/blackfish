@@ -845,9 +845,12 @@ async def get_models(
         except Exception as e:
             logger.error(f"Failed to execute transaction: {e}")
         if image is not None:
-            return list(filter(lambda x: x.image == image, models))
+            return sorted(
+                list(filter(lambda x: x.image == image, models)),
+                key=lambda x: x.repo.lower(),
+            )
         else:
-            return models
+            return sorted(models, key=lambda x: x.repo.lower())
     else:
         logger.info("Querying model table...")
 
@@ -857,7 +860,11 @@ async def get_models(
         if image is not None:
             query_filter["image"] = image
 
-        select_query = sa.select(Model).filter_by(**query_filter)
+        select_query = (
+            sa.select(Model)
+            .filter_by(**query_filter)
+            .order_by(sa.func.lower(Model.repo))
+        )
         try:
             res = await session.execute(select_query)
             return list(res.scalars().all())

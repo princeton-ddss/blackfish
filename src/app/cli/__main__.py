@@ -415,6 +415,7 @@ def prune() -> None:  # pragma: no cover
 def details(service_id: str) -> None:  # pragma: no cover
     """Show detailed service information"""
 
+    from uuid import UUID
     from datetime import datetime
     import json
     from app.services.base import Service
@@ -436,6 +437,7 @@ def details(service_id: str) -> None:  # pragma: no cover
     body = res.json()
     body["created_at"] = datetime.fromisoformat(body["created_at"])
     body["updated_at"] = datetime.fromisoformat(body["updated_at"])
+    body["id"] = UUID(body["id"])
     service = Service(**body)
     job = service.get_job()
     profile = service.get_profile()

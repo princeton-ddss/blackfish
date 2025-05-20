@@ -176,7 +176,6 @@ def run_text_generation(
     if name is None:
         name = f"blackfish-{randint(10_000, 99_999)}"
 
-    print("ctx.args", ctx.args)
     container_config = TextGenerationConfig(
         port=port,
         model_dir=model_dir,

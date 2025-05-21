@@ -8,5 +8,5 @@ apptainer run {{ '--nv' if job_config.gres else '' }} \
   --revision {{ container_config.revision }} \
   --trust-remote-code \
   --tensor-parallel-size {{ job_config.gres }} \
-  {{ container_config.launch_kwargs }}
+  {{ container_config.launch_kwargs if container_config.launch_kwargs else '' }}
 {%- endblock %}

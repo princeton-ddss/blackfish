@@ -33,7 +33,7 @@ def main() -> None:  # pragma: no cover
 
 @main.command()
 @click.option(
-    "--app_dir",
+    "--app-dir",
     "-r",
     type=str,
     default=config.HOME_DIR,
@@ -61,14 +61,14 @@ def main() -> None:  # pragma: no cover
     help="The username for remote authentication of an auto-generated default profile.",
 )
 @click.option(
-    "--home_dir",
+    "--home-dir",
     "-d",
     type=str,
     default=None,
     help="The home directory to use for an auto-generated default profile.",
 )
 @click.option(
-    "--cache_dir",
+    "--cache-dir",
     "-c",
     type=str,
     default=None,
@@ -224,7 +224,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     help="The duration to run the service for, e.g., 1:00 (one hour).",
 )
 @click.option(
-    "--ntasks_per_node",
+    "--ntasks-per-node",
     type=int,
     default=8,
     help="The number of tasks per compute node.",
@@ -260,7 +260,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     "--mount", "-m", type=str, default=None, help="An optional directory to mount."
 )
 @click.option(
-    "--grace_period",
+    "--grace-period",
     "-g",
     type=int,
     default=180,
@@ -311,7 +311,7 @@ run.add_command(run_speech_recognition, "speech-recognition")
 # blackfish stop [OPTIONS] SERVICE [SERVICE...]
 @main.command()
 @click.argument(
-    "service_id",
+    "service-id",
     type=str,
     required=True,
 )
@@ -751,7 +751,7 @@ def models_add(
 
 
 @model.command(name="rm")
-@click.argument("repo_id", type=str, required=True)
+@click.argument("repo-id", type=str, required=True)
 @click.option(
     "-p",
     "--profile",

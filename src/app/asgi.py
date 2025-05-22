@@ -663,6 +663,7 @@ async def delete_service(
             ServiceStatus.STOPPED,
             ServiceStatus.TIMEOUT,
             ServiceStatus.FAILED,
+            None,
         ]:
             logger.debug(f"Queueing service {service.id} for deletion")
             deletion = sa.delete(Service).where(Service.id == service.id)

@@ -22,23 +22,15 @@ def create_local_home_dir(home_dir: str | os.PathLike[str]) -> None:
                 os.mkdir(home_dir)
                 os.mkdir(os.path.join(home_dir, "models"))
                 os.mkdir(os.path.join(home_dir, "images"))
-                spinner.text = ""
-                spinner.ok(
-                    f"{LogSymbols.SUCCESS.value} Set up default Blackfish home"
-                    f" directory {home_dir}!"
-                )
+                spinner.text = f"Set up default Blackfish home directory {home_dir}"
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
             except OSError as e:
-                spinner.text = ""
-                spinner.fail(
-                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish home"
-                    f" directory: {e}."
-                )
+                spinner.text = f"Failed to set up Blackfish home directory: {e}"
+                spinner.fail(f"{LogSymbols.ERROR.value}")
                 raise Exception
         else:
-            spinner.text = ""
-            spinner.ok(
-                f"{LogSymbols.SUCCESS.value} Blackfish home directory already exists."
-            )
+            spinner.text = "Blackfish home directory already exists."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 def create_remote_home_dir(
@@ -63,10 +55,8 @@ def create_remote_home_dir(
             )
             remote_exists = res.decode("utf-8").strip()
         except Exception as e:
-            spinner.text = ""
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home: {e}."
-            )
+            spinner.text = f"Failed to set up Blackfish remote home: {e}."
+            spinner.fail(f"{LogSymbols.ERROR.value}")
             raise Exception
         if not remote_exists == "1":
             try:
@@ -79,27 +69,24 @@ def create_remote_home_dir(
                 _ = subprocess.check_output(
                     ["ssh", f"{user}@{host}", "mkdir", f"{home_dir}/images"]
                 )
-                spinner.text = ""
-                spinner.ok(f"{LogSymbols.SUCCESS.value} Done!")
+                spinner.text = "Done."
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
             except Exception as e:
-                spinner.text = ""
-                spinner.fail(
-                    f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote: {e}."
-                )
+                spinner.text = f"Failed to set up Blackfish remote: {e}."
+                spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            spinner.text = ""
-            spinner.ok(
-                f"{LogSymbols.SUCCESS.value} Blackfish remote home directory"
-                " already exists."
-            )
+            spinner.text = "Blackfish remote home directory already exists."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 def check_local_cache_exists(cache_dir: str | os.PathLike[str]) -> None:
     """Check that the local cache directory exists and raise and exception if not."""
     if os.path.exists(cache_dir):
-        print(f"{LogSymbols.SUCCESS.value} Blackfish cache directory already exists.")
+        print(f"{LogSymbols.SUCCESS.value} Local cache directory already exists.")
     else:
-        print(f"{LogSymbols.ERROR.value} Unable to find local cache dir {cache_dir}.")
+        print(
+            f"{LogSymbols.ERROR.value} Unable to find local cache directory {cache_dir}."
+        )
         raise Exception
 
 
@@ -117,23 +104,16 @@ def check_remote_cache_exists(
                 ]
             )
             remote_exists = res.decode("utf-8").strip()
-            spinner.text = ""
             if remote_exists == "1":
-                spinner.ok(
-                    f"{LogSymbols.SUCCESS.value} Blackfish remote cache directory"
-                    " exists."
-                )
+                spinner.text = "Remote cache already directory exists."
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
             else:
-                spinner.fail(
-                    f"{LogSymbols.ERROR.value} Unable to find remote cache dir"
-                    f" {cache_dir}."
-                )
+                spinner.text = f"Unable to find remote cache directory {cache_dir}."
+                spinner.fail(f"{LogSymbols.ERROR.value}")
                 raise Exception
         except Exception as e:
-            spinner.text = ""
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to set up Blackfish remote home: {e}."
-            )
+            spinner.text = f"Failed to set up Blackfish remote home: {e}."
+            spinner.fail(f"{LogSymbols.ERROR.value}")
             raise Exception
 
 

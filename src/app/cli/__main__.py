@@ -33,7 +33,7 @@ def main() -> None:  # pragma: no cover
 
 @main.command()
 @click.option(
-    "--app_dir",
+    "--app-dir",
     "-r",
     type=str,
     default=config.HOME_DIR,
@@ -61,14 +61,14 @@ def main() -> None:  # pragma: no cover
     help="The username for remote authentication of an auto-generated default profile.",
 )
 @click.option(
-    "--home_dir",
+    "--home-dir",
     "-d",
     type=str,
     default=None,
     help="The home directory to use for an auto-generated default profile.",
 )
 @click.option(
-    "--cache_dir",
+    "--cache-dir",
     "-c",
     type=str,
     default=None,
@@ -224,7 +224,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     help="The duration to run the service for, e.g., 1:00 (one hour).",
 )
 @click.option(
-    "--ntasks_per_node",
+    "--ntasks-per-node",
     type=int,
     default=8,
     help="The number of tasks per compute node.",
@@ -260,7 +260,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     "--mount", "-m", type=str, default=None, help="An optional directory to mount."
 )
 @click.option(
-    "--grace_period",
+    "--grace-period",
     "-g",
     type=int,
     default=180,
@@ -284,11 +284,11 @@ def run(
     The format of options approximately follows that of Slurm's `sbatch` command.
     """
 
-    from app.models.profile import serialize_profile
+    from app.models.profile import deserialize_profile
 
     ctx.obj = {
         "config": config,
-        "profile": serialize_profile(config.HOME_DIR, profile),
+        "profile": deserialize_profile(config.HOME_DIR, profile),
         "resources": {
             "time": time,
             "ntasks_per_node": ntasks_per_node,
@@ -311,7 +311,7 @@ run.add_command(run_speech_recognition, "speech-recognition")
 # blackfish stop [OPTIONS] SERVICE [SERVICE...]
 @main.command()
 @click.argument(
-    "service_id",
+    "service-id",
     type=str,
     required=True,
 )
@@ -323,13 +323,14 @@ def stop(service_id: str) -> None:  # pragma: no cover
             f"http://{config.HOST}:{config.PORT}/api/services/{service_id}/stop",
             json={},
         )
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to stop service {service_id} (status={res.status_code})"
+            spinner.text = (
+                f"Failed to stop service {service_id} (status={res.status_code})."
             )
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Stopped service {service_id}")
+            spinner.text = f"Stopped service {service_id}."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 # blackfish rm [OPTIONS] SERVICE [SERVICE...]
@@ -360,23 +361,21 @@ def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
             f"http://{config.HOST}:{config.PORT}/api/services",
             params=params,
         )
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to remove services (status={res.status_code})"
-            )
+            spinner.text = f"Failed to remove services (status={res.status_code})."
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
             data = res.json()
             if len(data) == 0:
-                spinner.ok(
-                    f"{LogSymbols.ERROR.value} Query did not match any services."
-                )
+                spinner.text = "Query did not match any services."
+                spinner.ok(f"{LogSymbols.ERROR.value}")
                 return
             oks = [x for x in data if x["status"] == "ok"]
             errors = [x for x in data if x["status"] == "error"]
-            spinner.ok(
-                f"{LogSymbols.SUCCESS.value} Removed {len(oks)} {'service' if len(oks) == 1 else 'services'}."
+            spinner.text = (
+                f"Removed {len(oks)} {'service' if len(oks) == 1 else 'services'}."
             )
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
             if len(errors) > 0:
                 click.echo(
                     f"{LogSymbols.ERROR.value} Failed to delete {len(errors)} {'service' if len(errors) == 1 else 'services'}."
@@ -397,16 +396,14 @@ def prune() -> None:  # pragma: no cover
 
     with yaspin(text="Deleting service...") as spinner:
         res = requests.delete(f"http://{config.HOST}:{config.PORT}/api/services/prune")
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to prune services (status={res.status_code})"
-            )
+            spinner.text = f"Failed to prune services (status={res.status_code})"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            count = res.json()
-            spinner.ok(
-                f"{LogSymbols.SUCCESS.value} Removed {count} {'service' if count == 1 else 'services'}."
+            spinner.text = (
+                f"Removed {res.json()} {'service' if res.json() == 1 else 'services'}."
             )
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 # blackfish details [OPTIONS] SERVICE
@@ -415,6 +412,7 @@ def prune() -> None:  # pragma: no cover
 def details(service_id: str) -> None:  # pragma: no cover
     """Show detailed service information"""
 
+    from uuid import UUID
     from datetime import datetime
     import json
     from app.services.base import Service
@@ -424,18 +422,20 @@ def details(service_id: str) -> None:  # pragma: no cover
         res = requests.get(
             f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
         )  # fresh data 🥬
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to fetch service {service_id} (status={res.status_code})."
+            spinner.text = (
+                f"Failed to fetch service {service_id} (status={res.status_code})."
             )
+            spinner.fail(f"{LogSymbols.ERROR.value}")
             return
         else:
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Found service {service_id}")
+            spinner.text = f"Found service {service_id}"
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
     body = res.json()
     body["created_at"] = datetime.fromisoformat(body["created_at"])
     body["updated_at"] = datetime.fromisoformat(body["updated_at"])
+    body["id"] = UUID(body["id"])
     service = Service(**body)
     job = service.get_job()
     profile = service.get_profile()
@@ -534,12 +534,9 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
         res = requests.get(
             f"http://{config.HOST}:{config.PORT}/api/services", params=params
         )  # fresh data 🥬
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to fetch services. Status code:"
-                f" {res.status_code}."
-            )
+            spinner.text = f"Failed to fetch services. Status code: {res.status_code}."
+            spinner.fail(f"{LogSymbols.ERROR.value}")
             return
 
     def is_active(service: Any) -> bool:
@@ -620,9 +617,9 @@ def models_ls(
 
     with yaspin(text="Fetching models") as spinner:
         res = requests.get(f"http://{config.HOST}:{config.PORT}/api/models?{params}")
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(f"{LogSymbols.ERROR.value} Error: {res.status_code}")
+            spinner.text = f"Error: {res.status_code}"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
             return
 
     tab = PrettyTable(
@@ -677,8 +674,7 @@ def models_ls(
 )
 @click.option(
     "-c",
-    "--use_cache",
-    type=bool,
+    "--use-cache",
     is_flag=True,
     default=False,
     help=(
@@ -695,9 +691,9 @@ def models_add(
     """
 
     from app.models.model import add_model
-    from app.models.profile import serialize_profile, SlurmProfile
+    from app.models.profile import deserialize_profile, SlurmProfile
 
-    matched = serialize_profile(config.HOME_DIR, profile)
+    matched = deserialize_profile(config.HOME_DIR, profile)
     if matched is None:
         click.echo(
             f"{LogSymbols.ERROR.value} Profile not found 😔. To view a list of available profiles, use `blackfish profile ls`."
@@ -739,18 +735,18 @@ def models_add(
                 "model_dir": path,
             },
         )
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to insert model"
-                f" {repo_id} ({res.status_code}: {res.reason})"
+            spinner.text = (
+                f"Failed to insert model {repo_id} ({res.status_code}: {res.reason})"
             )
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Added model {repo_id}")
+            spinner.text = f"Added model {repo_id}."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 @model.command(name="rm")
-@click.argument("repo_id", type=str, required=True)
+@click.argument("repo-id", type=str, required=True)
 @click.option(
     "-p",
     "--profile",
@@ -772,8 +768,7 @@ def models_add(
 )
 @click.option(
     "-c",
-    "--use_cache",
-    type=bool,
+    "--use-cache",
     is_flag=True,
     default=False,
     help=(
@@ -787,9 +782,9 @@ def models_remove(
     """Remove model files."""
 
     from app.models.model import remove_model
-    from app.models.profile import serialize_profile, SlurmProfile
+    from app.models.profile import deserialize_profile, SlurmProfile
 
-    matched = serialize_profile(config.HOME_DIR, profile)
+    matched = deserialize_profile(config.HOME_DIR, profile)
     if matched is None:
         click.echo(
             f"{LogSymbols.ERROR.value} Profile not found 😔. To view a list of available profiles, use `blackfish profile ls`."
@@ -809,11 +804,11 @@ def models_remove(
             remove_model(
                 repo_id, profile=matched, revision=revision, use_cache=use_cache
             )
-            spinner.text = ""
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Removed model {repo_id}")
+            spinner.text = f"Removed model {repo_id}"
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
         except Exception as e:
-            spinner.text = ""
-            spinner.fail(f"{LogSymbols.ERROR.value} Failed to remove model: {e}")
+            spinner.text = f"Failed to remove model: {e}"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
 
 
 @main.group()

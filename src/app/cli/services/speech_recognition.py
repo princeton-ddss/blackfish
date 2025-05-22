@@ -77,6 +77,8 @@ def run_speech_recognition(
     See https://github.com/princeton-ddss/speech-recognition-inference for additional option details.
     """
 
+    from uuid import uuid4
+
     config: BlackfishConfig = ctx.obj.get("config")
     profile: BlackfishProfile | None = ctx.obj.get("profile")
     options: ServiceOptions = ctx.obj.get("options")
@@ -128,6 +130,7 @@ def run_speech_recognition(
 
         if dry_run:
             service = SpeechRecognition(
+                id=uuid4(),
                 name=name,
                 model=repo_id,
                 profile=profile.name,
@@ -167,17 +170,14 @@ def run_speech_recognition(
                         "grace_period": options.grace_period,
                     },
                 )
-                spinner.text = ""
                 if res.ok:
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Started service:"
-                        f" {res.json()['id']}"
-                    )
+                    spinner.text = f"Started service: {res.json()['id']}"
+                    spinner.ok(f"{LogSymbols.SUCCESS.value}")
                 else:
-                    spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to start service:"
-                        f" {res.status_code} - {res.reason}"
+                    spinner.text = (
+                        f"Failed to start service: {res.status_code} - {res.reason}"
                     )
+                    spinner.fail(f"{LogSymbols.ERROR.value}")
     else:
         job_config = LocalJobConfig(
             gres=ctx.obj.get("resources").get("gres"),
@@ -222,14 +222,11 @@ def run_speech_recognition(
                         "grace_period": options.grace_period,
                     },
                 )
-                spinner.text = ""
                 if res.ok:
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Started service:"
-                        f" {res.json()['id']}"
-                    )
+                    spinner.text = f"Started service: {res.json()['id']}"
+                    spinner.ok(f"{LogSymbols.SUCCESS.value}")
                 else:
-                    spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to start service:"
-                        f" {res.status_code} - {res.reason}"
+                    spinner.text = (
+                        f"Failed to start service: {res.status_code} - {res.reason}"
                     )
+                    spinner.fail(f"{LogSymbols.ERROR.value}")

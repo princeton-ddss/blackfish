@@ -68,8 +68,8 @@ from app.services.text_generation import TextGenerationConfig
 from app.config import config as blackfish_config
 from app.utils import find_port
 from app.models.profile import (
-    serialize_profiles,
-    serialize_profile,
+    deserialize_profiles,
+    deserialize_profile,
     SlurmProfile,
     LocalProfile,
     BlackfishProfile as Profile,
@@ -663,6 +663,7 @@ async def delete_service(
             ServiceStatus.STOPPED,
             ServiceStatus.TIMEOUT,
             ServiceStatus.FAILED,
+            None,
         ]:
             logger.debug(f"Queueing service {service.id} for deletion")
             deletion = sa.delete(Service).where(Service.id == service.id)
@@ -756,10 +757,17 @@ async def asyncpost(url: StrOrURL, data: Any, headers: Any) -> Any:
             return await response.json()
 
 
-@post("/proxy/{port:int}/{cmd:str}", guards=ENDPOINT_GUARDS)
+@post(
+    [
+        "/proxy/{port:int}/{cmd:str}",
+        "/proxy/{port:int}/{ver:str}/{cmd:path}",
+    ],
+    guards=ENDPOINT_GUARDS,
+)
 async def proxy_service(
     data: dict[Any, Any],
     port: int,
+    ver: Optional[str],
     cmd: str,
     streaming: Optional[bool],
     session: AsyncSession,
@@ -770,10 +778,14 @@ async def proxy_service(
     Setting query parameter `streaming` to `True` streams the response.
     """
 
+    if ver is not None:
+        url = f"http://localhost:{port}/{ver}{cmd}"
+    else:
+        url = f"http://localhost:{port}/{cmd}"
+
     if streaming:
 
         async def generator() -> AsyncGenerator:  # type: ignore
-            url = f"http://localhost:{port}/{cmd}"
             headers = {"Content-Type": "application/json"}
             with requests.post(url, json=data, headers=headers, stream=True) as res:
                 for x in res.iter_content(chunk_size=None):
@@ -783,7 +795,7 @@ async def proxy_service(
         return Stream(generator)
     else:
         res = await asyncpost(
-            f"http://localhost:{port}/{cmd}",
+            url,
             json.dumps(data),
             {"Content-Type": "application/json"},
         )
@@ -798,7 +810,7 @@ async def get_models(
     image: Optional[str] = None,
     refresh: Optional[bool] = False,
 ) -> list[Model]:
-    profiles = serialize_profiles(state.HOME_DIR)
+    profiles = deserialize_profiles(state.HOME_DIR)
 
     res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
@@ -834,9 +846,12 @@ async def get_models(
         except Exception as e:
             logger.error(f"Failed to execute transaction: {e}")
         if image is not None:
-            return list(filter(lambda x: x.image == image, models))
+            return sorted(
+                list(filter(lambda x: x.image == image, models)),
+                key=lambda x: x.repo.lower(),
+            )
         else:
-            return models
+            return sorted(models, key=lambda x: x.repo.lower())
     else:
         logger.info("Querying model table...")
 
@@ -846,7 +861,11 @@ async def get_models(
         if image is not None:
             query_filter["image"] = image
 
-        select_query = sa.select(Model).filter_by(**query_filter)
+        select_query = (
+            sa.select(Model)
+            .filter_by(**query_filter)
+            .order_by(sa.func.lower(Model.repo))
+        )
         try:
             res = await session.execute(select_query)
             return list(res.scalars().all())
@@ -881,7 +900,7 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
-        return serialize_profiles(blackfish_config.HOME_DIR)
+        return deserialize_profiles(blackfish_config.HOME_DIR)
     except FileNotFoundError:
         raise NotFoundException(detail="Profiles config not found.")
 
@@ -889,9 +908,9 @@ async def read_profiles() -> list[Profile]:
 @get("/api/profiles/{name: str}", guards=ENDPOINT_GUARDS)
 async def read_profile(name: str) -> Profile | None:
     try:
-        profile = serialize_profile(blackfish_config.HOME_DIR, name)
+        profile = deserialize_profile(blackfish_config.HOME_DIR, name)
     except Exception as e:
-        raise InternalServerException(detail=f"Failed to serialize profile: {e}.")
+        raise InternalServerException(detail=f"Failed to deserialize profile: {e}.")
 
     if profile is not None:
         return profile

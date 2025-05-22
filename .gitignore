@@ -1,5 +1,6 @@
 .mypy_cache/
 .vscode/
+.ropeproject/
 .DS_Store
 playground/
 sandbox/
@@ -26,6 +27,7 @@ lib/
 lib64/
 parts/
 sdist/
+dist/
 var/
 *.egg-info/
 .installed.cfg

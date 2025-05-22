@@ -1,9 +1,9 @@
-name: ci
+name: CI
 on:
   push:
-    branches: ["master", "dev"]
+    branches: ["main", "dev"]
   pull_request:
-    branches: ["master", "dev"]
+    branches: ["main", "dev"]
 env:
   FORCE_COLOR: "1"
 concurrency:
@@ -12,38 +12,64 @@ concurrency:
 permissions:
   contents: write
 jobs:
+
   lint:
+    name: Lint code 🧹
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.10
+      - uses: wntrblm/nox@main
+      - name: Set up Python 3.x
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
-      - name: Install
+          python-version: "3.x"
+      - name: Install Blackfish
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Lint
         run: nox --non-interactive --error-on-missing-interpreter --session "lint"
+
   tests:
+    name: Run tests 🧪
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
+      - uses: wntrblm/nox@main
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install
+      - name: Install Blackfish
         run: |
           python -m pip install --disable-pip-version-check .
+      - name: Set up Blackfish
+        run: blackfish init --auto --app-dir $HOME/.blackfish --schema local --home-dir $HOME/.blackfish --cache-dir $HOME/.blackfish
+      - name: Start Blackfish
+        run: blackfish start &
       - name: Run tests on ${{ matrix.os }}
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
-  deploy:
+
+  docs-preview:
+    name: Preview documentation 📖
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag
+      - name: Build documentation
+        run: mkdocs build
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./site/
+
+  docs:
+    name: Deploy documentation 📚
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
       - name: Configure Git Credentials
@@ -62,3 +88,47 @@ jobs:
             mkdocs-material-
       - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag
       - run: mkdocs gh-deploy --force
+
+  build:
+    name: Build distribution 📦
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Install uv (latest)
+        uses: astral-sh/setup-uv@v5
+      - name: Build wheel
+        run: uv build
+      - name: Store distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish:
+    name: Publish to PyPI 🎉
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    environment:
+      name: pypi
+      url: https://pypi.org/p/blackfish-ai
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download distributions
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}

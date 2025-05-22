@@ -51,7 +51,12 @@ def try_get_model_info(
 
 
 # blackfish run [OPTIONS] text-generation [OPTIONS]
-@click.command()
+@click.command(
+    context_settings=dict(
+        ignore_unknown_options=True,
+        allow_extra_args=True,
+    )
+)
 @click.argument(
     "repo_id",
     required=True,
@@ -82,39 +87,39 @@ def try_get_model_info(
     default=8080,
     help="Run server on the given port.",
 )
-@click.option(
-    "--disable-custom-kernels",
-    is_flag=True,
-    default=True,
-    help=(
-        "Disable custom CUDA kernels. Custom CUDA kernels are not guaranteed to run on"
-        " all devices, but will run faster if they do."
-    ),
-)
-@click.option(
-    "--sharded",
-    type=bool,
-    required=False,
-    default=None,
-    help=(
-        "Shard the model across multiple GPUs. The API uses all available GPUs by"
-        " default. Setting to 'true' with a single GPU results in an error."
-    ),
-)
-@click.option(
-    "--max-input-length",
-    type=int,
-    required=False,
-    default=None,  # 1024,
-    help="The maximum allowed input length (in tokens).",
-)
-@click.option(
-    "--max-total-tokens",
-    type=int,
-    required=False,
-    default=None,  # 2048,
-    help="The maximum allowed total length of input and output (in tokens).",
-)
+# @click.option(
+#     "--disable-custom-kernels",
+#     is_flag=True,
+#     default=True,
+#     help=(
+#         "Disable custom CUDA kernels. Custom CUDA kernels are not guaranteed to run on"
+#         " all devices, but will run faster if they do."
+#     ),
+# )
+# @click.option(
+#     "--sharded",
+#     type=bool,
+#     required=False,
+#     default=None,
+#     help=(
+#         "Shard the model across multiple GPUs. The API uses all available GPUs by"
+#         " default. Setting to 'true' with a single GPU results in an error."
+#     ),
+# )
+# @click.option(
+#     "--max-input-length",
+#     type=int,
+#     required=False,
+#     default=None,  # 1024,
+#     help="The maximum allowed input length (in tokens).",
+# )
+# @click.option(
+#     "--max-total-tokens",
+#     type=int,
+#     required=False,
+#     default=None,  # 2048,
+#     help="The maximum allowed total length of input and output (in tokens).",
+# )
 @click.option(
     "--dry-run",
     is_flag=True,
@@ -128,16 +133,18 @@ def run_text_generation(
     name: Optional[str],
     revision: Optional[str],
     port: int,
-    disable_custom_kernels: bool,
-    sharded: Optional[bool],
-    max_input_length: Optional[int],
-    max_total_tokens: Optional[int],
+    # disable_custom_kernels: bool,
+    # sharded: Optional[bool],
+    # max_input_length: Optional[int],
+    # max_total_tokens: Optional[int],
     dry_run: bool,
 ) -> None:  # pragma: no cover
     """Start a text generation service hosting a model provided by REPO_ID, e.g., openai/whisper-tiny.
 
     See https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher for additional option details.
     """
+
+    from uuid import uuid4
 
     config: BlackfishConfig = ctx.obj.get("config")
     profile: BlackfishProfile | None = ctx.obj.get("profile")
@@ -175,10 +182,11 @@ def run_text_generation(
         port=port,
         model_dir=model_dir,
         revision=revision,
-        sharded=sharded,
-        max_input_length=max_input_length,
-        max_total_tokens=max_total_tokens,
-        disable_custom_kernels=disable_custom_kernels,
+        # sharded=sharded,
+        # max_input_length=max_input_length,
+        # max_total_tokens=max_total_tokens,
+        # disable_custom_kernels=disable_custom_kernels,
+        launch_kwargs=" ".join(ctx.args),
     )
 
     job_config: JobConfig
@@ -191,6 +199,7 @@ def run_text_generation(
 
         if dry_run:
             service = TextGeneration(
+                id=uuid4(),
                 name=name,
                 model=repo_id,
                 profile=profile.name,
@@ -230,17 +239,14 @@ def run_text_generation(
                         "grace_period": options.grace_period,
                     },
                 )
-                spinner.text = ""
                 if res.ok:
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Started service:"
-                        f" {res.json()['id']}"
-                    )
+                    spinner.text = f"Started service: {res.json()['id']}"
+                    spinner.ok(f"{LogSymbols.SUCCESS.value}")
                 else:
-                    spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to start service:"
-                        f" {res.status_code} - {res.reason}"
+                    spinner.text = (
+                        f"Failed to start service: {res.status_code} - {res.reason}"
                     )
+                    spinner.fail(f"{LogSymbols.ERROR.value}")
     else:
         job_config = LocalJobConfig(
             gres=ctx.obj.get("resources").get("gres"),
@@ -285,14 +291,11 @@ def run_text_generation(
                         "grace_period": options.grace_period,
                     },
                 )
-                spinner.text = ""
                 if res.ok:
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Started service:"
-                        f" {res.json()['id']}"
-                    )
+                    spinner.text = f"Started service: {res.json()['id']}"
+                    spinner.ok(f"{LogSymbols.SUCCESS.value}")
                 else:
-                    spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to start service:"
-                        f" {res.status_code} - {res.reason}"
+                    spinner.text = (
+                        f"Failed to start service: {res.status_code} - {res.reason}"
                     )
+                    spinner.fail(f"{LogSymbols.ERROR.value}")

@@ -23,6 +23,7 @@ dependencies = [
   "advanced-alchemy>=0.27.1,<0.28",
   "aiohttp>=3.11.11",
   "aiosqlite>=0.20",
+  "alembic>=1.14,<1.16",
   "colorlog>=6.9",
   "fabric>=3.2.2",
   "huggingface-hub>=0.27.1",

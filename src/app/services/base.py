@@ -582,7 +582,9 @@ class Service(UUIDAuditBase):
                             f"Failed to kill process {pid}: (sqlite.Error) {e}"
                         )
 
-        logger.warning(f"Failed to close tunnel on port {self.port} (pid={pid}). Setting port to None.")
+        logger.warning(
+            f"Failed to close tunnel on port {self.port} (pid={pid}). Setting port to None."
+        )
         self.port = None
 
     def get_job(self, verbose: bool = False) -> Job | None:

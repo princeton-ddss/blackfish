@@ -1,0 +1,1702 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://princeton-ddss.github.io/blackfish/getting_started/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../admin/">
+      
+      
+      <link rel="icon" href="../assets/img/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>Getting Started - Blackfish</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/css/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#getting-started" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Blackfish" class="md-header__button md-logo" aria-label="Blackfish" data-md-component="logo">
+      
+  <img src="../assets/img/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Blackfish
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Getting Started
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="white" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/princeton-ddss/blackfish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../admin/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Platform
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/jobs/" class="md-tabs__link">
+          
+  
+  
+  API Documentation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contrib.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Blackfish" class="md-nav__button md-logo" aria-label="Blackfish" data-md-component="logo">
+      
+  <img src="../assets/img/logo.png" alt="logo">
+
+    </a>
+    Blackfish
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/princeton-ddss/blackfish" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pip" class="md-nav__link">
+    <span class="md-ellipsis">
+      pip
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Initialization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#models-and-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      Models and Images
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Profiles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Profiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schemas
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schemas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#slurm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Slurm
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local" class="md-nav__link">
+    <span class="md-ellipsis">
+      Local
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ls-list-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      ls - List profiles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-create-a-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      add - Create a profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#show-view-a-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      show - View a profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-modify-a-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      update - Modify a profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rm-delete-a-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      rm - Delete a profile
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Models
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Services
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Services">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#commands_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-start-a-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      run - Start a service
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ls-list-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      ls - List services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-stop-a-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      stop - Stop a service
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rm-delete-a-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      rm - Delete a service
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#speech-recognition" class="md-nav__link">
+    <span class="md-ellipsis">
+      Speech Recognition
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Platform
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    API Documentation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            API Documentation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jobs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Jobs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/services/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Services
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/swagger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OpenAPI (Swagger)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contrib.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pip" class="md-nav__link">
+    <span class="md-ellipsis">
+      pip
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Initialization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#models-and-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      Models and Images
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Profiles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Profiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schemas
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schemas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#slurm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Slurm
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local" class="md-nav__link">
+    <span class="md-ellipsis">
+      Local
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ls-list-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      ls - List profiles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-create-a-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      add - Create a profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#show-view-a-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      show - View a profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-modify-a-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      update - Modify a profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rm-delete-a-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      rm - Delete a profile
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Models
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Services
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Services">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#commands_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-start-a-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      run - Start a service
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ls-list-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      ls - List services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-stop-a-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      stop - Stop a service
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rm-delete-a-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      rm - Delete a service
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#speech-recognition" class="md-nav__link">
+    <span class="md-ellipsis">
+      Speech Recognition
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="getting-started">Getting Started</h1>
+<h2 id="installation">Installation</h2>
+<h3 id="pip">pip</h3>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pip<span class="w"> </span>install<span class="w"> </span>blackfish
+</span></code></pre></div>
+<p>If everything worked, <code>which blackfish</code> should point to the installed command-line tool.</p>
+<h2 id="setup">Setup</h2>
+<p>There's a small amount of setup required before we get started with Blackfish. Fortunately, it's mostly automated.</p>
+<h3 id="ssh">SSH</h3>
+<p>Using Blackfish from your laptop requires a seamless (i.e., password-less) method of communicating with remote clusters. On many systems, this is simple to setup with the <code>ssh-keygen</code> and <code>ssh-copy-id</code> utilitites. First, make sure that you are connected to your institution's network (or VPN), then type the following at the command-line:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ssh-keygen<span class="w"> </span>-t<span class="w"> </span>rsa<span class="w"> </span><span class="c1"># generates ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>ssh-copy-id<span class="w"> </span>&lt;user&gt;@&lt;host&gt;<span class="w"> </span><span class="c1"># answer yes to transfer the public key</span>
+</span></code></pre></div>
+<p>These commands create a secure public-private key pair and send the public key to the HPC server you need access to. You now have password-less access to your HPC server!</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Blackfish depends on seamless interaction with your university's HPC cluster. Before proceeding, make sure that you have enabled password-less login and are connected to your institutions network or VPN, if required.</p>
+</div>
+<h3 id="initialization">Initialization</h3>
+<p>To initialize Blackfish, just type
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>blackfish<span class="w"> </span>init
+</span></code></pre></div>
+and answer the prompts to create a new default profile.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your default profile connects to an HPC cluster, then Blackfish will attempt to set up the remote host at this point. Profile creation will fail if you're unable to connect to the HPC server and you'll need to re-run the <code>blackfish init</code> command or create a profile with <code>blackfish profile create</code> (see below).</p>
+</div>
+<h3 id="models-and-images">Models and Images</h3>
+<p>Blackfish works best with locally available model files and container images. Having these files available locally allows Blackfish to avoid slow downloads during deployment. See the section on <a href="">Obtaining Service Images and Models</a> for more information, or talk to your institution's HPC cluster admins.</p>
+<h3 id="configuration">Configuration</h3>
+<p>The application and command-line interface (CLI) pull their settings from environment variables and/or (for the application) arguments provided at start-up. The most important environment variables are:
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">BLACKFISH_HOST</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="w"> </span><span class="c1"># host for local instance of the Blackfish app</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">BLACKFISH_PORT</span><span class="o">=</span><span class="m">8000</span><span class="w"> </span><span class="c1"># port for local instance of the Blackfish app</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nv">BLACKFISH_HOME_DIR</span><span class="o">=</span><span class="s1">&#39;~/.blackfish&#39;</span><span class="w"> </span><span class="c1"># location to store application data</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nv">BLACKFISH_DEV_MODE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="c1"># run the application with development settings</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nv">BLACKFISH_TOKEN</span><span class="o">=</span><span class="s1">&#39;sealsaretasty&#39;</span><span class="w"> </span><span class="c1"># a user-defined secret auth token</span>
+</span></code></pre></div></p>
+<p>Running the application in development mode is recommended for development only on a shared system
+as it does not use authentication.</p>
+<h3 id="profiles">Profiles</h3>
+<p>The <code>blackfish profile</code> command provides methods for managing Blackfish profiles. Profiles
+are useful if you have access to multiple HPC resources or have multiple accounts on an HPC server.
+Each profile consists of some combination of the following attributes, depending on the profile
+type.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Blackfish profiles are stored in <code>$BLACKFISH_HOME/profiles.cfg</code>. On Linux, this is
+<code>$HOME/.blackfish/profiles.cfg</code> by default. You can modify this file directly, if needed, but you'll
+need to need setup any required remote resources by hand.</p>
+</div>
+<h4 id="schemas">Schemas</h4>
+<p>Each profile specifies a number of attributes that allow Blackfish to find resources (e.g., model
+files) and deploy services accordingly. The exact attributes depend on the profile <em>schema</em>. There are currently two profile schemas: <code>LocalProfile</code> ("local") and <code>SlurmProfile</code> ("slurm"). All profiles require the following attributes:</p>
+<ul>
+<li><code>name</code>: the unique profile name. The "default" profile is used by Blackfish when a profile isn't
+explicitly provided.</li>
+<li><code>schema</code>: one of "slurm" or "local". The profile schema determines how services associated with this
+profile are deployed by Blackfish. Use "slurm" if this profile will run jobs on HPC and "local" to
+run jobs on your laptop (or wherever Blackfish is installed).</li>
+</ul>
+<p>The additional attribute requirements for specific types are listed below.</p>
+<h5 id="slurm">Slurm</h5>
+<p>A Slurm profile specifies how to schedule services <em>on</em> a (possibly) remote server (e.g., HPC cluster) running Slurm <em>from</em> a local machine.</p>
+<ul>
+<li><code>host</code>: a HPC server to run services on, e.g. <code>&lt;cluster&gt;@&lt;university&gt;.edu</code> or <code>localhost</code> (if running Blackfish on an  HPC cluster).</li>
+<li><code>user</code>: a user name on the HPC server.</li>
+<li><code>home</code>: a location on the HPC server to store application data, e.g., <code>/home/&lt;user&gt;/.blackfish</code></li>
+<li><code>cache</code>: a location on the HPC server to store additional (typically shared) model images and
+files. Blackfish does <strong>not</strong> attempt to create this directory for you, but it does require that it can be found.</li>
+</ul>
+<h5 id="local">Local</h5>
+<p>A local profile specifies how to run services on a local machine, i.e., your laptop or desktop, <em>without a job scheduler</em>. This is useful for development and for running models that do not require large amounts of resource, especially if the model is able to use the GPU on your laptop.</p>
+<ul>
+<li><code>home</code>: a location on the local machine to store application data, e.g., <code>/home/&lt;user&gt;/.blackfish</code></li>
+<li><code>cache</code>: a location on the local machine to store additional (typically shared) model images and
+files. Blackfish does <strong>not</strong> attempt to create this directory for you, but it does require that it can be found.</li>
+</ul>
+<h4 id="commands">Commands</h4>
+<h5 id="ls-list-profiles">ls - List profiles</h5>
+<p>To view all profiles, type
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>blackfish<span class="w"> </span>profile<span class="w"> </span>ls
+</span></code></pre></div></p>
+<h5 id="add-create-a-profile">add - Create a profile</h5>
+<p>Creating a new profile is as simple as typing
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>blackfish<span class="w"> </span>profile<span class="w"> </span>add
+</span></code></pre></div></p>
+<p>and following the prompts (see attribute descriptions above). Note that profile names
+are unique.</p>
+<h5 id="show-view-a-profile">show - View a profile</h5>
+<p>You can view a list of all profiles with the <code>blackfish profile ls</code> command. If you want to view a
+specific profile, use the <code>blackfish profile show</code> command instead, e.g.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>blackfish<span class="w"> </span>profile<span class="w"> </span>show<span class="w"> </span>--name<span class="w"> </span>&lt;profile&gt;
+</span></code></pre></div>
+<p>Leaving off the <code>--name</code> option above will display the default profile, which is used by most
+commands if no profile is explicitly provided.</p>
+<h5 id="update-modify-a-profile">update - Modify a profile</h5>
+<p>To modify a profile, use the <code>blackfish profile update</code> command, e.g.</p>
+<p><div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>blackfish<span class="w"> </span>profile<span class="w"> </span>update<span class="w"> </span>--name<span class="w"> </span>&lt;profile&gt;
+</span></code></pre></div>
+This command updates the default profile if not <code>--name</code> is specified. Note that you cannot change
+the name or type attributes of a profile.</p>
+<h5 id="rm-delete-a-profile">rm - Delete a profile</h5>
+<p>To delete a profile, type <code>blackfish profile rm --name &lt;profile&gt;</code>. By default, the command
+requires you to confirm before deleting.
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>blackfish<span class="w"> </span>profile<span class="w"> </span>rm<span class="w"> </span>--name<span class="w"> </span>&lt;profile&gt;
+</span></code></pre></div></p>
+<h2 id="usage">Usage</h2>
+<p>Once you've initialized Blackfish and created a profile, you're ready to go. Their are two ways ways to interact with Blackfish: in a browser, via the user interface (UI), or at the command-line using the Blackfish CLI. In either case, the entrypoint is to type
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>blackfish<span class="w"> </span>start
+</span></code></pre></div>
+in the command-line. If everything worked, you should see a message stating the application
+startup is complete.</p>
+<p>At this point, we need to decide how we want to interact with Blackfish. The UI is available in your browser by heading over to <code>http://localhost:8000</code>. It's a relatively straight-forward interface, and we have detailed usage examples on the <a href="">user interface page</a>, so let's instead take a look at the CLI.</p>
+<p>Open a new terminal tab or window. First, let's see what type of services are available.
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span>--help
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w"> </span>Usage:<span class="w"> </span>blackfish<span class="w"> </span>run<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w"> </span>Run<span class="w"> </span>an<span class="w"> </span>inference<span class="w"> </span>service.
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w"> </span>The<span class="w"> </span>format<span class="w"> </span>of<span class="w"> </span>options<span class="w"> </span>approximately<span class="w"> </span>follows<span class="w"> </span>that<span class="w"> </span>of<span class="w"> </span>Slurm<span class="s1">&#39;s `sbatch` command.</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="s1">╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────╮</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="s1">│ --time                 TEXT     The duration to run the service for, e.g., 1:00 (one hour).               │</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="s1">│ --ntasks-per-node      INTEGER  The number of tasks per compute node.                                     │</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="s1">│ --mem                  INTEGER  The memory required per compute node in GB, e.g., 16 (G).                 │</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="s1">│ --gres                 INTEGER  The number of GPU devices required per compute node, e.g., 1.             │</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="s1">│ --partition            TEXT     The HPC partition to run the service on.                                  │</span>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="s1">│ --constraint           TEXT     Required compute node features, e.g., &#39;</span>gpu80<span class="err">&#39;</span>.<span class="w">                            </span>│
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>│<span class="w"> </span>--profile<span class="w">          </span>-p<span class="w">  </span>TEXT<span class="w">     </span>The<span class="w"> </span>Blackfish<span class="w"> </span>profile<span class="w"> </span>to<span class="w"> </span>use.<span class="w">                                             </span>│
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>│<span class="w"> </span>--help<span class="w">                          </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                                               </span>│
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>╰───────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>╭─<span class="w"> </span>Commands<span class="w"> </span>────────────────────────────────────────────────────────────────────────────────────────────────╮
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>│<span class="w"> </span>speech-recognition<span class="w">  </span>Start<span class="w"> </span>a<span class="w"> </span>speech<span class="w"> </span>recognition<span class="w"> </span>service<span class="w"> </span>hosting<span class="w"> </span>MODEL<span class="w"> </span>with<span class="w"> </span>access<span class="w"> </span>to<span class="w"> </span>INPUT_DIR<span class="w"> </span>on<span class="w"> </span>the<span class="w">      </span>│
+</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>│<span class="w">                     </span>service<span class="w"> </span>host.<span class="w"> </span>MODEL<span class="w"> </span>is<span class="w"> </span>specified<span class="w"> </span>as<span class="w"> </span>a<span class="w"> </span>repo<span class="w"> </span>ID,<span class="w"> </span>e.g.,<span class="w"> </span>openai/whisper-tiny.<span class="w">             </span>│
+</span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>│<span class="w"> </span>text-generation<span class="w">     </span>Start<span class="w"> </span>a<span class="w"> </span>text<span class="w"> </span>generation<span class="w"> </span>service<span class="w"> </span>hosting<span class="w"> </span>MODEL,<span class="w"> </span>where<span class="w"> </span>MODEL<span class="w"> </span>is<span class="w"> </span>specified<span class="w"> </span>as<span class="w"> </span>a<span class="w"> </span>repo<span class="w"> </span>ID,<span class="w"> </span>│
+</span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a>│<span class="w">                     </span>e.g.,<span class="w"> </span>openai/whisper-tiny.<span class="w">                                                            </span>│
+</span><span id="__span-10-23"><a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>╰───────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+</span></code></pre></div>
+This command displays a list of available sub-commands. One of these is <code>text-generation</code>, which is a service that generates text given an input prompt. There are a variety of models that we might use to perform this task, so let's check out what's available on our setup.</p>
+<h3 id="models">Models</h3>
+<p><div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>blackfish<span class="w"> </span>model<span class="w"> </span>ls
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>REPO<span class="w">                                   </span>REVISION<span class="w">                                   </span>PROFILE<span class="w">   </span>IMAGE
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>openai/whisper-tiny<span class="w">                    </span>169d4a4341b33bc18d8881c4b69c2e104e1cc0af<span class="w">   </span>default<span class="w">   </span>speech-recognition
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>openai/whisper-tiny<span class="w">                    </span>be0ba7c2f24f0127b27863a23a08002af4c2c279<span class="w">   </span>default<span class="w">   </span>speech-recognition
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>openai/whisper-small<span class="w">                   </span>973afd24965f72e36ca33b3055d56a652f456b4d<span class="w">   </span>default<span class="w">   </span>speech-recognition
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w">     </span>ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971<span class="w">   </span>default<span class="w">   </span>text-generation
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>meta-llama/Meta-Llama-3-70B<span class="w">            </span>b4d08b7db49d488da3ac49adf25a6b9ac01ae338<span class="w">   </span>macbook<span class="w">   </span>text-generation
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>openai/whisper-tiny<span class="w">                    </span>169d4a4341b33bc18d8881c4b69c2e104e1cc0af<span class="w">   </span>macbook<span class="w">   </span>speech-recognition
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w">     </span>4f42c91d806a19ae1a46af6c3fb5f4990d884cd6<span class="w">   </span>macbook<span class="w">   </span>text-generation
+</span></code></pre></div>
+As you can see, we have a number of models available.<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> Notice that <code>TinyLlama/TinyLlama-1.1B-Chat-v1.0</code> is listed twice. The first listing refers to a specific version of this model—
+<code>ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971</code>—that is available to the <code>default</code> profile; the second listing refers to a different version ("revision") of the same model—<code>4f42c91d806a19ae1a46af6c3fb5f4990d884cd6</code>—that is available to the <code>macbook</code> profile. For reproducibility, it's important to keep track of the exact revision used.</p>
+<p>Let's go ahead and try to run one of these models.</p>
+<h3 id="services">Services</h3>
+<p>A <em>service</em> is a containerized API that is called to perform a specific task, such a text generation, using a model specified by the user when the API is created. Services perform inference in an "online" fashion, meaning that, in general, they process requests one input at a time. Users can create as many services as they like (and have resources to support) and interact with them simultaneously. Services are completely managed by the user: as the creator of a service, you are the only person that can stop or restart the service, and you control access to the service via an authentication token.</p>
+<h4 id="commands_1">Commands</h4>
+<h5 id="run-start-a-service"><code>run</code> - Start a service</h5>
+<p>Looking back at the help message for <code>blackfish run</code>, we see that there are a few items that we should provide. First, we need to select the type of service to run. We've already decide to run
+<code>text-generation</code>, so we're good there. Next, there are a number of job options that we can provide. With the exception of <code>profile</code>, job options are based on the Slurm <code>sbatch</code> command and tell Blackfish the resources required to run a service. Finally, there are a number of "container options" available. To get a list of these, type <code>blackfish run text-generation --help</code>:</p>
+<p><div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span>text-generation<span class="w"> </span>--help
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w"> </span>Usage:<span class="w"> </span>blackfish<span class="w"> </span>run<span class="w"> </span>text-generation<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>MODEL
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w"> </span>Start<span class="w"> </span>a<span class="w"> </span>text<span class="w"> </span>generation<span class="w"> </span>service<span class="w"> </span>hosting<span class="w"> </span>MODEL,<span class="w"> </span>where<span class="w"> </span>MODEL<span class="w"> </span>is<span class="w"> </span>specified<span class="w"> </span>as<span class="w"> </span>a<span class="w"> </span>repo<span class="w"> </span>ID,<span class="w"> </span>e.g.,
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w"> </span>openai/whisper-tiny.
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w"> </span>See<span class="w"> </span>https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher<span class="w"> </span><span class="k">for</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w"> </span>additional<span class="w"> </span>option<span class="w"> </span>details.
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>╭─<span class="w"> </span>Options<span class="w"> </span>────────────────────────────────────────────────────────────────────────────────────────╮
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>│<span class="w"> </span>--name<span class="w">                    </span>-n<span class="w">  </span>TEXT<span class="w">     </span>Assign<span class="w"> </span>a<span class="w"> </span>name<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>service.<span class="w"> </span>A<span class="w"> </span>random<span class="w"> </span>name<span class="w"> </span>is<span class="w"> </span>assigned<span class="w">   </span>│
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>│<span class="w">                                        </span>by<span class="w"> </span>default.<span class="w">                                               </span>│
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>│<span class="w"> </span>--revision<span class="w">                </span>-r<span class="w">  </span>TEXT<span class="w">     </span>Use<span class="w"> </span>a<span class="w"> </span>specific<span class="w"> </span>model<span class="w"> </span>revision.<span class="w"> </span>The<span class="w"> </span>most<span class="w"> </span>recent<span class="w"> </span>locally<span class="w">    </span>│
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>│<span class="w">                                        </span>available<span class="w"> </span><span class="o">(</span>i.e.,<span class="w"> </span>downloaded<span class="o">)</span><span class="w"> </span>revision<span class="w"> </span>is<span class="w"> </span>used<span class="w"> </span>by<span class="w"> </span>default.<span class="w"> </span>│
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>│<span class="w"> </span>--disable-custom-kernels<span class="w">               </span>Disable<span class="w"> </span>custom<span class="w"> </span>CUDA<span class="w"> </span>kernels.<span class="w"> </span>Custom<span class="w"> </span>CUDA<span class="w"> </span>kernels<span class="w"> </span>are<span class="w"> </span>not<span class="w">  </span>│
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>│<span class="w">                                        </span>guaranteed<span class="w"> </span>to<span class="w"> </span>run<span class="w"> </span>on<span class="w"> </span>all<span class="w"> </span>devices,<span class="w"> </span>but<span class="w"> </span>will<span class="w"> </span>run<span class="w"> </span>faster<span class="w"> </span><span class="k">if</span><span class="w">  </span>│
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>│<span class="w">                                        </span>they<span class="w"> </span><span class="k">do</span>.<span class="w">                                                  </span>│
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>│<span class="w"> </span>--sharded<span class="w">                     </span>TEXT<span class="w">     </span>Shard<span class="w"> </span>the<span class="w"> </span>model<span class="w"> </span>across<span class="w"> </span>multiple<span class="w"> </span>GPUs.<span class="w"> </span>The<span class="w"> </span>API<span class="w"> </span>uses<span class="w"> </span>all<span class="w">    </span>│
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>│<span class="w">                                        </span>available<span class="w"> </span>GPUs<span class="w"> </span>by<span class="w"> </span>default.<span class="w"> </span>Setting<span class="w"> </span>to<span class="w"> </span><span class="s1">&#39;true&#39;</span><span class="w"> </span>with<span class="w"> </span>a<span class="w">       </span>│
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>│<span class="w">                                        </span>single<span class="w"> </span>GPU<span class="w"> </span>results<span class="w"> </span><span class="k">in</span><span class="w"> </span>an<span class="w"> </span>error.<span class="w">                           </span>│
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>│<span class="w"> </span>--max-input-length<span class="w">            </span>INTEGER<span class="w">  </span>The<span class="w"> </span>maximum<span class="w"> </span>allowed<span class="w"> </span>input<span class="w"> </span>length<span class="w"> </span><span class="o">(</span><span class="k">in</span><span class="w"> </span>tokens<span class="o">)</span>.<span class="w">             </span>│
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a>│<span class="w"> </span>--max-total-tokens<span class="w">            </span>INTEGER<span class="w">  </span>The<span class="w"> </span>maximum<span class="w"> </span>allowed<span class="w"> </span>total<span class="w"> </span>length<span class="w"> </span>of<span class="w"> </span>input<span class="w"> </span>and<span class="w"> </span>output<span class="w"> </span><span class="o">(</span><span class="k">in</span><span class="w">  </span>│
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>│<span class="w">                                        </span>tokens<span class="o">)</span>.<span class="w">                                                  </span>│
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a>│<span class="w"> </span>--dry-run<span class="w">                              </span>Print<span class="w"> </span>the<span class="w"> </span>job<span class="w"> </span>script<span class="w"> </span>but<span class="w"> </span><span class="k">do</span><span class="w"> </span>not<span class="w"> </span>run<span class="w"> </span>it.<span class="w">                   </span>│
+</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a>│<span class="w"> </span>--help<span class="w">                                 </span>Show<span class="w"> </span>this<span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.<span class="w">                               </span>│
+</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a>╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+</span></code></pre></div>
+The most important of these is the <code>revision</code>, which specifies the exact version of the model we want to run. By default, Blackfish selects the most recent locally available version. This container option (as well as <code>--name</code>) is available for <em>all</em> tasks: the remaining options are task-specific.</p>
+<p>We'll choose <code>TinyLlama/TinyLlama-1.1B-Chat-v1.0</code> for the required <code>MODEL</code> argument, which we saw earlier is available to the <code>default</code> and <code>macbook</code> profiles. This is a relatively small model, but we still want to ask for a GPU to speed things up. Putting it altogether, here's a command to start our service:
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span>--profile<span class="w"> </span>della<span class="w"> </span>--gres<span class="w"> </span><span class="m">1</span><span class="w"> </span>--mem<span class="w"> </span><span class="m">16</span><span class="w"> </span>--ntasks-per-node<span class="w"> </span><span class="m">4</span><span class="w"> </span>--time<span class="w"> </span><span class="m">00</span>:30:00<span class="w"> </span>--constraint<span class="w"> </span><span class="s1">&#39;amd&amp;gpu40&#39;</span><span class="w"> </span>text-generation<span class="w"> </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w"> </span>--api-key<span class="w"> </span>sealsaretasty
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>✔<span class="w"> </span>Found<span class="w"> </span><span class="m">49</span><span class="w"> </span>models.
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>✔<span class="w"> </span>Found<span class="w"> </span><span class="m">1</span><span class="w"> </span>snapshots.
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>⚠<span class="w"> </span>No<span class="w"> </span>revision<span class="w"> </span>provided.<span class="w"> </span>Using<span class="w"> </span>latest<span class="w"> </span>available<span class="w"> </span>commit:<span class="w"> </span>fe8a4ea1ffedaf415f4da2f062534de366a451e6.
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>✔<span class="w"> </span>Found<span class="w"> </span>model<span class="w"> </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0!
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>✔<span class="w"> </span>Started<span class="w"> </span>service:<span class="w"> </span>fed36739-70b4-4dc4-8017-a4277563aef9
+</span></code></pre></div>
+What just happened? First, Blackfish checked to make sure that the requested model is available to the <code>della</code> profile. Next, it found a list of available revisions of the model and selected the
+most recently published version because no revision was specified. Finally, it sent a request to deploy the model. Helpfully, the CLI returned an ID associated with the new service <code>fed36739-70b4-4dc4-8017-a4277563aef9</code>, which we can use get information about our service via the <code>blackfish ls</code> command.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If no <code>--revision</code> is provided, Blackfish automatically suggests the most recently available <em>downloaded</em> version of the requested model. This reduces the
+time-to-first-inference, but may not be desirable for your use case. Download the model <em>before</em> starting your service if you need the <a href="">most recent version</a> available on Hugging Face.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Add the <code>--dry-run</code> flag to preview the start-up script that Blackfish will submit.</p>
+</div>
+<h5 id="ls-list-services"><code>ls</code> - List services</h5>
+<p>To view a list of your Blackfish services, type
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>blackfish<span class="w"> </span>ls<span class="w"> </span><span class="c1"># --filter id=&lt;service_id&gt;,status=&lt;status&gt;</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>SERVICE<span class="w"> </span>ID<span class="w">      </span>IMAGE<span class="w">                </span>MODEL<span class="w">                                </span>CREATED<span class="w">       </span>UPDATED<span class="w">     </span>STATUS<span class="w">    </span>PORT<span class="w">   </span>NAME<span class="w">              </span>PROFILE
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>97ffde37-7e02<span class="w">   </span>speech_recognition<span class="w">   </span>openai/whisper-large-v3<span class="w">              </span><span class="m">7</span><span class="w"> </span>hours<span class="w"> </span>ago<span class="w">   </span><span class="m">1</span><span class="w"> </span>min<span class="w"> </span>ago<span class="w">   </span>HEALTHY<span class="w">   </span><span class="m">8082</span><span class="w">   </span>blackfish-11846<span class="w">   </span>default
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>fed36739-70b4<span class="w">   </span>text_generation<span class="w">      </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w">   </span><span class="m">7</span><span class="w"> </span>sec<span class="w"> </span>ago<span class="w">     </span><span class="m">5</span><span class="w"> </span>sec<span class="w"> </span>ago<span class="w">   </span>PENDING<span class="w">   </span>None<span class="w">   </span>blackfish-89359<span class="w">   </span>della
+</span></code></pre></div>
+The last item in this list is the service we just started. In this case, the <code>default</code> profile happens to be set up to connect to a remote HPC cluster, so the service is run as a Slurm job. It
+may take a few minutes for our Slurm job to start, and it will require additional time for the service to be ready after that. Until then, our service's status will be either <code>SUBMITTED</code>, <code>PENDING</code> or <code>STARTING</code>. Now would be a good time to brew a hot beverage ☕️.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If you ever want more detailed information about a service, you can get it with the
+<code>blackfish details &lt;service_id&gt;</code> command. Again, <code>--help</code> is your friend if you want more
+information.</p>
+</div>
+<p>Now that we're refreshed, let's see how our service is doing. Re-run the command above. If things went smoothly, then we should see that the service's status has changed to <code>HEALTHY</code> (if your service is still <code>STARTING</code>, give it another minute and try again).</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>blackfish<span class="w"> </span>ls
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>SERVICE<span class="w"> </span>ID<span class="w">      </span>IMAGE<span class="w">                </span>MODEL<span class="w">                                </span>CREATED<span class="w">       </span>UPDATED<span class="w">      </span>STATUS<span class="w">    </span>PORT<span class="w">   </span>NAME<span class="w">              </span>PROFILE
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>97ffde37-7e02<span class="w">   </span>speech_recognition<span class="w">   </span>openai/whisper-large-v3<span class="w">              </span><span class="m">7</span><span class="w"> </span>hours<span class="w"> </span>ago<span class="w">   </span><span class="m">19</span><span class="w"> </span>sec<span class="w"> </span>ago<span class="w">   </span>HEALTHY<span class="w">   </span><span class="m">8082</span><span class="w">   </span>blackfish-11846<span class="w">   </span>default
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>fed36739-70b4<span class="w">   </span>text_generation<span class="w">      </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w">   </span><span class="m">2</span><span class="w"> </span>min<span class="w"> </span>ago<span class="w">     </span><span class="m">19</span><span class="w"> </span>sec<span class="w"> </span>ago<span class="w">   </span>HEALTHY<span class="w">   </span><span class="m">8080</span><span class="w">   </span>blackfish-12328<span class="w">   </span>della
+</span></code></pre></div>
+<p>At this point, we can start
+interacting with the service. Let's say "Hello", shall we?</p>
+<p>The details of calling a service depend on the service you are trying to connect to. For the <code>text-generation</code> service, the primary endpoint is accessed like so:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>curl<span class="w"> </span>http://localhost:8080/v1/chat/completions<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer sealsaretasty&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="s1">        &quot;messages&quot;: [</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="s1">            {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;You are an expert marine biologist.&quot;},</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="s1">            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Why are orcas so awesome?&quot;}</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="s1">        ],</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="s1">        &quot;max_completion_tokens&quot;: 100,</span>
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="s1">        &quot;temperature&quot;: 0.1,</span>
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="s1">        &quot;stream&quot;: false</span>
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="s1">    }&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="w">  </span>%<span class="w"> </span>Total<span class="w">    </span>%<span class="w"> </span>Received<span class="w"> </span>%<span class="w"> </span>Xferd<span class="w">  </span>Average<span class="w"> </span>Speed<span class="w">   </span>Time<span class="w">    </span>Time<span class="w">     </span>Time<span class="w">  </span>Current
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="w">                                 </span>Dload<span class="w">  </span>Upload<span class="w">   </span>Total<span class="w">   </span>Spent<span class="w">    </span>Left<span class="w">  </span>Speed
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="m">100</span><span class="w">  </span><span class="m">1192</span><span class="w">  </span><span class="m">100</span><span class="w">   </span><span class="m">911</span><span class="w">  </span><span class="m">100</span><span class="w">   </span><span class="m">281</span><span class="w">   </span><span class="m">1652</span><span class="w">    </span><span class="m">509</span><span class="w"> </span>--:--:--<span class="w"> </span>--:--:--<span class="w"> </span>--:--:--<span class="w">  </span><span class="m">2159</span>
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="o">{</span>
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="w">  </span><span class="s2">&quot;id&quot;</span>:<span class="w"> </span><span class="s2">&quot;chatcmpl-b6452981728f4f3cb563960d6639f8a4&quot;</span>,
+</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="w">  </span><span class="s2">&quot;object&quot;</span>:<span class="w"> </span><span class="s2">&quot;chat.completion&quot;</span>,
+</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a><span class="w">  </span><span class="s2">&quot;created&quot;</span>:<span class="w"> </span><span class="m">1747826716</span>,
+</span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a><span class="w">  </span><span class="s2">&quot;model&quot;</span>:<span class="w"> </span><span class="s2">&quot;/data/snapshots/fe8a4ea1ffedaf415f4da2f062534de366a451e6&quot;</span>,
+</span><span id="__span-16-21"><a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a><span class="w">  </span><span class="s2">&quot;choices&quot;</span>:<span class="w"> </span><span class="o">[</span>
+</span><span id="__span-16-22"><a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a><span class="w">    </span><span class="o">{</span>
+</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a><span class="w">      </span><span class="s2">&quot;index&quot;</span>:<span class="w"> </span><span class="m">0</span>,
+</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a><span class="w">      </span><span class="s2">&quot;message&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-16-25"><a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a><span class="w">        </span><span class="s2">&quot;role&quot;</span>:<span class="w"> </span><span class="s2">&quot;assistant&quot;</span>,
+</span><span id="__span-16-26"><a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a><span class="w">        </span><span class="s2">&quot;reasoning_content&quot;</span>:<span class="w"> </span>null,
+</span><span id="__span-16-27"><a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a><span class="w">        </span><span class="s2">&quot;content&quot;</span>:<span class="w"> </span><span class="s2">&quot;Orcas (also known as killer whales) are incredibly intelligent and social animals that are known for their incredible abilities. Here are some reasons why orcas are so awesome:\n\n1. Intelligence: Orcas are highly intelligent and have been observed using tools, communicating with each other, and even learning from their trainers.\n\n2. Social behavior: Orcas are highly social animals and form complex social structures, including family groups, pods,&quot;</span>,
+</span><span id="__span-16-28"><a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a><span class="w">        </span><span class="s2">&quot;tool_calls&quot;</span>:<span class="w"> </span><span class="o">[]</span>
+</span><span id="__span-16-29"><a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a><span class="w">      </span><span class="o">}</span>,
+</span><span id="__span-16-30"><a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a><span class="w">      </span><span class="s2">&quot;logprobs&quot;</span>:<span class="w"> </span>null,
+</span><span id="__span-16-31"><a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a><span class="w">      </span><span class="s2">&quot;finish_reason&quot;</span>:<span class="w"> </span><span class="s2">&quot;length&quot;</span>,
+</span><span id="__span-16-32"><a id="__codelineno-16-32" name="__codelineno-16-32" href="#__codelineno-16-32"></a><span class="w">      </span><span class="s2">&quot;stop_reason&quot;</span>:<span class="w"> </span>null
+</span><span id="__span-16-33"><a id="__codelineno-16-33" name="__codelineno-16-33" href="#__codelineno-16-33"></a><span class="w">    </span><span class="o">}</span>
+</span><span id="__span-16-34"><a id="__codelineno-16-34" name="__codelineno-16-34" href="#__codelineno-16-34"></a><span class="w">  </span><span class="o">]</span>,
+</span><span id="__span-16-35"><a id="__codelineno-16-35" name="__codelineno-16-35" href="#__codelineno-16-35"></a><span class="w">  </span><span class="s2">&quot;usage&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-16-36"><a id="__codelineno-16-36" name="__codelineno-16-36" href="#__codelineno-16-36"></a><span class="w">    </span><span class="s2">&quot;prompt_tokens&quot;</span>:<span class="w"> </span><span class="m">40</span>,
+</span><span id="__span-16-37"><a id="__codelineno-16-37" name="__codelineno-16-37" href="#__codelineno-16-37"></a><span class="w">    </span><span class="s2">&quot;total_tokens&quot;</span>:<span class="w"> </span><span class="m">140</span>,
+</span><span id="__span-16-38"><a id="__codelineno-16-38" name="__codelineno-16-38" href="#__codelineno-16-38"></a><span class="w">    </span><span class="s2">&quot;completion_tokens&quot;</span>:<span class="w"> </span><span class="m">100</span>,
+</span><span id="__span-16-39"><a id="__codelineno-16-39" name="__codelineno-16-39" href="#__codelineno-16-39"></a><span class="w">    </span><span class="s2">&quot;prompt_tokens_details&quot;</span>:<span class="w"> </span>null
+</span><span id="__span-16-40"><a id="__codelineno-16-40" name="__codelineno-16-40" href="#__codelineno-16-40"></a><span class="w">  </span><span class="o">}</span>,
+</span><span id="__span-16-41"><a id="__codelineno-16-41" name="__codelineno-16-41" href="#__codelineno-16-41"></a><span class="w">  </span><span class="s2">&quot;prompt_logprobs&quot;</span>:<span class="w"> </span>null
+</span><span id="__span-16-42"><a id="__codelineno-16-42" name="__codelineno-16-42" href="#__codelineno-16-42"></a><span class="o">}</span>
+</span></code></pre></div>
+<p>Most services provide a single endpoint that performs a task or pipeline. For text generation, there two main endpoints, <code>/v1/completions</code> and <code>/v1/chat/completions</code>. Running services are yours to use as you see fit.</p>
+<h5 id="stop-stop-a-service"><code>stop</code> - Stop a service</h5>
+<p>When we are done with our service, we should shut it off and return its resources to the cluster. To do so, simply type
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>blackfish<span class="w"> </span>stop<span class="w"> </span>fed36739-70b4-4dc4-8017-a4277563aef9
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>✔<span class="w"> </span>Stopped<span class="w"> </span>service<span class="w"> </span>fed36739-70b4-4dc4-8017-a4277563aef9
+</span></code></pre></div>
+You should receive a nice message stating that the service was stopped, which you can confirm by checking its status with <code>blackfish ls</code>.</p>
+<h5 id="rm-delete-a-service"><code>rm</code> - Delete a service</h5>
+<p>Services aren't automatically deleted from your list, so it's a good idea to remove them when you're done if you don't need them for record keeping:
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>blackfish<span class="w"> </span>rm<span class="w"> </span>--filters<span class="w"> </span><span class="nv">id</span><span class="o">=</span>fed36739-70b4-4dc4-8017-a4277563aef9
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>✔<span class="w"> </span>Removed<span class="w"> </span><span class="m">1</span><span class="w"> </span>service.
+</span></code></pre></div></p>
+<h2 id="speech-recognition">Speech Recognition</h2>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span>--profile<span class="w"> </span>default<span class="w"> </span>speech-recognition<span class="w"> </span>openai/whisper-large-v3
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>✔<span class="w"> </span>Found<span class="w"> </span><span class="m">4</span><span class="w"> </span>models.
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>✔<span class="w"> </span>Found<span class="w"> </span><span class="m">1</span><span class="w"> </span>snapshots.
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>⚠<span class="w"> </span>No<span class="w"> </span>revision<span class="w"> </span>provided.<span class="w"> </span>Using<span class="w"> </span>latest<span class="w"> </span>available<span class="w"> </span>commit:<span class="w"> </span>06f233fe06e710322aca913c1bc4249a0d71fce1.
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>✔<span class="w"> </span>Found<span class="w"> </span>model<span class="w"> </span>openai/whisper-large-v3!
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>✔<span class="w"> </span>Started<span class="w"> </span>service:<span class="w"> </span>70e59004-84d4-4f7c-bf78-95ef96054289
+</span></code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>curl<span class="w"> </span>http://localhost:8080/transcribe<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="s1">        &quot;audio_path&quot;: &quot;/data/audio/NY045-0.mp3&quot;,</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="s1">        &quot;response_format&quot;: &quot;text&quot;</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="s1">    }&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">  </span>%<span class="w"> </span>Total<span class="w">    </span>%<span class="w"> </span>Received<span class="w"> </span>%<span class="w"> </span>Xferd<span class="w">  </span>Average<span class="w"> </span>Speed<span class="w">   </span>Time<span class="w">    </span>Time<span class="w">     </span>Time<span class="w">  </span>Current
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">                                 </span>Dload<span class="w">  </span>Upload<span class="w">   </span>Total<span class="w">   </span>Spent<span class="w">    </span>Left<span class="w">  </span>Speed
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="m">100</span><span class="w">   </span><span class="m">465</span><span class="w">  </span><span class="m">100</span><span class="w">   </span><span class="m">375</span><span class="w">  </span><span class="m">100</span><span class="w">    </span><span class="m">90</span><span class="w">     </span><span class="m">10</span><span class="w">      </span><span class="m">2</span><span class="w">  </span><span class="m">0</span>:00:45<span class="w">  </span><span class="m">0</span>:00:35<span class="w">  </span><span class="m">0</span>:00:10<span class="w">    </span><span class="m">91</span>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="o">{</span>
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">  </span><span class="s2">&quot;audio_path&quot;</span>:<span class="w"> </span><span class="s2">&quot;/data/audio/NY045-0.mp3&quot;</span>,
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="w">  </span><span class="s2">&quot;text&quot;</span>:<span class="w"> </span><span class="s2">&quot; Oh, going to Cuba. I went to Cuba on Prohibition time, too. And I brought a lot of fancy bottles, a little, like one drink in for souvenirs for all my friends. Well, Atlantic City, the ship was stopped. It was all in the newspapers about it, too. The crew had ripped the walls and put all&quot;</span>,
+</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="w">  </span><span class="s2">&quot;segments&quot;</span>:<span class="w"> </span>null,
+</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="w">  </span><span class="s2">&quot;task&quot;</span>:<span class="w"> </span><span class="s2">&quot;transcribe&quot;</span>
+</span><span id="__span-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a><span class="o">}</span>
+</span></code></pre></div>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>The list of models you see depends on your environment. If you do not have access to a shared HPC cache, your list of models is likely empty. Not to worry—we will see how to add models later on.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Home
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../admin/" class="md-footer__link md-footer__link--next" aria-label="Next: Platform">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Platform
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Princeton University
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+
+
+<h4>Cookie consent</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+    
+      
+    
+    
+      
+        
+  
+  
+    
+    
+  
+  <li class="task-list-item">
+    <label class="task-list-control">
+      <input type="checkbox" name="github" checked>
+      <span class="task-list-indicator"></span>
+      GitHub
+    </label>
+  </li>
+
+      
+    
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.footer", "content.footnote.tooltips", "content.code.copy", "content.code.select", "content.code.annotate"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>

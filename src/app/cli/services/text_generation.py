@@ -239,17 +239,14 @@ def run_text_generation(
                         "grace_period": options.grace_period,
                     },
                 )
-                spinner.text = ""
                 if res.ok:
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Started service:"
-                        f" {res.json()['id']}"
-                    )
+                    spinner.text = f"Started service: {res.json()['id']}"
+                    spinner.ok(f"{LogSymbols.SUCCESS.value}")
                 else:
-                    spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to start service:"
-                        f" {res.status_code} - {res.reason}"
+                    spinner.text = (
+                        f"Failed to start service: {res.status_code} - {res.reason}"
                     )
+                    spinner.fail(f"{LogSymbols.ERROR.value}")
     else:
         job_config = LocalJobConfig(
             gres=ctx.obj.get("resources").get("gres"),
@@ -294,14 +291,11 @@ def run_text_generation(
                         "grace_period": options.grace_period,
                     },
                 )
-                spinner.text = ""
                 if res.ok:
-                    spinner.ok(
-                        f"{LogSymbols.SUCCESS.value} Started service:"
-                        f" {res.json()['id']}"
-                    )
+                    spinner.text = f"Started service: {res.json()['id']}"
+                    spinner.ok(f"{LogSymbols.SUCCESS.value}")
                 else:
-                    spinner.fail(
-                        f"{LogSymbols.ERROR.value} Failed to start service:"
-                        f" {res.status_code} - {res.reason}"
+                    spinner.text = (
+                        f"Failed to start service: {res.status_code} - {res.reason}"
                     )
+                    spinner.fail(f"{LogSymbols.ERROR.value}")

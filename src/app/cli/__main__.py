@@ -323,13 +323,14 @@ def stop(service_id: str) -> None:  # pragma: no cover
             f"http://{config.HOST}:{config.PORT}/api/services/{service_id}/stop",
             json={},
         )
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to stop service {service_id} (status={res.status_code})"
+            spinner.text = (
+                f"Failed to stop service {service_id} (status={res.status_code})."
             )
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Stopped service {service_id}")
+            spinner.text = f"Stopped service {service_id}."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 # blackfish rm [OPTIONS] SERVICE [SERVICE...]
@@ -360,23 +361,21 @@ def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
             f"http://{config.HOST}:{config.PORT}/api/services",
             params=params,
         )
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to remove services (status={res.status_code})"
-            )
+            spinner.text = f"Failed to remove services (status={res.status_code})."
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
             data = res.json()
             if len(data) == 0:
-                spinner.ok(
-                    f"{LogSymbols.ERROR.value} Query did not match any services."
-                )
+                spinner.text = "Query did not match any services."
+                spinner.ok(f"{LogSymbols.ERROR.value}")
                 return
             oks = [x for x in data if x["status"] == "ok"]
             errors = [x for x in data if x["status"] == "error"]
-            spinner.ok(
-                f"{LogSymbols.SUCCESS.value} Removed {len(oks)} {'service' if len(oks) == 1 else 'services'}."
+            spinner.text = (
+                f"Removed {len(oks)} {'service' if len(oks) == 1 else 'services'}."
             )
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
             if len(errors) > 0:
                 click.echo(
                     f"{LogSymbols.ERROR.value} Failed to delete {len(errors)} {'service' if len(errors) == 1 else 'services'}."
@@ -397,16 +396,14 @@ def prune() -> None:  # pragma: no cover
 
     with yaspin(text="Deleting service...") as spinner:
         res = requests.delete(f"http://{config.HOST}:{config.PORT}/api/services/prune")
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to prune services (status={res.status_code})"
-            )
+            spinner.text = f"Failed to prune services (status={res.status_code})"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            count = res.json()
-            spinner.ok(
-                f"{LogSymbols.SUCCESS.value} Removed {count} {'service' if count == 1 else 'services'}."
+            spinner.text = (
+                f"Removed {res.json()} {'service' if res.json() == 1 else 'services'}."
             )
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 # blackfish details [OPTIONS] SERVICE
@@ -425,14 +422,15 @@ def details(service_id: str) -> None:  # pragma: no cover
         res = requests.get(
             f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
         )  # fresh data 🥬
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to fetch service {service_id} (status={res.status_code})."
+            spinner.text = (
+                f"Failed to fetch service {service_id} (status={res.status_code})."
             )
+            spinner.fail(f"{LogSymbols.ERROR.value}")
             return
         else:
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Found service {service_id}")
+            spinner.text = f"Found service {service_id}"
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
     body = res.json()
     body["created_at"] = datetime.fromisoformat(body["created_at"])
@@ -536,12 +534,9 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
         res = requests.get(
             f"http://{config.HOST}:{config.PORT}/api/services", params=params
         )  # fresh data 🥬
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to fetch services. Status code:"
-                f" {res.status_code}."
-            )
+            spinner.text = f"Failed to fetch services. Status code: {res.status_code}."
+            spinner.fail(f"{LogSymbols.ERROR.value}")
             return
 
     def is_active(service: Any) -> bool:
@@ -622,9 +617,9 @@ def models_ls(
 
     with yaspin(text="Fetching models") as spinner:
         res = requests.get(f"http://{config.HOST}:{config.PORT}/api/models?{params}")
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(f"{LogSymbols.ERROR.value} Error: {res.status_code}")
+            spinner.text = f"Error: {res.status_code}"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
             return
 
     tab = PrettyTable(
@@ -740,14 +735,14 @@ def models_add(
                 "model_dir": path,
             },
         )
-        spinner.text = ""
         if not res.ok:
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Failed to insert model"
-                f" {repo_id} ({res.status_code}: {res.reason})"
+            spinner.text = (
+                f"Failed to insert model {repo_id} ({res.status_code}: {res.reason})"
             )
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Added model {repo_id}")
+            spinner.text = f"Added model {repo_id}."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 @model.command(name="rm")
@@ -809,11 +804,11 @@ def models_remove(
             remove_model(
                 repo_id, profile=matched, revision=revision, use_cache=use_cache
             )
-            spinner.text = ""
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Removed model {repo_id}")
+            spinner.text = f"Removed model {repo_id}"
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
         except Exception as e:
-            spinner.text = ""
-            spinner.fail(f"{LogSymbols.ERROR.value} Failed to remove model: {e}")
+            spinner.text = f"Failed to remove model: {e}"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
 
 
 @main.group()

@@ -40,8 +40,8 @@ def get_models(profile: BlackfishProfile) -> list[str]:
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     models.add(f"{namespace}/{model}")
-            spinner.text = ""
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
+            spinner.text = f"Found {len(models)} models."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
         return list(models)
     else:
         models = set()
@@ -58,8 +58,8 @@ def get_models(profile: BlackfishProfile) -> list[str]:
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 models.add(f"{namespace}/{model}")
-            spinner.text = ""
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(models)} models.")
+            spinner.text = f"Found {len(models)} models."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
         return list(models)
 
 
@@ -87,8 +87,8 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
                     revisions.update(
                         sftp.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
                     )
-            spinner.text = ""
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
+            spinner.text = f"Found {len(revisions)} snapshots."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
         return list(revisions)
     else:
         revisions = set()
@@ -109,8 +109,8 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
                 revisions.update(
                     os.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
                 )
-            spinner.text = ""
-            spinner.ok(f"{LogSymbols.SUCCESS.value} Found {len(revisions)} snapshots.")
+            spinner.text = f"Found {len(revisions)} snapshots."
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
         return list(revisions)
 
 
@@ -134,8 +134,8 @@ def get_model_dir(
                     if revision in sftp.listdir(
                         os.path.join(default_dir, model_dir, "snapshots")
                     ):
-                        spinner.text = ""
-                        spinner.ok(f"{LogSymbols.SUCCESS.value} Found model {repo_id}!")
+                        spinner.text = f"Found model {repo_id}!"
+                        spinner.ok(f"{LogSymbols.SUCCESS.value}")
                         return os.path.join(default_dir, model_dir)
                 backup_dir = os.path.join(profile.home_dir, "models")
                 spinner.text = f"Looking in backup directory {backup_dir}"
@@ -143,14 +143,11 @@ def get_model_dir(
                     if revision in sftp.listdir(
                         os.path.join(backup_dir, model_dir, "snapshots")
                     ):
-                        spinner.text = ""
-                        spinner.ok(f"{LogSymbols.SUCCESS.value} Found model {repo_id}!")
+                        spinner.text = f"Found model {repo_id}!"
+                        spinner.ok(f"{LogSymbols.SUCCESS.value}")
                         return os.path.join(backup_dir, model_dir)
-            spinner.text = ""
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on"
-                f" {profile.host}."
-            )
+            spinner.text = f"Unable to find {repo_id}[{revision}] on {profile.host}."
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         return None
     else:
         with yaspin(text=f"Searching localhost for {repo_id}[{revision}]") as spinner:
@@ -160,8 +157,8 @@ def get_model_dir(
                 if revision in os.listdir(
                     os.path.join(default_dir, model_dir, "snapshots")
                 ):
-                    spinner.text = ""
-                    spinner.ok(f"{LogSymbols.SUCCESS.value} Found model {repo_id}!")
+                    spinner.text = f"Found model {repo_id}!"
+                    spinner.ok(f"{LogSymbols.SUCCESS.value}")
                     return os.path.join(default_dir, model_dir)
             backup_dir = os.path.join(profile.home_dir, "models")
             spinner.text = f"Looking in backup directory {backup_dir}"
@@ -169,13 +166,11 @@ def get_model_dir(
                 if revision in os.listdir(
                     os.path.join(backup_dir, model_dir, "snapshots")
                 ):
-                    spinner.text = ""
-                    spinner.ok(f"{LogSymbols.SUCCESS.value} Found model {repo_id}!")
+                    spinner.text = f"Found model {repo_id}!"
+                    spinner.ok(f"{LogSymbols.SUCCESS.value}")
                     return os.path.join(backup_dir, model_dir)
-            spinner.text = ""
-            spinner.fail(
-                f"{LogSymbols.ERROR.value} Unable to find {repo_id}[{revision}] on localhost."
-            )
+            spinner.text = f"Unable to find {repo_id}[{revision}] on localhost."
+            spinner.fail(f"{LogSymbols.ERROR.value}")
         return None
 
 

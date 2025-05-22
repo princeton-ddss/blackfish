@@ -241,7 +241,7 @@ The most important of these is the `revision`, which specifies the exact version
 
 We'll choose `TinyLlama/TinyLlama-1.1B-Chat-v1.0` for the required `MODEL` argument, which we saw earlier is available to the `default` and `macbook` profiles. This is a relatively small model, but we still want to ask for a GPU to speed things up. Putting it altogether, here's a command to start our service:
 ```shell
-blackfish run --profile della --gres 1 --mem 16 --ntasks-per-node 4 --time 00:30:00 --constraint 'amd&gpu40' text-generation TinyLlama/TinyLlama-1.1B-Chat-v1.0
+blackfish run --profile della --gres 1 --mem 16 --ntasks-per-node 4 --time 00:30:00 --constraint 'amd&gpu40' text-generation TinyLlama/TinyLlama-1.1B-Chat-v1.0 --api-key sealsaretasty
 ✔ Found 49 models.
 ✔ Found 1 snapshots.
 ⚠ No revision provided. Using latest available commit: fe8a4ea1ffedaf415f4da2f062534de366a451e6.
@@ -294,6 +294,7 @@ The details of calling a service depend on the service you are trying to connect
 ```shell
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sealsaretasty" \
   -d '{
         "messages": [
             {"role": "system", "content": "You are an expert marine biologist."},

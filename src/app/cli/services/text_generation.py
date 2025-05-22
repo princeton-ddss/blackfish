@@ -144,6 +144,8 @@ def run_text_generation(
     See https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher for additional option details.
     """
 
+    from uuid import uuid4
+
     config: BlackfishConfig = ctx.obj.get("config")
     profile: BlackfishProfile | None = ctx.obj.get("profile")
     options: ServiceOptions = ctx.obj.get("options")
@@ -197,6 +199,7 @@ def run_text_generation(
 
         if dry_run:
             service = TextGeneration(
+                id=uuid4(),
                 name=name,
                 model=repo_id,
                 profile=profile.name,

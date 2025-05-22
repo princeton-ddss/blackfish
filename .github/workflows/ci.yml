@@ -49,7 +49,7 @@ jobs:
       - name: Set up Blackfish
         run: blackfish init --auto --app-dir $HOME/.blackfish --schema local --home-dir $HOME/.blackfish --cache-dir $HOME/.blackfish
       - name: Start Blackfish
-        run: blackfish start
+        run: blackfish start &
       - name: Run tests on ${{ matrix.os }}
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
 

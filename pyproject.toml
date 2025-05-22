@@ -5,7 +5,7 @@ requires = [
 ]
 
 [project]
-name = "blackfish"
+name = "blackfish-ai"
 version = "0.1.0"
 description = "An open-source AI-as-a-Service platform."
 readme = "README.md"
@@ -39,12 +39,34 @@ dependencies = [
   "uvicorn>=0.34",
   "yaspin>=3.1",
 ]
+optional-dependencies.uv = [
+  "uv>=0.5.18",
+]
+urls.bug-tracker = "https://github.com/princeton-ddss/blackfish/issues"
+urls.documentation = "https://princeton-ddss.github.io/blackfish/"
 scripts.blackfish = "app.cli.__main__:main"
 
 [dependency-groups]
 dev = [
+  "ipython>=9.0.2",
   "locust>=2.33.2",
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.6.2",
+  "mkdocs-swagger-ui-tag>=0.6.11",
+  "mkdocstrings[python]>=0.28",
+  "nox>=2024.10.9",
+  "pytest>=8.3.4",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = [ "src/app" ]
+
+[tool.pyproject-fmt]
+max_supported_python = "3.13"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+show_error_codes = true
+warn_unreachable = true
+ignore_missing_imports = true

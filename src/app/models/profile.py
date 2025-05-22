@@ -58,7 +58,7 @@ class ProfileTypeException(Exception):
         super().__init__(f"Profile type {type} is not supported.")
 
 
-def serialize_profiles(home_dir: str) -> list[BlackfishProfile]:
+def deserialize_profiles(home_dir: str) -> list[BlackfishProfile]:
     """Parse profiles from profile.cfg."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
@@ -95,7 +95,7 @@ def serialize_profiles(home_dir: str) -> list[BlackfishProfile]:
     return profiles
 
 
-def serialize_profile(home_dir: str, name: str) -> BlackfishProfile | None:
+def deserialize_profile(home_dir: str, name: str) -> BlackfishProfile | None:
     """Parse a profile from profile.cfg."""
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")

@@ -8,13 +8,13 @@
 #SBATCH --time={{ job_config.time }}
 {%- if job_config.gres %}
 #SBATCH --gres=gpu:{{ job_config.gres }}
-{% endif %}
+{%- endif %}
 {%- if job_config.constraint %}
 #SBATCH --constraint={{ job_config.constraint }}
-{% endif %}
+{%- endif %}
 {%- if job_config.partition %}
 #SBATCH --partition={{ job_config.partition }}
-{% endif %}
+{%- endif %}
 {%- endblock %}
 {% block prelude %}
 export APPTAINER_CACHEDIR=/scratch/gpfs/{{ profile.user }}/APPTAINER_CACHE

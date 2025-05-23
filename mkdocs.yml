@@ -1,7 +1,7 @@
 site_name: Blackfish
 site_url: https://princeton-ddss.github.io/blackfish
 repo_url: https://github.com/princeton-ddss/blackfish
-copyright: Copyright &copy; 2024 Princeton University
+copyright: Copyright &copy; 2024 Colin Swaney and The Trustees of Princeton University
 theme:
   name: "material"
   logo: assets/img/logo.png
@@ -35,8 +35,6 @@ nav:
     - 'Jobs': 'api/jobs.md'
     - 'Services': 'api/services.md'
     - 'OpenAPI (Swagger)': 'api/swagger.md'
-    # - 'Swagger': 'api/swagger.html'
-  - 'Contributing': 'contrib.md'
 plugins:
   - search
   - mkdocstrings:
@@ -52,6 +50,7 @@ plugins:
   #     enable_creation_date: true
   - swagger-ui-tag:
       supportedSubmitMethods: []
+  - mike
 markdown_extensions:
   - footnotes
   - admonition

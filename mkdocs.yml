@@ -52,6 +52,7 @@ plugins:
   #     enable_creation_date: true
   - swagger-ui-tag:
       supportedSubmitMethods: []
+  - mike:
 markdown_extensions:
   - footnotes
   - admonition

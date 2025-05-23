@@ -68,7 +68,9 @@ jobs:
           python-version: 3.x
       - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag mike
       - name: Build and deploy documentation
-        run: mike deploy --push --allow-empty --deploy-prefix pr-preview pr-${{ github.event.number }}
+        run: /
+          mike set-default latest
+          mike deploy --push --allow-empty --deploy-prefix pr-preview pr-${{ github.event.number }} --message "Deploying docs preview for PR \#${{ github.event.number }} 🛫"
 
   docs:
     name: Deploy documentation 📚
@@ -85,7 +87,9 @@ jobs:
           python-version: 3.x
       - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag mike
       - name: Build and deploy documentation
-        run: mike deploy --push --update-aliases --allow-empty ${{ github.ref_name }} latest
+        run: /
+          mike set-default latest
+          mike deploy --push --update-aliases --allow-empty ${{ github.ref_name }} latest --message "Deploying docs version ${{ github.ref_name }} 🛫"
 
   build:
     name: Build distribution 📦

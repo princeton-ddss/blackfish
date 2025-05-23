@@ -8,10 +8,10 @@ For academic research, open source models present several advantages over closed
 ## Why Blackfish?
 
 ### 1. It's easy! 🥳
-Researchers should focus on research, not tooling. We try to meet researchers where they're at by providing multiple ways to work with Blackfish, including a CLI and browser-based UI. **Don't want to install Python packages?** [Ask your HPC admins about adding Blackfish to your Open OnDemand portal](https://github.com/princeton-ddss/blackfish-ondemand)!
+Researchers should focus on research, not tooling. We try to meet researchers where they're at by providing multiple ways to work with Blackfish, including a CLI and browser-based UI. **Don't want to install Python packages?** [Ask your HPC admins about adding Blackfish to your Open OnDemand portal](https://github.com/princeton-ddss/blackfish-ondemand)[^1]!
 
 ### 2. It's transparent 🔍
-You decide what model to run (down to the Git commit) and how you want it configured, so there are no unexpected (or undetected) changes in performance. Services are run in isolated containers with on-premise compute and fully transparent code so you know *exactly* how your data is being handled.
+You decide what model to run (down to the Git commit) and how you want it configured, so there are no unexpected (or undetected) changes in performance[^2]. Services are run in isolated containers with on-premise compute and fully transparent code so you know *exactly* how your data is being handled.
 
 ### 3. It's free! 💸
 You have an HPC cluster. We have software to run on it.

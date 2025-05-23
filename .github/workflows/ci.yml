@@ -63,10 +63,10 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-      - name: Checkout gh-pages branch
+      - name: Checkout PR branch
         run: |
           git fetch origin
-          git checkout gh-pages
+          git checkout ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
@@ -84,10 +84,10 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-      - name: Checkout gh-pages branch
+      - name: Checkout merge branch
         run: |
           git fetch origin
-          git checkout gh-pages
+          git checkout ${{ github.ref_name }}
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x

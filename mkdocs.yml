@@ -35,8 +35,6 @@ nav:
     - 'Jobs': 'api/jobs.md'
     - 'Services': 'api/services.md'
     - 'OpenAPI (Swagger)': 'api/swagger.md'
-    # - 'Swagger': 'api/swagger.html'
-  - 'Contributing': 'contrib.md'
 plugins:
   - search
   - mkdocstrings:
@@ -52,7 +50,7 @@ plugins:
   #     enable_creation_date: true
   - swagger-ui-tag:
       supportedSubmitMethods: []
-  - mike:
+  - mike
 markdown_extensions:
   - footnotes
   - admonition

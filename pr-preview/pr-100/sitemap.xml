@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://princeton-ddss.github.io/blackfish/pr-100/</loc>
+         <lastmod>2025-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://princeton-ddss.github.io/blackfish/pr-100/admin/</loc>
+         <lastmod>2025-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://princeton-ddss.github.io/blackfish/pr-100/develop/</loc>
+         <lastmod>2025-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://princeton-ddss.github.io/blackfish/pr-100/getting_started/</loc>
+         <lastmod>2025-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://princeton-ddss.github.io/blackfish/pr-100/api/jobs/</loc>
+         <lastmod>2025-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://princeton-ddss.github.io/blackfish/pr-100/api/services/</loc>
+         <lastmod>2025-05-23</lastmod>
+    </url>
+    <url>
+         <loc>https://princeton-ddss.github.io/blackfish/pr-100/api/swagger/</loc>
+         <lastmod>2025-05-23</lastmod>
+    </url>
+</urlset>

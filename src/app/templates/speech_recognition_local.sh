@@ -14,11 +14,11 @@ docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
   {%- endif %}
   --port {{ container_config.port }}
 {%- elif provider == 'apptainer' %}
-apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
+apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ mount }}:/data/audio \
   --bind {{ container_config.model_dir }}:/data/models \
   {{ profile.cache_dir }}/images/speech-recognition-inference_0.1.2.sif \
-  {{ name }}
+  {{ name }} \
   --model_dir /data/models \
   --model_id {{ model }} \
   {%- if container_config.revision %}

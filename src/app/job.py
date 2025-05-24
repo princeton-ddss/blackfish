@@ -359,7 +359,7 @@ class LocalJob(Job):
                 self.state = new_state
             elif self.provider == ContainerProvider.Apptainer:
                 res = subprocess.check_output(
-                    ["apptainer", "instance", "list", "--json", f"{self.job_id}"]
+                    ["apptainer", "instance", "list", "--json", f"{self.name}"]
                 )
                 body = json.loads(res)
                 if body["instances"] == []:
@@ -395,7 +395,7 @@ class LocalJob(Job):
                 )
             elif self.provider == ContainerProvider.Apptainer:
                 subprocess.check_output(
-                    ["apptainer", "instance", "stop", f"{self.job_id}"]
+                    ["apptainer", "instance", "stop", f"{self.name}"]
                 )
         except subprocess.CalledProcessError as e:
             logger.warning(

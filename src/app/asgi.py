@@ -980,6 +980,10 @@ img_server = create_static_files_router(
 )
 
 
+def not_found_exception_handler(request: Request, exc: Exception) -> Template:  # type: ignore
+    return Template(template_name="404.html")
+
+
 app = Litestar(
     route_handlers=[
         dashboard,
@@ -1017,4 +1021,5 @@ app = Litestar(
     openapi_config=openapi_config,
     template_config=template_config,
     middleware=[session_config.middleware],
+    exception_handlers={NotFoundException: not_found_exception_handler},
 )

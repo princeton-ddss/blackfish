@@ -30,7 +30,13 @@ theme:
 nav:
   - 'Home': 'index.md'
   - 'Getting Started': 'getting_started.md'
-  - 'Platform': 'admin.md'
+  - 'Examples':
+    - Text Generation: 'examples/text_generation.md'
+    - Speech Recognition: 'examples/speech_recognition.md'
+  - 'Platform': 'admin_guide.md'
+  - 'Contributing':
+    - Guidelines: 'contrib/guidelines.md'
+    - 'Developer Guide': 'contrib/developer_guide.md'
   - 'API Documentation':
     - 'Jobs': 'api/jobs.md'
     - 'Services': 'api/services.md'

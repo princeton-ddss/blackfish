@@ -6,7 +6,7 @@ docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
   -v {{ mount }}:/data/audio \
   -v {{ container_config.model_dir }}:/data/models \
   --name {{ name }} \
-  ghcr.io/princeton-ddss/speech-recognition-inference:latest \
+  ghcr.io/princeton-ddss/speech-recognition-inference:0.1.2 \
   --model_dir /data/models \
   --model_id {{ model }} \
   {%- if container_config.revision %}

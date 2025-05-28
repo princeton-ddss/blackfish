@@ -562,6 +562,13 @@ class Service(UUIDAuditBase):
         kill $pid
         ```
         """
+        if self.port is None:
+            logger.warning(
+                f"Could not close tunnel because service {self.id} has no port set."
+            )
+            return
+
+        logger.info(f"Closing tunnel for service {self.id} on port {self.port}.")
         ps = [p for p in psutil.process_iter() if p.name() == "ssh"]
         for p in ps:
             pid = p.pid

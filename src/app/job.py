@@ -153,7 +153,7 @@ class SlurmJob(Job):
             new_state = parse_state(res)
             if verbose:
                 logger.debug(
-                    f"The current job state is: {new_state} (job_id=${self.job_id})"
+                    f"The current job state is: {new_state} (job_id={self.job_id})"
                 )
             if (
                 self.state in [None, JobState.MISSING, JobState.PENDING]

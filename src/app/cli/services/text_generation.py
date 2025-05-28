@@ -87,39 +87,6 @@ def try_get_model_info(
     default=8080,
     help="Run server on the given port.",
 )
-# @click.option(
-#     "--disable-custom-kernels",
-#     is_flag=True,
-#     default=True,
-#     help=(
-#         "Disable custom CUDA kernels. Custom CUDA kernels are not guaranteed to run on"
-#         " all devices, but will run faster if they do."
-#     ),
-# )
-# @click.option(
-#     "--sharded",
-#     type=bool,
-#     required=False,
-#     default=None,
-#     help=(
-#         "Shard the model across multiple GPUs. The API uses all available GPUs by"
-#         " default. Setting to 'true' with a single GPU results in an error."
-#     ),
-# )
-# @click.option(
-#     "--max-input-length",
-#     type=int,
-#     required=False,
-#     default=None,  # 1024,
-#     help="The maximum allowed input length (in tokens).",
-# )
-# @click.option(
-#     "--max-total-tokens",
-#     type=int,
-#     required=False,
-#     default=None,  # 2048,
-#     help="The maximum allowed total length of input and output (in tokens).",
-# )
 @click.option(
     "--dry-run",
     is_flag=True,
@@ -133,15 +100,11 @@ def run_text_generation(
     name: Optional[str],
     revision: Optional[str],
     port: int,
-    # disable_custom_kernels: bool,
-    # sharded: Optional[bool],
-    # max_input_length: Optional[int],
-    # max_total_tokens: Optional[int],
     dry_run: bool,
 ) -> None:  # pragma: no cover
     """Start a text generation service hosting a model provided by REPO_ID, e.g., openai/whisper-tiny.
 
-    See https://huggingface.co/docs/text-generation-inference/en/basic_tutorials/launcher for additional option details.
+    In addition to the options listed by `--help`, you can pass any arguments of the `vllm serve` command, such as `--api-key`, `enable_reasoning`, or `seed`.
     """
 
     from uuid import uuid4
@@ -182,10 +145,6 @@ def run_text_generation(
         port=port,
         model_dir=model_dir,
         revision=revision,
-        # sharded=sharded,
-        # max_input_length=max_input_length,
-        # max_total_tokens=max_total_tokens,
-        # disable_custom_kernels=disable_custom_kernels,
         launch_kwargs=" ".join(ctx.args),
     )
 

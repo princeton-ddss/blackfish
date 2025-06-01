@@ -121,7 +121,7 @@ SERVICE ID      IMAGE             MODEL                                CREATED  
 
 As you can see, our service is still waiting in the job queue (`PENDING`). It might take a few minutes for a Slurm job to start, and it will require additional time for the service to load after it starts. Until then, our service's status will be either `SUBMITTED` or `STARTING`. Now would be a good time to make some tea 🫖
 
-> [!NOTE]
+> [!TIP]
 > While you're doing that, note that you can obtain additional information about an individual service with the `blackfish details <service_id>` command. Now back to that tea...
 
 Now that we're refreshed, let's see how our service is getting along. Re-run the command above:

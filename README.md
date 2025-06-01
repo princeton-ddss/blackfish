@@ -121,8 +121,8 @@ SERVICE ID      IMAGE             MODEL                                CREATED  
 
 As you can see, our service is still waiting in the job queue (`PENDING`). It might take a few minutes for a Slurm job to start, and it will require additional time for the service to load after it starts. Until then, our service's status will be either `SUBMITTED` or `STARTING`. Now would be a good time to make some tea 🫖
 
-!!! note
-    While you're doing that, note that you can obtain additional information about an individual service with the `blackfish details <service_id>` command. Now back to that tea...
+> [!NOTE]
+> While you're doing that, note that you can obtain additional information about an individual service with the `blackfish details <service_id>` command. Now back to that tea...
 
 Now that we're refreshed, let's see how our service is getting along. Re-run the command above:
 ```shell
@@ -183,9 +183,8 @@ curl http://localhost:8080/v1/chat/completions \
 
 Success! Our service is responding as expected. Feel free to play around with this model to your heart's delight. It should remain available for approximately thirty minutes in total (`--time 00:30:00`).
 
-!!! tip
-
-    You can interact with text generation services using OpenAI's official Python library, `openai`. If you're already using `openai` to work with private models like ChatGPT, your existing scripts should work with minimal modification!
+> [!TIP]
+> You can interact with text generation services using OpenAI's official Python library, `openai`. If you're already using `openai` to work with private models like ChatGPT, your existing scripts should work with minimal modification!
 
 When we're done with our service, we should shut it off and return its resources to the cluster. To do so, simply type
 ```shell
@@ -213,9 +212,8 @@ ssh-copy-id <user>@<host> # answer yes to transfer the public key
 
 These commands create a secure public-private key pair and send the public key to the HPC server you need access to. You now have password-less access to your HPC server!
 
-!!! warning
-
-    Blackfish depends on seamless interaction with your university's HPC cluster. Before proceeding, make sure that you have enabled password-less login and are connected to your institutions network or VPN, if required.
+> [!WARNING]
+> Blackfish depends on seamless interaction with your university's HPC cluster. Before proceeding, make sure that you have enabled password-less login and are connected to your institutions network or VPN, if required.
 
 #### Local Profile
 Before we start using services, we'll need to initialize Blackfish and create a profile. Type
@@ -248,10 +246,8 @@ For further details on profiles, refer to our [documentation](https://princeton-
 The current version of Blackfish does not ship Docker images required to run services. When running jobs locally, Docker will attempt to download the required image before starting the service, resulting in delays during the launching step. Instead, it's recommended that users pre-download the required images listed below.
 
 
-!!! note
-
-    When running services on Slurm clusters, Blackfish looks for the required SIF file in `$PROFILE_CACHE_DIR/images`.
-
+> [!NOTE]
+> When running services on Slurm clusters, Blackfish looks for the required SIF file in `$PROFILE_CACHE_DIR/images`.
 
 
 | Version | Text Generation   | Speech Recognition                 | Object Detection |

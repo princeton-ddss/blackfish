@@ -23,6 +23,11 @@ python -m venv .venv
 source .venv/bin/activate
 pip install blackfish-ai
 ```
+Or, using `uv`:
+```shell
+uv venv
+uv pip install blackfish-ai
+```
 
 For development, clone the package's repo and `pip` install instead:
 ```shell
@@ -53,9 +58,9 @@ user=shamu
 home=/home/shamu/.blackfish
 cache=/scratch/gpfs/shared/.blackfish
 ```
-The `cache` is a shared directory set up by your HPC admin for storing shared model and image files. This guide assumes you have access to a cache directory with all required Docker images downloaded. If your HPC does not have a cache set up, you can assign the same directory used for `home` and [add the images yourself]().
+The `cache` is a shared directory set up by your HPC admin for storing shared model and image files. This guide assumes you have access to a cache directory with all required Docker images downloaded. If your HPC does not have a cache set up, you can assign the same directory used for `home` and [add the images yourself](#image-support).
 
-Once Blackfish is installed and initialized, you start the application with the `blackfish start` command:
+Once Blackfish is properly initialized, you can run the `blackfish start` command to launch the application:
 ```shell
 blackfish start
 ```
@@ -73,21 +78,25 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://localhost:8000 (Press CTRL+C to quit)
 ```
 
+Congratulations! Blackfish is now up and running! The core API serves the user interface as well as endpoints to manage services and Blackfish itself. The rest of this guide will walk through how to use the CLI to interact with these endpoints.
+
+### Running Services
+
 Let's start by exploring what services are available. In a new terminal (with your virtual environment activated), type
 ```shell
 blackfish run --help
 ```
-The output displays a list of available commands. One of these is commands `text-generation`, which launches a service that generates text given a input prompt or message history (for models supporting chat). There are a *many* [models](https://huggingface.co/models?pipeline_tag=text-generation&sort=trending) to choose from to perform this task, but Blackfish only allows you to run models you have already downloaded. To view a list of available models, simply type
+The output displays a list of available commands. One of these is commands `text-generation`, which launches a service to generate text given an input prompt or message history (for models supporting chat). There are *many* [models](https://huggingface.co/models?pipeline_tag=text-generation&sort=trending) to choose from to perform this task, but Blackfish only allows you to run models you have already downloaded. To view a list of available models, run
 ```shell
 blackfish model ls --image=text-generation --refresh
 ```
 
 This command shows all models that we can pass to the `blackfish run text-generation` command. Because we haven't downloaded any models yet (unless your profile connected to a shared model repo), our list is empty! Let's add a "tiny" model:
 ```shell
-blackfish model add TinyLlama/TinyLlama-1.1B-Chat-v1.0
+blackfish model add TinyLlama/TinyLlama-1.1B-Chat-v1.0  # This will take a minute...
 ```
 
-Once the model is done downloading, you can check that it is available by re-running the `blackfish model ls --refresh` command. We're now ready to spin up a `text-generation` instance:
+Once the model is done downloading, you can check that it is available by re-running the `blackfish model ls --refresh` command. We're now ready to spin up a `text-generation` service:
 ```shell
 blackfish run --gres 1 --time 00:30:00 text-generation TinyLlama/TinyLlama-1.1B-Chat-v1.0 --api-key sealsaretasty
 ```
@@ -100,20 +109,20 @@ blackfish run --gres 1 --time 00:30:00 text-generation TinyLlama/TinyLlama-1.1B-
 ✔ Started service: 55862e3b-c2c2-428d-ac2d-89bdfa911fa4
 ```
 
-This command returns an ID for our new service. We can find more information about our
+This command returns an ID for our new service. We can view more information about our
 service by running
 ```shell
 blackfish ls
 ```
 ```
 SERVICE ID      IMAGE             MODEL                                CREATED     UPDATED     STATUS    PORT   NAME              PROFILE
-8bc6298d-3e40   text_generation   TinyLlama/TinyLlama-1.1B-Chat-v1.0   3 sec ago   3 sec ago   PENDING   None   blackfish-77771   default
+55862e3b-c2c2   text_generation   TinyLlama/TinyLlama-1.1B-Chat-v1.0   3 sec ago   3 sec ago   PENDING   None   blackfish-77771   default
 ```
 
-It might take a few minutes for a Slurm job to start, and it will require additional time for the service to setup after the job starts. Until then, our service's status will be either `SUBMITTED` or `STARTING`. Now would be a good time to make some tea 🫖
+As you can see, our service is still waiting in the job queue (`PENDING`). It might take a few minutes for a Slurm job to start, and it will require additional time for the service to load after it starts. Until then, our service's status will be either `SUBMITTED` or `STARTING`. Now would be a good time to make some tea 🫖
 
 !!! note
-    While you're doing that, note that can obtain detailed information about an individual service with the `blackfish details <service_id>` command. Now back to that tea...
+    While you're doing that, note that you can obtain additional information about an individual service with the `blackfish details <service_id>` command. Now back to that tea...
 
 Now that we're refreshed, let's see how our service is getting along. Re-run the command above:
 ```shell
@@ -124,7 +133,7 @@ SERVICE ID      IMAGE             MODEL                                CREATED  
 55862e3b-c2c2   text_generation   TinyLlama/TinyLlama-1.1B-Chat-v1.0   3 min ago   3 min ago   HEALTHY   8080   blackfish-90846   default
 ```
 
-If things went well, then the service's status should be `RUNNING`. At this point, we can interact with the service. Let's say "Hello":
+If things went well, then the service's status should be `HEALTHY`. At this point, we can start using the service. Let's ask an important question:
 ```shell
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -172,9 +181,13 @@ curl http://localhost:8080/v1/chat/completions \
 }
 ```
 
-Success! Our service is responding as expected. Feel free to play around with this model to your heart's delight. It should remain available for approximately thirty minutes (`--time 00:30:00`).
+Success! Our service is responding as expected. Feel free to play around with this model to your heart's delight. It should remain available for approximately thirty minutes in total (`--time 00:30:00`).
 
-When we are done with our service, we should shut it off and return its resources to the cluster. To do so, simply type
+!!! tip
+
+    You can interact with text generation services using OpenAI's official Python library, `openai`. If you're already using `openai` to work with private models like ChatGPT, your existing scripts should work with minimal modification!
+
+When we're done with our service, we should shut it off and return its resources to the cluster. To do so, simply type
 ```shell
 blackfish stop 55862e3b-c2c2-428d-ac2d-89bdfa911fa4
 ```
@@ -182,16 +195,16 @@ blackfish stop 55862e3b-c2c2-428d-ac2d-89bdfa911fa4
 ✔ Stopped service 55862e3b-c2c2-428d-ac2d-89bdfa911fa4.
 ```
 
-If you run `blackfish ls` again, you should see that the service is no longer listed: `ls` only displays active services. You want to see a list of *all* services by including the `--all` flag. Services remain in your services database until you explicit remove them, like so:
+If you run `blackfish ls` once more, you should see that the service is no longer listed: `ls` only displays *active* services by default. You can view *all* services by including the `--all` flag. Services remain in your services database until you explicit remove them, like so:
 ```shell
-❯ blackfish rm --filters id=55862e3b-c2c2-428d-ac2d-89bdfa911fa4
+blackfish rm --filters id=55862e3b-c2c2-428d-ac2d-89bdfa911fa4
 ```
 ```
 ✔ Removed 1 service.
 ```
 
 ### Local Setup
-Using Blackfish from your laptop requires a seamless (i.e., password-less) method of communicating with remote clusters. On many systems, this is simple to setup with the `ssh-keygen` and `ssh-copy-id` utilitites. First, make sure that you are connected to your institution's network (or VPN), then type the following at the command-line:
+Using Blackfish from your laptop requires a seamless (i.e., password-less) method of communicating with remote clusters. On many systems, this is simple to setup with the `ssh-keygen` and `ssh-copy-id` utilitites. First, make sure that you are connected to your institution's network or VPN (if required), then type the following at the command-line:
 
 ```shell
 ssh-keygen -t rsa # generates ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa
@@ -204,11 +217,22 @@ These commands create a secure public-private key pair and send the public key t
 
     Blackfish depends on seamless interaction with your university's HPC cluster. Before proceeding, make sure that you have enabled password-less login and are connected to your institutions network or VPN, if required.
 
-Before you begin using Blackfish, you'll need to initialize the application. To do so, type
+#### Local Profile
+Before we start using services, we'll need to initialize Blackfish and create a profile. Type
 ```shell
 blackfish init
 ```
-at the command line. This command will prompt you to provide details for a Blackfish *profile*. A typical default profile will look something like this:
+at the command line. This command will prompt you to provide details for a default Blackfish profile. If you want to run services on your laptop by default, then your profile should look something like this:
+
+```
+name=default
+type=local
+home=/home/shamu/.blackfish # local directory
+cache=/scratch/gpfs/shared/.blackfish # shared local directory to store model and image data
+```
+
+#### Slurm Profile
+On the other hand, if you normally want to run services on a remote Slurm cluster, then your profile should look as follows:
 ```
 name=default
 type=slurm
@@ -217,25 +241,30 @@ user=shamu
 home=/home/shamu/.blackfish # directory on host
 cache=/scratch/gpfs/shared/.blackfish # shared directory on host to store model and image data
 ```
-You can also run services locally, in which case your profile might look like this:
-```
-name=default
-type=local
-home=/home/shamu/.blackfish # local directory
-cache=/scratch/gpfs/shared/.blackfish # shared local directory to store model and image data
-```
+
 For further details on profiles, refer to our [documentation](https://princeton-ddss.github.io/blackfish/latest/getting_started/#profiles).
 
-## Image Support
+## Images
+The current version of Blackfish does not ship Docker images required to run services. When running jobs locally, Docker will attempt to download the required image before starting the service, resulting in delays during the launching step. Instead, it's recommended that users pre-download the required images listed below.
+
+
+!!! note
+
+    When running services on Slurm clusters, Blackfish looks for the required SIF file in `$PROFILE_CACHE_DIR/images`.
+
+
+
 | Version | Text Generation   | Speech Recognition                 | Object Detection |
 |:--------|:-----------------:|:----------------------------------:|:----------------:|
 | 0.1.0   | vllm-openai:0.8.4 | speech-recognition-inference:0.1.2 | -                |
-| 0.1.1   | vllm-openai:0.8.4 | speech-recognition-inference:0.1.2 | -                |
+<!-- | 0.1.1   | vllm-openai:0.8.4 | speech-recognition-inference:0.1.2 | -                | -->
 
-## Model Support
+## Models
+Blackfish (or rather, the services Blackfish runs) does not guarantee support for every model available from the [Hugging Face's Model Hub](https://huggingface.co/models). As a practical matter, however, services support nearly all "popular" models listed under their corresponding pipeline, including many "quantized" models (in the case of LLMs). Below is an evolving list of models that we have tested on HPC, including the resources requested and utilized by the service.
+
 The main requirement to run online inference is sufficient GPU memory. As a rule-of-thumb, the *minimum* memory required for a model is obtained by multiplying the number of parameters (in billions) times the number of bytes per parameter (`dtype / 8`). In practice, you need to budget an additional 5-10 GB for KV caching and keep in mind that default GPU utilization is typically set to around 90-95% by service images.
 
-### Tested Models (vllm/vllm-openai:v0.8.4)
+
 | Model                                        | Pipeline                     | Supported | Chat     | Gated | Reasoning | Memory | GPUs       | Cores | Size  | Dtype | Notes                                                                                          |
 |----------------------------------------------|------------------------------|-----------|----------|-------|-----------|--------|------------|-------|-------|-------|------------------------------------------------------------------------------------------------|
 | Qwen/QwQ-32B                                 | Text-generation              | ✅        | ✅       |       | ✅        | 16G    |  61.0/160G | 4     | 32.8B | bf16  | See https://docs.vllm.ai/en/stable/features/reasoning_outputs.html for reasoning content.      |
@@ -246,8 +275,8 @@ The main requirement to run online inference is sufficient GPU memory. As a rule
 | Qwen/Qwen2.5-32B-Instruct                    | Text-generation              | ✅        | ✅       |       |           | 16G    |   63.1/80G | 4     | 32.8B | bf16  |                                                                                                |
 | google/gemma-3-27b-it                        | Text-generation              | ✅        | ✅       | ✅    |           | 16G    |   54.1/80G | 4     | 27.4B | bf16  |                                                                                                |
 | google/gemma-3-1b-it                         | Text-generation              | ✅        | ✅       | ✅    |           | 8G     |       /10G | 4     | 27.4B | bf16  |                                                                                                |
-| meta-llama/Llama-4-Scout-17B-16E-Instruct    | Text-generation              | ❌        | ✅       | ✅    |           | -      |          - | -     |  109B | bf16  | Supports multimodal inputs. See https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving. |
-| meta-llama/Llama-4-Scout-17B-16E             | Text-generation              | ❌        |          | ✅    |           | -      |          - | -     |  109B | bf16  | Supports multimodal inputs. See https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving. |
+| meta-llama/Llama-4-Scout-17B-16E-Instruct    | Text-generation              | ✅        | ✅       | ✅    |           | 32G    |      /320G | 4     |  109B | bf16  | Supports multimodal inputs. See https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving. |
+| meta-llama/Llama-4-Scout-17B-16E             | Text-generation              | ✅        |          | ✅    |           | 32G    |      /320G | 4     |  109B | bf16  | Supports multimodal inputs. See https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving. |
 | meta-llama/Llama-3.3-70B-Instruct            | Text-generation              | ✅        | ✅       | ✅    |           | 16G    | 140.4/320G | 4     | 70.6B | bf16  |                                                                                                |
 | deepseek-ai/DeepSeek-R1-Distill-Llama-70B    | Text generation              | ✅        | ✅       |       | ✅        | 16G    | 141.2/320G | 4     | 70.6B | bf16  | See https://docs.vllm.ai/en/stable/features/reasoning_outputs.html for reasoning content.      |
 | deepseek-ai/DeepSeek-R1-Distill-Qwen-32B     | Text generation              | ✅        | ✅       |       | ✅        | 16G    |   64.6/80G | 4     | 32.8B | bf16  | See https://docs.vllm.ai/en/stable/features/reasoning_outputs.html for reasoning content.      |
@@ -287,4 +316,4 @@ The main requirement to run online inference is sufficient GPU memory. As a rule
 -->
 
 ## Want to learn more?
-You can find loads more details on our official [documentation page](https://princeton-ddss.github.io/blackfish/).
+You can find additional details and examples on our official [documentation page](https://princeton-ddss.github.io/blackfish/).

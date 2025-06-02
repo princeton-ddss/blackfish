@@ -28,7 +28,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Lint
-        run: nox --non-interactive --error-on-missing-interpreter --session "lint"
+        run: nox --non-interactive --error-on-missing-interpreters --session "lint"
 
   tests:
     name: Run tests 🧪
@@ -52,7 +52,7 @@ jobs:
       - name: Start Blackfish
         run: blackfish start &
       - name: Run tests on ${{ matrix.os }}
-        run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
+        run: nox --non-interactive --error-on-missing-interpreters --session "tests-${{ matrix.python-version }}" -- --full-trace
 
   docs-preview:
     name: Preview documentation 📖

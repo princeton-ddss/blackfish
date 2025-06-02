@@ -7,10 +7,15 @@
 python -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
-pip install blackfish
+pip install blackfish-ai
 ```
 
-If everything worked, `which blackfish` should point to the installed command-line tool.
+### uv
+```shell
+uv venv
+uv add blackfish-ai
+```
+
 
 ## Setup
 There's a small amount of setup required before we get started with Blackfish. Fortunately, it's mostly automated.

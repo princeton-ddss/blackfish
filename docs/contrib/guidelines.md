@@ -3,20 +3,17 @@
 **All  contributions are welcome as long as everyone involved is treated with respect.**
 
 ## Code Contributions
-For advice on setting up your development environment, see our [development guide](https://princeton-ddss.github.io/blackfish/contrib).
+For advice on setting up your development environment, see our [development guide](https://princeton-ddss.github.io/blackfish/latest/developer_guide).
 
 ### Steps
-1. Clone the repository and create a feature branch
-If addressing an open issue, create a feature branch from the issue. Otherwise, give the feature branch a descriptive name (e.g., `support-hdf5-files`).
-2. If fixing a bug, write a test and confirm that it fails (if possible)
-3. Implement your fix or feature
-4. If adding a feature, write appropriate tests (if possible)
+1. **Clone the repository and create a feature branch**. If you're addressing an open issue, create a feature branch from the issue. Otherwise, give the feature branch a descriptive name (e.g., `support-hdf5-files`).
+2. **Write some tests.** If fixing a bug, write a test and confirm that it fails. If adding a feature, write appropriate tests to check functionality.
 Make sure `pre-commit` is installed. If not, your PR is *very* likely to fail.
-5. Open a GitHub Pull Request to the `master` branch
-If the PR closes an issue, make sure to note this in the description (i.e., "Closes #78").
+3. **Implement your fix or feature**. The fun part! Don't be afraid to ask for help or advice.
+4. **Open a GitHub Pull Request to the `master` branch**. If the PR closes an issue, make sure to note this in the description (e.g., "Closes #78").
 
 ### Code Review
-In addition to passing automated tests, PRs must pass code review before they are merged. Feedback will include optional changes and required changes. Required changes must be addressed in order for the PR to be merged. If you disagree with required changes, you can argue your position respectfully, but understand that maintainers have the final say. Do not be discouraged or frustrated with reviewers. **Remember: feedback is a gif!**
+In addition to passing automated tests, PRs must pass code review before they are merged. Feedback will include optional changes and required changes. Required changes must be addressed in order for the PR to be merged. If you disagree with required changes, you can argue your position respectfully, but understand that maintainers have the final say. Do not be discouraged or frustrated with reviewers. **Remember: feedback is a GIF!**
 
 ![Feedback is a gif](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcmR4c2FmandtZzBkeW9lOGxzMnM0anB0MWdvMTFnNjZ2ZWo0N2N5dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ZF8GoFOeBDwHFsVYqt/giphy.gif)
 

@@ -164,9 +164,9 @@ def start(reload: bool) -> None:  # pragma: no cover
 
     - BLACKFISH_HOME_DIR: the location of Blackfish application file. Default: $HOME/.blackfish.
 
-    - BLACKFISH_DEBUG: the debug logger. Default: 1 (true).
+    - BLACKFISH_DEBUG: run the API in debug mode. Default: 1 (true).
 
-    - BLACKFISH_DEV_MODE: run the API without token authentication. Default: 1 (true).
+    - BLACKFISH_AUTH_TOKEN: an auth token to use for the API. Ignored in debug mode. Default: a random 32-byte token if not set.
 
     - BLACKFISH_CONTAINER_PROVIDER: the container management system to use for local
         service deployment. Defaults to Docker, if available, then Apptainer.
@@ -204,15 +204,20 @@ def start(reload: bool) -> None:  # pragma: no cover
         else:
             logger.error(f"Failed to upgrade database: {e}")
 
-    uvicorn.run(
-        "app.asgi:app",
-        host=config.HOST,
-        port=config.PORT,
-        log_level="info",
-        app_dir=os.path.abspath(os.path.join(__file__, "..", "..")),
-        reload_dirs=os.path.abspath(os.path.join(__file__, "..")),
-        reload=reload,
-    )
+    reload = True if config.DEBUG else reload
+
+    if __name__ == "app.cli.__main__":
+        uvicorn.run(
+            "app.asgi:app",
+            host=config.HOST,
+            port=config.PORT,
+            log_level="info",
+            app_dir=os.path.abspath(os.path.join(__file__, "..", "..")),
+            reload_dirs=os.path.abspath(os.path.join(__file__, ".."))
+            if reload
+            else None,
+            reload=reload,
+        )
 
 
 # blackfish run [OPTIONS] COMMAND

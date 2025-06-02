@@ -55,8 +55,8 @@ The application and command-line interface (CLI) pull their settings from enviro
 BLACKFISH_HOST='localhost' # host for local instance of the Blackfish app
 BLACKFISH_PORT=8000 # port for local instance of the Blackfish app
 BLACKFISH_HOME_DIR='~/.blackfish' # location to store application data
-BLACKFISH_DEV_MODE=1 # run the application with development settings
-BLACKFISH_TOKEN='sealsaretasty' # a user-defined secret auth token
+BLACKFISH_DEBUG=1 # run the application in debug (development) mode
+BLACKFISH_AUTH_TOKEN='sealsaretasty' # a user-defined secret auth token (ignored if DEBUG)
 ```
 
 Running the application in development mode is recommended for development only on a shared system

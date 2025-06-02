@@ -69,7 +69,7 @@ blackfish start
 INFO:     Added class SpeechRecognition to service class dictionary. [2025-02-24 11:55:06.639]
 INFO:     Added class TextGeneration to service class dictionary. [2025-02-24 11:55:06.639]
 WARNING:  Blackfish is running in debug mode. API endpoints are unprotected. In a production
-          environment, set BLACKFISH_DEV_MODE=0 to require user authentication. [2025-02-24 11:55:06.639]
+          environment, set BLACKFISH_DEBUG=0 to require user authentication. [2025-02-24 11:55:06.639]
 INFO:     Upgrading database... [2025-02-24 11:55:06.915]
 WARNING:  Current configuration will not reload as not all conditions are met, please refer to documentation.
 INFO:     Started server process [58591]

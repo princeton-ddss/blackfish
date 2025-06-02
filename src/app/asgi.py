@@ -7,7 +7,6 @@ import aiohttp
 from aiohttp.typedefs import StrOrURL
 import requests
 from datetime import datetime
-from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional, Tuple, Any, Type
@@ -98,7 +97,7 @@ service_classes = load_service_classes()
 ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
 
 # --- Auth ---
-AUTH_TOKEN = b64encode(urandom(32)).decode("utf-8")
+AUTH_TOKEN = blackfish_config.AUTH_TOKEN
 
 
 class AuthMiddleware(MiddlewareProtocol):
@@ -134,14 +133,14 @@ def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:  # type
         raise NotAuthorizedException
 
 
-PAGE_MIDDLEWARE = [] if blackfish_config.DEV_MODE else [AuthMiddleware]
-ENDPOINT_GUARDS = [] if blackfish_config.DEV_MODE else [auth_guard]
-if not blackfish_config.DEV_MODE:
+PAGE_MIDDLEWARE = [] if blackfish_config.DEBUG else [AuthMiddleware]
+ENDPOINT_GUARDS = [] if blackfish_config.DEBUG else [auth_guard]
+if not blackfish_config.DEBUG:
     logger.info(f"Blackfish API is protected with AUTH_TOKEN = {AUTH_TOKEN}")
 else:
     logger.warning(
         """Blackfish is running in debug mode. API endpoints are unprotected. In a production
-          environment, set BLACKFISH_DEV_MODE=0 to require user authentication."""
+          environment, set BLACKFISH_DEBUG=0 to require user authentication."""
     )
 
 
@@ -397,7 +396,6 @@ async def info(state: State) -> dict[str, Any]:
         "STATIC_DIR": state.STATIC_DIR,
         "HOME_DIR": state.HOME_DIR,
         "DEBUG": state.DEBUG,
-        "DEV_MODE": state.DEV_MODE,
         "CONTAINER_PROVIDER": state.CONTAINER_PROVIDER,
     }
 
@@ -415,6 +413,9 @@ async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:  # 
             logger.debug("from login: user already logged int => return None")
             return None
     token = data.token.get_secret()
+    if AUTH_TOKEN is None:
+        logger.error("AUTH_TOKEN is not set. Cannot authenticate user.")
+        raise InternalServerException(detail="Authentication token is not set.")
     if compare_digest(token, AUTH_TOKEN):
         request.set_session({"token": token})
         logger.debug(

@@ -1,26 +1,35 @@
 # Welcome to Blackfish
-Blackfish is an open source "ML-as-a-Service" (MLaaS) platform that helps researchers use state-of-the-art, open source machine learning and  artificial intelligence models. With Blackfish, researchers can spin up their own version of popular public cloud services (e.g., ChatGPT, Amazon Transcribe, etc.) using high-performance computing (HPC) resources already available on campus.
+Blackfish is an open source "ML-as-a-Service" (MLaaS) platform that helps researchers use state-of-the-art, open source artificial intelligence and machine learning models. With Blackfish, researchers can spin up their own version of popular public cloud services (e.g., ChatGPT, Amazon Transcribe, etc.) using high-performance computing (HPC) resources already available on campus.
 
-The primary goal of Blackfish is to facilitate **transparent**, **reproducible**, and **safe** research using advanced machine learning and artificial intelligence. We do this by providing mechanisms to run **open source models** with **user-defined configurations** in isolated containers.
+The primary goal of Blackfish is to facilitate **transparent** and **reproducible** research based on **open source** machine learning and artificial intelligence. We do this by providing mechanisms to run user-specified models with user-defined configurations. For academic research, open source models present several advantages over closed source models. First, whereas large-scale projects using public cloud services might cost $10K to $100K for [similar quality results](https://www.frontiersin.org/journals/big-data/articles/10.3389/fdata.2023.1210559/full), open source models running on HPC resources are free to researchers. Second, with open source models you know *exactly* what model you are using and you can easily provide a copy of that model to other researchers. Closed source models can and do change without notice. Third, using open-source models allows complete transparency into how *your* data is being used.
 
-For academic research, open source models present several advantages over closed source models. First, whereas large-scale projects using public cloud services might cost $10K to $100K for [similar quality results](https://www.frontiersin.org/journals/big-data/articles/10.3389/fdata.2023.1210559/full), open source models running on HPC resources are free to researchers. Second, with open source models you know *exactly* what model you are using and you can easily provide a copy of that model to other researchers. Closed source models can and do change without notice. Third, using open-source models allows complete transparency into how *your* data is being used.
+## Why should you use Blackfish?
 
-## Why Blackfish?
+### 1. It's easy! 🌈
+Researchers should focus on research, not tooling. We try to meet researchers where they're at by providing multiple ways to work with Blackfish, including a CLI and browser-based UI.
 
-### 1. It's easy! 🥳
-Researchers should focus on research, not tooling. We try to meet researchers where they're at by providing multiple ways to work with Blackfish, including a CLI and browser-based UI. **Don't want to install Python packages?** [Ask your HPC admins about adding Blackfish to your Open OnDemand portal](https://github.com/princeton-ddss/blackfish-ondemand)[^1]!
+Don't want to install Python packages? [Ask your HPC admins to add Blackfish to your Open OnDemand portal](https://github.com/princeton-ddss/blackfish-ondemand)!
 
-### 2. It's transparent 🔍
-You decide what model to run (down to the Git commit) and how you want it configured, so there are no unexpected (or undetected) changes in performance[^2]. Services are run in isolated containers with on-premise compute and fully transparent code so you know *exactly* how your data is being handled.
+### 2. It's transparent 🧐
+You decide what model to run (down to the Git commit) and how you want it configured. There are no unexpected (or undetected) changes in performance because the model is always the same. All services are *private*, so you know exactly how your data is being handled.
 
 ### 3. It's free! 💸
 You have an HPC cluster. We have software to run on it.
+
+
+## Requirements
+
+### Python
+Blackfish requires Python to run locally. Alternatively, Blackfish can be added to your university's [Open OnDemand](https://openondemand.org/) portal, which allows users to run applications on HPC resources through a web browser. For more information, see our companion repo [blackfish-ondemand](https://github.com/princeton-ddss/blackfish-ondemand).
+
+### Docker & Apptainer
+Blackfish uses Docker or Apptainer to run service containers locally. Services run on HPC clusters rely on Apptainer.
 
 ## Quickstart
 
 ### Step 1 - Install blackfish
 ```shell
-pip install blackfish-ml
+pip install blackfish-ai
 ```
 
 ### Step 2 - Create a profile
@@ -31,8 +40,8 @@ blackfish init
 # > name: default
 # > type: slurm
 # > host: della.princeton.edu
-# > user: timmy
-# > home: /home/timmy123/.blackfish
+# > user: shamu
+# > home: /home/shamu/.blackfish
 # > cache: /scratch/gpfs/shared/.blackfish
 ```
 
@@ -43,13 +52,12 @@ blackfish start
 
 ### Step 4 - Obtain a model
 ```shell
-# This will take awhile...
-blackfish model add --profile default openai/whisper-large-v3
+blackfish model add --profile default openai/whisper-large-v3  # This will take a minute...
 ```
 
 ### Step 5 - Run a service
 ```shell
-blackfish run --profile default --mount $HOME/Downloads speech-recognition openai/whisper-tiny
+blackfish run --mount $HOME/Downloads speech-recognition openai/whisper-large-v3
 ```
 
 ### Step 6 - Submit a request
@@ -73,14 +81,6 @@ In general, service APIs do not run on the same machine as the Blackfish applica
 ![image](assets/img/architecture-slurm.jpg)
 
 **Figure** The Blackfish architecture for running remote service APIs on a Slurm cluster.
-
-## Requirements
-
-### Python
-Blackfish requires Python to run locally. Alternatively, Blackfish can be added to your university's [Open OnDemand](https://openondemand.org/) portal, which allows users to run applications on HPC resources through a web browser. For more information, see our companion repo [blackfish-ondemand](https://github.com/princeton-ddss/blackfish-ondemand).
-
-### Docker & Apptainer
-Blackfish uses Docker to run service containers locally. Services run on HPC clusters rely on Apptainer.
 
 
 ## Acknowledgements

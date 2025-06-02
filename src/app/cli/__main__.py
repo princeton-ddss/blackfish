@@ -168,8 +168,7 @@ def start(reload: bool) -> None:  # pragma: no cover
 
     - BLACKFISH_AUTH_TOKEN: an auth token to use for the API. Ignored in debug mode. Default: a random 32-byte token if not set.
 
-    - BLACKFISH_CONTAINER_PROVIDER: the container management system to use for local
-        service deployment. Defaults to Docker, if available, then Apptainer.
+    - BLACKFISH_CONTAINER_PROVIDER: the container management system to use for local service deployment. Defaults: Docker, if available, else Apptainer.
     """
 
     import uvicorn

@@ -113,18 +113,20 @@ class AuthMiddleware(MiddlewareProtocol):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if Request(scope).session is None:
             logger.debug(
-                "from AuthMiddleware: no session found => redirect to dashboard login"
+                "(AuthMiddleware) No session found. Redirecting to dashboard login."
             )
             response = ASGIRedirectResponse(path="/login")
             await response(scope, receive, send)
         elif Request(scope).session.get("token") is None:
             logger.debug(
-                "from AuthMiddleware: no token found => redirect to dashboard login"
+                "(AuthMiddleware) No token found. Redirecting to dashboard login."
             )
             response = ASGIRedirectResponse(path="/login")
             await response(scope, receive, send)
         else:
-            logger.debug(f"from AuthMiddleware: {Request(scope).session}")
+            logger.debug(
+                "(AuthMiddleware) Found session token!"
+            )  # Request(scope).session
             await self.app(scope, receive, send)
 
 
@@ -415,7 +417,6 @@ async def info(state: State) -> dict[str, Any]:
 
 @post("/api/login")
 async def login(token: SecretString | None, request: Request) -> Optional[Redirect]:  # type: ignore
-    logger.debug(f"from login: received token: {token}")
     if AUTH_TOKEN is None:
         logger.error("AUTH_TOKEN is not set. Cannot authenticate user.")
         raise InternalServerException(detail="Authentication token is not set.")
@@ -427,7 +428,7 @@ async def login(token: SecretString | None, request: Request) -> Optional[Redire
     if token is not None:
         if bcrypt.checkpw(token.get_secret().encode(), AUTH_TOKEN):
             logger.debug("Authentication token verified. Adding token to session.")
-            request.set_session({"token": token})
+            request.set_session({"token": token.get_secret()})
         else:
             logger.debug("Invalid token provided. Redirecting to login.")
             return Redirect("/login/?success=false")

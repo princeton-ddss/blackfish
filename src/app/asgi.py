@@ -388,7 +388,7 @@ async def dashboard_login(request: Request) -> Template | Redirect:  # type: ign
             logger.debug("User authenticated. Redirecting to dashboard.")
             return Redirect("/dashboard")
 
-    logger.debug("User not authenticated. Returning to login page.")
+    logger.debug("User not authenticated. Returning login page.")
     return Template(template_name="login.html")
 
 
@@ -423,19 +423,21 @@ async def login(token: SecretString | None, request: Request) -> Optional[Redire
     session_token = request.session.get("token")
     if session_token is not None:
         if bcrypt.checkpw(session_token.encode(), AUTH_TOKEN):
-            logger.debug("User logged in with session token. Returning None.")
-            return None
+            logger.debug("User logged in with session token. Redirecting to dashboard.")
+            return Redirect("/dashboard")
     if token is not None:
         if bcrypt.checkpw(token.get_secret().encode(), AUTH_TOKEN):
-            logger.debug("Authentication token verified. Adding token to session.")
+            logger.debug(
+                "Authentication token verified. Adding token to session and redirecting to dashboard."
+            )
             request.set_session({"token": token.get_secret()})
+            return Redirect("/dashboard")
         else:
             logger.debug("Invalid token provided. Redirecting to login.")
-            return Redirect("/login/?success=false")
+            return Redirect("/login?success=false")
     else:
         logger.debug("No token provided. Redirecting to login.")
-        return Redirect("/login/?success=false")
-    return Redirect("/dashboard")
+        return Redirect("/login?success=false")
 
 
 @post("/api/logout", guards=ENDPOINT_GUARDS)

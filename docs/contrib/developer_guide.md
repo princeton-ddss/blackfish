@@ -105,8 +105,7 @@ HOST = "localhost"
 PORT = 8000
 STATIC_DIR = "/Users/colinswaney/GitHub/blackfish/src" # source of static files
 HOME_DIR = "/Users/colinswaney/.blackfish" # source of application data
-DEBUG = true # log debug statements
-DEV_MODE = true # run server in development mode (no auth)
+DEBUG = true # run server in development mode (no auth)
 CONTAINER_PROVIDER = "docker" # determines how to launch containers
 ```
 

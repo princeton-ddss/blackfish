@@ -13,7 +13,7 @@ from typing import Optional, Tuple, Any, Type
 import asyncio
 import itertools
 from pathlib import Path
-from secrets import compare_digest
+import bcrypt
 from importlib import import_module
 
 from fabric.connection import Connection
@@ -97,7 +97,12 @@ service_classes = load_service_classes()
 ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
 
 # --- Auth ---
-AUTH_TOKEN = blackfish_config.AUTH_TOKEN
+AUTH_TOKEN: Optional[bytes] = None
+if blackfish_config.AUTH_TOKEN is not None:
+    AUTH_TOKEN = bcrypt.hashpw(blackfish_config.AUTH_TOKEN.encode(), bcrypt.gensalt())
+else:
+    AUTH_TOKEN = None
+    logger.warning("AUTH_TOKEN is not set. Blackfish API endpoints are unprotected.")
 
 
 class AuthMiddleware(MiddlewareProtocol):
@@ -124,19 +129,24 @@ class AuthMiddleware(MiddlewareProtocol):
 
 
 def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:  # type: ignore
+    if AUTH_TOKEN is None:
+        logger.error("AUTH_TOKEN is not set. Cannot authenticate user.")
+        raise InternalServerException(detail="Authentication token is not set.")
     token = connection.session.get("token")
     if token is None:
-        logger.debug("from auth_guard: session.token is None => NotAuthorizedException")
+        logger.debug("Session token is None. Raising NotAuthorizedException.")
         raise NotAuthorizedException
-    if not compare_digest(token, AUTH_TOKEN):
-        logger.debug("from auth_guard: invalid token => NotAuthorizedException")
+    if not bcrypt.checkpw(token.encode(), AUTH_TOKEN):
+        logger.debug("Invalid token provided. Raising NotAuthorizedException.")
         raise NotAuthorizedException
 
 
 PAGE_MIDDLEWARE = [] if blackfish_config.DEBUG else [AuthMiddleware]
 ENDPOINT_GUARDS = [] if blackfish_config.DEBUG else [auth_guard]
 if not blackfish_config.DEBUG:
-    logger.info(f"Blackfish API is protected with AUTH_TOKEN = {AUTH_TOKEN}")
+    logger.info(
+        f"Blackfish API is protected with AUTH_TOKEN = {blackfish_config.AUTH_TOKEN}"
+    )
 else:
     logger.warning(
         """Blackfish is running in debug mode. API endpoints are unprotected. In a production
@@ -367,13 +377,16 @@ async def dashboard() -> Template:
 
 @get(path="/login")
 async def dashboard_login(request: Request) -> Template | Redirect:  # type: ignore
+    if AUTH_TOKEN is None:
+        logger.error("AUTH_TOKEN is not set. Redirecting to dashboard.")
+        return Redirect("/dashboard")
     token = request.session.get("token")
     if token is not None:
-        if compare_digest(token, AUTH_TOKEN):
-            logger.debug(
-                "from dashboard_login: user already authenticated => redirect dashboard"
-            )
+        if bcrypt.checkpw(token.encode(), AUTH_TOKEN):
+            logger.debug("User authenticated. Redirecting to dashboard.")
             return Redirect("/dashboard")
+
+    logger.debug("User not authenticated. Returning to login page.")
     return Template(template_name="login.html")
 
 
@@ -400,29 +413,26 @@ async def info(state: State) -> dict[str, Any]:
     }
 
 
-@dataclass
-class LoginPayload:
-    token: SecretString
-
-
 @post("/api/login")
-async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:  # type: ignore
-    token = request.session.get("token")
-    if token is not None:
-        if compare_digest(token, AUTH_TOKEN):
-            logger.debug("from login: user already logged int => return None")
-            return None
-    token = data.token.get_secret()
+async def login(token: SecretString | None, request: Request) -> Optional[Redirect]:  # type: ignore
+    logger.debug(f"from login: received token: {token}")
     if AUTH_TOKEN is None:
         logger.error("AUTH_TOKEN is not set. Cannot authenticate user.")
         raise InternalServerException(detail="Authentication token is not set.")
-    if compare_digest(token, AUTH_TOKEN):
-        request.set_session({"token": token})
-        logger.debug(
-            f"from login: added token:{token} to session => redirect /dashboard"
-        )
+    session_token = request.session.get("token")
+    if session_token is not None:
+        if bcrypt.checkpw(session_token.encode(), AUTH_TOKEN):
+            logger.debug("User logged in with session token. Returning None.")
+            return None
+    if token is not None:
+        if bcrypt.checkpw(token.get_secret().encode(), AUTH_TOKEN):
+            logger.debug("Authentication token verified. Adding token to session.")
+            request.set_session({"token": token})
+        else:
+            logger.debug("Invalid token provided. Redirecting to login.")
+            return Redirect("/login/?success=false")
     else:
-        logger.debug("from login: invalid token => return None")
+        logger.debug("No token provided. Redirecting to login.")
         return Redirect("/login/?success=false")
     return Redirect("/dashboard")
 
@@ -432,7 +442,7 @@ async def logout(request: Request) -> Redirect:  # type: ignore
     token = request.session.get("token")
     if token is not None:
         request.set_session({"token": None})
-        logger.debug("from logout: reset session => redirect /login")
+        logger.debug("from logout: reset session.")
     return Redirect("/login")
 
 

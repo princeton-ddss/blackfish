@@ -979,7 +979,7 @@ template_config = TemplateConfig(
     engine=JinjaTemplateEngine,
 )
 
-session_config = CookieBackendConfig(secret=urandom(16), key="bf_user", samesite="lax")
+session_config = CookieBackendConfig(secret=urandom(16), key="bf_user", samesite="none")
 
 next_server = create_static_files_router(
     path="_next",

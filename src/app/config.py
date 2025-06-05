@@ -7,7 +7,7 @@ from base64 import b64encode
 from copy import deepcopy
 
 
-DEFAULT_BASE_PATH = "/"
+DEFAULT_BASE_PATH = ""
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8000
 DEFAULT_STATIC_DIR = Path(__file__).parent.parent

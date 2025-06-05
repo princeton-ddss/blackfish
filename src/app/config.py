@@ -7,6 +7,7 @@ from base64 import b64encode
 from copy import deepcopy
 
 
+DEFAULT_BASE_PATH = "/"
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8000
 DEFAULT_STATIC_DIR = Path(__file__).parent.parent
@@ -49,6 +50,7 @@ class BlackfishConfig:
     """
 
     def __init__(self) -> None:
+        self.BASE_PATH = os.getenv("BLACKFISH_HOST", DEFAULT_BASE_PATH)
         self.HOST = os.getenv("BLACKFISH_HOST", DEFAULT_HOST)
         self.PORT = int(os.getenv("BLACKFISH_PORT", DEFAULT_PORT))
         self.STATIC_DIR = Path(os.getenv("BLACKFISH_STATIC_DIR", DEFAULT_STATIC_DIR))

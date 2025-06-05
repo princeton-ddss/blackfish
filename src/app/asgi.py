@@ -369,7 +369,7 @@ async def find_models(profile: Profile) -> list[Model]:
 # --- Pages ---
 @get("/", middleware=PAGE_MIDDLEWARE)
 async def index() -> Redirect:
-    return Redirect("/dashboard")
+    return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
 
 
 @get(path="/dashboard", middleware=PAGE_MIDDLEWARE)
@@ -381,12 +381,12 @@ async def dashboard() -> Template:
 async def dashboard_login(request: Request) -> Template | Redirect:  # type: ignore
     if AUTH_TOKEN is None:
         logger.error("AUTH_TOKEN is not set. Redirecting to dashboard.")
-        return Redirect("/dashboard")
+        return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
     token = request.session.get("token")
     if token is not None:
         if bcrypt.checkpw(token.encode(), AUTH_TOKEN):
             logger.debug("User authenticated. Redirecting to dashboard.")
-            return Redirect("/dashboard")
+            return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
 
     logger.debug("User not authenticated. Returning login page.")
     return Template(template_name="login.html")
@@ -424,14 +424,18 @@ async def login(token: SecretString | None, request: Request) -> Optional[Redire
     if session_token is not None:
         if bcrypt.checkpw(session_token.encode(), AUTH_TOKEN):
             logger.debug("User logged in with session token. Redirecting to dashboard.")
-            return Redirect("/dashboard")
+            return Redirect(
+                f"{blackfish_config.BASE_PATH}/dashboard"
+            )
     if token is not None:
         if bcrypt.checkpw(token.get_secret().encode(), AUTH_TOKEN):
             logger.debug(
                 "Authentication token verified. Adding token to session and redirecting to dashboard."
             )
             request.set_session({"token": token.get_secret()})
-            return Redirect("/dashboard")
+            return Redirect(
+                f"{blackfish_config.BASE_PATH}/dashboard"
+            )
         else:
             logger.debug("Invalid token provided. Redirecting to login.")
             return Redirect("/login?success=false")
@@ -979,7 +983,13 @@ template_config = TemplateConfig(
     engine=JinjaTemplateEngine,
 )
 
-session_config = CookieBackendConfig(secret=urandom(16), key="bf_user", samesite="none")
+session_config = CookieBackendConfig(
+    secret=urandom(16),
+    key="bf_user",
+    # domain="mydella-test.princeton.edu",
+    # path="/",
+    samesite="none",
+)
 
 next_server = create_static_files_router(
     path="_next",
@@ -999,6 +1009,7 @@ def not_found_exception_handler(request: Request, exc: Exception) -> Template:  
 
 
 app = Litestar(
+    path=blackfish_config.BASE_PATH,
     route_handlers=[
         dashboard,
         dashboard_login,

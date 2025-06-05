@@ -50,7 +50,7 @@ class BlackfishConfig:
     """
 
     def __init__(self) -> None:
-        self.BASE_PATH = os.getenv("BLACKFISH_HOST", DEFAULT_BASE_PATH)
+        self.BASE_PATH = os.getenv("BLACKFISH_BASE_PATH", DEFAULT_BASE_PATH)
         self.HOST = os.getenv("BLACKFISH_HOST", DEFAULT_HOST)
         self.PORT = int(os.getenv("BLACKFISH_PORT", DEFAULT_PORT))
         self.STATIC_DIR = Path(os.getenv("BLACKFISH_STATIC_DIR", DEFAULT_STATIC_DIR))

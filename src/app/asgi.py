@@ -115,13 +115,13 @@ class AuthMiddleware(MiddlewareProtocol):
             logger.debug(
                 "(AuthMiddleware) No session found. Redirecting to dashboard login."
             )
-            response = ASGIRedirectResponse(path="/login")
+            response = ASGIRedirectResponse(path=f"{blackfish_config.BASE_PATH}/login")
             await response(scope, receive, send)
         elif Request(scope).session.get("token") is None:
             logger.debug(
                 "(AuthMiddleware) No token found. Redirecting to dashboard login."
             )
-            response = ASGIRedirectResponse(path="/login")
+            response = ASGIRedirectResponse(path=f"{blackfish_config.BASE_PATH}/login")
             await response(scope, receive, send)
         else:
             logger.debug(
@@ -438,10 +438,10 @@ async def login(token: SecretString | None, request: Request) -> Optional[Redire
             )
         else:
             logger.debug("Invalid token provided. Redirecting to login.")
-            return Redirect("/login?success=false")
+            return Redirect(f"{blackfish_config.BASE_PATH}/login?success=false")
     else:
         logger.debug("No token provided. Redirecting to login.")
-        return Redirect("/login?success=false")
+        return Redirect(f"{blackfish_config.BASE_PATH}/login?success=false")
 
 
 @post("/api/logout", guards=ENDPOINT_GUARDS)
@@ -450,7 +450,7 @@ async def logout(request: Request) -> Redirect:  # type: ignore
     if token is not None:
         request.set_session({"token": None})
         logger.debug("from logout: reset session.")
-    return Redirect("/login")
+    return Redirect(f"{blackfish_config.BASE_PATH}/login")
 
 
 @dataclass
@@ -986,8 +986,6 @@ template_config = TemplateConfig(
 session_config = CookieBackendConfig(
     secret=urandom(16),
     key="bf_user",
-    # domain="mydella-test.princeton.edu",
-    # path="/",
     samesite="none",
 )
 

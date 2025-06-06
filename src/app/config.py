@@ -3,15 +3,16 @@ from pathlib import Path
 from enum import StrEnum, auto
 from typing import Optional, Any
 import subprocess
+from base64 import b64encode
 from copy import deepcopy
 
 
+DEFAULT_BASE_PATH = ""
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8000
 DEFAULT_STATIC_DIR = Path(__file__).parent.parent
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
 DEFAULT_DEBUG = 1  # True
-DEFAULT_DEV_MODE = 1  # True
 
 
 class ContainerProvider(StrEnum):
@@ -49,14 +50,19 @@ class BlackfishConfig:
     """
 
     def __init__(self) -> None:
+        self.BASE_PATH = os.getenv("BLACKFISH_BASE_PATH", DEFAULT_BASE_PATH)
         self.HOST = os.getenv("BLACKFISH_HOST", DEFAULT_HOST)
         self.PORT = int(os.getenv("BLACKFISH_PORT", DEFAULT_PORT))
         self.STATIC_DIR = Path(os.getenv("BLACKFISH_STATIC_DIR", DEFAULT_STATIC_DIR))
         self.HOME_DIR = os.getenv("BLACKFISH_HOME_DIR", DEFAULT_HOME_DIR)
         self.DEBUG = bool(int(os.getenv("BLACKFISH_DEBUG", DEFAULT_DEBUG)))
-        self.DEV_MODE = bool(int(os.getenv("BLACKFISH_DEV_MODE", DEFAULT_DEBUG)))
+        self.AUTH_TOKEN = (
+            os.getenv("BLACKFISH_AUTH_TOKEN", b64encode(os.urandom(32)).decode("utf-8"))
+            if not self.DEBUG
+            else None
+        )
         self.CONTAINER_PROVIDER = os.getenv(
-            "BLACKFISH_CONTAINER_PROVIER", get_container_provider()
+            "BLACKFISH_CONTAINER_PROVIDER", get_container_provider()
         )
 
     def __str__(self) -> str:

@@ -7,14 +7,13 @@ import aiohttp
 from aiohttp.typedefs import StrOrURL
 import requests
 from datetime import datetime
-from base64 import b64encode
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional, Tuple, Any, Type
 import asyncio
 import itertools
 from pathlib import Path
-from secrets import compare_digest
+import bcrypt
 from importlib import import_module
 
 from fabric.connection import Connection
@@ -98,7 +97,12 @@ service_classes = load_service_classes()
 ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
 
 # --- Auth ---
-AUTH_TOKEN = b64encode(urandom(32)).decode("utf-8")
+AUTH_TOKEN: Optional[bytes] = None
+if blackfish_config.AUTH_TOKEN is not None:
+    AUTH_TOKEN = bcrypt.hashpw(blackfish_config.AUTH_TOKEN.encode(), bcrypt.gensalt())
+else:
+    AUTH_TOKEN = None
+    logger.warning("AUTH_TOKEN is not set. Blackfish API endpoints are unprotected.")
 
 
 class AuthMiddleware(MiddlewareProtocol):
@@ -109,39 +113,46 @@ class AuthMiddleware(MiddlewareProtocol):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if Request(scope).session is None:
             logger.debug(
-                "from AuthMiddleware: no session found => redirect to dashboard login"
+                "(AuthMiddleware) No session found. Redirecting to dashboard login."
             )
-            response = ASGIRedirectResponse(path="/login")
+            response = ASGIRedirectResponse(path=f"{blackfish_config.BASE_PATH}/login")
             await response(scope, receive, send)
         elif Request(scope).session.get("token") is None:
             logger.debug(
-                "from AuthMiddleware: no token found => redirect to dashboard login"
+                "(AuthMiddleware) No token found. Redirecting to dashboard login."
             )
-            response = ASGIRedirectResponse(path="/login")
+            response = ASGIRedirectResponse(path=f"{blackfish_config.BASE_PATH}/login")
             await response(scope, receive, send)
         else:
-            logger.debug(f"from AuthMiddleware: {Request(scope).session}")
+            logger.debug(
+                "(AuthMiddleware) Found session token!"
+            )  # Request(scope).session
             await self.app(scope, receive, send)
 
 
 def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:  # type: ignore
+    if AUTH_TOKEN is None:
+        logger.error("AUTH_TOKEN is not set. Cannot authenticate user.")
+        raise InternalServerException(detail="Authentication token is not set.")
     token = connection.session.get("token")
     if token is None:
-        logger.debug("from auth_guard: session.token is None => NotAuthorizedException")
+        logger.debug("Session token is None. Raising NotAuthorizedException.")
         raise NotAuthorizedException
-    if not compare_digest(token, AUTH_TOKEN):
-        logger.debug("from auth_guard: invalid token => NotAuthorizedException")
+    if not bcrypt.checkpw(token.encode(), AUTH_TOKEN):
+        logger.debug("Invalid token provided. Raising NotAuthorizedException.")
         raise NotAuthorizedException
 
 
-PAGE_MIDDLEWARE = [] if blackfish_config.DEV_MODE else [AuthMiddleware]
-ENDPOINT_GUARDS = [] if blackfish_config.DEV_MODE else [auth_guard]
-if not blackfish_config.DEV_MODE:
-    logger.info(f"Blackfish API is protected with AUTH_TOKEN = {AUTH_TOKEN}")
+PAGE_MIDDLEWARE = [] if blackfish_config.DEBUG else [AuthMiddleware]
+ENDPOINT_GUARDS = [] if blackfish_config.DEBUG else [auth_guard]
+if not blackfish_config.DEBUG:
+    logger.info(
+        f"Blackfish API is protected with AUTH_TOKEN = {blackfish_config.AUTH_TOKEN}"
+    )
 else:
     logger.warning(
         """Blackfish is running in debug mode. API endpoints are unprotected. In a production
-          environment, set BLACKFISH_DEV_MODE=0 to require user authentication."""
+          environment, set BLACKFISH_DEBUG=0 to require user authentication."""
     )
 
 
@@ -358,7 +369,7 @@ async def find_models(profile: Profile) -> list[Model]:
 # --- Pages ---
 @get("/", middleware=PAGE_MIDDLEWARE)
 async def index() -> Redirect:
-    return Redirect("/dashboard")
+    return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
 
 
 @get(path="/dashboard", middleware=PAGE_MIDDLEWARE)
@@ -368,13 +379,16 @@ async def dashboard() -> Template:
 
 @get(path="/login")
 async def dashboard_login(request: Request) -> Template | Redirect:  # type: ignore
+    if AUTH_TOKEN is None:
+        logger.error("AUTH_TOKEN is not set. Redirecting to dashboard.")
+        return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
     token = request.session.get("token")
     if token is not None:
-        if compare_digest(token, AUTH_TOKEN):
-            logger.debug(
-                "from dashboard_login: user already authenticated => redirect dashboard"
-            )
-            return Redirect("/dashboard")
+        if bcrypt.checkpw(token.encode(), AUTH_TOKEN):
+            logger.debug("User authenticated. Redirecting to dashboard.")
+            return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
+
+    logger.debug("User not authenticated. Returning login page.")
     return Template(template_name="login.html")
 
 
@@ -397,33 +411,33 @@ async def info(state: State) -> dict[str, Any]:
         "STATIC_DIR": state.STATIC_DIR,
         "HOME_DIR": state.HOME_DIR,
         "DEBUG": state.DEBUG,
-        "DEV_MODE": state.DEV_MODE,
         "CONTAINER_PROVIDER": state.CONTAINER_PROVIDER,
     }
 
 
-@dataclass
-class LoginPayload:
-    token: SecretString
-
-
 @post("/api/login")
-async def login(data: LoginPayload, request: Request) -> Optional[Redirect]:  # type: ignore
-    token = request.session.get("token")
+async def login(token: SecretString | None, request: Request) -> Optional[Redirect]:  # type: ignore
+    if AUTH_TOKEN is None:
+        logger.error("AUTH_TOKEN is not set. Cannot authenticate user.")
+        raise InternalServerException(detail="Authentication token is not set.")
+    session_token = request.session.get("token")
+    if session_token is not None:
+        if bcrypt.checkpw(session_token.encode(), AUTH_TOKEN):
+            logger.debug("User logged in with session token. Redirecting to dashboard.")
+            return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
     if token is not None:
-        if compare_digest(token, AUTH_TOKEN):
-            logger.debug("from login: user already logged int => return None")
-            return None
-    token = data.token.get_secret()
-    if compare_digest(token, AUTH_TOKEN):
-        request.set_session({"token": token})
-        logger.debug(
-            f"from login: added token:{token} to session => redirect /dashboard"
-        )
+        if bcrypt.checkpw(token.get_secret().encode(), AUTH_TOKEN):
+            logger.debug(
+                "Authentication token verified. Adding token to session and redirecting to dashboard."
+            )
+            request.set_session({"token": token.get_secret()})
+            return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
+        else:
+            logger.debug("Invalid token provided. Redirecting to login.")
+            return Redirect(f"{blackfish_config.BASE_PATH}/login?success=false")
     else:
-        logger.debug("from login: invalid token => return None")
-        return Redirect("/login/?success=false")
-    return Redirect("/dashboard")
+        logger.debug("No token provided. Redirecting to login.")
+        return Redirect(f"{blackfish_config.BASE_PATH}/login?success=false")
 
 
 @post("/api/logout", guards=ENDPOINT_GUARDS)
@@ -431,8 +445,8 @@ async def logout(request: Request) -> Redirect:  # type: ignore
     token = request.session.get("token")
     if token is not None:
         request.set_session({"token": None})
-        logger.debug("from logout: reset session => redirect /login")
-    return Redirect("/login")
+        logger.debug("from logout: reset session.")
+    return Redirect(f"{blackfish_config.BASE_PATH}/login")
 
 
 @dataclass
@@ -965,7 +979,11 @@ template_config = TemplateConfig(
     engine=JinjaTemplateEngine,
 )
 
-session_config = CookieBackendConfig(secret=urandom(16))
+session_config = CookieBackendConfig(
+    secret=urandom(16),
+    key="bf_user",
+    samesite="none",
+)
 
 next_server = create_static_files_router(
     path="_next",
@@ -985,6 +1003,7 @@ def not_found_exception_handler(request: Request, exc: Exception) -> Template:  
 
 
 app = Litestar(
+    path=blackfish_config.BASE_PATH,
     route_handlers=[
         dashboard,
         dashboard_login,

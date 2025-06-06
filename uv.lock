@@ -258,7 +258,7 @@ wheels = [
 
 [[package]]
 name = "blackfish-ai"
-version = "0.1.0a0"
+version = "0.1.2.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "advanced-alchemy" },
@@ -335,7 +335,7 @@ dev = [
     { name = "mkdocs-swagger-ui-tag", specifier = ">=0.6.11" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.28" },
     { name = "nox", specifier = ">=2024.10.9" },
-    { name = "pre-commit", specifier = ">=4.2.0" },
+    { name = "pre-commit", specifier = ">=4.2" },
     { name = "pytest", specifier = ">=8.3.4" },
 ]
 

@@ -590,7 +590,7 @@ class Service(UUIDAuditBase):
                         )
 
         logger.warning(
-            f"Failed to close tunnel on port {self.port} (pid={pid}). Setting port to None."
+            f"Failed to close tunnel on port {self.port}. Setting port to None."
         )
         self.port = None
 

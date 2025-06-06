@@ -424,18 +424,14 @@ async def login(token: SecretString | None, request: Request) -> Optional[Redire
     if session_token is not None:
         if bcrypt.checkpw(session_token.encode(), AUTH_TOKEN):
             logger.debug("User logged in with session token. Redirecting to dashboard.")
-            return Redirect(
-                f"{blackfish_config.BASE_PATH}/dashboard"
-            )
+            return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
     if token is not None:
         if bcrypt.checkpw(token.get_secret().encode(), AUTH_TOKEN):
             logger.debug(
                 "Authentication token verified. Adding token to session and redirecting to dashboard."
             )
             request.set_session({"token": token.get_secret()})
-            return Redirect(
-                f"{blackfish_config.BASE_PATH}/dashboard"
-            )
+            return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
         else:
             logger.debug("Invalid token provided. Redirecting to login.")
             return Redirect(f"{blackfish_config.BASE_PATH}/login?success=false")

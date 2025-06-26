@@ -60,10 +60,12 @@ from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.response import File
 
 from app.logger import logger
-from app import services
+from app import services, jobs
 from app.services.base import Service, ServiceStatus
 from app.services.speech_recognition import SpeechRecognitionConfig
 from app.services.text_generation import TextGenerationConfig
+from app.jobs.base import BatchJob, BatchJobStatus
+from app.jobs.speech_recognition import SpeechRecognitionBatchConfig
 from app.config import config as blackfish_config
 from app.utils import find_port
 from app.models.profile import (
@@ -86,7 +88,7 @@ def load_service_classes() -> dict[str, Type[Service]]:
             for k, v in module.__dict__.items():
                 if isinstance(v, type) and v.__bases__[0] == Service:
                     service_classes[file.stem] = v
-                    logger.info(f"Added class {k} to service class dictionary.")
+                    logger.debug(f"Added class {k} to service class dictionary.")
 
     return service_classes
 
@@ -94,7 +96,25 @@ def load_service_classes() -> dict[str, Type[Service]]:
 service_classes = load_service_classes()
 
 
+def load_batch_job_classes() -> dict[str, Type[BatchJob]]:
+    batch_job_classes: dict[str, Type[BatchJob]] = {}
+    directory = Path(jobs.__path__[0])
+    for file in directory.glob("*.py"):
+        if not file.stem.startswith("_") and not file.stem == "base":
+            module = import_module(f"app.{directory.stem}.{file.stem}")
+            for k, v in module.__dict__.items():
+                if isinstance(v, type) and v.__bases__[0] == BatchJob:
+                    batch_job_classes[file.stem] = v
+                    logger.debug(f"Added class {k} to batch job class dictionary.")
+
+    return batch_job_classes
+
+
+batch_job_classes = load_batch_job_classes()
+
+
 ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
+BatchContainerConfig = SpeechRecognitionBatchConfig
 
 # --- Auth ---
 AUTH_TOKEN: Optional[bytes] = None
@@ -167,6 +187,19 @@ async def get_service(service_id: str, session: AsyncSession) -> Service | None:
         return res.scalar_one()
     except NoResultFound:
         logger.error(f"Service {service_id} not found.")
+        return None
+
+
+async def get_batch_job(job_id: str, session: AsyncSession) -> BatchJob | None:
+    """Query a single batch job ID from the application database and raise a `NotFoundException`
+    if the service is missing.
+    """
+    query = sa.select(BatchJob).where(BatchJob.id == job_id)
+    res = await session.execute(query)
+    try:
+        return res.scalar_one()
+    except NoResultFound:
+        logger.error(f"Batch job {job_id} not found.")
         return None
 
 
@@ -759,10 +792,235 @@ async def prune_services(session: AsyncSession, state: State) -> int:
     return count
 
 
-async def asyncget(url: StrOrURL) -> Any:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            return await response.json()
+class BatchJobRequest(BaseModel):
+    name: str
+    pipeline: str
+    repo_id: str
+    profile: Profile
+    job_config: JobConfig
+    container_config: BatchContainerConfig
+    mount: Optional[str] = None
+
+
+def build_batch_job(data: BatchJobRequest) -> BatchJob | None:
+    """Convert a batch job request into a batch job object based on the requested pipeline."""
+
+    BatchJobClass = batch_job_classes.get(data.pipeline)
+    logger.debug(f"BatchJobClass: {BatchJobClass}")
+    if BatchJobClass is not None:
+        flattened = {
+            "name": data.name,
+            "repo_id": data.repo_id,
+            "profile": data.profile.name,
+            "home_dir": data.profile.home_dir,
+            "cache_dir": data.profile.cache_dir,
+            "mount": data.mount,
+        }
+        logger.debug(f"flattened: {flattened}")
+        if isinstance(data.profile, LocalProfile):
+            flattened["host"] = "localhost"
+            flattened["provider"] = blackfish_config.CONTAINER_PROVIDER
+        if isinstance(data.profile, SlurmProfile):
+            flattened["user"] = data.profile.user
+            flattened["host"] = data.profile.host
+            flattened["scheduler"] = JobScheduler.Slurm
+
+        logger.debug("Creating batch job")
+        batch_job = BatchJobClass(**flattened)
+        logger.debug(f"Batch job created: {batch_job}")
+        return batch_job
+
+    else:
+        logger.error(
+            f"Failed to build batch job: unrecognized pipeline {data.pipeline}"
+        )
+        return None
+
+
+@post("/api/jobs", guards=ENDPOINT_GUARDS)
+async def run_job(
+    data: BatchJobRequest,
+    session: AsyncSession,
+    state: State,
+) -> BatchJob | None:
+    logger.debug(f"Received job request: {data}")
+
+    logger.debug("Building batch job...")
+    batch_job = build_batch_job(data)
+
+    if batch_job is not None:
+        logger.debug("Attempting to start batch job...")
+        try:
+            await batch_job.start(
+                session,
+                state,
+                job_options=data.job_config,
+                container_options=data.container_config,
+            )
+        except Exception as e:
+            detail = f"Unable to start batch job. Error: {e}"
+            logger.error(detail)
+            raise InternalServerException(detail=detail)
+
+    return batch_job
+
+
+@get("/api/jobs", guards=ENDPOINT_GUARDS)
+async def fetch_jobs(
+    session: AsyncSession,
+    state: State,
+    id: Optional[str] = None,
+    pipeline: Optional[str] = None,
+    repo_id: Optional[str] = None,
+    status: Optional[str] = None,
+    name: Optional[str] = None,
+    profile: Optional[str] = None,
+) -> list[BatchJob]:
+    query_params = {
+        "id": id,
+        "pipeline": pipeline,
+        "repo_id": repo_id,
+        "status": status,
+        "name": name,
+        "profile": profile,
+    }
+
+    query_params = {k: v for k, v in query_params.items() if v is not None}
+    query = sa.select(BatchJob).filter_by(**query_params)
+    logger.debug(f"Executing query {query}...")
+    res = await session.execute(query)
+    jobs = res.scalars().all()
+    logger.debug(f"Found {len(jobs)} matching batch jobs.")
+
+    await asyncio.gather(*[s.update(session, state) for s in jobs])
+
+    return list(jobs)
+
+
+@get("/api/jobs/{id:str}", guards=ENDPOINT_GUARDS)
+async def get_job(
+    id: str,
+    session: AsyncSession,
+    state: State,
+) -> BatchJob | None:
+    """Fetch a job by its ID."""
+    query = sa.select(BatchJob).where(BatchJob.id == id)
+    res = await session.execute(query)
+    try:
+        return res.scalar_one()
+    except NoResultFound:
+        raise NotFoundException(detail=f"Job {id} not found")
+    except Exception as e:
+        logger.error(f"Failed to execute query: {e}")
+        raise InternalServerException(
+            detail="An error occurred while fetching the job."
+        )
+
+
+@put("/api/jobs/{job_id:str}/stop", guards=ENDPOINT_GUARDS)
+async def stop_job(
+    job_id: str,
+    session: AsyncSession,
+    state: State,
+) -> BatchJob | None:
+    """Stop a job by its ID."""
+    job = await get_batch_job(job_id, session)
+    if job is None:
+        logger.debug("HERE")
+        raise NotFoundException(detail=f"Job {job_id} not found")
+
+    try:
+        await job.stop(session, state)
+        return job
+    except Exception as e:
+        logger.error(f"Failed to stop job {job_id}: {e}")
+        raise InternalServerException(
+            detail="An error occurred while stopping the job."
+        )
+
+
+@dataclass
+class DeleteBatchJobResponse:
+    job_id: str
+    status: str
+    message: Optional[str] = None
+
+
+@delete("/api/jobs", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_job(
+    session: AsyncSession,
+    state: State,
+    id: Optional[str] = None,
+    pipeline: Optional[str] = None,
+    model: Optional[str] = None,
+    status: Optional[str] = None,
+    name: Optional[str] = None,
+    profile: Optional[str] = None,
+) -> list[DeleteBatchJobResponse] | None:
+    """Delete batch jobs matching the provided query parameters."""
+
+    query_params = {
+        "id": id,
+        "pipeline": pipeline,
+        "model": model,
+        "status": status,
+        "name": name,
+        "profile": profile,
+    }
+
+    query_params = {k: v for k, v in query_params.items() if v is not None}
+    query = sa.select(BatchJob).filter_by(**query_params)
+    logger.debug(f"Executing query {query}...")
+    query_res = await session.execute(query)
+    jobs = query_res.scalars().all()
+    logger.debug(f"Found {len(jobs)} matching batch jobs.")
+
+    if len(jobs) == 0:
+        logger.warning(
+            f"The query parameters {query_params} did not match any batch jobs."
+        )
+        return []
+
+    await asyncio.gather(*[s.update(session, state) for s in jobs])
+
+    res = []
+    for batch_job in jobs:
+        if batch_job.status in [
+            BatchJobStatus.STOPPED,
+            BatchJobStatus.TIMEOUT,
+            BatchJobStatus.FAILED,
+            None,
+        ]:
+            logger.debug(f"Queueing batch job {batch_job.id} for deletion")
+            deletion = sa.delete(BatchJob).where(BatchJob.id == batch_job.id)
+            try:
+                await session.execute(deletion)
+            except Exception as e:
+                raise InternalServerException(
+                    detail=f"An error occurrred while attempting to delete batch job {batch_job.id.hex}: {e}"
+                )
+            try:
+                job = batch_job.get_job()
+                if job is not None:
+                    job.remove()
+            except Exception as e:
+                logger.warning(
+                    f"Unable to remove job for batch job {batch_job.id.hex}: {e}"
+                )
+            res.append(DeleteBatchJobResponse(job_id=batch_job.id.hex, status="ok"))
+        else:
+            logger.warning(
+                f"Batch job is still running (status={batch_job.status}). Aborting delete."
+            )
+            res.append(
+                DeleteBatchJobResponse(
+                    job_id=batch_job.id.hex,
+                    status="error",
+                    message="Batch job is still running",
+                )
+            )
+
+    return res
 
 
 async def asyncpost(url: StrOrURL, data: Any, headers: Any) -> Any:
@@ -1023,6 +1281,11 @@ app = Litestar(
         delete_service,
         prune_services,
         proxy_service,
+        run_job,
+        fetch_jobs,
+        get_job,
+        stop_job,
+        delete_job,
         create_model,
         get_model,
         get_models,

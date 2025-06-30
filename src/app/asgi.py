@@ -76,7 +76,7 @@ from app.models.profile import (
     BlackfishProfile as Profile,
 )
 from app.models.model import Model
-from app.job import JobConfig, JobScheduler
+from app.job import JobConfig, JobScheduler, SlurmJobConfig
 
 
 def load_service_classes() -> dict[str, Type[Service]]:
@@ -578,9 +578,17 @@ def build_service(data: ServiceRequest) -> Optional[Service]:
         if isinstance(data.profile, LocalProfile):
             flattened["host"] = "localhost"
             flattened["provider"] = blackfish_config.CONTAINER_PROVIDER
-        if isinstance(data.profile, SlurmProfile):
+        if isinstance(data.profile, SlurmProfile) and isinstance(
+            data.job_config, SlurmJobConfig
+        ):
             flattened["host"] = data.profile.host
             flattened["user"] = data.profile.user
+            flattened["time"] = data.job_config.time
+            flattened["ntasks_per_node"] = data.job_config.ntasks_per_node
+            flattened["mem"] = data.job_config.mem
+            flattened["gres"] = data.job_config.gres
+            flattened["partition"] = data.job_config.partition
+            flattened["constraint"] = data.job_config.constraint
             flattened["scheduler"] = JobScheduler.Slurm
 
         return ServiceClass(**flattened)

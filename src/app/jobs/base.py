@@ -29,7 +29,6 @@ class BatchJobStatus(StrEnum):
     COMPLETED = auto()
     STOPPED = auto()
     FAILED = auto()
-    CANCELLED = auto()
     TIMEOUT = auto()
 
 
@@ -221,6 +220,7 @@ class BatchJob(UUIDAuditBase):
         app_config: State,
         timeout: bool = False,
         failed: bool = False,
+        completed: bool = False,
     ) -> None:
         logger.debug(f"Stopping batch job {self.id}")
 
@@ -228,6 +228,7 @@ class BatchJob(UUIDAuditBase):
             BatchJobStatus.STOPPED,
             BatchJobStatus.TIMEOUT,
             BatchJobStatus.FAILED,
+            BatchJobStatus.COMPLETED,
         ]:
             logger.warning(
                 f"Batch job is already stopped (status={self.status}). Aborting stop."
@@ -253,6 +254,8 @@ class BatchJob(UUIDAuditBase):
             self.status = BatchJobStatus.TIMEOUT
         elif failed:
             self.status = BatchJobStatus.FAILED
+        elif completed:
+            self.status = BatchJobStatus.COMPLETED
         else:
             self.status = BatchJobStatus.STOPPED
 
@@ -306,6 +309,13 @@ class BatchJob(UUIDAuditBase):
                 )
                 await self.stop(session, app_config, timeout=True)
                 return BatchJobStatus.TIMEOUT
+            elif job.state == JobState.COMPLETED:
+                logger.debug(
+                    f"Batch job {self.id} has completed. Setting status to"
+                    " COMPLETED and stopping the batch job."
+                )
+                await self.stop(session, app_config, completed=True)
+                return BatchJobStatus.COMPLETED
             elif job.state == JobState.RUNNING:
                 logger.debug(
                     f"Batch job {self.id} is running. Setting status to"
@@ -323,9 +333,7 @@ class BatchJob(UUIDAuditBase):
                     f"Batch job {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
-                await self.stop(
-                    session, app_config, failed=True
-                )  # stop will push to database
+                await self.stop(session, app_config, failed=True)
                 return BatchJobStatus.FAILED
         elif isinstance(job, LocalJob):
             if job.state == JobState.CREATED:
@@ -366,9 +374,7 @@ class BatchJob(UUIDAuditBase):
                     f"Batch job {self.id} has a failed job"
                     f" (job.state={job.state}). Setting status to FAILED."
                 )
-                await self.stop(
-                    session, app_config, failed=True
-                )  # stop will push to database
+                await self.stop(session, app_config, failed=True)
                 return BatchJobStatus.FAILED
 
         return None

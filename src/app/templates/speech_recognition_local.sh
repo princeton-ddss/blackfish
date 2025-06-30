@@ -1,7 +1,7 @@
 {% extends "base_local.sh" %}
 {% block command %}
 {%- if provider == "docker" %}
-docker run -d {{ ' --gpus all' if job_config.gres else '' }} \
+docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
   -p {{ container_config.port }}:{{ container_config.port }} \
   -v {{ mount }}:/data/audio \
   -v {{ container_config.model_dir }}:/data/models \

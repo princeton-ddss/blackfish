@@ -1,7 +1,7 @@
 {% extends "base_slurm.sh" %}
 {% block command %}
 
-XDG_RUNTIME_DIR=""
+export XDG_RUNTIME_DIR=""
 
 apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ mount }}:/data/audio \

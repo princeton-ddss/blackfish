@@ -19,6 +19,9 @@
 {% block prelude %}
 export APPTAINER_CACHEDIR=/scratch/gpfs/{{ profile.user }}/APPTAINER_CACHE
 export APPTAINER_TMPDIR=/tmp
+{%- if job_config.gres > 0 %}
+export APPTAINERENV_CUDA_VISIBLE_DEVICES={{ range(job_config.gres) | join(',') }}
+{%- endif %}
 {% raw %}
 port=$(comm -23 <(seq 8080 8899 | sort) <(ss -Htan | awk '{{print $4}}' | cut -d':' -f2 | sort -u) | shuf | head -n 1)
 {% endraw %}

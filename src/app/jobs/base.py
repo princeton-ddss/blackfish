@@ -60,7 +60,7 @@ class BatchJob(UUIDAuditBase):
     nsuccess: Mapped[Optional[int]]
     nfail: Mapped[Optional[int]]
     scheduler: Mapped[Optional[str]]
-    provider: Mapped[ContainerProvider]
+    provider: Mapped[Optional[ContainerProvider]]
     mount: Mapped[Optional[str]]
     __mapper_args__ = {
         "polymorphic_on": "pipeline",
@@ -404,8 +404,11 @@ class BatchJob(UUIDAuditBase):
                 )
             else:
                 return None
-        else:
+        elif self.provider is not None:
             job = LocalJob(self.job_id, self.provider, self.name)
+        else:
+            logger.warning("Unable to fetch job: `self.provider` missing.")
+            return None
 
         job.update(verbose=verbose)
         return job

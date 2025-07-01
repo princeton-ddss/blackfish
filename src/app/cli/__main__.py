@@ -473,6 +473,14 @@ def details(service_id: str) -> None:  # pragma: no cover
             "port": job.port,
             "name": job.name,
             "state": job.state,
+            "resources": {
+                "time": service.time,
+                "ntasks_per_node": service.ntasks_per_node,
+                "mem": service.mem,
+                "gres": service.gres,
+                "partition": service.partition,
+                "constraint": service.constraint,
+            },
         }
     elif isinstance(job, LocalJob):
         data["job"] = {

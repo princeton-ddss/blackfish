@@ -23,5 +23,7 @@ apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --revision {{ container_config.revision }} \
   --job-id {{ uuid }} \
 {%- endif %}
+{%- if container_config.kwargs %}
   {{ " ".join(container_config.kwargs) }}
+{%- endif %}
 {%- endblock %}

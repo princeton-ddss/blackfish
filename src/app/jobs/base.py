@@ -269,6 +269,7 @@ class BatchJob(UUIDAuditBase):
             BatchJobStatus.STOPPED,
             BatchJobStatus.TIMEOUT,
             BatchJobStatus.FAILED,
+            BatchJobStatus.COMPLETED,
         ]:
             logger.debug(
                 f"Batch job {self.id} is no longer running. Aborting status update."

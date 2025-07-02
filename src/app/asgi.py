@@ -997,6 +997,7 @@ async def delete_job(
             BatchJobStatus.STOPPED,
             BatchJobStatus.TIMEOUT,
             BatchJobStatus.FAILED,
+            BatchJobStatus.COMPLETED,
             None,
         ]:
             logger.debug(f"Queueing batch job {batch_job.id} for deletion")

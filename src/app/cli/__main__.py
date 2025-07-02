@@ -389,7 +389,7 @@ def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
                     f"{LogSymbols.ERROR.value} Failed to delete {len(errors)} {'service' if len(errors) == 1 else 'services'}."
                 )
                 for error in errors:
-                    click.echo(f"- {error['id']} - {error['message']}")
+                    click.echo(f"- {error['job_id']} - {error['message']}")
 
 
 @main.command()

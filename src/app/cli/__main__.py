@@ -4,6 +4,7 @@ import rich_click as click
 from rich_click import Context
 import requests
 import os
+import sys
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 from typing import Optional, cast
@@ -808,7 +809,7 @@ def remove_batch_job(filters: Optional[str]) -> None:
             params = {k: v for k, v in map(lambda x: x.split("="), filters.split(","))}
         except Exception as e:
             click.echo(f"Unable to parse filter: {e}")
-            return
+            sys.exit(1)
     else:
         params = None
 

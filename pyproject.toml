@@ -49,6 +49,8 @@ scripts.blackfish = "app.cli.__main__:main"
 
 [dependency-groups]
 dev = [
+  "anyio>=4.9",
+  "dotenv>=0.9.9",
   "ipython>=9.0.2",
   "locust>=2.33.2",
   "mike>=2.1.3",

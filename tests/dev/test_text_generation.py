@@ -51,7 +51,7 @@ def test_local_slurm():
         },
     }
     requests.post(
-        "http://localhost:8000/services",
+        "http://localhost:8000/api/services",
         data=data,
     )
 
@@ -75,6 +75,6 @@ def test_local():
         },
     }
     requests.post(
-        "http://localhost:8000/services",
+        "http://localhost:8000/api/services",
         data=data,
     )

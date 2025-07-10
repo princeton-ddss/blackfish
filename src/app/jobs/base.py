@@ -284,101 +284,110 @@ class BatchJob(UUIDAuditBase):
 
         job = self.get_job(verbose=True)
         if isinstance(job, SlurmJob):
-            if job.state == JobState.PENDING:
-                logger.debug(
-                    f"Batch job {self.id} has not started. Setting status to PENDING."
-                )
-                self.status = BatchJobStatus.PENDING
-                return BatchJobStatus.PENDING
-            elif job.state == JobState.MISSING:
-                logger.warning(
-                    f"Batch job {self.id} has no job state (this batch job is likely"
-                    " new or has expired). Aborting status update."
-                )
-                return self.status
-            elif job.state == JobState.CANCELLED:
-                logger.debug(
-                    f"Batch job {self.id} has a cancelled job. Setting status to"
-                    " STOPPED and stopping the batch job."
-                )
-                await self.stop(session, app_config)
-                return BatchJobStatus.STOPPED
-            elif job.state == JobState.TIMEOUT:
-                logger.debug(
-                    f"Batch job {self.id} has a timed out job. Setting status to"
-                    " TIMEOUT and stopping the batch job."
-                )
-                await self.stop(session, app_config, timeout=True)
-                return BatchJobStatus.TIMEOUT
-            elif job.state == JobState.COMPLETED:
-                logger.debug(
-                    f"Batch job {self.id} has completed. Setting status to"
-                    " COMPLETED and stopping the batch job."
-                )
-                await self.stop(session, app_config, completed=True)
-                return BatchJobStatus.COMPLETED
-            elif job.state == JobState.RUNNING:
-                logger.debug(
-                    f"Batch job {self.id} is running. Setting status to"
-                    " RUNNING and checking progress."
-                )
-                self.status = BatchJobStatus.RUNNING
-                progress = self.get_progress(app_config)
-                if progress is not None:
-                    self.ntotal = progress.ntotal
-                    self.nsuccess = progress.nsuccess
-                    self.nfail = progress.nfail
-                return BatchJobStatus.RUNNING
-            else:
-                logger.debug(
-                    f"Batch job {self.id} has a failed job"
-                    f" (job.state={job.state}). Setting status to FAILED."
-                )
-                await self.stop(session, app_config, failed=True)
-                return BatchJobStatus.FAILED
+            return await self.update_from_slurm(session, app_config, job)
         elif isinstance(job, LocalJob):
-            if job.state == JobState.CREATED:
-                logger.debug(
-                    f"Batch job {self.id} has not started. Setting status to PENDING."
-                )
-                self.status = BatchJobStatus.PENDING
-                return BatchJobStatus.PENDING
-            elif job.state == JobState.MISSING:
-                logger.warning(
-                    f"Batch job {self.id} has a missing job state (this batch job is likely"
-                    " new or has expired). Aborting status update."
-                )
-                return self.status
-            elif job.state == JobState.EXITED:
-                logger.debug(
-                    f"Batch job {self.id} has exited. Setting status to"
-                    " STOPPED and stopping the batch job."
-                )
-                await self.stop(session, app_config)
-                return BatchJobStatus.STOPPED
-            elif job.state == JobState.RUNNING:
-                logger.debug(
-                    f"Batch job {self.id} is running. Setting status to"
-                    " RUNNING and checking progress."
-                )
-                self.status = BatchJobStatus.RUNNING
-                progress = self.get_progress(app_config)
-                if progress is not None:
-                    self.ntotal = progress.ntotal
-                    self.nsuccess = progress.nsuccess
-                    self.nfail = progress.nfail
-                return BatchJobStatus.RUNNING
-            elif job.state in [JobState.RESTARTING, JobState.PAUSED]:
-                raise NotImplementedError
-            else:
-                logger.debug(
-                    f"Batch job {self.id} has a failed job"
-                    f" (job.state={job.state}). Setting status to FAILED."
-                )
-                await self.stop(session, app_config, failed=True)
-                return BatchJobStatus.FAILED
-
+            return await self.update_from_local(session, app_config, job)
         return None
+
+    async def update_from_slurm(
+        self, session: AsyncSession, app_config: State, job: SlurmJob
+    ) -> BatchJobStatus | None:
+        if job.state == JobState.PENDING:
+            logger.debug(
+                f"Batch job {self.id} has not started. Setting status to PENDING."
+            )
+            self.status = BatchJobStatus.PENDING
+            return BatchJobStatus.PENDING
+        elif job.state == JobState.MISSING:
+            logger.warning(
+                f"Batch job {self.id} has no job state (this batch job is likely"
+                " new or has expired). Aborting status update."
+            )
+            return self.status
+        elif job.state == JobState.CANCELLED:
+            logger.debug(
+                f"Batch job {self.id} has a cancelled job. Setting status to"
+                " STOPPED and stopping the batch job."
+            )
+            await self.stop(session, app_config)
+            return BatchJobStatus.STOPPED
+        elif job.state == JobState.TIMEOUT:
+            logger.debug(
+                f"Batch job {self.id} has a timed out job. Setting status to"
+                " TIMEOUT and stopping the batch job."
+            )
+            await self.stop(session, app_config, timeout=True)
+            return BatchJobStatus.TIMEOUT
+        elif job.state == JobState.COMPLETED:
+            logger.debug(
+                f"Batch job {self.id} has completed. Setting status to"
+                " COMPLETED and stopping the batch job."
+            )
+            await self.stop(session, app_config, completed=True)
+            return BatchJobStatus.COMPLETED
+        elif job.state == JobState.RUNNING:
+            logger.debug(
+                f"Batch job {self.id} is running. Setting status to"
+                " RUNNING and checking progress."
+            )
+            self.status = BatchJobStatus.RUNNING
+            progress = self.get_progress(app_config)
+            if progress is not None:
+                self.ntotal = progress.ntotal
+                self.nsuccess = progress.nsuccess
+                self.nfail = progress.nfail
+            return BatchJobStatus.RUNNING
+        else:
+            logger.debug(
+                f"Batch job {self.id} has a failed job"
+                f" (job.state={job.state}). Setting status to FAILED."
+            )
+            await self.stop(session, app_config, failed=True)
+            return BatchJobStatus.FAILED
+
+    async def update_from_local(
+        self, session: AsyncSession, app_config: State, job: LocalJob
+    ) -> BatchJobStatus | None:
+        if job.state == JobState.CREATED:
+            logger.debug(
+                f"Batch job {self.id} has not started. Setting status to PENDING."
+            )
+            self.status = BatchJobStatus.PENDING
+            return BatchJobStatus.PENDING
+        elif job.state == JobState.MISSING:
+            logger.warning(
+                f"Batch job {self.id} has a missing job state (this batch job is likely"
+                " new or has expired). Aborting status update."
+            )
+            return self.status
+        elif job.state == JobState.EXITED:
+            logger.debug(
+                f"Batch job {self.id} has exited. Setting status to"
+                " STOPPED and stopping the batch job."
+            )
+            await self.stop(session, app_config)
+            return BatchJobStatus.STOPPED
+        elif job.state == JobState.RUNNING:
+            logger.debug(
+                f"Batch job {self.id} is running. Setting status to"
+                " RUNNING and checking progress."
+            )
+            self.status = BatchJobStatus.RUNNING
+            progress = self.get_progress(app_config)
+            if progress is not None:
+                self.ntotal = progress.ntotal
+                self.nsuccess = progress.nsuccess
+                self.nfail = progress.nfail
+            return BatchJobStatus.RUNNING
+        elif job.state in [JobState.RESTARTING, JobState.PAUSED]:
+            raise NotImplementedError
+        else:
+            logger.debug(
+                f"Batch job {self.id} has a failed job"
+                f" (job.state={job.state}). Setting status to FAILED."
+            )
+            await self.stop(session, app_config, failed=True)
+            return BatchJobStatus.FAILED
 
     def get_progress(self, app_config: State) -> BatchJobProgress | None:
         raise NotImplementedError(

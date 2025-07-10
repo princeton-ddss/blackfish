@@ -42,7 +42,7 @@ from litestar.exceptions import (
     HTTPException,
     ValidationException,
 )
-from litestar.status_codes import HTTP_409_CONFLICT
+from litestar.status_codes import HTTP_409_CONFLICT, HTTP_404_NOT_FOUND
 from litestar.config.cors import CORSConfig
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
@@ -1266,7 +1266,7 @@ img_server = create_static_files_router(
 
 
 def not_found_exception_handler(request: Request, exc: Exception) -> Template:  # type: ignore
-    return Template(template_name="404.html")
+    return Template(template_name="404.html", status_code=HTTP_404_NOT_FOUND)
 
 
 app = Litestar(

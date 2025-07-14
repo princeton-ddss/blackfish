@@ -50,6 +50,8 @@ scripts.blackfish = "app.cli.__main__:main"
 [dependency-groups]
 dev = [
   "anyio>=4.9",
+  "coverage>=7.9.2",
+  "coverage-badge>=1.1.2",
   "dotenv>=0.9.9",
   "ipython>=9.0.2",
   "locust>=2.33.2",
@@ -61,6 +63,7 @@ dev = [
   "nox>=2024.10.9",
   "pre-commit>=4.2",
   "pytest>=8.3.4",
+  "pytest-cov>=6.2.1",
 ]
 
 [tool.hatch.build.targets.wheel]

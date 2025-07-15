@@ -43,6 +43,7 @@ class SpeechRecognitionBatch(BatchJob):
             f"Fetching progress from {os.path.join(self.mount, f'.checkpoint-{self.id.hex}')}"
         )
         if profile.is_local():
+            logger.debug("Using local profile to fetch progress.")
             try:
                 with open(
                     os.path.join(self.mount, f".checkpoint-{self.id.hex}"),

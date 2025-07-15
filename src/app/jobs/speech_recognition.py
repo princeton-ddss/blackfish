@@ -9,7 +9,7 @@ from litestar.datastructures import State
 
 from app.jobs.base import BatchJob, BaseConfig, BatchJobProgress
 from app.logger import logger
-from app.models.profile import LocalProfile, SlurmProfile
+from app.models.profile import SlurmProfile
 
 
 @dataclass
@@ -29,6 +29,11 @@ class SpeechRecognitionBatch(BatchJob):
     def get_progress(self, app_config: State) -> BatchJobProgress | None:
         """Fetch the progress of the batch job."""
         profile = self.get_profile(app_config)
+        if profile is None:
+            logger.warning(
+                f"Unable to fetch progress: batch job {self.id} is missing a `profile`."
+            )
+            return None
         if self.mount is None:
             logger.warning(
                 f"Unable to fetch progress: batch job {self.id} is missing a `mount`."
@@ -37,7 +42,7 @@ class SpeechRecognitionBatch(BatchJob):
         logger.debug(
             f"Fetching progress from {os.path.join(self.mount, f'.checkpoint-{self.id.hex}')}"
         )
-        if isinstance(profile, LocalProfile):
+        if profile.is_local():
             try:
                 with open(
                     os.path.join(self.mount, f".checkpoint-{self.id.hex}"),

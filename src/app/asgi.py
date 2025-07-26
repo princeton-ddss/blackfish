@@ -1249,7 +1249,7 @@ template_config = TemplateConfig(
 session_config = CookieBackendConfig(
     secret=urandom(16),
     key="bf_user",
-    samesite="none",
+    # samesite="none",
 )
 
 next_server = create_static_files_router(

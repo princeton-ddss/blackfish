@@ -18,7 +18,7 @@ jobs:
     name: Lint code 🧹
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: wntrblm/nox@main
       - name: Set up Python 3.x
         uses: actions/setup-python@v5
@@ -38,7 +38,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: wntrblm/nox@main
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure Git Credentials
         run: |
           git config user.name github-actions[bot]
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure Git Credentials
         run: |
           git config user.name github-actions[bot]
@@ -101,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Set up Python 3.x
@@ -131,7 +131,7 @@ jobs:
 
     steps:
     - name: Download distributions
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: python-package-distributions
         path: dist/

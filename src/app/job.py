@@ -36,6 +36,11 @@ class JobState(StrEnum):
     STOPPED = auto()
 
 
+def format_state(status: JobState | str | None) -> str:
+    """Format job status for display."""
+    return status.upper() if status else "NONE"
+
+
 class JobScheduler(StrEnum):
     Slurm = auto()
 
@@ -153,7 +158,7 @@ class SlurmJob(Job):
             new_state = parse_state(res)
             if verbose:
                 logger.debug(
-                    f"The current job state is: {new_state} (job_id={self.job_id})"
+                    f"The current job state is: {format_state(new_state)} (job_id={self.job_id})"
                 )
             if (
                 self.state in [None, JobState.MISSING, JobState.PENDING]
@@ -163,7 +168,7 @@ class SlurmJob(Job):
             ):
                 if verbose:
                     logger.debug(
-                        f"Job state updated from {self.state} to RUNNING"
+                        f"Job state updated from {format_state(self.state)} to RUNNING"
                         f" (job_id={self.job_id}). Fetching node and port."
                     )
                 self.fetch_node()
@@ -171,7 +176,7 @@ class SlurmJob(Job):
             elif self.state is not None and self.state != new_state:
                 if verbose:
                     logger.debug(
-                        f"Job state updated from {self.state} to {new_state}"
+                        f"Job state updated from {format_state(self.state)} to {format_state(new_state)}"
                         f" (job_id={self.job_id})."
                     )
             self.state = new_state
@@ -234,6 +239,7 @@ class SlurmJob(Job):
 
         return self.node
 
+    # TODO: fetch_port doesn't seem to be a SlurmJob method because it only depends on the service.
     def fetch_port(self) -> Optional[int]:
         """Attempt to update the job port and return the new port (or the current
         port if the update fails)
@@ -293,7 +299,9 @@ class SlurmJob(Job):
                 self.fetch_port()
                 return {"ok": True}
             else:
-                logger.debug(f"job {self.job_id} failed (state={self.state}).")
+                logger.debug(
+                    f"job {self.job_id} failed (state={format_state(self.state)})."
+                )
                 return {"ok": False}
 
             time.sleep(period)
@@ -348,12 +356,12 @@ class LocalJob(Job):
                 new_state = parse_state(res)
                 if verbose:
                     logger.debug(
-                        f"The current job state is: {new_state} (job_id={self.job_id})"
+                        f"The current job state is: {format_state(new_state)} (job_id={self.job_id})"
                     )
                 if self.state is not None and self.state != new_state:
                     if verbose:
                         logger.debug(
-                            f"Job state updated from {self.state} to {new_state}"
+                            f"Job state updated from {format_state(self.state)} to {format_state(new_state)}"
                             f" (job_id={self.job_id})"
                         )
                 self.state = new_state
@@ -369,12 +377,12 @@ class LocalJob(Job):
 
                 if verbose:
                     logger.debug(
-                        f"The current job state is: {new_state} (job_id={self.job_id})"
+                        f"The current job state is: {format_state(new_state)} (job_id={self.job_id})"
                     )
                 if self.state is not None and self.state != new_state:
                     if verbose:
                         logger.debug(
-                            f"Job state updated from {self.state} to {new_state}"
+                            f"Job state updated from {format_state(self.state)} to {format_state(new_state)}"
                             f" (job_id={self.job_id})."
                         )
                 self.state = new_state

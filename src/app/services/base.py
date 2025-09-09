@@ -59,6 +59,12 @@ class Service(UUIDAuditBase):
     job_id: Mapped[Optional[str]]
     port: Mapped[Optional[int]]
     status: Mapped[Optional[ServiceStatus]]
+    time: Mapped[Optional[str]]
+    ntasks_per_node: Mapped[Optional[int]]
+    mem: Mapped[Optional[int]]
+    gres: Mapped[Optional[str]]
+    partition: Mapped[Optional[str]]
+    constraint: Mapped[Optional[str]]
 
     scheduler: Mapped[Optional[str]]
     provider: Mapped[Optional[ContainerProvider]]

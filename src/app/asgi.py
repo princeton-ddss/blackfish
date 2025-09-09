@@ -807,7 +807,7 @@ class BatchJobRequest(BaseModel):
     profile: Profile
     job_config: JobConfig
     container_config: BatchContainerConfig
-    mount: Optional[str] = None
+    mount: str
 
 
 def build_batch_job(data: BatchJobRequest) -> BatchJob | None:
@@ -824,11 +824,16 @@ def build_batch_job(data: BatchJobRequest) -> BatchJob | None:
             "cache_dir": data.profile.cache_dir,
             "mount": data.mount,
         }
-        logger.debug(f"flattened: {flattened}")
+
         if isinstance(data.profile, LocalProfile):
             flattened["host"] = "localhost"
+            if blackfish_config.CONTAINER_PROVIDER is None:
+                logger.error(
+                    "Failed to build batch job: blackfish config is missing a container provider"
+                )
+                return None
             flattened["provider"] = blackfish_config.CONTAINER_PROVIDER
-        if isinstance(data.profile, SlurmProfile):
+        elif isinstance(data.profile, SlurmProfile):
             flattened["user"] = data.profile.user
             flattened["host"] = data.profile.host
             flattened["scheduler"] = JobScheduler.Slurm

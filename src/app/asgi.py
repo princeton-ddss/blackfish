@@ -21,7 +21,7 @@ from paramiko.sftp_client import SFTPClient
 from pydantic import BaseModel
 
 import sqlalchemy as sa
-from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.exc import IntegrityError, NoResultFound, StatementError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import Result
 
@@ -191,11 +191,15 @@ async def get_service(service_id: str, session: AsyncSession) -> Service | None:
 
 
 async def get_batch_job(job_id: str, session: AsyncSession) -> BatchJob | None:
-    """Query a single batch job ID from the application database and raise a `NotFoundException`
-    if the service is missing.
+    """Query a single batch job ID from the application database and return `None`
+    if the service is missing or the query fails.
     """
-    query = sa.select(BatchJob).where(BatchJob.id == job_id)
-    res = await session.execute(query)
+    try:
+        query = sa.select(BatchJob).where(BatchJob.id == job_id)
+        res = await session.execute(query)
+    except StatementError:
+        logger.error(f"{job_id} is not a valid UUID.")
+        return None
     try:
         return res.scalar_one()
     except NoResultFound:
@@ -814,7 +818,6 @@ def build_batch_job(data: BatchJobRequest) -> BatchJob | None:
     """Convert a batch job request into a batch job object based on the requested pipeline."""
 
     BatchJobClass = batch_job_classes.get(data.pipeline)
-    logger.debug(f"BatchJobClass: {BatchJobClass}")
     if BatchJobClass is not None:
         flattened = {
             "name": data.name,
@@ -838,7 +841,6 @@ def build_batch_job(data: BatchJobRequest) -> BatchJob | None:
             flattened["host"] = data.profile.host
             flattened["scheduler"] = JobScheduler.Slurm
 
-        logger.debug("Creating batch job")
         batch_job = BatchJobClass(**flattened)
         logger.debug(f"Batch job created: {batch_job}")
         return batch_job
@@ -875,7 +877,9 @@ async def run_job(
             logger.error(detail)
             raise InternalServerException(detail=detail)
 
-    return batch_job
+        return batch_job
+    else:
+        raise ValidationException(detail="Invalid pipeline {data.pipeline}")
 
 
 @get("/api/jobs", guards=ENDPOINT_GUARDS)
@@ -901,7 +905,11 @@ async def fetch_jobs(
     query_params = {k: v for k, v in query_params.items() if v is not None}
     query = sa.select(BatchJob).filter_by(**query_params)
     logger.debug(f"Executing query {query}...")
-    res = await session.execute(query)
+    try:
+        res = await session.execute(query)
+    except StatementError as e:
+        raise ValidationException(detail=f"Invalid query statement: {e}")
+
     jobs = res.scalars().all()
     logger.debug(f"Found {len(jobs)} matching batch jobs.")
 
@@ -918,16 +926,19 @@ async def get_job(
 ) -> BatchJob | None:
     """Fetch a job by its ID."""
     query = sa.select(BatchJob).where(BatchJob.id == id)
-    res = await session.execute(query)
     try:
-        return res.scalar_one()
-    except NoResultFound:
-        raise NotFoundException(detail=f"Job {id} not found")
+        res = await session.execute(query)
+    except StatementError:
+        raise NotFoundException(detail=f"Job {id} not found. Invalid job ID {id}")
     except Exception as e:
         logger.error(f"Failed to execute query: {e}")
         raise InternalServerException(
             detail="An error occurred while fetching the job."
         )
+    try:
+        return res.scalar_one()
+    except NoResultFound:
+        raise NotFoundException(detail=f"Job {id} not found")
 
 
 @put("/api/jobs/{job_id:str}/stop", guards=ENDPOINT_GUARDS)
@@ -939,7 +950,6 @@ async def stop_job(
     """Stop a job by its ID."""
     job = await get_batch_job(job_id, session)
     if job is None:
-        logger.debug("HERE")
         raise NotFoundException(detail=f"Job {job_id} not found")
 
     try:
@@ -983,8 +993,13 @@ async def delete_job(
 
     query_params = {k: v for k, v in query_params.items() if v is not None}
     query = sa.select(BatchJob).filter_by(**query_params)
+
     logger.debug(f"Executing query {query}...")
-    query_res = await session.execute(query)
+    try:
+        query_res = await session.execute(query)
+    except StatementError as e:
+        raise ValidationException(detail=f"Invalid query statement: {e}")
+
     jobs = query_res.scalars().all()
     logger.debug(f"Found {len(jobs)} matching batch jobs.")
 
@@ -1010,9 +1025,17 @@ async def delete_job(
             try:
                 await session.execute(deletion)
             except Exception as e:
-                raise InternalServerException(
-                    detail=f"An error occurrred while attempting to delete batch job {batch_job.id.hex}: {e}"
+                logger.error(
+                    f"An error occurrred while attempting to delete batch job {batch_job.id.hex}: {e}"
                 )
+                res.append(
+                    DeleteBatchJobResponse(
+                        job_id=batch_job.id.hex,
+                        status="error",
+                        message=f"Delete query error: {e}",
+                    )
+                )
+                continue
             try:
                 job = batch_job.get_job()
                 if job is not None:
@@ -1024,7 +1047,7 @@ async def delete_job(
             res.append(DeleteBatchJobResponse(job_id=batch_job.id.hex, status="ok"))
         else:
             logger.warning(
-                f"Batch job is still running (status={batch_job.status}). Aborting delete."
+                f"Batch job {batch_job.id.hex} is still running (status={batch_job.status}). Aborting delete."
             )
             res.append(
                 DeleteBatchJobResponse(

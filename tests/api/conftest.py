@@ -34,7 +34,7 @@ async def _seed_db(
         db.add_all([s["class"](**s["data"]) for s in services])
         await db.commit()
 
-    # Add batch jobs to the database  
+    # Add batch jobs to the database
     async with sessionmaker() as db:
         db.add_all([j["class"](**j["data"]) for j in jobs])
         await db.commit()
@@ -60,5 +60,5 @@ async def client_fixture(app) -> AsyncGenerator[AsyncTestClient, None]:
     async with AsyncTestClient(app=app) as client:
         # Authenticate the client
         await client.post("/api/login?token=sealsaretasty")
-        
+
         yield client

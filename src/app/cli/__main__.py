@@ -516,7 +516,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     """List services"""
 
     from typing import Any
-    from prettytable import PrettyTable, PLAIN_COLUMNS
+    from prettytable import PrettyTable, TableStyle
     from datetime import datetime
     from app.utils import format_datetime
     from app.services.base import ServiceStatus
@@ -534,7 +534,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
             "PROFILE",
         ]
     )
-    tab.set_style(PLAIN_COLUMNS)
+    tab.set_style(TableStyle.PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
 
@@ -694,7 +694,7 @@ def list_batch_jobs(
     """List batches"""
 
     from typing import Any
-    from prettytable import PrettyTable, PLAIN_COLUMNS
+    from prettytable import PrettyTable, TableStyle
     from datetime import datetime
     from app.utils import format_datetime
     from app.jobs.base import BatchJobStatus
@@ -712,7 +712,7 @@ def list_batch_jobs(
             "PROFILE",
         ]
     )
-    tab.set_style(PLAIN_COLUMNS)
+    tab.set_style(TableStyle.PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
 
@@ -877,7 +877,7 @@ def models_ls(
 ) -> None:  # pragma: no cover
     """Show available (downloaded) models."""
 
-    from prettytable import PrettyTable, PLAIN_COLUMNS
+    from prettytable import PrettyTable, TableStyle
 
     params = f"refresh={refresh}"
     if profile is not None:
@@ -900,13 +900,13 @@ def models_ls(
             "IMAGE",
         ]
     )
-    tab.set_style(PLAIN_COLUMNS)
+    tab.set_style(TableStyle.PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
 
     if len(res.json()) == 0:
         click.echo(
-            f"{LogSymbols.WARNING.value} No models found. Is '{profile}' a profile on this host?"
+            f"{LogSymbols.WARNING.value} No models found. You can try using the `--refresh` flag to find newly added models."
         )
 
     for model in res.json():

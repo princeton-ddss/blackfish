@@ -886,9 +886,16 @@ def models_ls(
         params += f"&image={image}"
 
     with yaspin(text="Fetching models") as spinner:
-        res = requests.get(f"http://{config.HOST}:{config.PORT}/api/models?{params}")
-        if not res.ok:
-            spinner.text = f"Error: {res.status_code}"
+        try:
+            res = requests.get(
+                f"http://{config.HOST}:{config.PORT}/api/models?{params}"
+            )
+            if not res.ok:
+                spinner.text = f"Blackfish API encountered an error: {res.status_code}"
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
 
@@ -995,24 +1002,27 @@ def models_add(
         return
 
     with yaspin(text="Inserting model to database...") as spinner:
-        res = requests.post(
-            f"http://{config.HOST}:{config.PORT}/api/models",
-            json={
-                "repo": model.repo,
-                "profile": model.profile,
-                "revision": model.revision,
-                "image": model.image,
-                "model_dir": path,
-            },
-        )
-        if not res.ok:
-            spinner.text = (
-                f"Failed to insert model {repo_id} ({res.status_code}: {res.reason})"
+        try:
+            res = requests.post(
+                f"http://{config.HOST}:{config.PORT}/api/models",
+                json={
+                    "repo": model.repo,
+                    "profile": model.profile,
+                    "revision": model.revision,
+                    "image": model.image,
+                    "model_dir": path,
+                },
             )
+            if not res.ok:
+                spinner.text = f"Failed to insert model {repo_id} ({res.status_code}: {res.reason})"
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+            else:
+                spinner.text = f"Added model {repo_id}."
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
-        else:
-            spinner.text = f"Added model {repo_id}."
-            spinner.ok(f"{LogSymbols.SUCCESS.value}")
+            return
 
 
 @model.command(name="rm")

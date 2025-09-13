@@ -1,4 +1,5 @@
 import pytest
+import requests
 from unittest.mock import patch, Mock
 from app.cli.__main__ import main
 
@@ -47,7 +48,7 @@ from app.cli.__main__ import main
             False,
             {"json": {}, "status_code": 500},
             0,
-            "Error: 500",
+            "Blackfish API encountered an error: 500",
         ),
         # With profile filter
         (
@@ -458,3 +459,57 @@ def test_missing_required_arguments(
 
     assert result.exit_code == expected_exit_code
     assert expected_in_output in result.output or "Usage:" in result.output
+
+
+def test_list_models_connection_error(cli_runner):
+    """Test that connection errors are handled gracefully."""
+
+    with (
+        patch("app.config.config") as mock_config,
+        patch("app.cli.__main__.requests.get") as mock_get,
+    ):
+        # Mock config
+        mock_config.HOST = "localhost"
+        mock_config.PORT = "8080"  # wrong port
+
+        # Mock requests.post raises ConnectionError
+        mock_get.side_effect = requests.exceptions.ConnectionError("Connection failed")
+
+        result = cli_runner.invoke(main, ["model", "ls"])
+
+        assert "Failed to connect" in result.output
+        assert result.exit_code == 0
+
+
+def test_add_model_connection_error(cli_runner):
+    with (
+        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
+        patch("app.models.model.add_model") as mock_add_model,
+        patch("app.cli.__main__.requests.post") as mock_post,
+        patch("app.config.config") as mock_config,
+    ):
+        # Mock config
+        mock_config.HOST = "localhost"
+        mock_config.PORT = "8080"  # wrong port
+
+        # Mock profile deserialization
+        mock_profile = Mock()
+        mock_profile.name = "test"
+        mock_profile.is_local.return_value = True
+        mock_deserialize_profile.return_value = mock_profile
+
+        # Mock add model
+        mock_model = Mock()
+        mock_model.repo = "openai/whisper-tiny"
+        mock_model.profile = "default"
+        mock_model.revision = "main"
+        mock_model.image = "speech-recognition"
+        mock_add_model.return_value = (mock_model, "/path/to/model")
+
+        # Mock requests.post raises ConnectionError
+        mock_post.side_effect = requests.exceptions.ConnectionError("Connection failed")
+
+        result = cli_runner.invoke(main, ["model", "add", "openai/whisper-tiny"])
+
+        assert "Failed to connect" in result.output
+        assert result.exit_code == 0

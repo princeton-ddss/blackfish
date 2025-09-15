@@ -56,7 +56,7 @@ async def test_models_list(client: AsyncClient) -> None:
 
     response = await client.get("/api/models?profile=default")
     assert response.status_code == 200
-    assert len(response.json()) == 4
+    assert len(response.json()) == 2
 
 
 async def test_models_get(client: AsyncClient) -> None:

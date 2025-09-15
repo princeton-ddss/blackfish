@@ -1219,8 +1219,10 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
+        logger.debug("Fetching profiles")
         return deserialize_profiles(blackfish_config.HOME_DIR)
     except FileNotFoundError:
+        logger.error("Profiles config not found.")
         raise NotFoundException(detail="Profiles config not found.")
 
 
@@ -1228,6 +1230,9 @@ async def read_profiles() -> list[Profile]:
 async def read_profile(name: str) -> Profile | None:
     try:
         profile = deserialize_profile(blackfish_config.HOME_DIR, name)
+    except FileNotFoundError:
+        logger.debug("Profiles config not found.")
+        raise NotFoundException(detail="Profile config not found.")
     except Exception as e:
         raise InternalServerException(detail=f"Failed to deserialize profile: {e}.")
 

@@ -1132,7 +1132,7 @@ async def get_models(
                 return list()
             models = await find_models(matched)
             logger.debug(
-                "Deleting existing models WHERE model.profile == '{profile}'..."
+                f"Deleting existing models WHERE model.profile == '{profile}'..."
             )
             try:
                 delete_query = sa.delete(Model).where(Model.profile == profile)
@@ -1185,9 +1185,12 @@ async def get_models(
 
 @get("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def get_model(model_id: str, session: AsyncSession) -> Model:
-    logger.info(f"Model={model_id}")
     query = sa.select(Model).where(Model.id == model_id)
-    res = await session.execute(query)
+    try:
+        res = await session.execute(query)
+    except StatementError:
+        logger.error(f"{model_id} is not a valid UUID.")
+        raise ValidationException(detail=f"{model_id} is not a valid UUID.")
     try:
         return res.scalar_one()
     except NoResultFound as e:
@@ -1202,8 +1205,15 @@ async def create_model(data: Model, session: AsyncSession) -> Model:
 
 @delete("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_model(model_id: str, session: AsyncSession) -> None:
-    query = sa.delete(Model).where(Model.id == model_id)
-    await session.execute(query)
+    try:
+        query = sa.delete(Model).where(Model.id == model_id)
+        res = await session.execute(query)
+    except StatementError:
+        logger.error(f"{model_id} is not a valid UUID.")
+        raise ValidationException(detail="{model_id} is not a valid UUID.")
+
+    if res.rowcount == 0:
+        raise NotFoundException(detail="No model deleted: {model_id} not found.")
 
 
 @get("/api/profiles", guards=ENDPOINT_GUARDS)

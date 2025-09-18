@@ -233,7 +233,7 @@ def find_port(
             if port == upper - 1:
                 if use_stdout:
                     print(
-                        f"{LogSymbols.ERROR.value} Failed to bind port {port} on host"
+                        f"{LogSymbols.WARNING.value} Failed to bind port {port} on host"
                         f" {host}."
                     )
                 else:

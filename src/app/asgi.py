@@ -15,6 +15,7 @@ import itertools
 from pathlib import Path
 import bcrypt
 from importlib import import_module
+from uuid import UUID
 
 from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
@@ -177,19 +178,6 @@ else:
 
 
 # --- Utils ---
-async def get_service(service_id: str, session: AsyncSession) -> Service | None:
-    """Query a single service ID from the application database and raise a `NotFoundException`
-    if the service is missing.
-    """
-    query = sa.select(Service).where(Service.id == service_id)
-    res = await session.execute(query)
-    try:
-        return res.scalar_one()
-    except NoResultFound:
-        logger.error(f"Service {service_id} not found.")
-        return None
-
-
 async def get_batch_job(job_id: str, session: AsyncSession) -> BatchJob | None:
     """Query a single batch job ID from the application database and return `None`
     if the service is missing or the query fails.
@@ -565,41 +553,57 @@ class StopServiceRequest:
     failed: bool = False
 
 
-def build_service(data: ServiceRequest) -> Optional[Service]:
+def build_service(data: ServiceRequest) -> Service:
     """Convert a service request into a service object based on the requested image."""
 
     ServiceClass = service_classes.get(data.image)
-    if ServiceClass is not None:
-        flattened = {
-            "name": data.name,
-            "model": data.repo_id,
-            "profile": data.profile.name,
-            "home_dir": data.profile.home_dir,
-            "cache_dir": data.profile.cache_dir,
-            "mount": data.mount,
-            "grace_period": data.grace_period,
-        }
-        if isinstance(data.profile, LocalProfile):
-            flattened["host"] = "localhost"
-            flattened["provider"] = blackfish_config.CONTAINER_PROVIDER
-        if isinstance(data.profile, SlurmProfile) and isinstance(
-            data.job_config, SlurmJobConfig
-        ):
-            flattened["host"] = data.profile.host
-            flattened["user"] = data.profile.user
-            flattened["time"] = data.job_config.time
-            flattened["ntasks_per_node"] = data.job_config.ntasks_per_node
-            flattened["mem"] = data.job_config.mem
-            flattened["gres"] = data.job_config.gres
-            flattened["partition"] = data.job_config.partition
-            flattened["constraint"] = data.job_config.constraint
-            flattened["scheduler"] = JobScheduler.Slurm
 
-        return ServiceClass(**flattened)
+    if ServiceClass is None:
+        raise ValidationException(
+            detail=f"Unrecognized service image {data.image}",
+            extra=[
+                {"message": "Invalid service request", "key": "image", "source": "data"}
+            ],
+        )
 
-    else:
-        logger.error(f"build_service received unrecognized image {data.image}")
-        return None
+    flattened = {
+        "name": data.name,
+        "model": data.repo_id,
+        "profile": data.profile.name,
+        "home_dir": data.profile.home_dir,
+        "cache_dir": data.profile.cache_dir,
+        "mount": data.mount,
+        "grace_period": data.grace_period,
+    }
+
+    if isinstance(data.profile, LocalProfile):
+        if blackfish_config.CONTAINER_PROVIDER is None:
+            raise ValidationException(
+                detail="Container provider is None",
+                extra=[
+                    {
+                        "message": "Invalid config",
+                        "key": "CONTAINER_PROVIDER",
+                        "source": "config",
+                    }
+                ],
+            )
+        flattened["host"] = "localhost"
+        flattened["provider"] = blackfish_config.CONTAINER_PROVIDER
+    if isinstance(data.profile, SlurmProfile) and isinstance(
+        data.job_config, SlurmJobConfig
+    ):
+        flattened["host"] = data.profile.host
+        flattened["user"] = data.profile.user
+        flattened["time"] = data.job_config.time
+        flattened["ntasks_per_node"] = data.job_config.ntasks_per_node
+        flattened["mem"] = data.job_config.mem
+        flattened["gres"] = data.job_config.gres
+        flattened["partition"] = data.job_config.partition
+        flattened["constraint"] = data.job_config.constraint
+        flattened["scheduler"] = JobScheduler.Slurm
+
+    return ServiceClass(**flattened)
 
 
 @post("/api/services", guards=ENDPOINT_GUARDS)
@@ -607,29 +611,28 @@ async def run_service(
     data: ServiceRequest,
     session: AsyncSession,
     state: State,
-) -> Optional[Service]:
+) -> Service:
     service = build_service(data)
-    if service is not None:
-        try:
-            await service.start(
-                session,
-                state,
-                container_options=data.container_config,
-                job_options=data.job_config,
-            )
-        except Exception as e:
-            detail = f"Unable to start service. Error: {e}"
-            logger.error(detail)
-            raise InternalServerException(detail=detail)
+
+    try:
+        await service.start(
+            session,
+            state,
+            container_options=data.container_config,
+            job_options=data.job_config,
+        )
+    except Exception as e:
+        logger.error(f"Failed to start service: {e}")
+        raise InternalServerException(detail=f"Failed to start service: {e}")
 
     return service
 
 
 @put("/api/services/{service_id:str}/stop", guards=ENDPOINT_GUARDS)
 async def stop_service(
-    service_id: str, data: StopServiceRequest, session: AsyncSession, state: State
+    service_id: UUID, data: StopServiceRequest, session: AsyncSession, state: State
 ) -> Service:
-    service = await get_service(service_id, session)
+    service = await session.get(Service, service_id)
     if service is None:
         raise NotFoundException(detail="Service not found")
 
@@ -639,11 +642,11 @@ async def stop_service(
 
 @get("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
 async def refresh_service(
-    service_id: str, session: AsyncSession, state: State
-) -> Optional[Service]:
-    service = await get_service(service_id, session)
+    service_id: UUID, session: AsyncSession, state: State
+) -> Service:
+    service = await session.get(Service, service_id)
     if service is None:
-        raise NotFoundException(detail="Service not found")
+        raise NotFoundException(detail=f"Service {service_id} not found")
 
     await service.refresh(session, state)
     return service
@@ -653,7 +656,7 @@ async def refresh_service(
 async def fetch_services(
     session: AsyncSession,
     state: State,
-    id: Optional[str] = None,
+    id: Optional[UUID] = None,
     image: Optional[str] = None,
     model: Optional[str] = None,
     status: Optional[str] = None,
@@ -662,16 +665,19 @@ async def fetch_services(
     profile: Optional[str] = None,
 ) -> list[Service]:
     query_params = {
-        "id": id,
-        "image": image,
-        "model": model,
-        "status": status,
-        "port": port,
-        "name": name,
-        "profile": profile,
+        k: v
+        for k, v in {
+            "id": id,
+            "image": image,
+            "model": model,
+            "status": status,
+            "port": port,
+            "name": name,
+            "profile": profile,
+        }.items()
+        if v is not None
     }
 
-    query_params = {k: v for k, v in query_params.items() if v is not None}
     query = sa.select(Service).filter_by(**query_params)
     res = await session.execute(query)
     services = res.scalars().all()
@@ -685,7 +691,7 @@ async def fetch_services(
 async def delete_service(
     session: AsyncSession,
     state: State,
-    id: Optional[str] = None,
+    id: Optional[UUID] = None,
     image: Optional[str] = None,
     model: Optional[str] = None,
     status: Optional[str] = None,
@@ -693,29 +699,35 @@ async def delete_service(
     name: Optional[str] = None,
     profile: Optional[str] = None,
 ) -> list[dict[str, str]]:
+    # Build query parameters
     query_params = {
-        "id": id,
-        "image": image,
-        "model": model,
-        "status": status,
-        "port": port,
-        "name": name,
-        "profile": profile,
+        k: v
+        for k, v in {
+            "id": id,
+            "image": image,
+            "model": model,
+            "status": status,
+            "port": port,
+            "name": name,
+            "profile": profile,
+        }.items()
+        if v is not None
     }
 
-    query_params = {k: v for k, v in query_params.items() if v is not None}
+    # Query database
     query = sa.select(Service).filter_by(**query_params)
     query_res = await session.execute(query)
     services = query_res.scalars().all()
-
     if len(services) == 0:
         logger.warning(
             f"The query parameters {query_params} did not match any services."
         )
         return []
 
+    # Refresh services (async)
     await asyncio.gather(*[s.refresh(session, state) for s in services])
 
+    # Delete running services
     res = []
     for service in services:
         if service.status in [
@@ -724,35 +736,43 @@ async def delete_service(
             ServiceStatus.FAILED,
             None,
         ]:
-            logger.debug(f"Queueing service {service.id} for deletion")
+            # Try to delete the service; skip job clean up if this fails
+            logger.debug(f"Attempting to delete service {service.id}")
             deletion = sa.delete(Service).where(Service.id == service.id)
             try:
                 await session.execute(deletion)
             except Exception as e:
-                raise InternalServerException(
-                    detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
+                logger.error(f"Failed to delete service {service.id}: {e}")
+                res.append(
+                    {
+                        "id": str(service.id),
+                        "status": "error",
+                        "message": f"Failed to delete service: {e}",
+                    }
                 )
+                continue
+
+            # Attempt job clean up; don't fail whole operation if this doesn't work!
             try:
                 job = service.get_job()
                 if job is not None:
                     job.remove()
             except Exception as e:
-                logger.warning(
-                    f"Unable to remove job for service {service.id.hex}: {e}"
-                )
+                logger.warning(f"Unable to remove job for service {service.id}: {e}")
+
             res.append(
                 {
-                    "id": service.id.hex,
+                    "id": str(service.id),
                     "status": "ok",
                 }
             )
         else:
             logger.warning(
-                f"Service is still running (status={service.status}). Aborting delete."
+                f"Service {service.id} is still running (status={service.status}). Skipping."
             )
             res.append(
                 {
-                    "id": service.id.hex,
+                    "id": str(service.id),
                     "status": "error",
                     "message": "Service is still running",
                 }
@@ -763,6 +783,7 @@ async def delete_service(
 
 @delete("/api/services/prune", guards=ENDPOINT_GUARDS, status_code=200)
 async def prune_services(session: AsyncSession, state: State) -> int:
+    # Query database
     query = sa.select(Service).where(
         Service.status.in_(
             [
@@ -775,30 +796,33 @@ async def prune_services(session: AsyncSession, state: State) -> int:
     res = await session.execute(query)
     services = res.scalars().all()
 
+    # Any running services found?
     if len(services) == 0:
         return 0
 
+    # Refresh services
     await asyncio.gather(*[s.refresh(session, state) for s in services])
 
+    # Delete services
     count = 0
     for service in services:
-        logger.debug(f"Queueing service {service.id} for deletion")
+        # Try to delete the service; skip job clean upu if this fails
+        logger.debug(f"Attempting to delete service {service.id}")
         deletion = sa.delete(Service).where(Service.id == service.id)
         try:
             await session.execute(deletion)
         except Exception as e:
-            raise InternalServerException(
-                detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
-            )
+            logger.error(f"Failed to delete service {service.id}: {e}")
+            continue
+
+        # Attempt job clean up; don't fail whole operation if this doesn't work!
         try:
             job = service.get_job()
             if job is not None:
                 job.remove()
         except Exception as e:
             logger.warning(f"Unable to remove job for service {service.id.hex}: {e}")
-            raise InternalServerException(
-                detail=f"An error occurrred while attempting to delete service {service.id.hex}: {e}"
-            )
+
         count += 1
 
     return count

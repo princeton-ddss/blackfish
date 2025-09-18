@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional, Tuple, Any, Type
 import asyncio
-import itertools
 from pathlib import Path
 import bcrypt
 from importlib import import_module
@@ -1109,7 +1108,7 @@ async def get_models(
                 return list()
             models = await find_models(matched)
             logger.debug(
-                "Deleting existing models WHERE model.profile == '{profile}'..."
+                f"Deleting existing models WHERE model.profile == '{profile}'..."
             )
             try:
                 delete_query = sa.delete(Model).where(Model.profile == profile)
@@ -1117,8 +1116,17 @@ async def get_models(
             except Exception as e:
                 logger.error(f"Failed to execute query: {e}")
         else:
-            res = await asyncio.gather(*[find_models(profile) for profile in profiles])
-            models = list(itertools.chain(*res))  # list[list[dict]] -> list[dict]
+            gathered = await asyncio.gather(
+                *[find_models(profile) for profile in profiles], return_exceptions=True
+            )
+            models = []
+            for p, result in zip(profiles, gathered):
+                if isinstance(result, Exception):
+                    logger.error(
+                        f"Failed to find models for profile '{p.name}': {result}"
+                    )
+                elif isinstance(result, list):
+                    models.extend(result)
             logger.debug("Deleting all existing models...")
             try:
                 delete_all_query = sa.delete(Model)

@@ -82,13 +82,29 @@ class TestFilesAPI:
         assert response.status_code == 200
 
     async def test_files_permission_denied(self, client: AsyncTestClient):
-        """Test /api/files with path that might cause permission error."""
+        """Test /api/files with path that causes permission error."""
+        import tempfile
+        import os
 
-        # Try to access a restricted directory (behavior may vary by system)
-        response = await client.get("/api/files", params={"path": "/"})
+        # Create a temporary directory with no read permissions
+        with tempfile.TemporaryDirectory() as temp_dir:
+            restricted_dir = os.path.join(temp_dir, "restricted")
+            os.makedirs(restricted_dir)
 
-        # Should handle permission errors gracefully
-        assert response.status_code == 401
+            # Remove read and execute permissions for owner/group/other
+            os.chmod(restricted_dir, 0o000)
+
+            try:
+                response = await client.get(
+                    "/api/files", params={"path": restricted_dir}
+                )
+
+                # Should return 401 for permission denied
+                assert response.status_code == 401
+
+            finally:
+                # Restore permissions so cleanup can work
+                os.chmod(restricted_dir, 0o755)
 
 
 class TestAudioAPI:

@@ -489,6 +489,7 @@ def details(service_id: str) -> None:  # pragma: no cover
                 "gres": service.gres,
                 "partition": service.partition,
                 "constraint": service.constraint,
+                "account": service.account,
             },
         }
     elif isinstance(job, LocalJob):

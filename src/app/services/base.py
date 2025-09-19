@@ -65,6 +65,7 @@ class Service(UUIDAuditBase):
     gres: Mapped[Optional[str]]
     partition: Mapped[Optional[str]]
     constraint: Mapped[Optional[str]]
+    account: Mapped[Optional[str]]
 
     scheduler: Mapped[Optional[str]]
     provider: Mapped[Optional[ContainerProvider]]

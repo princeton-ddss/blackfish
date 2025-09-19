@@ -64,6 +64,7 @@ class SlurmJobConfig:
     gres: int = 0  # i.e., gpu:<gres>
     partition: Optional[str] = None  # e.g., mig
     constraint: Optional[str] = None  # e.g., gpu80
+    account: Optional[str] = None  # e.g., project123
 
 
 JobConfig = Union[LocalJobConfig, SlurmJobConfig]

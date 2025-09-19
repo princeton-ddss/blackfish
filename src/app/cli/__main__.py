@@ -263,6 +263,12 @@ def start(reload: bool) -> None:  # pragma: no cover
     help="Required compute node features, e.g., 'gpu80'.",
 )
 @click.option(
+    "--account",
+    type=str,
+    default=None,
+    help="The Slurm account to charge resources to.",
+)
+@click.option(
     "--profile", "-p", type=str, default="default", help="The Blackfish profile to use."
 )
 @click.option(
@@ -284,6 +290,7 @@ def run(
     gres: int,
     partition: Optional[str],
     constraint: Optional[str],
+    account: Optional[str],
     profile: str,
     mount: Optional[str],
     grace_period: int,
@@ -305,6 +312,7 @@ def run(
             "gres": gres,
             "partition": partition,
             "constraint": constraint,
+            "account": account,
         },
         "options": ServiceOptions(
             mount=mount,
@@ -481,6 +489,7 @@ def details(service_id: str) -> None:  # pragma: no cover
                 "gres": service.gres,
                 "partition": service.partition,
                 "constraint": service.constraint,
+                "account": service.account,
             },
         }
     elif isinstance(job, LocalJob):
@@ -627,6 +636,12 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     help="Required compute node features, e.g., 'gpu80'.",
 )
 @click.option(
+    "--account",
+    type=str,
+    default=None,
+    help="The Slurm account to charge resources to.",
+)
+@click.option(
     "--profile", "-p", type=str, default="default", help="The Blackfish profile to use."
 )
 @click.option(
@@ -641,6 +656,7 @@ def batch(
     gres: int,
     partition: Optional[str],
     constraint: Optional[str],
+    account: Optional[str],
     profile: str,
     mount: Optional[str],
 ) -> None:  # pragma: no cover
@@ -661,6 +677,7 @@ def batch(
             "gres": gres,
             "partition": partition,
             "constraint": constraint,
+            "account": account,
         },
         "options": ServiceOptions(
             mount=mount,

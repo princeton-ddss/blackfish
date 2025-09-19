@@ -85,7 +85,7 @@ class TestFilesAPI:
         """Test /api/files with path that might cause permission error."""
 
         # Try to access a restricted directory (behavior may vary by system)
-        response = await client.get("/api/files", params={"path": "/root"})
+        response = await client.get("/api/files", params={"path": "/"})
 
         # Should handle permission errors gracefully
         assert response.status_code == 401

@@ -24,6 +24,7 @@ from app.logger import logger
 from app.utils import find_port
 from app.config import ContainerProvider
 from app.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
+from app.ssh_manager import SSHConnectionManager
 
 
 @dataclass
@@ -98,6 +99,7 @@ class Service(UUIDAuditBase):
         app_config: State,
         container_options: BaseConfig,
         job_options: JobConfig,
+        ssh_manager: SSHConnectionManager,
     ) -> None:
         """Start the service with provided Slurm job and container options. Assumes running in attached state.
 
@@ -153,50 +155,42 @@ class Service(UUIDAuditBase):
                 logger.debug(f"Copying job script to {self.host}:{profile.home_dir}.")
                 remote_script_dir = os.path.join(profile.home_dir, "jobs", self.id.hex)
 
-                try:
-                    _ = subprocess.check_output(
-                        [
-                            "ssh",
-                            f"{self.user}@{self.host}",
-                            "mkdir",
-                            "-p",
-                            remote_script_dir,
-                        ]
+                if self.user is None:
+                    raise ValueError(
+                        "Service user cannot be None for remote operations"
                     )
-                except Exception as e:
-                    logger.error(f"Failed to copy job script to remote host: {e}.")
-                    raise
 
-                try:
-                    _ = subprocess.check_output(
-                        [
-                            "scp",
-                            script_path,
-                            (f"{self.user}@{self.host}:{remote_script_dir}"),
-                        ]
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to copy job script to remote host: {e}")
-                    raise
+                with ssh_manager.connection(self.host, self.user) as conn:
+                    try:
+                        logger.debug(f"Creating remote directory: {remote_script_dir}")
+                        conn.run(f"mkdir -p {remote_script_dir}", hide=True)
+                    except Exception as e:
+                        logger.error(f"Failed to create remote directory: {e}")
+                        raise
 
-                logger.debug(f"Submitting batch job to {self.host}.")
-                try:
-                    res = subprocess.check_output(
-                        [
-                            "ssh",
-                            f"{self.user}@{self.host}",
-                            "sbatch",
-                            "--chdir",
-                            remote_script_dir,
-                            os.path.join(remote_script_dir, "start.sh"),
-                        ]
-                    )
-                    job_id = res.decode("utf-8").strip().split()[-1]
-                    self.status = ServiceStatus.SUBMITTED
-                    self.job_id = job_id
-                except Exception as e:
-                    logger.error(f"Failed to submit Slurm job: {e}")
-                    raise
+                    try:
+                        logger.debug("Copying script to remote host")
+                        conn.put(
+                            script_path, os.path.join(remote_script_dir, "start.sh")
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to copy job script to remote host: {e}")
+                        raise
+
+                    logger.debug(f"Submitting batch job to {self.host}.")
+                    try:
+                        result = conn.run(
+                            f"cd {remote_script_dir} && sbatch --chdir {remote_script_dir} start.sh",
+                            hide=True,
+                        )
+                        if not result.ok:
+                            raise Exception(f"sbatch command failed: {result.stderr}")
+                        job_id = result.stdout.strip().split()[-1]
+                        self.status = ServiceStatus.SUBMITTED
+                        self.job_id = job_id
+                    except Exception as e:
+                        logger.error(f"Failed to submit Slurm job: {e}")
+                        raise
         else:
             script_path = Path(
                 os.path.join(app_config.HOME_DIR, "jobs", self.id.hex, "start.sh")

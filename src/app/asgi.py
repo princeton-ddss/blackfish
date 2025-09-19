@@ -16,8 +16,8 @@ import bcrypt
 from importlib import import_module
 from uuid import UUID
 
-from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
+from app.ssh_manager import SSHConnectionManager
 from pydantic import BaseModel
 
 import sqlalchemy as sa
@@ -242,7 +242,9 @@ def remote_model_info(
     return cache_info, home_info
 
 
-async def find_models(profile: Profile) -> list[Model]:
+async def find_models(
+    profile: Profile, ssh_manager: SSHConnectionManager
+) -> list[Model]:
     """Find all model revisions associated with a given profile.
 
     The model files associated with a given profile are determined by the contents
@@ -254,7 +256,7 @@ async def find_models(profile: Profile) -> list[Model]:
     if isinstance(profile, SlurmProfile) and not profile.is_local():
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
         with (
-            Connection(host=profile.host, user=profile.user) as conn,
+            ssh_manager.connection(profile.host, profile.user) as conn,
             conn.sftp() as sftp,
         ):
             cache_info, home_info = remote_model_info(profile, sftp=sftp)
@@ -619,6 +621,7 @@ async def run_service(
             state,
             container_options=data.container_config,
             job_options=data.job_config,
+            ssh_manager=state.ssh_manager,
         )
     except Exception as e:
         logger.error(f"Failed to start service: {e}")
@@ -1153,7 +1156,7 @@ async def get_models(
                     f"Profile '{profile}' not found. Returning an empty list."
                 )
                 return list()
-            models = await find_models(matched)
+            models = await find_models(matched, state.ssh_manager)
             logger.debug(
                 f"Deleting existing models WHERE model.profile == '{profile}'..."
             )
@@ -1164,7 +1167,8 @@ async def get_models(
                 logger.error(f"Failed to execute query: {e}")
         else:
             gathered = await asyncio.gather(
-                *[find_models(profile) for profile in profiles], return_exceptions=True
+                *[find_models(profile, state.ssh_manager) for profile in profiles],
+                return_exceptions=True,
             )
             models = []
             for p, result in zip(profiles, gathered):
@@ -1344,6 +1348,14 @@ def not_found_exception_handler(request: Request, exc: Exception) -> Template:  
     return Template(template_name="404.html", status_code=HTTP_404_NOT_FOUND)
 
 
+async def shutdown_handler(app: "Litestar") -> None:
+    """Cleanup handler called when the application shuts down."""
+    logger.info("Shutting down SSH connection manager")
+    ssh_manager = getattr(app.state, "ssh_manager", None)
+    if ssh_manager is not None:
+        ssh_manager.shutdown()
+
+
 app = Litestar(
     path=blackfish_config.BASE_PATH,
     route_handlers=[
@@ -1382,10 +1394,11 @@ app = Litestar(
     dependencies={"session": session_provider},
     plugins=[SQLAlchemyPlugin(db_config)],
     logging_config=None,  # disable Litestar logger (we're using our own)
-    state=State(blackfish_config.as_dict()),
+    state=State({**blackfish_config.as_dict(), "ssh_manager": SSHConnectionManager()}),
     cors_config=cors_config,
     openapi_config=openapi_config,
     template_config=template_config,
     middleware=[session_config.middleware],
     exception_handlers={NotFoundException: not_found_exception_handler},
+    on_shutdown=[shutdown_handler],
 )

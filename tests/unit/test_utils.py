@@ -1,6 +1,6 @@
 import os
-from unittest import mock
 import datetime
+from contextlib import contextmanager
 
 from app import utils
 from app.models.profile import SlurmProfile
@@ -54,9 +54,22 @@ def mock_sftp(conn):
     return MockSFTPClient()
 
 
-@mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
+class MockConnection:
+    def sftp(self):
+        return MockSFTPClient()
+
+
+class MockSSHManager:
+    @contextmanager
+    def connection(self, host, user):
+        yield MockConnection()
+
+
+mock_ssh_manager = MockSSHManager()
+
+
 def test_get_models():
-    assert set(utils.get_models(profile)) == set(
+    assert set(utils.get_models(profile, mock_ssh_manager)) == set(
         [
             "test/model-a",
             "test/model-b",
@@ -66,9 +79,12 @@ def test_get_models():
     )
 
 
-@mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
 def test_get_revisions():
-    assert set(utils.get_revisions("test/model-a", profile=profile)) == set(
+    assert set(
+        utils.get_revisions(
+            "test/model-a", profile=profile, ssh_manager=mock_ssh_manager
+        )
+    ) == set(
         [
             "test-commit-a",
             "test-commit-b",
@@ -76,18 +92,26 @@ def test_get_revisions():
     )
 
 
-@mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
 def test_get_model_dir_some():
     assert (
-        utils.get_model_dir("test/model-a", revision="test-commit-a", profile=profile)
+        utils.get_model_dir(
+            "test/model-a",
+            revision="test-commit-a",
+            profile=profile,
+            ssh_manager=mock_ssh_manager,
+        )
         == "/test/cache_dir/.blackfish/models/models--test--model-a"
     )
 
 
-@mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
 def test_get_model_dir_none():
     assert (
-        utils.get_model_dir("test/model-a", revision="test-commit-e", profile=profile)
+        utils.get_model_dir(
+            "test/model-a",
+            revision="test-commit-e",
+            profile=profile,
+            ssh_manager=mock_ssh_manager,
+        )
         is None
     )
 

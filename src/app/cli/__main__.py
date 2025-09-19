@@ -263,6 +263,12 @@ def start(reload: bool) -> None:  # pragma: no cover
     help="Required compute node features, e.g., 'gpu80'.",
 )
 @click.option(
+    "--account",
+    type=str,
+    default=None,
+    help="The Slurm account to charge resources to.",
+)
+@click.option(
     "--profile", "-p", type=str, default="default", help="The Blackfish profile to use."
 )
 @click.option(
@@ -284,6 +290,7 @@ def run(
     gres: int,
     partition: Optional[str],
     constraint: Optional[str],
+    account: Optional[str],
     profile: str,
     mount: Optional[str],
     grace_period: int,
@@ -305,6 +312,7 @@ def run(
             "gres": gres,
             "partition": partition,
             "constraint": constraint,
+            "account": account,
         },
         "options": ServiceOptions(
             mount=mount,
@@ -481,6 +489,7 @@ def details(service_id: str) -> None:  # pragma: no cover
                 "gres": service.gres,
                 "partition": service.partition,
                 "constraint": service.constraint,
+                "account": service.account,
             },
         }
     elif isinstance(job, LocalJob):
@@ -516,7 +525,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     """List services"""
 
     from typing import Any
-    from prettytable import PrettyTable, PLAIN_COLUMNS
+    from prettytable import PrettyTable, TableStyle
     from datetime import datetime
     from app.utils import format_datetime
     from app.services.base import ServiceStatus
@@ -534,7 +543,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
             "PROFILE",
         ]
     )
-    tab.set_style(PLAIN_COLUMNS)
+    tab.set_style(TableStyle.PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
 
@@ -627,6 +636,12 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     help="Required compute node features, e.g., 'gpu80'.",
 )
 @click.option(
+    "--account",
+    type=str,
+    default=None,
+    help="The Slurm account to charge resources to.",
+)
+@click.option(
     "--profile", "-p", type=str, default="default", help="The Blackfish profile to use."
 )
 @click.option(
@@ -641,6 +656,7 @@ def batch(
     gres: int,
     partition: Optional[str],
     constraint: Optional[str],
+    account: Optional[str],
     profile: str,
     mount: Optional[str],
 ) -> None:  # pragma: no cover
@@ -661,6 +677,7 @@ def batch(
             "gres": gres,
             "partition": partition,
             "constraint": constraint,
+            "account": account,
         },
         "options": ServiceOptions(
             mount=mount,
@@ -694,7 +711,7 @@ def list_batch_jobs(
     """List batches"""
 
     from typing import Any
-    from prettytable import PrettyTable, PLAIN_COLUMNS
+    from prettytable import PrettyTable, TableStyle
     from datetime import datetime
     from app.utils import format_datetime
     from app.jobs.base import BatchJobStatus
@@ -712,7 +729,7 @@ def list_batch_jobs(
             "PROFILE",
         ]
     )
-    tab.set_style(PLAIN_COLUMNS)
+    tab.set_style(TableStyle.PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
 
@@ -877,7 +894,7 @@ def models_ls(
 ) -> None:  # pragma: no cover
     """Show available (downloaded) models."""
 
-    from prettytable import PrettyTable, PLAIN_COLUMNS
+    from prettytable import PrettyTable, TableStyle
 
     params = f"refresh={refresh}"
     if profile is not None:
@@ -886,9 +903,16 @@ def models_ls(
         params += f"&image={image}"
 
     with yaspin(text="Fetching models") as spinner:
-        res = requests.get(f"http://{config.HOST}:{config.PORT}/api/models?{params}")
-        if not res.ok:
-            spinner.text = f"Error: {res.status_code}"
+        try:
+            res = requests.get(
+                f"http://{config.HOST}:{config.PORT}/api/models?{params}"
+            )
+            if not res.ok:
+                spinner.text = f"Blackfish API encountered an error: {res.status_code}"
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
 
@@ -900,13 +924,13 @@ def models_ls(
             "IMAGE",
         ]
     )
-    tab.set_style(PLAIN_COLUMNS)
+    tab.set_style(TableStyle.PLAIN_COLUMNS)
     tab.align = "l"
     tab.right_padding_width = 3
 
     if len(res.json()) == 0:
         click.echo(
-            f"{LogSymbols.WARNING.value} No models found. Is '{profile}' a profile on this host?"
+            f"{LogSymbols.WARNING.value} No models found. You can try using the `--refresh` flag to find newly added models."
         )
 
     for model in res.json():
@@ -995,24 +1019,27 @@ def models_add(
         return
 
     with yaspin(text="Inserting model to database...") as spinner:
-        res = requests.post(
-            f"http://{config.HOST}:{config.PORT}/api/models",
-            json={
-                "repo": model.repo,
-                "profile": model.profile,
-                "revision": model.revision,
-                "image": model.image,
-                "model_dir": path,
-            },
-        )
-        if not res.ok:
-            spinner.text = (
-                f"Failed to insert model {repo_id} ({res.status_code}: {res.reason})"
+        try:
+            res = requests.post(
+                f"http://{config.HOST}:{config.PORT}/api/models",
+                json={
+                    "repo": model.repo,
+                    "profile": model.profile,
+                    "revision": model.revision,
+                    "image": model.image,
+                    "model_dir": path,
+                },
             )
+            if not res.ok:
+                spinner.text = f"Failed to insert model {repo_id} ({res.status_code}: {res.reason})"
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+            else:
+                spinner.text = f"Added model {repo_id}."
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
-        else:
-            spinner.text = f"Added model {repo_id}."
-            spinner.ok(f"{LogSymbols.SUCCESS.value}")
+            return
 
 
 @model.command(name="rm")

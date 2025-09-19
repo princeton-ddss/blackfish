@@ -126,7 +126,7 @@ def models_fixture() -> list[Model | dict[str, Any]]:
         {
             "id": "0022468b-3182-4381-a76a-25d06248398f",
             "repo": "openai/whisper-tiny",
-            "profile": "default",
+            "profile": "test",
             "revision": "2",
             "image": "speech_recognition",
             "model_dir": "/home/test/.blackfish/models/models--openai/whisper-tiny",
@@ -142,7 +142,7 @@ def models_fixture() -> list[Model | dict[str, Any]]:
         {
             "id": "64ef94e4-689d-4479-8023-6f5823897ee8",
             "repo": "meta-llama/Llama-3.1-70B",
-            "profile": "default",
+            "profile": "test",
             "revision": "4",
             "image": "text_generation",
             "model_dir": "/home/test/.blackfish/models/models--meta-llama/Llama-3.1-70B",

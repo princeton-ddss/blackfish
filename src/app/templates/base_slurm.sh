@@ -15,6 +15,9 @@
 {%- if job_config.partition %}
 #SBATCH --partition={{ job_config.partition }}
 {%- endif %}
+{%- if job_config.account %}
+#SBATCH --account={{ job_config.account }}
+{%- endif %}
 {%- endblock %}
 {% block prelude %}
 export APPTAINER_CACHEDIR=/scratch/gpfs/{{ profile.user }}/APPTAINER_CACHE

@@ -65,6 +65,7 @@ class Service(UUIDAuditBase):
     gres: Mapped[Optional[str]]
     partition: Mapped[Optional[str]]
     constraint: Mapped[Optional[str]]
+    account: Mapped[Optional[str]]
 
     scheduler: Mapped[Optional[str]]
     provider: Mapped[Optional[ContainerProvider]]
@@ -164,7 +165,7 @@ class Service(UUIDAuditBase):
                     )
                 except Exception as e:
                     logger.error(f"Failed to copy job script to remote host: {e}.")
-                    return
+                    raise
 
                 try:
                     _ = subprocess.check_output(
@@ -176,7 +177,7 @@ class Service(UUIDAuditBase):
                     )
                 except Exception as e:
                     logger.error(f"Failed to copy job script to remote host: {e}")
-                    return
+                    raise
 
                 logger.debug(f"Submitting batch job to {self.host}.")
                 try:
@@ -195,7 +196,7 @@ class Service(UUIDAuditBase):
                     self.job_id = job_id
                 except Exception as e:
                     logger.error(f"Failed to submit Slurm job: {e}")
-                    return
+                    raise
         else:
             script_path = Path(
                 os.path.join(app_config.HOME_DIR, "jobs", self.id.hex, "start.sh")

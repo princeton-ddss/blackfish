@@ -6,16 +6,30 @@ from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
 from fabric.connection import Connection
 from app.models.profile import BlackfishProfile, SlurmProfile
+from app.auth import get_hf_token
 from app.logger import logger
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
 
-def get_latest_commit(repo_id: str, revisions: list[str]) -> str:  # pragma: no cover
-    """Return the most recent revision for a model from a list of options."""
+def get_latest_commit(
+    repo_id: str, revisions: list[str], token: Optional[str] = None
+) -> str:  # pragma: no cover
+    """Return the most recent revision for a model from a list of options.
+
+    Args:
+        repo_id: Repository ID (e.g., 'username/model-name')
+        revisions: List of revision IDs to search for
+        token: Optional HF token for authentication. If None, will auto-resolve.
+    """
     if len(revisions) == 0:
         raise Exception("List of revisions should be non-empty.")
-    commits = map(lambda x: x.commit_id, list_repo_commits(repo_id))
+
+    # Use provided token or auto-resolve
+    if token is None:
+        token = get_hf_token()
+
+    commits = map(lambda x: x.commit_id, list_repo_commits(repo_id, token=token))
     for commit in commits:
         if commit in revisions:
             return revisions[revisions.index(commit)]
@@ -178,6 +192,7 @@ def has_model(
     repo_id: str,
     profile: BlackfishProfile,
     revision: Optional[str] = None,
+    token: Optional[str] = None,
 ) -> bool:
     """Check if files exist for a given model and profile.
 
@@ -189,12 +204,18 @@ def has_model(
             a tag (e.g., 'v0.1.0') or a commit hash (e.g., "ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971").
         profile:
             The name of a profile to search for model files, e.g., "default".
+        token:
+            Optional HF token for authentication. If None, will auto-resolve.
 
     Returns:
         bool
     """
+    # Use provided token or auto-resolve
+    if token is None:
+        token = get_hf_token()
+
     try:
-        ModelCard.load(repo_id)
+        ModelCard.load(repo_id, token=token)
     except RepositoryNotFoundError:
         print(
             "Repository not found. Is this model hosted on Hugging Face? Check that"

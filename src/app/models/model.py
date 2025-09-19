@@ -9,6 +9,7 @@ from huggingface_hub import snapshot_download, model_info, scan_cache_dir, Model
 from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy.orm import Mapped
 from app.models.profile import BlackfishProfile as Profile
+from app.auth import get_hf_token
 
 
 PIPELINE_IMAGES = {
@@ -148,10 +149,8 @@ def add_model(
         else Path(*[profile.home_dir, "models"])
     )
 
-    if hasattr(profile, "token"):
-        token = profile.token
-    else:
-        token = None
+    # Get HF token from environment or HF's official storage
+    token = get_hf_token()
 
     path = snapshot_download(
         repo_id=repo_id,
@@ -161,7 +160,7 @@ def add_model(
     )
 
     revision = path.split("/")[-1]
-    res = model_info(repo_id=repo_id)
+    res = model_info(repo_id=repo_id, token=token)
     pipeline = get_pipeline(res)  # e.g., "text-generation"
 
     try:

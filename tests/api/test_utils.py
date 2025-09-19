@@ -88,7 +88,7 @@ class TestFilesAPI:
         response = await client.get("/api/files", params={"path": "/root"})
 
         # Should handle permission errors gracefully
-        assert response.status_code == 404
+        assert response.status_code == 401
 
 
 class TestAudioAPI:

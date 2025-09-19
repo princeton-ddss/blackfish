@@ -31,16 +31,17 @@ class TestFetchProfilesAPI:
             for profile in result:
                 assert isinstance(profile, dict)
                 assert "name" in profile
-                assert "type" in profile
-                # Type should be either "local" or "slurm"
-                assert profile["type"] in ["local", "slurm"]
+                assert "schema" in profile or "type" in profile
+                # Schema should be either "local" or "slurm"
+                schema = profile.get("schema") or profile.get("type")
+                assert schema in ["local", "slurm"]
 
                 # Common fields for both profile types
                 assert "home_dir" in profile
                 assert "cache_dir" in profile
 
                 # Slurm-specific fields
-                if profile["type"] == "slurm":
+                if schema == "slurm":
                     assert "host" in profile
                     assert "user" in profile
 
@@ -99,7 +100,8 @@ class TestGetSingleProfileAPI:
         # Verify it return the default fixture profile
         assert isinstance(result, dict)
         assert result["name"] == profile_name
-        assert result["type"] == "local"
+        schema = result.get("schema") or result.get("type")
+        assert schema == "local"
 
     async def test_get_profile_file_not_found(self, client: AsyncTestClient):
         with patch("app.asgi.deserialize_profile") as mock_deserialize_profile:

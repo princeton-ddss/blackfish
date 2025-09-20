@@ -36,12 +36,12 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
 
     while True:
         try:
-            profile_type = ProfileType[input("> type [slurm or local]: ").capitalize()]
+            schema = ProfileType[input("> schema [slurm or local]: ").capitalize()]
             break
         except Exception:
-            print(f"Profile type should be one of: {list(ProfileType.__members__)}.")
+            print(f"Profile schema should be one of: {list(ProfileType.__members__)}.")
 
-    if profile_type == ProfileType.Slurm:
+    if schema == ProfileType.Slurm:
         host = input("> host [localhost]: ")
         host = "localhost" if host == "" else host
         user = input("> user: ")
@@ -70,14 +70,14 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
                 return False
 
         profiles[name] = {
-            "type": "slurm",
+            "schema": "slurm",
             "user": user,
             "host": host,
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
 
-    elif profile_type == ProfileType.Local:
+    elif schema == ProfileType.Local:
         home_dir = input(f"> home [{app_dir}]: ")
         home_dir = app_dir if home_dir == "" else home_dir
         cache_dir = input("> cache: ")
@@ -92,7 +92,7 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
             return False
 
         profiles[name] = {
-            "type": "local",
+            "schema": "local",
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
@@ -124,14 +124,14 @@ def _auto_profile_(
 
     if schema.capitalize() not in list(ProfileType.__members__):
         print(
-            f"{LogSymbols.ERROR.value} Profile type should be one of: {list(ProfileType.__members__)}."
+            f"{LogSymbols.ERROR.value} Profile schema should be one of: {list(ProfileType.__members__)}."
         )
         return False
     else:
-        profile_type = ProfileType[schema.capitalize()]
+        schema_enum = ProfileType[schema.capitalize()]
 
     profile: LocalProfile | SlurmProfile
-    if profile_type == ProfileType.Slurm:
+    if schema_enum == ProfileType.Slurm:
         if name is None:
             raise ValueError("'name' is required.")
         if host is None:
@@ -174,14 +174,14 @@ def _auto_profile_(
                 return False
 
         profiles[profile.name] = {
-            "type": "slurm",
+            "schema": "slurm",
             "user": profile.user,
             "host": profile.host,
             "home_dir": profile.home_dir,
             "cache_dir": profile.cache_dir,
         }
 
-    elif profile_type == ProfileType.Local:
+    elif schema_enum == ProfileType.Local:
         if name is None:
             raise ValueError("'name' is required.")
         if home_dir is None:
@@ -202,7 +202,7 @@ def _auto_profile_(
             return False
 
         profiles[name] = {
-            "type": "local",
+            "schema": "local",
             "home_dir": profile.home_dir,
             "cache_dir": profile.cache_dir,
         }
@@ -215,7 +215,7 @@ def _auto_profile_(
 
 def _update_profile_(
     default_home: str, default_name: str = "default", name: Optional[str] = None
-) -> None:
+) -> bool:
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles.cfg")
 
@@ -228,11 +228,11 @@ def _update_profile_(
             f"{LogSymbols.ERROR.value} Profile {name} not found. To view your existing"
             " profiles, type `blackfish profile list`."
         )
-        return
+        return False
     else:
         profile = profiles[name]
-        profile_type = profile["type"]
-        if profile_type == "slurm":
+        schema = profile.get("schema") or profile.get("type")
+        if schema == "slurm":
             host = input(f"> host [{profile['host']}]: ")
             host = profile["host"] if host == "" else host
             user = input(f"> user [{profile['user']}]: ")
@@ -246,8 +246,8 @@ def _update_profile_(
                 check_remote_cache_exists(host=host, user=user, cache_dir=cache_dir)
             except Exception:
                 print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
-                return
-        elif profile_type == "local":
+                return False
+        elif schema == "local":
             home_dir = input(f"> home [{profile['home_dir']}]: ")
             home_dir = profile["home_dir"] if home_dir == "" else home_dir
             cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
@@ -257,21 +257,21 @@ def _update_profile_(
                 check_local_cache_exists(cache_dir)
             except Exception:
                 print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
-                return
+                return False
         else:
             raise NotImplementedError
 
-    if profile_type == "slurm":
+    if schema == "slurm":
         profiles[name] = {
-            "type": "slurm",
+            "schema": "slurm",
             "user": user,
             "host": host,
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
-    elif profile_type == "local":
+    elif schema == "local":
         profiles[name] = {
-            "type": "local",
+            "schema": "local",
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
@@ -281,6 +281,7 @@ def _update_profile_(
     with open(os.path.join(default_home, "profiles.cfg"), "w") as f:
         profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Updated profile {name}.")
+        return True
 
 
 @click.command()
@@ -288,7 +289,9 @@ def _update_profile_(
 def create_profile(ctx: Context) -> None:  # pragma: no cover
     """Create a new profile. Fails if the profile name already exists."""
 
-    _create_profile_(ctx.obj.get("home_dir"))
+    success = _create_profile_(ctx.obj.get("home_dir"))
+    if not success:
+        ctx.exit(1)
 
 
 @click.command()
@@ -306,23 +309,24 @@ def show_profile(ctx: Context, name: str) -> None:  # pragma: no cover
 
     if name in profiles:
         profile = profiles[name]
-        profile_type = profile["type"]
-        if profile_type == "slurm":
+        schema = profile.get("schema") or profile.get("type")
+        if schema == "slurm":
             print(f"[{name}]")
-            print("type: slurm")
+            print("schema: slurm")
             print(f"host: {profile['host']}")
             print(f"user: {profile['user']}")
             print(f"home: {profile['home_dir']}")
             print(f"cache: {profile['cache_dir']}")
-        elif profile_type == "local":
+        elif schema == "local":
             print(f"[{name}]")
-            print("type: local")
+            print("schema: local")
             print(f"home: {profile['home_dir']}")
             print(f"cache: {profile['cache_dir']}")
         else:
             raise NotImplementedError
     else:
         print(f"{LogSymbols.ERROR.value} Profile {name} not found.")
+        ctx.exit(1)
 
 
 @click.command()
@@ -339,17 +343,17 @@ def list_profiles(ctx: Context) -> None:  # pragma: no cover
         profile = profiles[name]
         if profile.name == "DEFAULT":
             continue
-        profile_type = profile["type"]
-        if profile_type == "slurm":
+        schema = profile.get("schema") or profile.get("type")
+        if schema == "slurm":
             print(f"[{name}]")
-            print("type: slurm")
+            print("schema: slurm")
             print(f"host: {profile['host']}")
             print(f"user: {profile['user']}")
             print(f"home: {profile['home_dir']}")
             print(f"cache: {profile['cache_dir']}")
-        elif profile_type == "local":
+        elif schema == "local":
             print(f"[{name}]")
-            print("type: local")
+            print("schema: local")
             print(f"home: {profile['home_dir']}")
             print(f"cache: {profile['cache_dir']}")
         print("")
@@ -368,7 +372,9 @@ def update_profile(ctx: Context, name: str) -> None:  # pragma: no cover
     it using a new name.
     """
 
-    _update_profile_(ctx.obj.get("home_dir"), "default", name)
+    success = _update_profile_(ctx.obj.get("home_dir"), "default", name)
+    if not success:
+        ctx.exit(1)
 
 
 @click.command()
@@ -394,5 +400,7 @@ def delete_profile(ctx: Context, name: str) -> None:  # pragma: no cover
             with open(os.path.join(home_dir, "profiles.cfg"), "w") as f:
                 profiles.write(f)
             print(f"{LogSymbols.SUCCESS.value} Profile {name} deleted.")
+        # Note: User canceling deletion is not an error, so no exit(1)
     else:
         print(f"{LogSymbols.ERROR.value} Profile {name} not found.")
+        ctx.exit(1)

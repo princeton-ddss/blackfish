@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union, Optional
+from typing import Union
 from configparser import ConfigParser
 import os
 

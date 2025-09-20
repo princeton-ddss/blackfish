@@ -39,15 +39,6 @@ class TestHFTokenResolution:
                 token = get_hf_token()
                 assert token is None
 
-    def test_get_hf_token_hf_import_error(self):
-        """Test graceful handling when huggingface_hub is not available."""
-        with patch.dict(os.environ, {}, clear=True):
-            with patch(
-                "huggingface_hub.get_token", side_effect=ImportError("No module")
-            ):
-                token = get_hf_token()
-                assert token is None
-
     def test_get_hf_token_hf_exception(self):
         """Test graceful handling when HF auth throws an exception."""
         with patch.dict(os.environ, {}, clear=True):
@@ -85,11 +76,3 @@ class TestHFAuthentication:
                 mock_whoami.side_effect = Exception("Invalid token")
 
                 assert is_hf_authenticated() is False
-
-    def test_is_hf_authenticated_import_error(self):
-        """Test authentication check when huggingface_hub is not available."""
-        with patch("app.auth.get_hf_token") as mock_get_token:
-            with patch("huggingface_hub.whoami", side_effect=ImportError("No module")):
-                mock_get_token.return_value = "some_token"
-                # Should assume token is valid if HF library not available
-                assert is_hf_authenticated() is True

@@ -14,7 +14,6 @@ class SlurmProfile:
     home_dir: str
     cache_dir: str
     schema: str = "slurm"
-    hf_token: Optional[str] = None
 
     def is_local(self) -> bool:
         return self.host == "localhost"
@@ -38,7 +37,6 @@ class LocalProfile:
     home_dir: str
     cache_dir: str
     schema: str = "local"
-    hf_token: Optional[str] = None
 
     def is_local(self) -> bool:
         return True
@@ -82,7 +80,6 @@ def deserialize_profiles(home_dir: str) -> list[BlackfishProfile]:
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
-                    hf_token=profile.get("hf_token"),
                 )
             )
         elif schema == "local":
@@ -91,7 +88,6 @@ def deserialize_profiles(home_dir: str) -> list[BlackfishProfile]:
                     name=section,
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
-                    hf_token=profile.get("hf_token"),
                 )
             )
         else:

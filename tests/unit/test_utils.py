@@ -1,5 +1,6 @@
 import os
 from unittest import mock
+from unittest.mock import patch
 import datetime
 
 from app import utils
@@ -121,3 +122,38 @@ def test_format_datetime():
         2025, 1, 12, 14, 55, 29, 646404, tzinfo=datetime.timezone.utc
     )
     assert utils.format_datetime(t0, t1) == "3 min ago"
+
+
+def test_get_latest_commit_accepts_token():
+    """Test that get_latest_commit function accepts token parameter."""
+
+    with patch("app.utils.list_repo_commits") as mock_list_commits:
+        # Mock the HF API response
+        mock_commit = type("MockCommit", (), {"commit_id": "abc123"})()
+        mock_list_commits.return_value = [mock_commit]
+
+        # Call with explicit token
+        result = utils.get_latest_commit("test/model", ["abc123"], token="test_token")
+
+        # Verify token was passed to HF API
+        mock_list_commits.assert_called_once_with("test/model", token="test_token")
+        assert result == "abc123"
+
+
+def test_has_model_accepts_token():
+    """Test that has_model function accepts token parameter."""
+    from app.models.profile import LocalProfile
+
+    test_profile = LocalProfile(
+        name="test", home_dir="/tmp/test", cache_dir="/tmp/cache"
+    )
+
+    with patch("app.utils.ModelCard.load") as mock_load:
+        with patch("app.utils.get_models") as mock_get_models:
+            mock_get_models.return_value = ["test/model"]
+
+            # Call with explicit token
+            utils.has_model("test/model", test_profile, token="test_token")
+
+            # Verify token was passed to ModelCard.load
+            mock_load.assert_called_once_with("test/model", token="test_token")

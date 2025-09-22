@@ -13,7 +13,7 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
 {%- elif provider == 'apptainer' %}
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ container_config.model_dir }}:/data \
-  {{ profile.cache_dir }}/images/vllm-openai_v0.8.4.sif \
+  {{ profile.cache_dir }}/images/vllm-openai_v0.10.2.sif \
   {{ name }} \
   --model /data/snapshots/{{ container_config['revision'] }} \
   --port {{ container_config.port }} \

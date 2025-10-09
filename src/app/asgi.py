@@ -640,14 +640,20 @@ async def stop_service(
 
 
 @get("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
-async def refresh_service(
-    service_id: UUID, session: AsyncSession, state: State
+async def fetch_service(
+    service_id: UUID,
+    session: AsyncSession,
+    state: State,
+    refresh: Optional[bool] = False,
 ) -> Service:
     service = await session.get(Service, service_id)
     if service is None:
         raise NotFoundException(detail=f"Service {service_id} not found")
 
-    await service.refresh(session, state)
+    if refresh:
+        logger.info("Refreshing service status")
+        await service.refresh(session, state)
+
     return service
 
 
@@ -662,6 +668,7 @@ async def fetch_services(
     port: Optional[int] = None,
     name: Optional[str] = None,
     profile: Optional[str] = None,
+    refresh: Optional[bool] = False,
 ) -> list[Service]:
     query_params = {
         k: v
@@ -681,7 +688,9 @@ async def fetch_services(
     res = await session.execute(query)
     services = res.scalars().all()
 
-    await asyncio.gather(*[s.refresh(session, state) for s in services])
+    if refresh:
+        logger.info("Refreshing service statuses")
+        await asyncio.gather(*[s.refresh(session, state) for s in services])
 
     return list(services)
 
@@ -1360,7 +1369,7 @@ app = Litestar(
         get_audio,
         run_service,
         stop_service,
-        refresh_service,
+        fetch_service,
         fetch_services,
         delete_service,
         prune_services,

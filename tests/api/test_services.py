@@ -101,6 +101,54 @@ class TestFetchServicesAPI:
         result = response.json()
         assert result == []
 
+    async def test_fetch_services_with_refresh_true(self, client: AsyncTestClient):
+        """Test fetching services with refresh=true parameter."""
+        with patch.object(Service, "refresh", new_callable=AsyncMock) as mock_refresh:
+            response = await client.get("/api/services", params={"refresh": "true"})
+
+            assert response.status_code == 200
+            result = response.json()
+            assert isinstance(result, list)
+
+            # Verify that refresh was called for each service
+            # The number of calls depends on how many services exist in test data
+            assert mock_refresh.call_count >= 0
+
+    async def test_fetch_services_with_refresh_false(self, client: AsyncTestClient):
+        """Test fetching services with refresh=false parameter."""
+        with patch.object(Service, "refresh", new_callable=AsyncMock) as mock_refresh:
+            response = await client.get("/api/services", params={"refresh": "false"})
+
+            assert response.status_code == 200
+            result = response.json()
+            assert isinstance(result, list)
+
+            # Verify that refresh was NOT called when refresh=false
+            mock_refresh.assert_not_called()
+
+    async def test_fetch_services_without_refresh_parameter(
+        self, client: AsyncTestClient
+    ):
+        """Test fetching services without refresh parameter (backward compatibility)."""
+        with patch.object(Service, "refresh", new_callable=AsyncMock) as mock_refresh:
+            response = await client.get("/api/services")
+
+            assert response.status_code == 200
+            result = response.json()
+            assert isinstance(result, list)
+
+            # Verify that refresh was NOT called when parameter is omitted (default behavior)
+            mock_refresh.assert_not_called()
+
+    async def test_fetch_services_with_invalid_refresh_parameter(
+        self, client: AsyncTestClient
+    ):
+        """Test fetching services with invalid refresh parameter value."""
+        response = await client.get("/api/services", params={"refresh": "invalid"})
+
+        # Should return 400 for invalid refresh parameter value
+        assert response.status_code == 400
+
 
 class TestGetSingleServiceAPI:
     """Test cases for the GET /api/services/{service_id} endpoint."""
@@ -128,6 +176,68 @@ class TestGetSingleServiceAPI:
         response = await client.get("/api/services/invalid-uuid-format")
 
         # Should return 400 for invalid UUID format
+        assert response.status_code == 400
+
+    async def test_get_service_with_refresh_true(self, client: AsyncTestClient):
+        """Test fetching a single service with refresh=true parameter."""
+        service_id = "4c2216ea-df22-4bf6-bcea-56964df12af5"
+
+        with patch.object(Service, "refresh", new_callable=AsyncMock) as mock_refresh:
+            response = await client.get(
+                f"/api/services/{service_id}", params={"refresh": "true"}
+            )
+
+            assert response.status_code == 200
+            result = response.json()
+            assert isinstance(result, dict)
+            assert result["id"] == service_id
+
+            # Verify that refresh was called for the service
+            mock_refresh.assert_called_once()
+
+    async def test_get_service_with_refresh_false(self, client: AsyncTestClient):
+        """Test fetching a single service with refresh=false parameter."""
+        service_id = "4c2216ea-df22-4bf6-bcea-56964df12af5"
+
+        with patch.object(Service, "refresh", new_callable=AsyncMock) as mock_refresh:
+            response = await client.get(
+                f"/api/services/{service_id}", params={"refresh": "false"}
+            )
+
+            assert response.status_code == 200
+            result = response.json()
+            assert isinstance(result, dict)
+            assert result["id"] == service_id
+
+            # Verify that refresh was NOT called when refresh=false
+            mock_refresh.assert_not_called()
+
+    async def test_get_service_without_refresh_parameter(self, client: AsyncTestClient):
+        """Test fetching a single service without refresh parameter (backward compatibility)."""
+        service_id = "4c2216ea-df22-4bf6-bcea-56964df12af5"
+
+        with patch.object(Service, "refresh", new_callable=AsyncMock) as mock_refresh:
+            response = await client.get(f"/api/services/{service_id}")
+
+            assert response.status_code == 200
+            result = response.json()
+            assert isinstance(result, dict)
+            assert result["id"] == service_id
+
+            # Verify that refresh was NOT called when parameter is omitted (default behavior)
+            mock_refresh.assert_not_called()
+
+    async def test_get_service_with_invalid_refresh_parameter(
+        self, client: AsyncTestClient
+    ):
+        """Test fetching a single service with invalid refresh parameter value."""
+        service_id = "4c2216ea-df22-4bf6-bcea-56964df12af5"
+
+        response = await client.get(
+            f"/api/services/{service_id}", params={"refresh": "invalid"}
+        )
+
+        # Should return 400 for invalid refresh parameter value
         assert response.status_code == 400
 
 

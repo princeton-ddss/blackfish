@@ -335,18 +335,47 @@ run.add_command(run_speech_recognition, "speech-recognition")
 def stop(service_id: str) -> None:  # pragma: no cover
     """Stop one or more services"""
 
+    from uuid import UUID
+
+    # First, try to use the service_id as provided (full UUID)
+    try:
+        UUID(service_id)
+        full_service_id = service_id
+    except ValueError:
+        # If it's not a valid UUID, try to find a matching service by abbreviated ID
+        with yaspin(text="Looking up service...") as spinner:
+            res = requests.get(f"http://{config.HOST}:{config.PORT}/api/services")
+            if not res.ok:
+                spinner.text = f"Failed to fetch services (status={res.status_code})."
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
+
+            services = res.json()
+            matching_services = [s for s in services if s["id"].startswith(service_id)]
+
+            if len(matching_services) == 0:
+                spinner.text = f"No service found matching '{service_id}'."
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
+            elif len(matching_services) > 1:
+                spinner.text = f"Multiple services match '{service_id}': {', '.join([s['id'][:13] for s in matching_services])}. Please provide a more specific ID."
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
+            else:
+                full_service_id = matching_services[0]["id"]
+                spinner.text = f"Found service {full_service_id[:13]}."
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
+
     with yaspin(text="Stopping service...") as spinner:
         res = requests.put(
-            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}/stop",
+            f"http://{config.HOST}:{config.PORT}/api/services/{full_service_id}/stop",
             json={},
         )
         if not res.ok:
-            spinner.text = (
-                f"Failed to stop service {service_id} (status={res.status_code})."
-            )
+            spinner.text = f"Failed to stop service {full_service_id[:13]} (status={res.status_code})."
             spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            spinner.text = f"Stopped service {service_id}."
+            spinner.text = f"Stopped service {full_service_id[:13]}."
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
@@ -437,7 +466,8 @@ def details(service_id: str) -> None:  # pragma: no cover
 
     with yaspin(text="Fetching service...") as spinner:
         res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
+            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}",
+            params={"refresh": "true"},
         )  # fresh data 🥬
         if not res.ok:
             spinner.text = (
@@ -554,9 +584,10 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
             click.echo(f"Unable to parse filter: {e}")
             return
     else:
-        params = None
+        params = {}
 
     with yaspin(text="Fetching services...") as spinner:
+        params["refresh"] = "true"
         res = requests.get(
             f"http://{config.HOST}:{config.PORT}/api/services", params=params
         )  # fresh data 🥬

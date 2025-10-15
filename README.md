@@ -320,4 +320,4 @@ The main requirement to run online inference is sufficient GPU memory. As a rule
 ## Want to learn more?
 You can find additional details and examples on our official [documentation page](https://princeton-ddss.github.io/blackfish/).
 
-[^1]: Models that can be used to retrieve embeddings with --task embded 
+[^1]: Models that can be used to retrieve embeddings with --task embed 

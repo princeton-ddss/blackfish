@@ -1264,7 +1264,7 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
         raise ValidationException(detail="{model_id} is not a valid UUID.")
 
     if res.rowcount == 0:
-        raise NotFoundException(detail="No model deleted: {model_id} not found.")
+        raise NotFoundException(detail=f"No model deleted: {model_id} not found.")
 
 
 @dataclass

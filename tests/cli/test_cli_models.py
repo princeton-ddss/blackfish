@@ -308,9 +308,9 @@ def test_add_model(
 
 @pytest.mark.parametrize(
     "repo_id, profile, revision, use_cache, profile_exists, is_local_profile, "
-    "remove_model_success, expected_exit_code, expected_in_output",
+    "remove_model_success, mock_delete_response, expected_exit_code, expected_in_output",
     [
-        # Successful model removal
+        # Successful model removal with successful database deletion
         (
             "openai/whisper-large-v3",
             "default",
@@ -319,8 +319,31 @@ def test_add_model(
             True,
             True,
             True,
+            {"status_code": 200, "json": [{"status": "ok", "model_id": "test-id"}]},
             0,
-            "Removed model openai/whisper-large-v3",
+            "Database updated successfully!",
+        ),
+        # Successful file removal but database deletion fails
+        (
+            "openai/whisper-large-v3",
+            "default",
+            None,
+            False,
+            True,
+            True,
+            True,
+            {
+                "status_code": 200,
+                "json": [
+                    {
+                        "status": "error",
+                        "model_id": "test-id",
+                        "message": "Database error",
+                    }
+                ],
+            },
+            0,
+            "Database update failed",
         ),
         # Profile not found
         (
@@ -331,6 +354,7 @@ def test_add_model(
             False,
             True,
             True,
+            {"status_code": 200, "json": []},
             0,
             "Profile not found",
         ),
@@ -343,10 +367,11 @@ def test_add_model(
             True,
             False,
             True,
+            {"status_code": 200, "json": []},
             0,
             "Blackfish can only manage models for local profiles",
         ),
-        # Model removal fails
+        # Model removal fails (file deletion)
         (
             "nonexistent/model",
             "default",
@@ -355,10 +380,11 @@ def test_add_model(
             True,
             True,
             False,
+            {"status_code": 200, "json": []},
             0,
             "Failed to remove model",
         ),
-        # With revision and cache
+        # With revision and cache - successful
         (
             "microsoft/DialoGPT-medium",
             "test-profile",
@@ -367,8 +393,22 @@ def test_add_model(
             True,
             True,
             True,
+            {"status_code": 200, "json": [{"status": "ok", "model_id": "test-id"}]},
             0,
-            "Removed model microsoft/DialoGPT-medium",
+            "Database updated successfully!",
+        ),
+        # Database deletion returns 500 error
+        (
+            "openai/whisper-large-v3",
+            "default",
+            None,
+            False,
+            True,
+            True,
+            True,
+            {"status_code": 500, "reason": "Internal Server Error"},
+            0,
+            "Failed to delete model openai/whisper-large-v3",
         ),
     ],
 )
@@ -382,6 +422,7 @@ def test_remove_model(
     profile_exists: bool,
     is_local_profile: bool,
     remove_model_success: bool,
+    mock_delete_response: dict,
     expected_exit_code: int,
     expected_in_output: str,
 ) -> None:
@@ -399,6 +440,7 @@ def test_remove_model(
     with (
         patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
         patch("app.models.model.remove_model") as mock_remove_model,
+        patch("app.cli.__main__.requests.delete") as mock_delete,
     ):
         # Mock profile deserialization
         if not profile_exists:
@@ -421,6 +463,14 @@ def test_remove_model(
         if not remove_model_success:
             mock_remove_model.side_effect = Exception("Model not found")
 
+        # Mock requests.delete
+        mock_response_obj = Mock()
+        mock_response_obj.ok = mock_delete_response["status_code"] == 200
+        mock_response_obj.status_code = mock_delete_response["status_code"]
+        mock_response_obj.reason = mock_delete_response.get("reason", "OK")
+        mock_response_obj.json.return_value = mock_delete_response.get("json", [])
+        mock_delete.return_value = mock_response_obj
+
         result = cli_runner.invoke(main, cmd)
 
         # Verify calls made appropriately
@@ -434,8 +484,20 @@ def test_remove_model(
                     revision=revision,
                     use_cache=use_cache,
                 )
+                # Verify database deletion was attempted
+                mock_delete.assert_called_once()
+                call_args = mock_delete.call_args
+                assert (
+                    f"http://{mock_config.HOST}:{mock_config.PORT}/api/models"
+                    in call_args[0][0]
+                )
+                assert call_args[1]["params"]["repo_id"] == repo_id
+                assert call_args[1]["params"]["profile"] == profile
+                assert call_args[1]["params"]["revision"] == revision
             else:
                 mock_remove_model.assert_called_once()
+                # Database deletion should not be called if file removal fails
+                mock_delete.assert_not_called()
 
         assert result.exit_code == expected_exit_code
         assert expected_in_output in result.output
@@ -510,6 +572,39 @@ def test_add_model_connection_error(cli_runner):
         mock_post.side_effect = requests.exceptions.ConnectionError("Connection failed")
 
         result = cli_runner.invoke(main, ["model", "add", "openai/whisper-tiny"])
+
+        assert "Failed to connect" in result.output
+        assert result.exit_code == 0
+
+
+def test_remove_model_connection_error(cli_runner):
+    """Test that connection errors during database deletion are handled gracefully."""
+    with (
+        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
+        patch("app.models.model.remove_model") as mock_remove_model,
+        patch("app.cli.__main__.requests.delete") as mock_delete,
+        patch("app.config.config") as mock_config,
+    ):
+        # Mock config
+        mock_config.HOST = "localhost"
+        mock_config.PORT = "8080"  # wrong port
+        mock_config.HOME_DIR = "/tmp/blackfish"
+
+        # Mock profile deserialization
+        mock_profile = Mock()
+        mock_profile.name = "default"
+        mock_profile.is_local.return_value = True
+        mock_deserialize_profile.return_value = mock_profile
+
+        # Mock remove model (file deletion succeeds)
+        mock_remove_model.return_value = None
+
+        # Mock requests.delete raises ConnectionError
+        mock_delete.side_effect = requests.exceptions.ConnectionError(
+            "Connection failed"
+        )
+
+        result = cli_runner.invoke(main, ["model", "rm", "openai/whisper-tiny"])
 
         assert "Failed to connect" in result.output
         assert result.exit_code == 0

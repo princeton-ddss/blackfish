@@ -60,6 +60,7 @@ dev = [
   "mkdocs-material>=9.6.2",
   "mkdocs-swagger-ui-tag>=0.6.11",
   "mkdocstrings[python]>=0.28",
+  "mypy>=1.18.2",
   "nox>=2024.10.9",
   "pre-commit>=4.2",
   "pytest>=8.3.4",

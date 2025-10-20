@@ -23,7 +23,7 @@ from pydantic import BaseModel
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound, StatementError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import Result
+from sqlalchemy import Result, CursorResult
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
@@ -1239,7 +1239,7 @@ async def create_model(data: Model, session: AsyncSession) -> Model:
 async def delete_model(model_id: str, session: AsyncSession) -> None:
     try:
         query = sa.delete(Model).where(Model.id == model_id)
-        res = await session.execute(query)
+        res: CursorResult[Any] = await session.execute(query)
     except StatementError:
         logger.error(f"{model_id} is not a valid UUID.")
         raise ValidationException(detail="{model_id} is not a valid UUID.")

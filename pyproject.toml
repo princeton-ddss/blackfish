@@ -31,6 +31,7 @@ dependencies = [
   "jinja2>=3.1.5",
   "litestar>=2.14",
   "log-symbols>=0.0.14",
+  "pillow>=11.1",
   "prettytable>=3.12",
   "psutil>=6.1.1",
   "pydantic>=2.10.6",

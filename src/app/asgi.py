@@ -27,7 +27,7 @@ from sqlalchemy import Result
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
-from litestar.datastructures import State
+from litestar.datastructures import State, UploadFile
 from advanced_alchemy.extensions.litestar import (
     SQLAlchemyAsyncConfig,
     SQLAlchemyPlugin,
@@ -527,6 +527,146 @@ async def get_audio(path: str) -> File | None:
             raise ValidationException("Path should specify a .wav or .mp3 file.")
     else:
         raise NotFoundException(f"{path} not found.")
+
+
+def validate_safe_path(path: str) -> Path:
+    """Validate that a path is safe to write to and prevent directory traversal."""
+    if ".." in path:
+        raise ValidationException("Path contains invalid directory traversal")
+
+    path_obj = Path(path)
+    if not path_obj.is_absolute():
+        raise ValidationException("Path must be absolute")
+
+    file_path = path_obj.resolve()
+
+    if ".." in str(file_path):
+        raise ValidationException("Path contains invalid directory traversal")
+
+    return file_path
+
+
+def validate_text_file_extension(path: str) -> None:
+    """Validate that the file has a text file extension."""
+    allowed_extensions = {".txt", ".md", ".json", ".csv", ".log", ".yaml", ".yml", ".xml"}
+    if not any(path.lower().endswith(ext) for ext in allowed_extensions):
+        raise ValidationException(
+            f"Invalid text file extension. Allowed: {', '.join(allowed_extensions)}"
+        )
+
+
+def validate_image_file_extension(path: str) -> None:
+    """Validate that the file has an image file extension."""
+    allowed_extensions = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"}
+    if not any(path.lower().endswith(ext) for ext in allowed_extensions):
+        raise ValidationException(
+            f"Invalid image file extension. Allowed: {', '.join(allowed_extensions)}"
+        )
+
+
+class TextFileRequest(BaseModel):
+    path: str
+    content: str
+
+
+@post("/api/files/text", guards=ENDPOINT_GUARDS, status_code=200)
+async def save_text_file(data: TextFileRequest, state: State) -> dict[str, str]:
+    """Create or overwrite a text file at the specified path."""
+    validate_text_file_extension(data.path)
+    file_path = validate_safe_path(data.path)
+
+    try:
+        encoded = data.content.encode("utf-8")
+    except UnicodeEncodeError:
+        raise ValidationException("Content must be valid UTF-8")
+
+    if len(encoded) > state.MAX_TEXT_FILE_SIZE:
+        max_mb = state.MAX_TEXT_FILE_SIZE / (1024 * 1024)
+        raise ValidationException(f"File size exceeds maximum of {max_mb:.1f}MB")
+
+    try:
+        parent_dir = file_path.parent
+        parent_dir.mkdir(parents=True, exist_ok=True)
+
+        file_path.write_text(data.content, encoding="utf-8")
+        logger.debug(f"Created text file at {file_path}")
+        return {"status": "ok", "path": str(file_path)}
+    except PermissionError:
+        raise NotAuthorizedException(f"Permission denied to write to {file_path}")
+    except Exception as e:
+        logger.error(f"Failed to write text file: {e}")
+        raise InternalServerException(f"Failed to write file: {e}")
+
+
+@post("/api/files/image", guards=ENDPOINT_GUARDS, status_code=200)
+async def save_image_file(
+    request: Request,
+    state: State,
+) -> dict[str, str]:
+    """Create or overwrite an image file from uploaded data.
+
+    Accepts multipart/form-data uploads from browser file inputs.
+    If path is not provided, saves to HOME_DIR/uploads with original filename.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        raise InternalServerException(
+            "PIL/Pillow is required for image validation. Install with: pip install pillow"
+        )
+
+    form_data = await request.form()
+
+    data = form_data.get("data")
+    if not isinstance(data, UploadFile):
+        raise ValidationException("Missing required file upload 'data'")
+
+    path = form_data.get("path")
+    if path:
+        if isinstance(path, bytes):
+            path = path.decode("utf-8")
+        elif not isinstance(path, str):
+            path = str(path)
+        path = path.strip()
+        if not path:
+            path = None
+
+    image_bytes = await data.read()
+
+    if len(image_bytes) > state.MAX_IMAGE_FILE_SIZE:
+        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
+        raise ValidationException(f"Image size exceeds maximum of {max_mb:.1f}MB")
+
+    if path is None:
+        upload_dir = Path(blackfish_config.HOME_DIR) / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        file_path = upload_dir / (data.filename or "uploaded_image.png")
+    else:
+        validate_image_file_extension(path)
+        file_path = validate_safe_path(path)
+
+    try:
+        from io import BytesIO
+        img = Image.open(BytesIO(image_bytes))
+        img.verify()
+        logger.debug(f"Validated image: format={img.format}, size={img.size}")
+    except ValidationException:
+        raise
+    except Exception as e:
+        raise ValidationException(f"Invalid image data: {e}")
+
+    try:
+        parent_dir = file_path.parent
+        parent_dir.mkdir(parents=True, exist_ok=True)
+
+        file_path.write_bytes(image_bytes)
+        logger.debug(f"Created image file at {file_path}")
+        return {"status": "ok", "path": str(file_path)}
+    except PermissionError:
+        raise NotAuthorizedException(f"Permission denied to write to {file_path}")
+    except Exception as e:
+        logger.error(f"Failed to write image file: {e}")
+        raise InternalServerException(f"Failed to write file: {e}")
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)
@@ -1358,6 +1498,8 @@ app = Litestar(
         get_ports,
         get_files,
         get_audio,
+        save_text_file,
+        save_image_file,
         run_service,
         stop_service,
         refresh_service,

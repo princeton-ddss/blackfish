@@ -13,7 +13,6 @@ DEFAULT_PORT = 8000
 DEFAULT_STATIC_DIR = Path(__file__).parent.parent
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
 DEFAULT_DEBUG = True
-DEFAULT_MAX_TEXT_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 DEFAULT_MAX_IMAGE_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
@@ -61,7 +60,6 @@ class BlackfishConfig:
         debug: bool = DEFAULT_DEBUG,
         auth_token: Optional[str] = None,
         container_provider: Optional[ContainerProvider] = None,
-        max_text_file_size: int = DEFAULT_MAX_TEXT_FILE_SIZE,
         max_image_file_size: int = DEFAULT_MAX_IMAGE_FILE_SIZE,
     ) -> None:
         self.BASE_PATH = os.getenv("BLACKFISH_BASE_PATH", base_path)
@@ -84,9 +82,6 @@ class BlackfishConfig:
             )
         else:
             self.CONTAINER_PROVIDER = container_provider
-        self.MAX_TEXT_FILE_SIZE = int(
-            os.getenv("BLACKFISH_MAX_TEXT_FILE_SIZE", max_text_file_size)
-        )
         self.MAX_IMAGE_FILE_SIZE = int(
             os.getenv("BLACKFISH_MAX_IMAGE_FILE_SIZE", max_image_file_size)
         )

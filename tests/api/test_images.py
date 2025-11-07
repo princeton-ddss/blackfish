@@ -158,6 +158,33 @@ class TestUploadImageAPI:
                 # Restore permissions for cleanup
                 os.chmod(restricted_dir, 0o755)
 
+    async def test_upload_image_existing_path(self, client: AsyncTestClient):
+        """Test that uploading to an existing path returns 400 error."""
+        png_bytes = self._create_test_png()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+
+            # First upload should succeed
+            response = await client.post(
+                "/api/images",
+                files={"file": png_bytes},
+                data={"path": file_path},
+            )
+            assert response.status_code == 201
+
+            # Second upload to the same path should fail
+            response = await client.post(
+                "/api/images",
+                files={"file": png_bytes},
+                data={"path": file_path},
+            )
+
+            # Should return validation error
+            assert response.status_code == 400
+            result = response.json()
+            assert "already exists" in result["detail"]
+
     def _create_test_png(self) -> bytes:
         """Create a minimal valid PNG image for testing."""
         img = Image.new("RGB", (10, 10), color="red")

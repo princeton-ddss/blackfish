@@ -37,10 +37,11 @@ nav:
   - 'Contributing':
     - Guidelines: 'contrib/guidelines.md'
     - 'Developer Guide': 'contrib/developer_guide.md'
-  - 'API Documentation':
+  - 'API':
+    - 'Usage': 'api/usage.md'
     - 'Jobs': 'api/jobs.md'
     - 'Services': 'api/services.md'
-    - 'OpenAPI (Swagger)': 'api/swagger.md'
+  # - 'REST API': 'openapi/swagger.md'
 plugins:
   - search
   - mkdocstrings:

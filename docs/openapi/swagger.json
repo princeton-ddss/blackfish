@@ -1,7 +1,7 @@
 {
     "info": {
-        "title": "Blackfish API",
-        "version": "0.0.1"
+        "title": "Blackfish REST API",
+        "version": "0.2.1"
     },
     "openapi": "3.1.0",
     "servers": [

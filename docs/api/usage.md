@@ -13,7 +13,7 @@ from blackfish import Blackfish, ManagedService
 bf = Blackfish(debug=True)
 
 # Create a service
-service = ManagedService(
+service = bf.launch_service(
     name="tiny-llama-service",
     image="text_generation",
     model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
@@ -24,20 +24,6 @@ service = ManagedService(
         "gres": 1,
     }
 )
-
-# Start a service
-service.start()
-# service = bf.create_service(
-#     name="tiny-llama-service",
-#     image="text_generation",
-#     model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-#     job_config={
-#         "name": "tiny-llama-service",
-#         "time": "01:00:00",
-#         "mem": 8,
-#         "gres": 1,
-#     }
-# )
 
 # Wait for service
 service.wait(timeout=300)
@@ -68,7 +54,7 @@ from blackfish import Blackfish
 async def main():
     async with Blackfish() as bf:
         # Create a service
-        service = await bf.async_create_service(
+        service = await bf.async_launch_service(
             name="tiny-llama-service",
             image="text_generation",
             model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
@@ -92,7 +78,19 @@ asyncio.run(main())
 
 ## Resource Management
 
-Use context managers for automatic cleanup:
+### Services
+
+Blackfish launches services running on external resources. Generally, you will want to tie the lifetime of services to the lifetime of your Python script to ensure that external resources are released. This is the default behavior for services.
+
+In some cases, however, you may want services to outlive your script. To accomplish this, simply set `auto_cleanup=False`:
+
+```python
+bf.launch_service(..., auto_cleanup=False)
+```
+
+### Client
+
+Use context managers for automatic cleanup of the Blackfish client:
 
 ```python
 # Sync context manager
@@ -111,12 +109,12 @@ Or manually (with sync API):
 ```python
 bf = Blackfish()
 # ... do work ...
-bf.close()  # Close database connection
+bf.close()
 ```
 
 ## Service Objects
 
-The `ManagedService` type wraps a `Service` that should always point to a service that is tracked by the Blackfish database. This means that Blackfish will not lose track of your service even if your Python session crashes. You can access the internal service's attributes exactly as if you were working with the underlying `Service`:
+The `ManagedService` type wraps a `Service` that should always point to a service that is tracked by the Blackfish database. This means that Blackfish will not lose track of your service even if your Python session crashes[^1]. You can access the internal service's attributes exactly as if you were working with the underlying `Service`:
 
 ```python
 print(f"Service: {service.id}")
@@ -203,12 +201,6 @@ async def create_multiple_services():
 asyncio.run(create_multiple_services())
 ```
 
-## Best Practices
-
-1. **Handle exceptions** - service creation can fail
-2. **Set appropriate grace periods** for slow-starting services
-3. **Use profiles** to manage different deployment configurations
-
 ## Troubleshooting
 
 ### Service won't start
@@ -237,3 +229,5 @@ blackfish init
 ```
 
 And verify that the home directory `~/.blackfish` exists.
+
+[^1]: If `auto_clean=False`. Otherwise, Blackfish automatically deletes services on shutdown.

@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+
+import sys
 import asyncio
+import atexit
 import os
 import time
+import logging
+from uuid import UUID
 from pathlib import Path
 from typing import (
     Optional,
@@ -17,6 +22,7 @@ from typing import (
 from functools import wraps
 from contextlib import asynccontextmanager
 
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -24,19 +30,23 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 from litestar.datastructures import State
-
-from app.config import BlackfishConfig
-from app.services.base import Service, ServiceStatus
-from app.services.text_generation import TextGenerationConfig
-from app.services.speech_recognition import SpeechRecognitionConfig
-from app.job import JobScheduler, JobConfig
-from app.utils import find_port
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-# Import all service subclasses to register polymorphic identities with SQLAlchemy
-from app.services.text_generation import TextGeneration  # noqa: F401
-from app.services.speech_recognition import SpeechRecognition  # noqa: F401
+from app.config import BlackfishConfig
+from app.models.profile import deserialize_profile, LocalProfile, SlurmProfile
+from app.services.base import Service, ServiceStatus
+from app.services.text_generation import TextGeneration, TextGenerationConfig
+from app.services.speech_recognition import SpeechRecognition, SpeechRecognitionConfig
+from app.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
+from app.utils import (
+    find_port,
+    get_models,
+    get_revisions,
+    get_latest_commit,
+    get_model_dir,
+)
+from app.logger import logger
 
 
 def set_logging_level(level: str = "WARNING") -> None:
@@ -56,9 +66,6 @@ def set_logging_level(level: str = "WARNING") -> None:
         >>> blackfish.set_logging_level("DEBUG")  # Show all logs including debug
         >>> blackfish.set_logging_level("WARNING")  # Only warnings and errors (default)
     """
-    import logging
-    from app.logger import logger
-
     numeric_level = getattr(logging, level.upper(), None)
     if numeric_level is None:
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -236,7 +243,7 @@ class ManagedService:
             Self (for method chaining), or None if service not found
 
         Example:
-            >>> service = await bf.async_create_service(...)
+            >>> service = await bf.async_launch_service(...)
             >>> service = await service.async_wait()
             >>> if service and service.status == ServiceStatus.HEALTHY:
             ...     print(f"Service ready on port {service.port}")
@@ -360,12 +367,12 @@ class Blackfish:
 
     This client provides both synchronous and asynchronous APIs for creating,
     managing, and monitoring ML inference services. All async methods are prefixed
-    with 'async_' (e.g., async_create_service, async_list_services).
+    with 'async_' (e.g., async_launch_service, async_list_services).
 
     Examples:
         Synchronous usage:
         >>> bf = Blackfish()
-        >>> service = bf.create_service(
+        >>> service = bf.launch_service(
         ...     name="my-llm",
         ...     image="text_generation",
         ...     model="meta-llama/Llama-3.3-70B-Instruct",
@@ -376,7 +383,7 @@ class Blackfish:
         Asynchronous usage:
         >>> async def main():
         ...     bf = Blackfish()
-        ...     service = await bf.async_create_service(
+        ...     service = await bf.async_launch_service(
         ...         name="my-llm",
         ...         image="text_generation",
         ...         model="meta-llama/Llama-3.3-70B-Instruct",
@@ -459,6 +466,10 @@ class Blackfish:
         # Convert config to Litestar State for compatibility with base.py methods
         self._state = State(self.config.as_dict())
 
+        # Auto-cleanup tracking
+        self._managed_services: list[ManagedService] = []
+        atexit.register(self._cleanup_services)
+
         # Set logging level to WARNING by default for cleaner programmatic interface
         set_logging_level("WARNING")
 
@@ -509,9 +520,47 @@ class Blackfish:
         """Close the database connection (sync wrapper)."""
         _async_to_sync(self._async_close)()
 
-    # Service Management Methods
+    def _cleanup_services(self) -> None:
+        """Clean up all tracked services on script exit.
 
-    async def async_create_service(
+        This method is registered with atexit. It stops and deletes all services that were created during the session.
+
+        Errors are silently ignored to prevent issues during interpreter shutdown.
+        """
+        if not self._managed_services:
+            return
+
+        print(
+            f"🧹 Blackfish cleaning up {len(self._managed_services)} service(s)...",
+            file=sys.stderr,
+        )
+
+        try:
+            # Create a new event loop in case default is closed during shutdown
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(self._async_cleanup_services())
+                print(
+                    f"{LogSymbols.SUCCESS.value} Blackfish cleanup completed!",
+                    file=sys.stderr,
+                )
+            finally:
+                loop.close()
+        except Exception as e:
+            print(
+                f"{LogSymbols.ERROR.value} Blackfish cleanup failed: {e}",
+                file=sys.stderr,
+            )
+
+    async def _async_cleanup_services(self) -> None:
+        """Async implementation of cleanup for all tracked services."""
+        for service in self._managed_services:
+            if service._service is not None:
+                await service.async_stop()
+                await service.async_delete()
+
+    async def async_launch_service(
         self,
         name: str,
         image: str,
@@ -521,6 +570,7 @@ class Blackfish:
         job_config: Optional[dict[str, Any]] = None,
         mount: Optional[str] = None,
         grace_period: int = 180,
+        auto_cleanup: bool = True,
         **kwargs: dict[str, Any],  # BlackfishConfig
     ) -> ManagedService:
         """Create and start a new service (async).
@@ -536,6 +586,8 @@ class Blackfish:
             job_config: Job configuration options (Slurm settings, etc.)
             mount: Optional directory to mount
             grace_period: Time in seconds to wait before marking unhealthy
+            auto_cleanup: If True, automatically stop and delete this service when the
+                Python script exits (default: True)
             **kwargs: Additional service-specific parameters
 
         Returns:
@@ -545,7 +597,6 @@ class Blackfish:
             ValueError: If the profile is not found, the model is not available,
                 or model files cannot be located.
         """
-        from app.models.profile import deserialize_profile
 
         # Load profile
         profile = deserialize_profile(self.home_dir, profile_name)
@@ -573,9 +624,6 @@ class Blackfish:
             "grace_period": grace_period,
             **kwargs,
         }
-
-        # Add profile-specific parameters
-        from app.models.profile import LocalProfile, SlurmProfile
 
         if isinstance(profile, LocalProfile):
             service_params["host"] = "localhost"
@@ -607,13 +655,6 @@ class Blackfish:
         )
 
         if needs_model_info:
-            from app.utils import (
-                get_models,
-                get_revisions,
-                get_latest_commit,
-                get_model_dir,
-            )
-
             # Check if model is available
             available_models = get_models(profile)
             if model not in available_models:
@@ -666,9 +707,6 @@ class Blackfish:
                     )
                 container_config["model_dir"] = model_dir
 
-        # Create appropriate config objects based on service type
-        from app.job import SlurmJobConfig, LocalJobConfig
-
         # Map image type to config class
         container_cfg: TextGenerationConfig | SpeechRecognitionConfig
         if image == "text_generation":
@@ -691,10 +729,16 @@ class Blackfish:
             spinner.text = f"Started service: {service.id}"
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
-        return ManagedService(service, self)
+        managed_service = ManagedService(service, self)
+
+        # Track service for auto-cleanup if enabled
+        if auto_cleanup:
+            self._managed_services.append(managed_service)
+
+        return managed_service
 
     @_async_to_sync
-    async def create_service(
+    async def launch_service(
         self,
         name: str,
         image: str,
@@ -704,13 +748,14 @@ class Blackfish:
         job_config: Optional[dict[str, Any]] = None,
         mount: Optional[str] = None,
         grace_period: int = 180,
+        auto_cleanup: bool = True,
         **kwargs: dict[str, Any],  # BlackfishConfig
     ) -> ManagedService:
         """Create and start a new service (sync wrapper).
 
-        See async_create_service for details.
+        See async_launch_service for details.
         """
-        return await self.async_create_service(
+        return await self.async_launch_service(
             name,
             image,
             model,
@@ -719,6 +764,7 @@ class Blackfish:
             job_config,
             mount,
             grace_period,
+            auto_cleanup,
             **kwargs,
         )
 
@@ -731,9 +777,6 @@ class Blackfish:
         Returns:
             ManagedService instance or None if not found
         """
-        import sqlalchemy as sa
-        from uuid import UUID
-
         async with self._session() as session:
             query = sa.select(Service).where(Service.id == UUID(service_id))
             result = await session.execute(query)
@@ -773,7 +816,6 @@ class Blackfish:
         Returns:
             List of matching managed services
         """
-        import sqlalchemy as sa
 
         # Build query filters
         filters = {}
@@ -872,8 +914,6 @@ class Blackfish:
         Returns:
             True if deleted, False if not found
         """
-        import sqlalchemy as sa
-        from uuid import UUID
 
         async with self._session() as session:
             query = sa.delete(Service).where(Service.id == UUID(service_id))
@@ -907,7 +947,7 @@ class Blackfish:
             ManagedService instance if target status reached, None if timeout or service failed
 
         Example:
-            >>> service = bf.create_service(...)
+            >>> service = bf.launch_service(...)
             >>> service = await bf.async_wait_for_service(str(service.id))
             >>> if service and service.status == ServiceStatus.HEALTHY:
             ...     print(f"Service ready on port {service.port}")

@@ -191,3 +191,114 @@ class TestUploadImageAPI:
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         return buffer.getvalue()
+
+
+class TestGetImageAPI:
+    """Test cases for the GET /api/images endpoint."""
+
+    async def test_get_image_requires_authentication(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that GET /api/images requires authentication."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            self._create_and_save_png(file_path)
+
+            response = await no_auth_client.get(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return NotAuthorized error
+            assert response.status_code == 401
+
+    async def test_get_image_success(self, client: AsyncTestClient):
+        """Test retrieving an existing image file."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            original_data = self._create_and_save_png(file_path)
+
+            response = await client.get(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return success with image data
+            assert response.status_code == 200
+            assert response.content == original_data
+
+    async def test_get_image_not_found(self, client: AsyncTestClient):
+        """Test retrieving a non-existent image."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "nonexistent.png")
+
+            response = await client.get(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return not found error
+            assert response.status_code == 404
+
+    async def test_get_image_is_directory(self, client: AsyncTestClient):
+        """Test that attempting to get a directory returns an error."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            response = await client.get(
+                "/api/images",
+                params={"path": temp_dir},
+            )
+
+            # Should return validation error
+            assert response.status_code == 400
+            result = response.json()
+            assert "not a file" in result["detail"]
+
+    async def test_get_image_invalid_extension(self, client: AsyncTestClient):
+        """Test that files with invalid extensions are rejected."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.txt")
+            with open(file_path, "w") as f:
+                f.write("Not an image")
+
+            response = await client.get(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return validation error
+            assert response.status_code == 400
+            result = response.json()
+            assert "Invalid image file extension" in result["detail"]
+
+    async def test_get_image_corrupted_file(self, client: AsyncTestClient):
+        """Test that corrupted image files are rejected."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "corrupted.png")
+            with open(file_path, "wb") as f:
+                f.write(b"This is not a valid PNG file")
+
+            response = await client.get(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return validation error
+            assert response.status_code == 400
+            result = response.json()
+            assert "Invalid image file" in result["detail"]
+
+    def _create_and_save_png(self, path: str) -> bytes:
+        """Create and save a PNG image for testing."""
+        img = Image.new("RGB", (10, 10), color="blue")
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        data = buffer.getvalue()
+        with open(path, "wb") as f:
+            f.write(data)
+        return data

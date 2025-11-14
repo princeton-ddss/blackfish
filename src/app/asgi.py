@@ -610,6 +610,42 @@ async def upload_image(
         raise InternalServerException(f"Failed to create file: {e}")
 
 
+@get("/api/images", guards=ENDPOINT_GUARDS)
+async def get_image(path: str) -> File:
+    """Retrieve an image file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve image from {file_path}")
+
+    if not file_path.exists():
+        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+
+    if not file_path.is_file():
+        raise ValidationException(f"The requested path ({file_path}) is not a file")
+
+    # Validate it's an image file
+    if not any(str(file_path).lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid image file extension. Allowed extensions: {', '.join(IMAGE_EXTENSIONS)}"
+        )
+
+    try:
+        img = Image.open(file_path)
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Invalid image file: {e}")
+
+    try:
+        return File(path=file_path)
+    except PermissionError as e:
+        logger.error(f"Permission denied reading file at {file_path}: {e}")
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to read image file at {file_path}: {e}")
+        raise InternalServerException(f"Failed to read file: {e}")
+
+
 @get("/api/ports", guards=ENDPOINT_GUARDS)
 async def get_ports(request: Request) -> int:  # type: ignore
     """Find an available port on the server. This endpoint allows a UI to run local services."""
@@ -1440,6 +1476,7 @@ app = Litestar(
         get_files,
         get_audio,
         upload_image,
+        get_image,
         run_service,
         stop_service,
         refresh_service,

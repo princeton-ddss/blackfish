@@ -570,7 +570,7 @@ class Service(UUIDAuditBase):
         ```
         """
         if self.port is None:
-            logger.warning(
+            logger.debug(
                 f"Could not close tunnel because service {self.id} has no port set."
             )
             return

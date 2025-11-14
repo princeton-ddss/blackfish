@@ -9,16 +9,18 @@ import requests
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple, Any, Type
+from typing import Optional, Tuple, Any, Type, Annotated
 import asyncio
 from pathlib import Path
 import bcrypt
 from importlib import import_module
 from uuid import UUID
+from PIL import Image
+from io import BytesIO
 
 from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
-from pydantic import BaseModel
+from pydantic import BaseModel, AfterValidator, ConfigDict
 
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound, StatementError
@@ -27,7 +29,7 @@ from sqlalchemy import Result
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
-from litestar.datastructures import State
+from litestar.datastructures import State, UploadFile
 from advanced_alchemy.extensions.litestar import (
     SQLAlchemyAsyncConfig,
     SQLAlchemyPlugin,
@@ -58,6 +60,8 @@ from litestar.datastructures.secret_values import SecretString
 from litestar.middleware.base import MiddlewareProtocol
 from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.response import File
+from litestar.enums import RequestEncodingType
+from litestar.params import Body
 
 from app.logger import logger
 from app import services, jobs
@@ -528,6 +532,202 @@ async def get_audio(path: str) -> File | None:
     else:
         raise NotFoundException(f"{path} not found.")
 
+
+IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
+
+
+def has_image_extension(path: str) -> str:
+    if not any(path.lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid image file extension. Allowed extensions: {', '.join(IMAGE_EXTENSIONS)}"
+        )
+    return path
+
+
+class ImageUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_image_extension)]
+    file: UploadFile
+
+
+class ImageUploadResponse(BaseModel):
+    filename: str
+    size: int
+    created_at: datetime
+
+
+@post("/api/images", guards=ENDPOINT_GUARDS)
+async def upload_image(
+    data: Annotated[
+        ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> ImageUploadResponse:
+    """Upload an image file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload image {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    if len(content) > state.MAX_IMAGE_FILE_SIZE:
+        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
+        file_mb = len(content) / (1024 * 1024)
+        raise ValidationException(
+            f"Image size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
+        )
+
+    try:
+        img = Image.open(BytesIO(content))
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Pillow detected invalid image data: {e}")
+
+    try:
+        parent_dir = path.parent
+        parent_dir.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        logger.debug(f"Created image file at {path}")
+        return ImageUploadResponse(
+            filename=os.path.basename(path),
+            size=len(content),
+            created_at=datetime.now(),
+        )
+    except PermissionError as e:
+        logger.error(
+            f"User does not have permission to create file at path {path}: {e}"
+        )
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except OSError as e:
+        logger.error(f"Failed to create image file at path {path}: {e}")
+        raise InternalServerException(f"Failed to create file: {e}")
+    except Exception as e:
+        logger.error(f"Failed to create image file at path {path}: {e}")
+        raise InternalServerException(f"Failed to create file: {e}")
+
+
+@get("/api/images", guards=ENDPOINT_GUARDS)
+async def get_image(path: str) -> File:
+    """Retrieve an image file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve image from {file_path}")
+
+    if not file_path.exists():
+        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+
+    if not file_path.is_file():
+        raise ValidationException(f"The requested path ({file_path}) is not a file")
+
+    # Validate it's an image file
+    if not any(str(file_path).lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid image file extension. Allowed extensions: {', '.join(IMAGE_EXTENSIONS)}"
+        )
+
+    try:
+        img = Image.open(file_path)
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Invalid image file: {e}")
+
+    try:
+        return File(path=file_path)
+    except PermissionError as e:
+        logger.error(f"Permission denied reading file at {file_path}: {e}")
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to read image file at {file_path}: {e}")
+        raise InternalServerException(f"Failed to read file: {e}")
+
+
+@put("/api/images", guards=ENDPOINT_GUARDS)
+async def update_image(
+    data: Annotated[
+        ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> ImageUploadResponse:
+    """Update/replace an existing image file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update image {data.file.filename} at {path}")
+
+    if not path.exists():
+        raise NotFoundException(f"The requested path ({path}) does not exist")
+
+    if not path.is_file():
+        raise ValidationException(f"The requested path ({path}) is not a file")
+
+    if len(content) > state.MAX_IMAGE_FILE_SIZE:
+        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
+        file_mb = len(content) / (1024 * 1024)
+        raise ValidationException(
+            f"Image size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
+        )
+
+    try:
+        img = Image.open(BytesIO(content))
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Pillow detected invalid image data: {e}")
+
+    try:
+        path.write_bytes(content)
+        logger.debug(f"Updated image file at {path}")
+        return ImageUploadResponse(
+            filename=os.path.basename(path),
+            size=len(content),
+            created_at=datetime.now(),
+        )
+    except PermissionError as e:
+        logger.error(
+            f"User does not have permission to update file at path {path}: {e}"
+        )
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to update image file at path {path}: {e}")
+        raise InternalServerException(f"Failed to update file: {e}")
+    
+    
+@delete("/api/images", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_image(path: str) -> dict[str, str]:
+    """Delete an image file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete image at {file_path}")
+
+    if not file_path.exists():
+        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+
+    if not file_path.is_file():
+        raise ValidationException(f"The requested path ({file_path}) is not a file")
+
+    # Validate it's an image file
+    if not any(str(file_path).lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid image file extension. Allowed extensions: {', '.join(IMAGE_EXTENSIONS)}"
+        )
+
+    try:
+        file_path.unlink()
+        logger.debug(f"Deleted image file at {file_path}")
+        return {"message": f"Successfully deleted image at {file_path}"}
+    except PermissionError as e:
+        logger.error(f"Permission denied deleting file at {file_path}: {e}")
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to delete image file at {file_path}: {e}")
+        raise InternalServerException(f"Failed to delete file: {e}")
+    
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)
 async def get_ports(request: Request) -> int:  # type: ignore
@@ -1358,6 +1558,10 @@ app = Litestar(
         get_ports,
         get_files,
         get_audio,
+        upload_image,
+        get_image,
+        update_image,
+        delete_image,
         run_service,
         stop_service,
         refresh_service,

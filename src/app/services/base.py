@@ -652,5 +652,5 @@ class Service(UUIDAuditBase):
             res = requests.get(f"http://localhost:{self.port}/health")
             return res
         except Exception as e:
-            logger.error(f"Failed to check health: {e}")
+            logger.debug(f"Failed to check health: {e}")
             return None

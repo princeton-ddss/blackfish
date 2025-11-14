@@ -21,10 +21,7 @@ class ContainerProvider(StrEnum):
 
 
 def get_container_provider() -> Optional[ContainerProvider]:
-    """Determine which container platform to use: Docker (preferred) or Apptainer.
-
-    Raises an exception if neither container platform is available.
-    """
+    """Determine which container platform to use: Docker (preferred) or Apptainer."""
     try:
         _ = subprocess.run(["which", "docker"], check=True, capture_output=True)
         return ContainerProvider.Docker
@@ -74,10 +71,13 @@ class BlackfishConfig:
             )
         else:
             self.AUTH_TOKEN = auth_token
+        self.CONTAINER_PROVIDER: ContainerProvider | None
         if container_provider is None:
-            self.CONTAINER_PROVIDER = os.getenv(
-                "BLACKFISH_CONTAINER_PROVIDER", get_container_provider()
-            )
+            cp = os.getenv("BLACKFISH_CONTAINER_PROVIDER")
+            if cp is not None:
+                self.CONTAINER_PROVIDER = ContainerProvider(cp)
+            else:
+                self.CONTAINER_PROVIDER = get_container_provider()
         else:
             self.CONTAINER_PROVIDER = container_provider
 

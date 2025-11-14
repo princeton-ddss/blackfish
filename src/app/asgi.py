@@ -1313,7 +1313,8 @@ cors_config = CORSConfig(
 openapi_config = OpenAPIConfig(
     title="Blackfish API",
     version="0.0.1",
-    render_plugins=[SwaggerRenderPlugin(path="/swagger")],
+    path="/docs",
+    render_plugins=[SwaggerRenderPlugin()],
 )
 
 template_config = TemplateConfig(

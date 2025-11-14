@@ -646,6 +646,57 @@ async def get_image(path: str) -> File:
         raise InternalServerException(f"Failed to read file: {e}")
 
 
+@put("/api/images", guards=ENDPOINT_GUARDS)
+async def update_image(
+    data: Annotated[
+        ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> ImageUploadResponse:
+    """Update/replace an existing image file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update image {data.file.filename} at {path}")
+
+    if not path.exists():
+        raise NotFoundException(f"The requested path ({path}) does not exist")
+
+    if not path.is_file():
+        raise ValidationException(f"The requested path ({path}) is not a file")
+
+    if len(content) > state.MAX_IMAGE_FILE_SIZE:
+        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
+        file_mb = len(content) / (1024 * 1024)
+        raise ValidationException(
+            f"Image size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
+        )
+
+    try:
+        img = Image.open(BytesIO(content))
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Pillow detected invalid image data: {e}")
+
+    try:
+        path.write_bytes(content)
+        logger.debug(f"Updated image file at {path}")
+        return ImageUploadResponse(
+            filename=os.path.basename(path),
+            size=len(content),
+            created_at=datetime.now(),
+        )
+    except PermissionError as e:
+        logger.error(
+            f"User does not have permission to update file at path {path}: {e}"
+        )
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to update image file at path {path}: {e}")
+        raise InternalServerException(f"Failed to update file: {e}")
+    
+    
 @get("/api/ports", guards=ENDPOINT_GUARDS)
 async def get_ports(request: Request) -> int:  # type: ignore
     """Find an available port on the server. This endpoint allows a UI to run local services."""
@@ -1477,6 +1528,7 @@ app = Litestar(
         get_audio,
         upload_image,
         get_image,
+        update_image,
         run_service,
         stop_service,
         refresh_service,

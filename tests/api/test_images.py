@@ -302,3 +302,147 @@ class TestGetImageAPI:
         with open(path, "wb") as f:
             f.write(data)
         return data
+
+
+class TestUpdateImageAPI:
+    """Test cases for the PUT /api/images endpoint."""
+
+    async def test_update_image_requires_authentication(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that PUT /api/images requires authentication."""
+
+        png_bytes = self._create_test_png()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            self._create_and_save_png(file_path)
+
+            response = await no_auth_client.put(
+                "/api/images",
+                files={"file": png_bytes},
+                data={"path": file_path},
+            )
+
+            # Should return NotAuthorized error
+            assert response.status_code == 401
+
+    async def test_update_image_success(self, client: AsyncTestClient):
+        """Test successfully updating an existing image."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            # Create initial file
+            self._create_and_save_png(file_path, color="red")
+
+            # Update with new image
+            new_png_bytes = self._create_test_png(color="green")
+            response = await client.put(
+                "/api/images",
+                files={"file": new_png_bytes},
+                data={"path": file_path},
+            )
+
+            # Should return success
+            assert response.status_code == 200
+            result = response.json()
+            assert result["filename"] == "test.png"
+            assert result["size"] == len(new_png_bytes)
+            assert "created_at" in result
+
+            # Verify file was actually updated
+            with open(file_path, "rb") as f:
+                assert f.read() == new_png_bytes
+
+    async def test_update_image_not_found(self, client: AsyncTestClient):
+        """Test updating a non-existent image."""
+
+        png_bytes = self._create_test_png()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "nonexistent.png")
+
+            response = await client.put(
+                "/api/images",
+                files={"file": png_bytes},
+                data={"path": file_path},
+            )
+
+            # Should return not found error
+            assert response.status_code == 404
+
+    async def test_update_image_is_directory(self, client: AsyncTestClient):
+        """Test that attempting to update a directory returns an error."""
+
+        png_bytes = self._create_test_png()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            response = await client.put(
+                "/api/images",
+                files={"file": png_bytes},
+                data={"path": temp_dir},
+            )
+
+            # Should return validation error
+            assert response.status_code == 400
+            result = response.json()
+            # Check for either our specific message or the general validation failure message
+            assert "not a file" in result["detail"] or "Validation failed" in result["detail"]
+
+    async def test_update_image_invalid_data(self, client: AsyncTestClient):
+        """Test that invalid image data is rejected."""
+
+        invalid_data = b"This is not an image"
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            self._create_and_save_png(file_path)
+
+            response = await client.put(
+                "/api/images",
+                files={"file": invalid_data},
+                data={"path": file_path},
+            )
+
+            # Should return validation error
+            assert response.status_code == 400
+            result = response.json()
+            assert "Pillow detected invalid image data" in result["detail"]
+
+    async def test_update_image_permission_denied(self, client: AsyncTestClient):
+        """Test handling of permission denied errors."""
+
+        png_bytes = self._create_test_png()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            self._create_and_save_png(file_path)
+            os.chmod(file_path, 0o444)
+
+            try:
+                response = await client.put(
+                    "/api/images",
+                    files={"file": png_bytes},
+                    data={"path": file_path},
+                )
+
+                # Should return permission denied or OS error
+                assert response.status_code in [401, 500]
+
+            finally:
+                # Restore permissions for cleanup
+                os.chmod(file_path, 0o644)
+
+    def _create_test_png(self, color: str = "red") -> bytes:
+        """Create a minimal valid PNG image for testing."""
+        img = Image.new("RGB", (10, 10), color=color)
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        return buffer.getvalue()
+
+    def _create_and_save_png(self, path: str, color: str = "blue") -> bytes:
+        """Create and save a PNG image for testing."""
+        data = self._create_test_png(color=color)
+        with open(path, "wb") as f:
+            f.write(data)
+        return data

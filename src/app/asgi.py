@@ -697,6 +697,38 @@ async def update_image(
         raise InternalServerException(f"Failed to update file: {e}")
     
     
+@delete("/api/images", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_image(path: str) -> dict[str, str]:
+    """Delete an image file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete image at {file_path}")
+
+    if not file_path.exists():
+        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+
+    if not file_path.is_file():
+        raise ValidationException(f"The requested path ({file_path}) is not a file")
+
+    # Validate it's an image file
+    if not any(str(file_path).lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid image file extension. Allowed extensions: {', '.join(IMAGE_EXTENSIONS)}"
+        )
+
+    try:
+        file_path.unlink()
+        logger.debug(f"Deleted image file at {file_path}")
+        return {"message": f"Successfully deleted image at {file_path}"}
+    except PermissionError as e:
+        logger.error(f"Permission denied deleting file at {file_path}: {e}")
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to delete image file at {file_path}: {e}")
+        raise InternalServerException(f"Failed to delete file: {e}")
+    
+
 @get("/api/ports", guards=ENDPOINT_GUARDS)
 async def get_ports(request: Request) -> int:  # type: ignore
     """Find an available port on the server. This endpoint allows a UI to run local services."""
@@ -1529,6 +1561,7 @@ app = Litestar(
         upload_image,
         get_image,
         update_image,
+        delete_image,
         run_service,
         stop_service,
         refresh_service,

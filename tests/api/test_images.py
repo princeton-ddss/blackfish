@@ -446,3 +446,126 @@ class TestUpdateImageAPI:
         with open(path, "wb") as f:
             f.write(data)
         return data
+
+
+class TestDeleteImageAPI:
+    """Test cases for the DELETE /api/images endpoint."""
+
+    async def test_delete_image_requires_authentication(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that DELETE /api/images requires authentication."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            self._create_and_save_png(file_path)
+
+            response = await no_auth_client.delete(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return NotAuthorized error
+            assert response.status_code == 401
+
+    async def test_delete_image_success(self, client: AsyncTestClient):
+        """Test successfully deleting an existing image."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            self._create_and_save_png(file_path)
+
+            # Verify file exists
+            assert os.path.exists(file_path)
+
+            response = await client.delete(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return success
+            assert response.status_code == 200
+            result = response.json()
+            assert "Successfully deleted" in result["message"]
+
+            # Verify file was actually deleted
+            assert not os.path.exists(file_path)
+
+    async def test_delete_image_not_found(self, client: AsyncTestClient):
+        """Test deleting a non-existent image."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "nonexistent.png")
+
+            response = await client.delete(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return not found error
+            assert response.status_code == 404
+
+    async def test_delete_image_is_directory(self, client: AsyncTestClient):
+        """Test that attempting to delete a directory returns an error."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            response = await client.delete(
+                "/api/images",
+                params={"path": temp_dir},
+            )
+
+            # Should return validation error
+            assert response.status_code == 400
+            result = response.json()
+            assert "not a file" in result["detail"]
+
+    async def test_delete_image_invalid_extension(self, client: AsyncTestClient):
+        """Test that files with invalid extensions cannot be deleted."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.txt")
+            with open(file_path, "w") as f:
+                f.write("Not an image")
+
+            response = await client.delete(
+                "/api/images",
+                params={"path": file_path},
+            )
+
+            # Should return validation error
+            assert response.status_code == 400
+            result = response.json()
+            assert "Invalid image file extension" in result["detail"]
+
+    async def test_delete_image_permission_denied(self, client: AsyncTestClient):
+        """Test handling of permission denied errors."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.png")
+            self._create_and_save_png(file_path)
+
+            # Make parent directory read-only
+            os.chmod(temp_dir, 0o555)
+
+            try:
+                response = await client.delete(
+                    "/api/images",
+                    params={"path": file_path},
+                )
+
+                # Should return permission denied or OS error
+                assert response.status_code in [401, 500]
+
+            finally:
+                # Restore permissions for cleanup
+                os.chmod(temp_dir, 0o755)
+
+    def _create_and_save_png(self, path: str) -> bytes:
+        """Create and save a PNG image for testing."""
+        img = Image.new("RGB", (10, 10), color="purple")
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        data = buffer.getvalue()
+        with open(path, "wb") as f:
+            f.write(data)
+        return data

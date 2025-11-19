@@ -4,3 +4,8 @@
     height: 2.0rem;
     width:auto
 }
+
+.language-pycon .gp, .language-pycon .go { /* Generic.Prompt, Generic.Output */
+    user-select: none;
+    -webkit-user-select: none;
+}

@@ -28,19 +28,28 @@ theme:
     - content.code.select
     - content.code.annotate
 nav:
-  - 'Home': 'index.md'
-  - 'Getting Started': 'getting_started.md'
-  - 'Examples':
-    - Text Generation: 'examples/text_generation.md'
-    - Speech Recognition: 'examples/speech_recognition.md'
-  - 'Platform': 'admin_guide.md'
+  - 'Home':
+    - 'Welcome': 'index.md'
+  - 'Setup':
+    - Installation: 'setup/installation.md'
+    - Management: 'setup/management.md'
+  - 'User Guide':
+    - Tutorials:
+      - Command Line: 'getting_started.md'
+      - Web Interface: 'examples.md'
+      - Python API: 'examples.md'
+      - REST API: 'examples.md'
+    - 'Examples':
+      - 'Text Generation': 'examples.md'
+      - 'Speech Recognition': 'examples.md'
   - 'Contributing':
     - Guidelines: 'contrib/guidelines.md'
-    - 'Developer Guide': 'contrib/developer_guide.md'
-  - 'API':
-    - 'Usage': 'api/usage.md'
-    - 'Jobs': 'api/jobs.md'
+    - 'Developer Notes': 'contrib/developer_guide.md'
+  - 'API Reference':
+    - 'Core': 'api/core.md'
     - 'Services': 'api/services.md'
+    - 'Jobs': 'api/jobs.md'
+    - 'Usage': 'api/usage.md'
   # - 'REST API': 'openapi/swagger.md'
 plugins:
   - search
@@ -62,9 +71,10 @@ markdown_extensions:
   - footnotes
   - admonition
   - pymdownx.highlight:
+      use_pygments: true
+      pygments_lang_class: true
       anchor_linenums: true
       line_spans: __span
-      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences

@@ -1,6 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
 .md-header__button.md-logo img, .md-header__button.md-logo svg {
     fill: currentcolor;
     display: block;
-    height: 2.0rem;
+    height: 4.0rem;
     width:auto
+}
+
+[dir=ltr] .md-header__title {
+    margin-left: .5rem;
+    font-family: 'Playfair Display', sans-serif;
+}
+
+.md-header__topic span {
+    line-height: 3.0rem;
+    font-size: 2.0rem;
+    font-weight: 800;
+}
+
+@media screen and (max-width: 1220px) { /* For smaller screens */
+    .md-header__topic span {
+        line-height: 2.4rem;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+}
+
+.md-typeset img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.md-typeset h1 {
+    font-family: 'Playfair Display', sans-serif;
+}
+
+.md-typeset h2 {
+    font-weight: 300;
+    font-family: 'Playfair Display', sans-serif;
+}
+
+.md-typeset h3 {
+    font-weight: 300;
+    font-family: 'Playfair Display', sans-serif;
+}
+
+.md-typeset p {
+    font-weight: 100;
+}
+
+.md-nav__title {
+    font-family: 'Playfair Display', sans-serif;
+    color: var(--md-default-fg-color);
+    font-weight: 800;
+}
+
+.md-nav__item {
+    font-weight: 100;
+}
+
+.custom-intro::first-letter {
+    -webkit-initial-letter: 3;
+    initial-letter: 3;
+    /* font-size: 200%; */
+    font-weight: 800;
+    font-family: 'Playfair Display', sans-serif;
+    padding-right: .5em;
 }

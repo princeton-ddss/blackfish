@@ -72,6 +72,8 @@ JobConfig = Union[LocalJobConfig, SlurmJobConfig]
 
 @dataclass
 class Job:
+    """Abstract job class."""
+
     def cancel(self) -> None:
         raise NotImplementedError()
 

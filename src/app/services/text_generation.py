@@ -158,7 +158,7 @@ class TextGenerationConfig(BaseConfig):
 
 @dataclass
 class TextGenerationParameters:
-    """See https://platform.openai.com/docs/api-reference/chat and https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html#chat-api."""
+    """Refer to the vLLM [docs](https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html#chat-api) more information."""
 
     # OpenAI Core
     audio: Optional[object] = None

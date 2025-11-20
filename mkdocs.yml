@@ -34,14 +34,18 @@ nav:
     - Installation: 'setup/installation.md'
     - Management: 'setup/management.md'
   - 'User Guide':
-    - Tutorials:
-      - Command Line: 'getting_started.md'
-      - Web Interface: 'examples.md'
-      - Python API: 'examples.md'
-      - REST API: 'examples.md'
-    - 'Examples':
-      - 'Text Generation': 'examples.md'
-      - 'Speech Recognition': 'examples.md'
+    - Guides:
+      - Command Line: 'usage/cli.md'
+      - Web Interface: 'usage/ui.md'
+      - Python API: 'usage/client.md'
+    - 'Examples': 'https://github.com/princeton-ddss/blackfish-examples'
+      # - 'Text Generation':
+      #   - 'Stochastic Parrot': 'examples/text_generation/stochastic_parrot.md'
+      #   - 'Prompt Engineeering': 'examples/text_generation/prompt_engineering.md'
+      #   - 'Record Linkage': 'examples/text_generation/record_linkage.md'
+      #   - 'Image Classification': 'examples/text_generation/image_classification.md'
+      # - 'Speech Recognition':
+      #   - 'Basic Transcription': 'examples/speech_recognition/basic_transcription.md'
   - 'Contributing':
     - Guidelines: 'contrib/guidelines.md'
     - 'Developer Notes': 'contrib/developer_guide.md'
@@ -49,7 +53,6 @@ nav:
     - 'Core': 'api/core.md'
     - 'Services': 'api/services.md'
     - 'Jobs': 'api/jobs.md'
-    - 'Usage': 'api/usage.md'
   # - 'REST API': 'openapi/swagger.md'
 plugins:
   - search

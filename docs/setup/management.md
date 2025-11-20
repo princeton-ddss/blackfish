@@ -18,14 +18,16 @@ In general, service APIs do not run on the same machine as the Blackfish applica
 
 ![image](../assets/img/architecture-slurm.png)
 
-**Figure** The Blackfish architecture for running remote services on a Slurm cluster.
+**Figure 1** The Blackfish architecture for running remote services on a Slurm cluster.
 
 ### Application Data
 
 Blackfish stores data in several different locations:
 
-- Core application data is stored on the system where the Blackfish application is running (`~/.blackfish` by default).
-- Profile data
+- Core application data is stored in `BLACKFISH_HOME_DIR` on the system where Blackfish is running (`~/.blackfish` by default). Core application data includes profile configuration, application logs, and database storage.
+- Models and images are stored in the user-defined locations `home_dir` and `cache_dir`. These are profile-specific locations that need not reside on the machine where Blackfish is running. `home_dir` also stores job files created each time a service launches.
+
+Let's consider what happens when a user launches a service from her laptop targeting a remote HPC cluster (Figure 1). The user will specify a profile that tells Blackfish the `host` and `user` of the targeted cluster. Blackfish will use this information to look for required model and image files in either the `home_dir` or `cache_dir`—also specified by the profile—on the cluster. If the required files exist, Blackfish creates a Slurm job script, stores it in `$BLACKFISH_HOME_DIR/jobs/$service_id`, then copies that job script to `$home_dir/jobs/$service_id` on the remote cluster. Finally, Blackfish remotely submits the Slurm job and stores its log files to `$home_dir/jobs/$service_id`.
 
 ## Images
 
@@ -61,12 +63,11 @@ docker pull vllm/vllm-openai:v0.8.4
 
 ### Automatic Downloads
 
-- Blackfish will download modelsfor you
-- Only support Hugging Face Model Hub
+You can download models with the `blackfish model add` command. Blackfish stores downloaded models to the `home_dir` of the specified profile by default. If you are downloading models to share with other users, add the `--use-cache` flag to save files to the `cache_dir` instead. Model download support is currently limited to *local* profiles. If you want to download models for use on HPC, you'll need to be running Blackfish on your cluster.
 
 ### Manual Downloads
 
-Internally, model downloads and management are performed by `huggingface_hub`. You can download models yourself using the same method:
+Internally, model downloads and management are performed by [`huggingface_hub`](https://github.com/huggingface/huggingface_hub). You can download models yourself using the same method:
 
 ```python
 from huggingface_hub import shapshot_download
@@ -78,6 +79,6 @@ The `snapshot_download` method store models files to `~/.cache/huggingface/hub/`
 
 !!! note
 
-    Users can only download new snapshots to `profile.home_dir`. Thus, if a model is found before running a service, then the image should look for model data in whichever cache directory the snapshot is found. Otherwise, the service should bind to `profile.home_dir` so that model files are stored there. **Users should not be given write access to `profile.cache_dir`.** If a user does *not* specify a revision, then we need to make sure that the image doesn't try to download a different revision in the case that a version of the requested model already exists in `profile.cache_dir` because this directory is assumed to be read-only and the Docker image might try to download a different revision.
+    In addition to downloading model files, the `blackfish model add` command extracts metadata from the model and adds it go an internal database of models available to the profile that was used to add the model. Manually added models will not show up when running `blackfish model ls` (because they are not added to this database), but Blackfish will still be able to discover and run these models.
 
 [^1]: If you only intend to run services on your laptop, Blackfish will attempt to download each image automatically the first time you run its corresponding service. In this case, expect the startup time for the first run of each service type to take much longer than subsequent runs.

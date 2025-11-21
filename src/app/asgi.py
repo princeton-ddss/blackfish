@@ -523,7 +523,8 @@ async def get_files(
 
 
 @get("/api/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
-async def get_audio(path: str) -> File | None:
+async def get_audio_legacy(path: str) -> File | None:
+    """Legacy endpoint for retrieving audio files. Use GET /api/audios instead."""
     if os.path.isfile(path):
         if path.endswith(".wav") or path.endswith(".mp3"):
             return File(path=path)
@@ -535,6 +536,7 @@ async def get_audio(path: str) -> File | None:
 
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
 TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
+AUDIO_EXTENSIONS = [".wav", ".mp3"]
 
 
 def has_image_extension(path: str) -> str:
@@ -918,6 +920,178 @@ async def delete_text(path: str) -> dict[str, str]:
         raise NotAuthorizedException(f"Permission denied: {e}")
     except Exception as e:
         logger.error(f"Failed to delete text file at {file_path}: {e}")
+        raise InternalServerException(f"Failed to delete file: {e}")
+
+
+def has_audio_extension(path: str) -> str:
+    if not any(path.lower().endswith(ext) for ext in AUDIO_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid audio file extension. Allowed extensions: {', '.join(AUDIO_EXTENSIONS)}"
+        )
+    return path
+
+
+class AudioUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_audio_extension)]
+    file: UploadFile
+
+
+class AudioUploadResponse(BaseModel):
+    filename: str
+    size: int
+    created_at: datetime
+
+
+@post("/api/audios", guards=ENDPOINT_GUARDS)
+async def upload_audio(
+    data: Annotated[
+        AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> AudioUploadResponse:
+    """Upload an audio file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload audio file {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    if len(content) > state.MAX_IMAGE_FILE_SIZE:
+        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
+        file_mb = len(content) / (1024 * 1024)
+        raise ValidationException(
+            f"Audio file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
+        )
+
+    try:
+        parent_dir = path.parent
+        parent_dir.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        logger.debug(f"Created audio file at {path}")
+        return AudioUploadResponse(
+            filename=os.path.basename(path),
+            size=len(content),
+            created_at=datetime.now(),
+        )
+    except PermissionError as e:
+        logger.error(
+            f"User does not have permission to create file at path {path}: {e}"
+        )
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to create audio file at path {path}: {e}")
+        raise InternalServerException(f"Failed to create file: {e}")
+
+
+@get("/api/audios", guards=ENDPOINT_GUARDS)
+async def get_audio(path: str) -> File:
+    """Retrieve an audio file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve audio file from {file_path}")
+
+    if not file_path.exists():
+        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+
+    if not file_path.is_file():
+        raise ValidationException(f"The requested path ({file_path}) is not a file")
+
+    # Validate it's an audio file
+    if not any(str(file_path).lower().endswith(ext) for ext in AUDIO_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid audio file extension. Allowed extensions: {', '.join(AUDIO_EXTENSIONS)}"
+        )
+
+    try:
+        return File(path=file_path)
+    except PermissionError as e:
+        logger.error(f"Permission denied reading file at {file_path}: {e}")
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to read audio file at {file_path}: {e}")
+        raise InternalServerException(f"Failed to read file: {e}")
+
+
+@put("/api/audios", guards=ENDPOINT_GUARDS)
+async def update_audio(
+    data: Annotated[
+        AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> AudioUploadResponse:
+    """Update/replace an existing audio file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update audio file {data.file.filename} at {path}")
+
+    if not path.exists():
+        raise NotFoundException(f"The requested path ({path}) does not exist")
+
+    if not path.is_file():
+        raise ValidationException(f"The requested path ({path}) is not a file")
+
+    if len(content) > state.MAX_IMAGE_FILE_SIZE:
+        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
+        file_mb = len(content) / (1024 * 1024)
+        raise ValidationException(
+            f"Audio file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
+        )
+
+    try:
+        path.write_bytes(content)
+        logger.debug(f"Updated audio file at {path}")
+        return AudioUploadResponse(
+            filename=os.path.basename(path),
+            size=len(content),
+            created_at=datetime.now(),
+        )
+    except PermissionError as e:
+        logger.error(
+            f"User does not have permission to update file at path {path}: {e}"
+        )
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to update audio file at path {path}: {e}")
+        raise InternalServerException(f"Failed to update file: {e}")
+
+
+@delete("/api/audios", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_audio(path: str) -> dict[str, str]:
+    """Delete an audio file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete audio file at {file_path}")
+
+    if not file_path.exists():
+        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+
+    if not file_path.is_file():
+        raise ValidationException(f"The requested path ({file_path}) is not a file")
+
+    # Validate it's an audio file
+    if not any(str(file_path).lower().endswith(ext) for ext in AUDIO_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid audio file extension. Allowed extensions: {', '.join(AUDIO_EXTENSIONS)}"
+        )
+
+    try:
+        file_path.unlink()
+        logger.debug(f"Deleted audio file at {file_path}")
+        return {"message": f"Successfully deleted audio file at {file_path}"}
+    except PermissionError as e:
+        logger.error(f"Permission denied deleting file at {file_path}: {e}")
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to delete audio file at {file_path}: {e}")
         raise InternalServerException(f"Failed to delete file: {e}")
 
 
@@ -1749,7 +1923,7 @@ app = Litestar(
         logout,
         get_ports,
         get_files,
-        get_audio,
+        get_audio_legacy,
         upload_image,
         get_image,
         update_image,
@@ -1758,6 +1932,10 @@ app = Litestar(
         get_text,
         update_text,
         delete_text,
+        upload_audio,
+        get_audio,
+        update_audio,
+        delete_audio,
         run_service,
         stop_service,
         refresh_service,

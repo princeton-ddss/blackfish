@@ -534,6 +534,7 @@ async def get_audio(path: str) -> File | None:
 
 
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
+TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
 
 
 def has_image_extension(path: str) -> str:
@@ -728,6 +729,197 @@ async def delete_image(path: str) -> dict[str, str]:
         logger.error(f"Failed to delete image file at {file_path}: {e}")
         raise InternalServerException(f"Failed to delete file: {e}")
     
+    
+def has_text_extension(path: str) -> str:
+    if not any(path.lower().endswith(ext) for ext in TEXT_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid text file extension. Allowed extensions: {', '.join(TEXT_EXTENSIONS)}"
+        )
+    return path
+
+
+class TextUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_text_extension)]
+    file: UploadFile
+
+
+class TextUploadResponse(BaseModel):
+    filename: str
+    size: int
+    created_at: datetime
+
+
+@post("/api/texts", guards=ENDPOINT_GUARDS)
+async def upload_text(
+    data: Annotated[
+        TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> TextUploadResponse:
+    """Upload a text file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload text file {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    if len(content) > state.MAX_IMAGE_FILE_SIZE:
+        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
+        file_mb = len(content) / (1024 * 1024)
+        raise ValidationException(
+            f"Text file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
+        )
+
+    # Validate it's actually text content
+    try:
+        content.decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
+
+    try:
+        parent_dir = path.parent
+        parent_dir.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        logger.debug(f"Created text file at {path}")
+        return TextUploadResponse(
+            filename=os.path.basename(path),
+            size=len(content),
+            created_at=datetime.now(),
+        )
+    except PermissionError as e:
+        logger.error(
+            f"User does not have permission to create file at path {path}: {e}"
+        )
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to create text file at path {path}: {e}")
+        raise InternalServerException(f"Failed to create file: {e}")
+
+
+@get("/api/texts", guards=ENDPOINT_GUARDS)
+async def get_text(path: str) -> File:
+    """Retrieve a text file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve text file from {file_path}")
+
+    if not file_path.exists():
+        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+
+    if not file_path.is_file():
+        raise ValidationException(f"The requested path ({file_path}) is not a file")
+
+    # Validate it's a text file
+    if not any(str(file_path).lower().endswith(ext) for ext in TEXT_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid text file extension. Allowed extensions: {', '.join(TEXT_EXTENSIONS)}"
+        )
+
+    # Validate it's actually text content
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            f.read()
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"Invalid text file: {e}")
+
+    try:
+        return File(path=file_path)
+    except PermissionError as e:
+        logger.error(f"Permission denied reading file at {file_path}: {e}")
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to read text file at {file_path}: {e}")
+        raise InternalServerException(f"Failed to read file: {e}")
+
+
+@put("/api/texts", guards=ENDPOINT_GUARDS)
+async def update_text(
+    data: Annotated[
+        TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> TextUploadResponse:
+    """Update/replace an existing text file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update text file {data.file.filename} at {path}")
+
+    if not path.exists():
+        raise NotFoundException(f"The requested path ({path}) does not exist")
+
+    if not path.is_file():
+        raise ValidationException(f"The requested path ({path}) is not a file")
+
+    if len(content) > state.MAX_IMAGE_FILE_SIZE:
+        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
+        file_mb = len(content) / (1024 * 1024)
+        raise ValidationException(
+            f"Text file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
+        )
+
+    # Validate it's actually text content
+    try:
+        content.decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
+
+    try:
+        path.write_bytes(content)
+        logger.debug(f"Updated text file at {path}")
+        return TextUploadResponse(
+            filename=os.path.basename(path),
+            size=len(content),
+            created_at=datetime.now(),
+        )
+    except PermissionError as e:
+        logger.error(
+            f"User does not have permission to update file at path {path}: {e}"
+        )
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to update text file at path {path}: {e}")
+        raise InternalServerException(f"Failed to update file: {e}")
+
+
+@delete("/api/texts", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_text(path: str) -> dict[str, str]:
+    """Delete a text file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete text file at {file_path}")
+
+    if not file_path.exists():
+        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+
+    if not file_path.is_file():
+        raise ValidationException(f"The requested path ({file_path}) is not a file")
+
+    # Validate it's a text file
+    if not any(str(file_path).lower().endswith(ext) for ext in TEXT_EXTENSIONS):
+        raise ValidationException(
+            f"Invalid text file extension. Allowed extensions: {', '.join(TEXT_EXTENSIONS)}"
+        )
+
+    try:
+        file_path.unlink()
+        logger.debug(f"Deleted text file at {file_path}")
+        return {"message": f"Successfully deleted text file at {file_path}"}
+    except PermissionError as e:
+        logger.error(f"Permission denied deleting file at {file_path}: {e}")
+        raise NotAuthorizedException(f"Permission denied: {e}")
+    except Exception as e:
+        logger.error(f"Failed to delete text file at {file_path}: {e}")
+        raise InternalServerException(f"Failed to delete file: {e}")
+
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)
 async def get_ports(request: Request) -> int:  # type: ignore
@@ -1562,6 +1754,10 @@ app = Litestar(
         get_image,
         update_image,
         delete_image,
+        upload_text,
+        get_text,
+        update_text,
+        delete_text,
         run_service,
         stop_service,
         refresh_service,

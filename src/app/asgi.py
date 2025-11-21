@@ -65,6 +65,15 @@ from litestar.params import Body
 
 from app.logger import logger
 from app import services, jobs
+from app.file_utils import (
+    create_extension_validator,
+    validate_file_exists_and_type,
+    validate_file_size,
+    write_file_with_error_handling,
+    update_file_with_error_handling,
+    delete_file_with_error_handling,
+    read_file_with_error_handling,
+)
 from app.services.base import Service, ServiceStatus
 from app.services.speech_recognition import SpeechRecognitionConfig
 from app.services.text_generation import TextGenerationConfig
@@ -538,13 +547,10 @@ IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
 TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
 AUDIO_EXTENSIONS = [".wav", ".mp3"]
 
-
-def has_image_extension(path: str) -> str:
-    if not any(path.lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid image file extension. Allowed extensions: {', '.join(IMAGE_EXTENSIONS)}"
-        )
-    return path
+# Create extension validators for each file type
+has_image_extension = create_extension_validator(IMAGE_EXTENSIONS, "image")
+has_text_extension = create_extension_validator(TEXT_EXTENSIONS, "text")
+has_audio_extension = create_extension_validator(AUDIO_EXTENSIONS, "audio")
 
 
 class ImageUploadRequest(BaseModel):
@@ -577,12 +583,7 @@ async def upload_image(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    if len(content) > state.MAX_IMAGE_FILE_SIZE:
-        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
-        file_mb = len(content) / (1024 * 1024)
-        raise ValidationException(
-            f"Image size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
-        )
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "image")
 
     try:
         img = Image.open(BytesIO(content))
@@ -590,27 +591,8 @@ async def upload_image(
     except Exception as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
-    try:
-        parent_dir = path.parent
-        parent_dir.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(content)
-        logger.debug(f"Created image file at {path}")
-        return ImageUploadResponse(
-            filename=os.path.basename(path),
-            size=len(content),
-            created_at=datetime.now(),
-        )
-    except PermissionError as e:
-        logger.error(
-            f"User does not have permission to create file at path {path}: {e}"
-        )
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except OSError as e:
-        logger.error(f"Failed to create image file at path {path}: {e}")
-        raise InternalServerException(f"Failed to create file: {e}")
-    except Exception as e:
-        logger.error(f"Failed to create image file at path {path}: {e}")
-        raise InternalServerException(f"Failed to create file: {e}")
+    result = write_file_with_error_handling(path, content, "image")
+    return ImageUploadResponse(**result)
 
 
 @get("/api/images", guards=ENDPOINT_GUARDS)
@@ -621,17 +603,7 @@ async def get_image(path: str) -> File:
 
     logger.debug(f"Attempting to retrieve image from {file_path}")
 
-    if not file_path.exists():
-        raise NotFoundException(f"The requested path ({file_path}) does not exist")
-
-    if not file_path.is_file():
-        raise ValidationException(f"The requested path ({file_path}) is not a file")
-
-    # Validate it's an image file
-    if not any(str(file_path).lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid image file extension. Allowed extensions: {', '.join(IMAGE_EXTENSIONS)}"
-        )
+    validate_file_exists_and_type(file_path, IMAGE_EXTENSIONS, "image")
 
     try:
         img = Image.open(file_path)
@@ -639,14 +611,7 @@ async def get_image(path: str) -> File:
     except Exception as e:
         raise ValidationException(f"Invalid image file: {e}")
 
-    try:
-        return File(path=file_path)
-    except PermissionError as e:
-        logger.error(f"Permission denied reading file at {file_path}: {e}")
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to read image file at {file_path}: {e}")
-        raise InternalServerException(f"Failed to read file: {e}")
+    return read_file_with_error_handling(file_path, "image")
 
 
 @put("/api/images", guards=ENDPOINT_GUARDS)
@@ -663,18 +628,8 @@ async def update_image(
 
     logger.debug(f"Attempting to update image {data.file.filename} at {path}")
 
-    if not path.exists():
-        raise NotFoundException(f"The requested path ({path}) does not exist")
-
-    if not path.is_file():
-        raise ValidationException(f"The requested path ({path}) is not a file")
-
-    if len(content) > state.MAX_IMAGE_FILE_SIZE:
-        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
-        file_mb = len(content) / (1024 * 1024)
-        raise ValidationException(
-            f"Image size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
-        )
+    validate_file_exists_and_type(path, IMAGE_EXTENSIONS, "image")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "image")
 
     try:
         img = Image.open(BytesIO(content))
@@ -682,22 +637,8 @@ async def update_image(
     except Exception as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
-    try:
-        path.write_bytes(content)
-        logger.debug(f"Updated image file at {path}")
-        return ImageUploadResponse(
-            filename=os.path.basename(path),
-            size=len(content),
-            created_at=datetime.now(),
-        )
-    except PermissionError as e:
-        logger.error(
-            f"User does not have permission to update file at path {path}: {e}"
-        )
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to update image file at path {path}: {e}")
-        raise InternalServerException(f"Failed to update file: {e}")
+    result = update_file_with_error_handling(path, content, "image")
+    return ImageUploadResponse(**result)
     
     
 @delete("/api/images", guards=ENDPOINT_GUARDS, status_code=200)
@@ -708,36 +649,9 @@ async def delete_image(path: str) -> dict[str, str]:
 
     logger.debug(f"Attempting to delete image at {file_path}")
 
-    if not file_path.exists():
-        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+    validate_file_exists_and_type(file_path, IMAGE_EXTENSIONS, "image")
 
-    if not file_path.is_file():
-        raise ValidationException(f"The requested path ({file_path}) is not a file")
-
-    # Validate it's an image file
-    if not any(str(file_path).lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid image file extension. Allowed extensions: {', '.join(IMAGE_EXTENSIONS)}"
-        )
-
-    try:
-        file_path.unlink()
-        logger.debug(f"Deleted image file at {file_path}")
-        return {"message": f"Successfully deleted image at {file_path}"}
-    except PermissionError as e:
-        logger.error(f"Permission denied deleting file at {file_path}: {e}")
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to delete image file at {file_path}: {e}")
-        raise InternalServerException(f"Failed to delete file: {e}")
-    
-    
-def has_text_extension(path: str) -> str:
-    if not any(path.lower().endswith(ext) for ext in TEXT_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid text file extension. Allowed extensions: {', '.join(TEXT_EXTENSIONS)}"
-        )
-    return path
+    return delete_file_with_error_handling(file_path, "image")
 
 
 class TextUploadRequest(BaseModel):
@@ -770,37 +684,16 @@ async def upload_text(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    if len(content) > state.MAX_IMAGE_FILE_SIZE:
-        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
-        file_mb = len(content) / (1024 * 1024)
-        raise ValidationException(
-            f"Text file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
-        )
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "text")
 
-    # Validate it's actually text content
+    # Text-specific validation
     try:
         content.decode('utf-8')
     except UnicodeDecodeError as e:
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
-    try:
-        parent_dir = path.parent
-        parent_dir.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(content)
-        logger.debug(f"Created text file at {path}")
-        return TextUploadResponse(
-            filename=os.path.basename(path),
-            size=len(content),
-            created_at=datetime.now(),
-        )
-    except PermissionError as e:
-        logger.error(
-            f"User does not have permission to create file at path {path}: {e}"
-        )
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to create text file at path {path}: {e}")
-        raise InternalServerException(f"Failed to create file: {e}")
+    result = write_file_with_error_handling(path, content, "text")
+    return TextUploadResponse(**result)
 
 
 @get("/api/texts", guards=ENDPOINT_GUARDS)
@@ -811,33 +704,15 @@ async def get_text(path: str) -> File:
 
     logger.debug(f"Attempting to retrieve text file from {file_path}")
 
-    if not file_path.exists():
-        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+    validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
 
-    if not file_path.is_file():
-        raise ValidationException(f"The requested path ({file_path}) is not a file")
-
-    # Validate it's a text file
-    if not any(str(file_path).lower().endswith(ext) for ext in TEXT_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid text file extension. Allowed extensions: {', '.join(TEXT_EXTENSIONS)}"
-        )
-
-    # Validate it's actually text content
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             f.read()
     except UnicodeDecodeError as e:
         raise ValidationException(f"Invalid text file: {e}")
 
-    try:
-        return File(path=file_path)
-    except PermissionError as e:
-        logger.error(f"Permission denied reading file at {file_path}: {e}")
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to read text file at {file_path}: {e}")
-        raise InternalServerException(f"Failed to read file: {e}")
+    return read_file_with_error_handling(file_path, "text")
 
 
 @put("/api/texts", guards=ENDPOINT_GUARDS)
@@ -854,41 +729,16 @@ async def update_text(
 
     logger.debug(f"Attempting to update text file {data.file.filename} at {path}")
 
-    if not path.exists():
-        raise NotFoundException(f"The requested path ({path}) does not exist")
+    validate_file_exists_and_type(path, TEXT_EXTENSIONS, "text")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "text")
 
-    if not path.is_file():
-        raise ValidationException(f"The requested path ({path}) is not a file")
-
-    if len(content) > state.MAX_IMAGE_FILE_SIZE:
-        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
-        file_mb = len(content) / (1024 * 1024)
-        raise ValidationException(
-            f"Text file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
-        )
-
-    # Validate it's actually text content
     try:
         content.decode('utf-8')
     except UnicodeDecodeError as e:
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
-    try:
-        path.write_bytes(content)
-        logger.debug(f"Updated text file at {path}")
-        return TextUploadResponse(
-            filename=os.path.basename(path),
-            size=len(content),
-            created_at=datetime.now(),
-        )
-    except PermissionError as e:
-        logger.error(
-            f"User does not have permission to update file at path {path}: {e}"
-        )
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to update text file at path {path}: {e}")
-        raise InternalServerException(f"Failed to update file: {e}")
+    result = update_file_with_error_handling(path, content, "text")
+    return TextUploadResponse(**result)
 
 
 @delete("/api/texts", guards=ENDPOINT_GUARDS, status_code=200)
@@ -899,36 +749,9 @@ async def delete_text(path: str) -> dict[str, str]:
 
     logger.debug(f"Attempting to delete text file at {file_path}")
 
-    if not file_path.exists():
-        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+    validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
 
-    if not file_path.is_file():
-        raise ValidationException(f"The requested path ({file_path}) is not a file")
-
-    # Validate it's a text file
-    if not any(str(file_path).lower().endswith(ext) for ext in TEXT_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid text file extension. Allowed extensions: {', '.join(TEXT_EXTENSIONS)}"
-        )
-
-    try:
-        file_path.unlink()
-        logger.debug(f"Deleted text file at {file_path}")
-        return {"message": f"Successfully deleted text file at {file_path}"}
-    except PermissionError as e:
-        logger.error(f"Permission denied deleting file at {file_path}: {e}")
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to delete text file at {file_path}: {e}")
-        raise InternalServerException(f"Failed to delete file: {e}")
-
-
-def has_audio_extension(path: str) -> str:
-    if not any(path.lower().endswith(ext) for ext in AUDIO_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid audio file extension. Allowed extensions: {', '.join(AUDIO_EXTENSIONS)}"
-        )
-    return path
+    return delete_file_with_error_handling(file_path, "text")
 
 
 class AudioUploadRequest(BaseModel):
@@ -961,31 +784,10 @@ async def upload_audio(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    if len(content) > state.MAX_IMAGE_FILE_SIZE:
-        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
-        file_mb = len(content) / (1024 * 1024)
-        raise ValidationException(
-            f"Audio file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
-        )
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "audio")
 
-    try:
-        parent_dir = path.parent
-        parent_dir.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(content)
-        logger.debug(f"Created audio file at {path}")
-        return AudioUploadResponse(
-            filename=os.path.basename(path),
-            size=len(content),
-            created_at=datetime.now(),
-        )
-    except PermissionError as e:
-        logger.error(
-            f"User does not have permission to create file at path {path}: {e}"
-        )
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to create audio file at path {path}: {e}")
-        raise InternalServerException(f"Failed to create file: {e}")
+    result = write_file_with_error_handling(path, content, "audio")
+    return AudioUploadResponse(**result)
 
 
 @get("/api/audios", guards=ENDPOINT_GUARDS)
@@ -996,26 +798,9 @@ async def get_audio(path: str) -> File:
 
     logger.debug(f"Attempting to retrieve audio file from {file_path}")
 
-    if not file_path.exists():
-        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+    validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
 
-    if not file_path.is_file():
-        raise ValidationException(f"The requested path ({file_path}) is not a file")
-
-    # Validate it's an audio file
-    if not any(str(file_path).lower().endswith(ext) for ext in AUDIO_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid audio file extension. Allowed extensions: {', '.join(AUDIO_EXTENSIONS)}"
-        )
-
-    try:
-        return File(path=file_path)
-    except PermissionError as e:
-        logger.error(f"Permission denied reading file at {file_path}: {e}")
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to read audio file at {file_path}: {e}")
-        raise InternalServerException(f"Failed to read file: {e}")
+    return read_file_with_error_handling(file_path, "audio")
 
 
 @put("/api/audios", guards=ENDPOINT_GUARDS)
@@ -1032,35 +817,11 @@ async def update_audio(
 
     logger.debug(f"Attempting to update audio file {data.file.filename} at {path}")
 
-    if not path.exists():
-        raise NotFoundException(f"The requested path ({path}) does not exist")
+    validate_file_exists_and_type(path, AUDIO_EXTENSIONS, "audio")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "audio")
 
-    if not path.is_file():
-        raise ValidationException(f"The requested path ({path}) is not a file")
-
-    if len(content) > state.MAX_IMAGE_FILE_SIZE:
-        max_mb = state.MAX_IMAGE_FILE_SIZE / (1024 * 1024)
-        file_mb = len(content) / (1024 * 1024)
-        raise ValidationException(
-            f"Audio file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
-        )
-
-    try:
-        path.write_bytes(content)
-        logger.debug(f"Updated audio file at {path}")
-        return AudioUploadResponse(
-            filename=os.path.basename(path),
-            size=len(content),
-            created_at=datetime.now(),
-        )
-    except PermissionError as e:
-        logger.error(
-            f"User does not have permission to update file at path {path}: {e}"
-        )
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to update audio file at path {path}: {e}")
-        raise InternalServerException(f"Failed to update file: {e}")
+    result = update_file_with_error_handling(path, content, "audio")
+    return AudioUploadResponse(**result)
 
 
 @delete("/api/audios", guards=ENDPOINT_GUARDS, status_code=200)
@@ -1071,28 +832,9 @@ async def delete_audio(path: str) -> dict[str, str]:
 
     logger.debug(f"Attempting to delete audio file at {file_path}")
 
-    if not file_path.exists():
-        raise NotFoundException(f"The requested path ({file_path}) does not exist")
+    validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
 
-    if not file_path.is_file():
-        raise ValidationException(f"The requested path ({file_path}) is not a file")
-
-    # Validate it's an audio file
-    if not any(str(file_path).lower().endswith(ext) for ext in AUDIO_EXTENSIONS):
-        raise ValidationException(
-            f"Invalid audio file extension. Allowed extensions: {', '.join(AUDIO_EXTENSIONS)}"
-        )
-
-    try:
-        file_path.unlink()
-        logger.debug(f"Deleted audio file at {file_path}")
-        return {"message": f"Successfully deleted audio file at {file_path}"}
-    except PermissionError as e:
-        logger.error(f"Permission denied deleting file at {file_path}: {e}")
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to delete audio file at {file_path}: {e}")
-        raise InternalServerException(f"Failed to delete file: {e}")
+    return delete_file_with_error_handling(file_path, "audio")
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)

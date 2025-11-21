@@ -9,16 +9,18 @@ import requests
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple, Any, Type
+from typing import Optional, Tuple, Any, Type, Annotated
 import asyncio
 from pathlib import Path
 import bcrypt
 from importlib import import_module
 from uuid import UUID
+from PIL import Image
+from io import BytesIO
 
 from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
-from pydantic import BaseModel
+from pydantic import BaseModel, AfterValidator, ConfigDict
 
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound, StatementError
@@ -27,7 +29,7 @@ from sqlalchemy import Result
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
-from litestar.datastructures import State
+from litestar.datastructures import State, UploadFile
 from advanced_alchemy.extensions.litestar import (
     SQLAlchemyAsyncConfig,
     SQLAlchemyPlugin,
@@ -58,9 +60,20 @@ from litestar.datastructures.secret_values import SecretString
 from litestar.middleware.base import MiddlewareProtocol
 from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.response import File
+from litestar.enums import RequestEncodingType
+from litestar.params import Body
 
 from app.logger import logger
 from app import services, jobs
+from app.file_utils import (
+    create_extension_validator,
+    validate_file_exists_and_type,
+    validate_file_size,
+    write_file_with_error_handling,
+    update_file_with_error_handling,
+    delete_file_with_error_handling,
+    read_file_with_error_handling,
+)
 from app.services.base import Service, ServiceStatus
 from app.services.speech_recognition import SpeechRecognitionConfig
 from app.services.text_generation import TextGenerationConfig
@@ -519,7 +532,8 @@ async def get_files(
 
 
 @get("/api/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
-async def get_audio(path: str) -> File | None:
+async def get_audio_legacy(path: str) -> File | None:
+    """Legacy endpoint for retrieving audio files. Use GET /api/audios instead."""
     if os.path.isfile(path):
         if path.endswith(".wav") or path.endswith(".mp3"):
             return File(path=path)
@@ -527,6 +541,300 @@ async def get_audio(path: str) -> File | None:
             raise ValidationException("Path should specify a .wav or .mp3 file.")
     else:
         raise NotFoundException(f"{path} not found.")
+
+
+IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
+TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
+AUDIO_EXTENSIONS = [".wav", ".mp3"]
+
+# Create extension validators for each file type
+has_image_extension = create_extension_validator(IMAGE_EXTENSIONS, "image")
+has_text_extension = create_extension_validator(TEXT_EXTENSIONS, "text")
+has_audio_extension = create_extension_validator(AUDIO_EXTENSIONS, "audio")
+
+
+class ImageUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_image_extension)]
+    file: UploadFile
+
+
+class ImageUploadResponse(BaseModel):
+    filename: str
+    size: int
+    created_at: datetime
+
+
+@post("/api/images", guards=ENDPOINT_GUARDS)
+async def upload_image(
+    data: Annotated[
+        ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> ImageUploadResponse:
+    """Upload an image file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload image {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "image")
+
+    try:
+        img = Image.open(BytesIO(content))
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Pillow detected invalid image data: {e}")
+
+    result = write_file_with_error_handling(path, content, "image")
+    return ImageUploadResponse(**result)
+
+
+@get("/api/images", guards=ENDPOINT_GUARDS)
+async def get_image(path: str) -> File:
+    """Retrieve an image file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve image from {file_path}")
+
+    validate_file_exists_and_type(file_path, IMAGE_EXTENSIONS, "image")
+
+    try:
+        img = Image.open(file_path)
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Invalid image file: {e}")
+
+    return read_file_with_error_handling(file_path, "image")
+
+
+@put("/api/images", guards=ENDPOINT_GUARDS)
+async def update_image(
+    data: Annotated[
+        ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> ImageUploadResponse:
+    """Update/replace an existing image file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update image {data.file.filename} at {path}")
+
+    validate_file_exists_and_type(path, IMAGE_EXTENSIONS, "image")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "image")
+
+    try:
+        img = Image.open(BytesIO(content))
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Pillow detected invalid image data: {e}")
+
+    result = update_file_with_error_handling(path, content, "image")
+    return ImageUploadResponse(**result)
+    
+    
+@delete("/api/images", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_image(path: str) -> dict[str, str]:
+    """Delete an image file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete image at {file_path}")
+
+    validate_file_exists_and_type(file_path, IMAGE_EXTENSIONS, "image")
+
+    return delete_file_with_error_handling(file_path, "image")
+
+
+class TextUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_text_extension)]
+    file: UploadFile
+
+
+class TextUploadResponse(BaseModel):
+    filename: str
+    size: int
+    created_at: datetime
+
+
+@post("/api/texts", guards=ENDPOINT_GUARDS)
+async def upload_text(
+    data: Annotated[
+        TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> TextUploadResponse:
+    """Upload a text file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload text file {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "text")
+
+    # Text-specific validation
+    try:
+        content.decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
+
+    result = write_file_with_error_handling(path, content, "text")
+    return TextUploadResponse(**result)
+
+
+@get("/api/texts", guards=ENDPOINT_GUARDS)
+async def get_text(path: str) -> File:
+    """Retrieve a text file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve text file from {file_path}")
+
+    validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            f.read()
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"Invalid text file: {e}")
+
+    return read_file_with_error_handling(file_path, "text")
+
+
+@put("/api/texts", guards=ENDPOINT_GUARDS)
+async def update_text(
+    data: Annotated[
+        TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> TextUploadResponse:
+    """Update/replace an existing text file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update text file {data.file.filename} at {path}")
+
+    validate_file_exists_and_type(path, TEXT_EXTENSIONS, "text")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "text")
+
+    try:
+        content.decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
+
+    result = update_file_with_error_handling(path, content, "text")
+    return TextUploadResponse(**result)
+
+
+@delete("/api/texts", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_text(path: str) -> dict[str, str]:
+    """Delete a text file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete text file at {file_path}")
+
+    validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
+
+    return delete_file_with_error_handling(file_path, "text")
+
+
+class AudioUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_audio_extension)]
+    file: UploadFile
+
+
+class AudioUploadResponse(BaseModel):
+    filename: str
+    size: int
+    created_at: datetime
+
+
+@post("/api/audios", guards=ENDPOINT_GUARDS)
+async def upload_audio(
+    data: Annotated[
+        AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> AudioUploadResponse:
+    """Upload an audio file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload audio file {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "audio")
+
+    result = write_file_with_error_handling(path, content, "audio")
+    return AudioUploadResponse(**result)
+
+
+@get("/api/audios", guards=ENDPOINT_GUARDS)
+async def get_audio(path: str) -> File:
+    """Retrieve an audio file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve audio file from {file_path}")
+
+    validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
+
+    return read_file_with_error_handling(file_path, "audio")
+
+
+@put("/api/audios", guards=ENDPOINT_GUARDS)
+async def update_audio(
+    data: Annotated[
+        AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> AudioUploadResponse:
+    """Update/replace an existing audio file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update audio file {data.file.filename} at {path}")
+
+    validate_file_exists_and_type(path, AUDIO_EXTENSIONS, "audio")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "audio")
+
+    result = update_file_with_error_handling(path, content, "audio")
+    return AudioUploadResponse(**result)
+
+
+@delete("/api/audios", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_audio(path: str) -> dict[str, str]:
+    """Delete an audio file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete audio file at {file_path}")
+
+    validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
+
+    return delete_file_with_error_handling(file_path, "audio")
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)
@@ -1357,7 +1665,19 @@ app = Litestar(
         logout,
         get_ports,
         get_files,
+        get_audio_legacy,
+        upload_image,
+        get_image,
+        update_image,
+        delete_image,
+        upload_text,
+        get_text,
+        update_text,
+        delete_text,
+        upload_audio,
         get_audio,
+        update_audio,
+        delete_audio,
         run_service,
         stop_service,
         refresh_service,

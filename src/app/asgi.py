@@ -587,7 +587,7 @@ async def upload_image(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
+    validate_file_size(content, state.MAX_FILE_SIZE)
 
     try:
         img = Image.open(BytesIO(content))
@@ -606,8 +606,6 @@ async def get_image(path: str) -> File:
 
     logger.debug(f"Attempting to retrieve image from {file_path}")
 
-    validate_file_exists(file_path)
-    validate_file_extension(file_path, IMAGE_EXTENSIONS)
     validate_file_exists(file_path)
     validate_file_extension(file_path, IMAGE_EXTENSIONS)
 
@@ -636,7 +634,7 @@ async def update_image(
 
     validate_file_exists(path)
     validate_file_extension(path, IMAGE_EXTENSIONS)
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
+    validate_file_size(content, state.MAX_FILE_SIZE)
 
     try:
         img = Image.open(BytesIO(content))
@@ -683,7 +681,7 @@ async def upload_text(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
+    validate_file_size(content, state.MAX_FILE_SIZE)
 
     # Text-specific validation
     try:
@@ -728,7 +726,7 @@ async def update_text(
 
     validate_file_exists(path)
     validate_file_extension(path, TEXT_EXTENSIONS)
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
+    validate_file_size(content, state.MAX_FILE_SIZE)
 
     try:
         content.decode("utf-8")
@@ -776,7 +774,7 @@ async def upload_audio(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
+    validate_file_size(content, state.MAX_FILE_SIZE)
 
     return try_write_file(path, content)
 
@@ -811,7 +809,7 @@ async def update_audio(
 
     validate_file_exists(path)
     validate_file_extension(path, AUDIO_EXTENSIONS)
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
+    validate_file_size(content, state.MAX_FILE_SIZE)
 
     return try_write_file(path, content, update=True)
 

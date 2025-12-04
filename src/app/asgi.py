@@ -66,11 +66,11 @@ from litestar.params import Body
 from app.logger import logger
 from app import services, jobs
 from app.file_utils import (
+    FileUploadResponse,
     create_extension_validator,
     validate_file_exists_and_type,
     validate_file_size,
-    write_file_with_error_handling,
-    update_file_with_error_handling,
+    try_write_file,
     delete_file_with_error_handling,
     read_file_with_error_handling,
 )
@@ -560,19 +560,13 @@ class ImageUploadRequest(BaseModel):
     file: UploadFile
 
 
-class ImageUploadResponse(BaseModel):
-    filename: str
-    size: int
-    created_at: datetime
-
-
 @post("/api/images", guards=ENDPOINT_GUARDS)
 async def upload_image(
     data: Annotated[
         ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
     ],
     state: State,
-) -> ImageUploadResponse:
+) -> FileUploadResponse:
     """Upload an image file to a specified location."""
 
     content = await data.file.read()
@@ -583,7 +577,7 @@ async def upload_image(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "image")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
     try:
         img = Image.open(BytesIO(content))
@@ -591,8 +585,7 @@ async def upload_image(
     except Exception as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
-    result = write_file_with_error_handling(path, content, "image")
-    return ImageUploadResponse(**result)
+    return try_write_file(path, content)
 
 
 @get("/api/images", guards=ENDPOINT_GUARDS)
@@ -611,7 +604,7 @@ async def get_image(path: str) -> File:
     except Exception as e:
         raise ValidationException(f"Invalid image file: {e}")
 
-    return read_file_with_error_handling(file_path, "image")
+    return read_file_with_error_handling(file_path)
 
 
 @put("/api/images", guards=ENDPOINT_GUARDS)
@@ -620,7 +613,7 @@ async def update_image(
         ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
     ],
     state: State,
-) -> ImageUploadResponse:
+) -> FileUploadResponse:
     """Update/replace an existing image file at the specified path."""
 
     content = await data.file.read()
@@ -629,7 +622,7 @@ async def update_image(
     logger.debug(f"Attempting to update image {data.file.filename} at {path}")
 
     validate_file_exists_and_type(path, IMAGE_EXTENSIONS, "image")
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "image")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
     try:
         img = Image.open(BytesIO(content))
@@ -637,10 +630,9 @@ async def update_image(
     except Exception as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
-    result = update_file_with_error_handling(path, content, "image")
-    return ImageUploadResponse(**result)
-    
-    
+    return try_write_file(path, content, update=True)
+
+
 @delete("/api/images", guards=ENDPOINT_GUARDS, status_code=200)
 async def delete_image(path: str) -> dict[str, str]:
     """Delete an image file at the specified path."""
@@ -651,7 +643,7 @@ async def delete_image(path: str) -> dict[str, str]:
 
     validate_file_exists_and_type(file_path, IMAGE_EXTENSIONS, "image")
 
-    return delete_file_with_error_handling(file_path, "image")
+    return delete_file_with_error_handling(file_path)
 
 
 class TextUploadRequest(BaseModel):
@@ -661,19 +653,11 @@ class TextUploadRequest(BaseModel):
     file: UploadFile
 
 
-class TextUploadResponse(BaseModel):
-    filename: str
-    size: int
-    created_at: datetime
-
-
 @post("/api/texts", guards=ENDPOINT_GUARDS)
 async def upload_text(
-    data: Annotated[
-        TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
-    ],
+    data: Annotated[TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)],
     state: State,
-) -> TextUploadResponse:
+) -> FileUploadResponse:
     """Upload a text file to a specified location."""
 
     content = await data.file.read()
@@ -684,16 +668,15 @@ async def upload_text(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "text")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
     # Text-specific validation
     try:
-        content.decode('utf-8')
+        content.decode("utf-8")
     except UnicodeDecodeError as e:
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
-    result = write_file_with_error_handling(path, content, "text")
-    return TextUploadResponse(**result)
+    return try_write_file(path, content)
 
 
 @get("/api/texts", guards=ENDPOINT_GUARDS)
@@ -707,21 +690,19 @@ async def get_text(path: str) -> File:
     validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
 
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             f.read()
     except UnicodeDecodeError as e:
         raise ValidationException(f"Invalid text file: {e}")
 
-    return read_file_with_error_handling(file_path, "text")
+    return read_file_with_error_handling(file_path)
 
 
 @put("/api/texts", guards=ENDPOINT_GUARDS)
 async def update_text(
-    data: Annotated[
-        TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
-    ],
+    data: Annotated[TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)],
     state: State,
-) -> TextUploadResponse:
+) -> FileUploadResponse:
     """Update/replace an existing text file at the specified path."""
 
     content = await data.file.read()
@@ -730,15 +711,14 @@ async def update_text(
     logger.debug(f"Attempting to update text file {data.file.filename} at {path}")
 
     validate_file_exists_and_type(path, TEXT_EXTENSIONS, "text")
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "text")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
     try:
-        content.decode('utf-8')
+        content.decode("utf-8")
     except UnicodeDecodeError as e:
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
-    result = update_file_with_error_handling(path, content, "text")
-    return TextUploadResponse(**result)
+    return try_write_file(path, content, update=True)
 
 
 @delete("/api/texts", guards=ENDPOINT_GUARDS, status_code=200)
@@ -751,7 +731,7 @@ async def delete_text(path: str) -> dict[str, str]:
 
     validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
 
-    return delete_file_with_error_handling(file_path, "text")
+    return delete_file_with_error_handling(file_path)
 
 
 class AudioUploadRequest(BaseModel):
@@ -761,19 +741,13 @@ class AudioUploadRequest(BaseModel):
     file: UploadFile
 
 
-class AudioUploadResponse(BaseModel):
-    filename: str
-    size: int
-    created_at: datetime
-
-
 @post("/api/audios", guards=ENDPOINT_GUARDS)
 async def upload_audio(
     data: Annotated[
         AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
     ],
     state: State,
-) -> AudioUploadResponse:
+) -> FileUploadResponse:
     """Upload an audio file to a specified location."""
 
     content = await data.file.read()
@@ -784,10 +758,9 @@ async def upload_audio(
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "audio")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
-    result = write_file_with_error_handling(path, content, "audio")
-    return AudioUploadResponse(**result)
+    return try_write_file(path, content)
 
 
 @get("/api/audios", guards=ENDPOINT_GUARDS)
@@ -800,7 +773,7 @@ async def get_audio(path: str) -> File:
 
     validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
 
-    return read_file_with_error_handling(file_path, "audio")
+    return read_file_with_error_handling(file_path)
 
 
 @put("/api/audios", guards=ENDPOINT_GUARDS)
@@ -809,7 +782,7 @@ async def update_audio(
         AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
     ],
     state: State,
-) -> AudioUploadResponse:
+) -> FileUploadResponse:
     """Update/replace an existing audio file at the specified path."""
 
     content = await data.file.read()
@@ -818,10 +791,9 @@ async def update_audio(
     logger.debug(f"Attempting to update audio file {data.file.filename} at {path}")
 
     validate_file_exists_and_type(path, AUDIO_EXTENSIONS, "audio")
-    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE, "audio")
+    validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
-    result = update_file_with_error_handling(path, content, "audio")
-    return AudioUploadResponse(**result)
+    return try_write_file(path, content, update=True)
 
 
 @delete("/api/audios", guards=ENDPOINT_GUARDS, status_code=200)
@@ -834,7 +806,7 @@ async def delete_audio(path: str) -> dict[str, str]:
 
     validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
 
-    return delete_file_with_error_handling(file_path, "audio")
+    return delete_file_with_error_handling(file_path)
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)

@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 from typing import Callable
+from pydantic import BaseModel
 
 from litestar.exceptions import (
     NotFoundException,
@@ -21,7 +22,9 @@ from litestar.response import File
 from app.logger import logger
 
 
-def create_extension_validator(extensions: list[str], file_type: str) -> Callable[[str], str]:
+def create_extension_validator(
+    extensions: list[str], file_type: str
+) -> Callable[[str], str]:
     """Create an extension validator function for a specific file type.
 
     Args:
@@ -31,16 +34,20 @@ def create_extension_validator(extensions: list[str], file_type: str) -> Callabl
     Returns:
         A validator function that raises ValidationException if extension is invalid
     """
+
     def validator(path: str) -> str:
         if not any(path.lower().endswith(ext) for ext in extensions):
             raise ValidationException(
                 f"Invalid {file_type} file extension. Allowed extensions: {', '.join(extensions)}"
             )
         return path
+
     return validator
 
 
-def validate_file_exists_and_type(file_path: Path, extensions: list[str], file_type: str) -> None:
+def validate_file_exists_and_type(
+    file_path: Path, extensions: list[str], file_type: str
+) -> None:
     """Validate that a file exists, is actually a file, and has the correct extension.
 
     Args:
@@ -64,7 +71,7 @@ def validate_file_exists_and_type(file_path: Path, extensions: list[str], file_t
         )
 
 
-def validate_file_size(content: bytes, max_size: int, file_type: str) -> None:
+def validate_file_size(content: bytes, max_size: int) -> None:
     """Validate that file content doesn't exceed maximum size.
 
     Args:
@@ -80,85 +87,68 @@ def validate_file_size(content: bytes, max_size: int, file_type: str) -> None:
         max_mb = max_size / (1024 * 1024)
         file_mb = content_length / (1024 * 1024)
         raise ValidationException(
-            f"{file_type.capitalize()} file size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
+            f"File size ({file_mb:.1f}MB) exceeds maximum file size ({max_mb:.1f}MB)"
         )
 
 
-def write_file_with_error_handling(path: Path, content: bytes, file_type: str) -> dict[str, str | int | datetime]:
-    """Write file content to disk with comprehensive error handling.
+class FileUploadResponse(BaseModel):
+    filename: str
+    size: int
+    created_at: datetime
 
-    Creates parent directories if they don't exist.
+
+def try_write_file(
+    path: Path, content: bytes, update: bool = False
+) -> FileUploadResponse:
+    """Write file content to disk with error handling.
 
     Args:
-        path: Destination path for the file
-        content: File content bytes to write
-        file_type: Human-readable file type name for error messages
+        path: Path to write
+        content: File content bytes
+        update: If True, update existing file (errors if parent doesn't exist).
+                If False, create new file (errors if file already exists, creates parent dirs).
 
     Returns:
-        Dictionary with filename, size, and created_at timestamp
+        FileUploadResponse containing filename, size, and created_at timestamp
 
     Raises:
         NotAuthorizedException: If permission denied
-        InternalServerException: If other OS error occurs
+        InternalServerException: If file exists (update=False), parent missing (update=True), or other OS error
     """
     try:
-        parent_dir = path.parent
-        parent_dir.mkdir(parents=True, exist_ok=True)
+        if not update:
+            if path.exists():
+                raise OSError(f"File already exists: {path}")
+            path.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            if not path.parent.exists():
+                raise OSError(f"Parent directory does not exist: {path.parent}")
+
         path.write_bytes(content)
-        logger.debug(f"Created {file_type} file at {path}")
-        return {
-            "filename": os.path.basename(path),
-            "size": len(content),
-            "created_at": datetime.now(),
-        }
+        action = "Updated" if update else "Created"
+        logger.debug(f"{action} file at {path}")
+        return FileUploadResponse(
+            filename=os.path.basename(path),
+            size=len(content),
+            created_at=datetime.now(),
+        )
     except PermissionError as e:
-        logger.error(f"User does not have permission to create file at path {path}: {e}")
+        action = "update" if update else "create"
+        logger.error(
+            f"User does not have permission to {action} file at path {path}: {e}"
+        )
         raise NotAuthorizedException(f"Permission denied: {e}")
-    except OSError as e:
-        logger.error(f"Failed to create {file_type} file at path {path}: {e}")
-        raise InternalServerException(f"Failed to create file: {e}")
-    except Exception as e:
-        logger.error(f"Failed to create {file_type} file at path {path}: {e}")
-        raise InternalServerException(f"Failed to create file: {e}")
+    except (OSError, Exception) as e:
+        action = "update" if update else "create"
+        logger.error(f"Failed to {action} file at path {path}: {e}")
+        raise InternalServerException(f"Failed to {action} file: {e}")
 
 
-def update_file_with_error_handling(path: Path, content: bytes, file_type: str) -> dict[str, str | int | datetime]:
-    """Update existing file content with comprehensive error handling.
-
-    Args:
-        path: Path to the file to update
-        content: New file content bytes
-        file_type: Human-readable file type name for error messages
-
-    Returns:
-        Dictionary with filename, size, and created_at timestamp
-
-    Raises:
-        NotAuthorizedException: If permission denied
-        InternalServerException: If other error occurs
-    """
-    try:
-        path.write_bytes(content)
-        logger.debug(f"Updated {file_type} file at {path}")
-        return {
-            "filename": os.path.basename(path),
-            "size": len(content),
-            "created_at": datetime.now(),
-        }
-    except PermissionError as e:
-        logger.error(f"User does not have permission to update file at path {path}: {e}")
-        raise NotAuthorizedException(f"Permission denied: {e}")
-    except Exception as e:
-        logger.error(f"Failed to update {file_type} file at path {path}: {e}")
-        raise InternalServerException(f"Failed to update file: {e}")
-
-
-def delete_file_with_error_handling(file_path: Path, file_type: str) -> dict[str, str]:
+def delete_file_with_error_handling(file_path: Path) -> dict[str, str]:
     """Delete a file with comprehensive error handling.
 
     Args:
         file_path: Path to the file to delete
-        file_type: Human-readable file type name for error messages
 
     Returns:
         Dictionary with success message
@@ -169,22 +159,21 @@ def delete_file_with_error_handling(file_path: Path, file_type: str) -> dict[str
     """
     try:
         file_path.unlink()
-        logger.debug(f"Deleted {file_type} file at {file_path}")
-        return {"message": f"Successfully deleted {file_type} file at {file_path}"}
+        logger.debug(f"Deleted file at {file_path}")
+        return {"message": f"Successfully deleted file at {file_path}"}
     except PermissionError as e:
         logger.error(f"Permission denied deleting file at {file_path}: {e}")
         raise NotAuthorizedException(f"Permission denied: {e}")
     except Exception as e:
-        logger.error(f"Failed to delete {file_type} file at {file_path}: {e}")
+        logger.error(f"Failed to delete file at {file_path}: {e}")
         raise InternalServerException(f"Failed to delete file: {e}")
 
 
-def read_file_with_error_handling(file_path: Path, file_type: str) -> File:
+def read_file_with_error_handling(file_path: Path) -> File:
     """Read a file and return it with comprehensive error handling.
 
     Args:
         file_path: Path to the file to read
-        file_type: Human-readable file type name for error messages
 
     Returns:
         File response object
@@ -199,5 +188,5 @@ def read_file_with_error_handling(file_path: Path, file_type: str) -> File:
         logger.error(f"Permission denied reading file at {file_path}: {e}")
         raise NotAuthorizedException(f"Permission denied: {e}")
     except Exception as e:
-        logger.error(f"Failed to read {file_type} file at {file_path}: {e}")
+        logger.error(f"Failed to read file at {file_path}: {e}")
         raise InternalServerException(f"Failed to read file: {e}")

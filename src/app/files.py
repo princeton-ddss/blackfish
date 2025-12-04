@@ -129,7 +129,7 @@ def try_write_file(
         raise InternalServerException(f"Failed to {action} file: {e}")
 
 
-def try_delete_file(file_path: Path) -> dict[str, str]:
+def try_delete_file(file_path: Path) -> Path:
     """Delete a file with comprehensive error handling.
 
     Args:
@@ -145,7 +145,7 @@ def try_delete_file(file_path: Path) -> dict[str, str]:
     try:
         file_path.unlink()
         logger.debug(f"Deleted file at {file_path}")
-        return {"message": f"Successfully deleted file at {file_path}"}
+        return file_path
     except PermissionError as e:
         logger.error(f"Permission denied deleting file at {file_path}: {e}")
         raise NotAuthorizedException(f"Permission denied: {e}")

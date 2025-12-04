@@ -463,7 +463,7 @@ class TestDeleteAudioAPI:
             # Should return success
             assert response.status_code == 200
             result = response.json()
-            assert "Successfully deleted" in result["message"]
+            assert result == file_path
 
             # Verify file was actually deleted
             assert not os.path.exists(file_path)

@@ -634,7 +634,7 @@ async def update_image(
 
 
 @delete("/api/image", guards=ENDPOINT_GUARDS, status_code=200)
-async def delete_image(path: str) -> dict[str, str]:
+async def delete_image(path: str) -> Path:
     """Delete an image file at the specified path."""
 
     file_path = Path(path)
@@ -725,7 +725,7 @@ async def update_text(
 
 
 @delete("/api/text", guards=ENDPOINT_GUARDS, status_code=200)
-async def delete_text(path: str) -> dict[str, str]:
+async def delete_text(path: str) -> Path:
     """Delete a text file at the specified path."""
 
     file_path = Path(path)
@@ -803,7 +803,7 @@ async def update_audio(
 
 
 @delete("/api/audio", guards=ENDPOINT_GUARDS, status_code=200)
-async def delete_audio(path: str) -> dict[str, str]:
+async def delete_audio(path: str) -> Path:
     """Delete an audio file at the specified path."""
 
     file_path = Path(path)

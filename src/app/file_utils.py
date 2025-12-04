@@ -22,9 +22,7 @@ from litestar.response import File
 from app.logger import logger
 
 
-def create_extension_validator(
-    extensions: list[str], file_type: str
-) -> Callable[[str], str]:
+def create_extension_validator(extensions: list[str]) -> Callable[[str], str]:
     """Create an extension validator function for a specific file type.
 
     Args:
@@ -38,7 +36,7 @@ def create_extension_validator(
     def validator(path: str) -> str:
         if not any(path.lower().endswith(ext) for ext in extensions):
             raise ValidationException(
-                f"Invalid {file_type} file extension. Allowed extensions: {', '.join(extensions)}"
+                f"Invalid file extension. Allowed extensions: {', '.join(extensions)}"
             )
         return path
 

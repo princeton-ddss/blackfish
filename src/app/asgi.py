@@ -547,10 +547,9 @@ IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
 TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
 AUDIO_EXTENSIONS = [".wav", ".mp3"]
 
-# Create extension validators for each file type
-has_image_extension = create_extension_validator(IMAGE_EXTENSIONS, "image")
-has_text_extension = create_extension_validator(TEXT_EXTENSIONS, "text")
-has_audio_extension = create_extension_validator(AUDIO_EXTENSIONS, "audio")
+has_image_extension = create_extension_validator(IMAGE_EXTENSIONS)
+has_text_extension = create_extension_validator(TEXT_EXTENSIONS)
+has_audio_extension = create_extension_validator(AUDIO_EXTENSIONS)
 
 
 class ImageUploadRequest(BaseModel):

@@ -273,7 +273,7 @@ class TestGetImageAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Invalid image file extension" in result["detail"]
+            assert "Invalid file extension" in result["detail"]
 
     async def test_get_image_corrupted_file(self, client: AsyncTestClient):
         """Test that corrupted image files are rejected."""
@@ -538,7 +538,7 @@ class TestDeleteImageAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Invalid image file extension" in result["detail"]
+            assert "Invalid file extension" in result["detail"]
 
     async def test_delete_image_permission_denied(self, client: AsyncTestClient):
         """Test handling of permission denied errors."""

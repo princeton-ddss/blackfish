@@ -264,7 +264,7 @@ class TestGetAudioAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Invalid audio file extension" in result["detail"]
+            assert "Invalid file extension" in result["detail"]
 
     def _create_and_save_audio(self, path: str) -> bytes:
         """Create and save an audio file for testing."""
@@ -512,7 +512,7 @@ class TestDeleteAudioAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Invalid audio file extension" in result["detail"]
+            assert "Invalid file extension" in result["detail"]
 
     async def test_delete_audio_permission_denied(self, client: AsyncTestClient):
         """Test handling of permission denied errors."""

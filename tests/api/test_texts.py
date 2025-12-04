@@ -277,7 +277,7 @@ class TestGetTextAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Invalid text file extension" in result["detail"]
+            assert "Invalid file extension" in result["detail"]
 
     async def test_get_text_corrupted_file(self, client: AsyncTestClient):
         """Test that corrupted text files (invalid UTF-8) are rejected."""
@@ -538,7 +538,7 @@ class TestDeleteTextAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Invalid text file extension" in result["detail"]
+            assert "Invalid file extension" in result["detail"]
 
     async def test_delete_text_permission_denied(self, client: AsyncTestClient):
         """Test handling of permission denied errors."""

@@ -531,18 +531,6 @@ async def get_files(
         raise NotFoundException(detail=f"Path {path} does not exist.")
 
 
-@get("/api/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
-async def get_audio_legacy(path: str) -> File | None:
-    """Legacy endpoint for retrieving audio files. Use GET /api/audios instead."""
-    if os.path.isfile(path):
-        if path.endswith(".wav") or path.endswith(".mp3"):
-            return File(path=path)
-        else:
-            raise ValidationException("Path should specify a .wav or .mp3 file.")
-    else:
-        raise NotFoundException(f"{path} not found.")
-
-
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
 TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
 AUDIO_EXTENSIONS = [".wav", ".mp3"]
@@ -1656,7 +1644,6 @@ app = Litestar(
         logout,
         get_ports,
         get_files,
-        get_audio_legacy,
         upload_image,
         get_image,
         update_image,

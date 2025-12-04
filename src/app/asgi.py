@@ -570,7 +570,7 @@ class ImageUploadRequest(BaseModel):
     file: UploadFile
 
 
-@post("/api/images", guards=ENDPOINT_GUARDS)
+@post("/api/image", guards=ENDPOINT_GUARDS)
 async def upload_image(
     data: Annotated[
         ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
@@ -598,7 +598,7 @@ async def upload_image(
     return try_write_file(path, content)
 
 
-@get("/api/images", guards=ENDPOINT_GUARDS)
+@get("/api/image", guards=ENDPOINT_GUARDS)
 async def get_image(path: str) -> File:
     """Retrieve an image file from the specified path."""
 
@@ -618,7 +618,7 @@ async def get_image(path: str) -> File:
     return try_read_file(file_path)
 
 
-@put("/api/images", guards=ENDPOINT_GUARDS)
+@put("/api/image", guards=ENDPOINT_GUARDS)
 async def update_image(
     data: Annotated[
         ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
@@ -645,7 +645,7 @@ async def update_image(
     return try_write_file(path, content, update=True)
 
 
-@delete("/api/images", guards=ENDPOINT_GUARDS, status_code=200)
+@delete("/api/image", guards=ENDPOINT_GUARDS, status_code=200)
 async def delete_image(path: str) -> dict[str, str]:
     """Delete an image file at the specified path."""
 
@@ -666,7 +666,7 @@ class TextUploadRequest(BaseModel):
     file: UploadFile
 
 
-@post("/api/texts", guards=ENDPOINT_GUARDS)
+@post("/api/text", guards=ENDPOINT_GUARDS)
 async def upload_text(
     data: Annotated[TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)],
     state: State,
@@ -692,7 +692,7 @@ async def upload_text(
     return try_write_file(path, content)
 
 
-@get("/api/texts", guards=ENDPOINT_GUARDS)
+@get("/api/text", guards=ENDPOINT_GUARDS)
 async def get_text(path: str) -> File:
     """Retrieve a text file from the specified path."""
 
@@ -712,7 +712,7 @@ async def get_text(path: str) -> File:
     return try_read_file(file_path)
 
 
-@put("/api/texts", guards=ENDPOINT_GUARDS)
+@put("/api/text", guards=ENDPOINT_GUARDS)
 async def update_text(
     data: Annotated[TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)],
     state: State,
@@ -736,7 +736,7 @@ async def update_text(
     return try_write_file(path, content, update=True)
 
 
-@delete("/api/texts", guards=ENDPOINT_GUARDS, status_code=200)
+@delete("/api/text", guards=ENDPOINT_GUARDS, status_code=200)
 async def delete_text(path: str) -> dict[str, str]:
     """Delete a text file at the specified path."""
 
@@ -757,7 +757,7 @@ class AudioUploadRequest(BaseModel):
     file: UploadFile
 
 
-@post("/api/audios", guards=ENDPOINT_GUARDS)
+@post("/api/audio", guards=ENDPOINT_GUARDS)
 async def upload_audio(
     data: Annotated[
         AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
@@ -779,7 +779,7 @@ async def upload_audio(
     return try_write_file(path, content)
 
 
-@get("/api/audios", guards=ENDPOINT_GUARDS)
+@get("/api/audio", guards=ENDPOINT_GUARDS)
 async def get_audio(path: str) -> File:
     """Retrieve an audio file from the specified path."""
 
@@ -793,7 +793,7 @@ async def get_audio(path: str) -> File:
     return try_read_file(file_path)
 
 
-@put("/api/audios", guards=ENDPOINT_GUARDS)
+@put("/api/audio", guards=ENDPOINT_GUARDS)
 async def update_audio(
     data: Annotated[
         AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
@@ -814,7 +814,7 @@ async def update_audio(
     return try_write_file(path, content, update=True)
 
 
-@delete("/api/audios", guards=ENDPOINT_GUARDS, status_code=200)
+@delete("/api/audio", guards=ENDPOINT_GUARDS, status_code=200)
 async def delete_audio(path: str) -> dict[str, str]:
     """Delete an audio file at the specified path."""
 

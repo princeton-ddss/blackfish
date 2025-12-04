@@ -10,12 +10,12 @@ pytestmark = pytest.mark.anyio
 
 
 class TestUploadImageAPI:
-    """Test cases for the POST /api/images endpoint."""
+    """Test cases for the POST /api/image endpoint."""
 
     async def test_upload_image_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that /api/images requires authentication."""
+        """Test that /api/image requires authentication."""
 
         png_bytes = self._create_test_png()
 
@@ -23,7 +23,7 @@ class TestUploadImageAPI:
             file_path = os.path.join(temp_dir, "text.png")
 
             response = await no_auth_client.post(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": file_path},
             )
@@ -39,7 +39,7 @@ class TestUploadImageAPI:
             file_path = os.path.join(temp_dir, "test.png")
 
             response = await client.post(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": file_path},
             )
@@ -63,7 +63,7 @@ class TestUploadImageAPI:
             file_path = os.path.join(temp_dir, "nested", "dirs", "test.png")
 
             response = await client.post(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": file_path},
             )
@@ -82,7 +82,7 @@ class TestUploadImageAPI:
             file_path = os.path.join(temp_dir, "test.exe")
 
             response = await client.post(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": file_path},
             )
@@ -90,7 +90,7 @@ class TestUploadImageAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Validation failed for POST /api/images" in result["detail"]
+            assert "Validation failed for POST /api/image" in result["detail"]
 
     async def test_upload_image_valid_extensions(self, client: AsyncTestClient):
         """Test that all valid image extensions are accepted."""
@@ -102,7 +102,7 @@ class TestUploadImageAPI:
             for ext in valid_extensions:
                 file_path = os.path.join(temp_dir, f"test{ext}")
                 response = await client.post(
-                    "/api/images",
+                    "/api/image",
                     files={"file": png_bytes},
                     data={"path": file_path},
                 )
@@ -119,7 +119,7 @@ class TestUploadImageAPI:
             file_path = os.path.join(temp_dir, "test.png")
 
             response = await client.post(
-                "/api/images",
+                "/api/image",
                 files={"file": invalid_data},
                 data={"path": file_path},
             )
@@ -143,7 +143,7 @@ class TestUploadImageAPI:
 
             try:
                 response = await client.post(
-                    "/api/images",
+                    "/api/image",
                     files={"file": png_bytes},
                     data={"path": file_path},
                 )
@@ -167,7 +167,7 @@ class TestUploadImageAPI:
 
             # First upload should succeed
             response = await client.post(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": file_path},
             )
@@ -175,7 +175,7 @@ class TestUploadImageAPI:
 
             # Second upload to the same path should fail
             response = await client.post(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": file_path},
             )
@@ -194,19 +194,19 @@ class TestUploadImageAPI:
 
 
 class TestGetImageAPI:
-    """Test cases for the GET /api/images endpoint."""
+    """Test cases for the GET /api/image endpoint."""
 
     async def test_get_image_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that GET /api/images requires authentication."""
+        """Test that GET /api/image requires authentication."""
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, "test.png")
             self._create_and_save_png(file_path)
 
             response = await no_auth_client.get(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -221,7 +221,7 @@ class TestGetImageAPI:
             original_data = self._create_and_save_png(file_path)
 
             response = await client.get(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -236,7 +236,7 @@ class TestGetImageAPI:
             file_path = os.path.join(temp_dir, "nonexistent.png")
 
             response = await client.get(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -248,7 +248,7 @@ class TestGetImageAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.get(
-                "/api/images",
+                "/api/image",
                 params={"path": temp_dir},
             )
 
@@ -266,7 +266,7 @@ class TestGetImageAPI:
                 f.write("Not an image")
 
             response = await client.get(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -284,7 +284,7 @@ class TestGetImageAPI:
                 f.write(b"This is not a valid PNG file")
 
             response = await client.get(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -305,12 +305,12 @@ class TestGetImageAPI:
 
 
 class TestUpdateImageAPI:
-    """Test cases for the PUT /api/images endpoint."""
+    """Test cases for the PUT /api/image endpoint."""
 
     async def test_update_image_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that PUT /api/images requires authentication."""
+        """Test that PUT /api/image requires authentication."""
 
         png_bytes = self._create_test_png()
 
@@ -319,7 +319,7 @@ class TestUpdateImageAPI:
             self._create_and_save_png(file_path)
 
             response = await no_auth_client.put(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": file_path},
             )
@@ -338,7 +338,7 @@ class TestUpdateImageAPI:
             # Update with new image
             new_png_bytes = self._create_test_png(color="green")
             response = await client.put(
-                "/api/images",
+                "/api/image",
                 files={"file": new_png_bytes},
                 data={"path": file_path},
             )
@@ -363,7 +363,7 @@ class TestUpdateImageAPI:
             file_path = os.path.join(temp_dir, "nonexistent.png")
 
             response = await client.put(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": file_path},
             )
@@ -378,7 +378,7 @@ class TestUpdateImageAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.put(
-                "/api/images",
+                "/api/image",
                 files={"file": png_bytes},
                 data={"path": temp_dir},
             )
@@ -402,7 +402,7 @@ class TestUpdateImageAPI:
             self._create_and_save_png(file_path)
 
             response = await client.put(
-                "/api/images",
+                "/api/image",
                 files={"file": invalid_data},
                 data={"path": file_path},
             )
@@ -424,7 +424,7 @@ class TestUpdateImageAPI:
 
             try:
                 response = await client.put(
-                    "/api/images",
+                    "/api/image",
                     files={"file": png_bytes},
                     data={"path": file_path},
                 )
@@ -452,19 +452,19 @@ class TestUpdateImageAPI:
 
 
 class TestDeleteImageAPI:
-    """Test cases for the DELETE /api/images endpoint."""
+    """Test cases for the DELETE /api/image endpoint."""
 
     async def test_delete_image_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that DELETE /api/images requires authentication."""
+        """Test that DELETE /api/image requires authentication."""
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, "test.png")
             self._create_and_save_png(file_path)
 
             response = await no_auth_client.delete(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -482,7 +482,7 @@ class TestDeleteImageAPI:
             assert os.path.exists(file_path)
 
             response = await client.delete(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -501,7 +501,7 @@ class TestDeleteImageAPI:
             file_path = os.path.join(temp_dir, "nonexistent.png")
 
             response = await client.delete(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -513,7 +513,7 @@ class TestDeleteImageAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.delete(
-                "/api/images",
+                "/api/image",
                 params={"path": temp_dir},
             )
 
@@ -531,7 +531,7 @@ class TestDeleteImageAPI:
                 f.write("Not an image")
 
             response = await client.delete(
-                "/api/images",
+                "/api/image",
                 params={"path": file_path},
             )
 
@@ -552,7 +552,7 @@ class TestDeleteImageAPI:
 
             try:
                 response = await client.delete(
-                    "/api/images",
+                    "/api/image",
                     params={"path": file_path},
                 )
 

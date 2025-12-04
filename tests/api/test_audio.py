@@ -8,12 +8,12 @@ pytestmark = pytest.mark.anyio
 
 
 class TestUploadAudioAPI:
-    """Test cases for the POST /api/audios endpoint."""
+    """Test cases for the POST /api/audio endpoint."""
 
     async def test_upload_audio_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that /api/audios requires authentication."""
+        """Test that /api/audio requires authentication."""
 
         audio_bytes = self._create_test_audio()
 
@@ -21,7 +21,7 @@ class TestUploadAudioAPI:
             file_path = os.path.join(temp_dir, "test.wav")
 
             response = await no_auth_client.post(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": file_path},
             )
@@ -37,7 +37,7 @@ class TestUploadAudioAPI:
             file_path = os.path.join(temp_dir, "test.wav")
 
             response = await client.post(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": file_path},
             )
@@ -61,7 +61,7 @@ class TestUploadAudioAPI:
             file_path = os.path.join(temp_dir, "nested", "dirs", "test.wav")
 
             response = await client.post(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": file_path},
             )
@@ -80,7 +80,7 @@ class TestUploadAudioAPI:
             file_path = os.path.join(temp_dir, "test.exe")
 
             response = await client.post(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": file_path},
             )
@@ -88,7 +88,7 @@ class TestUploadAudioAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Validation failed for POST /api/audios" in result["detail"]
+            assert "Validation failed for POST /api/audio" in result["detail"]
 
     async def test_upload_audio_valid_extensions(self, client: AsyncTestClient):
         """Test that all valid audio extensions are accepted."""
@@ -100,7 +100,7 @@ class TestUploadAudioAPI:
             for ext in valid_extensions:
                 file_path = os.path.join(temp_dir, f"test{ext}")
                 response = await client.post(
-                    "/api/audios",
+                    "/api/audio",
                     files={"file": audio_bytes},
                     data={"path": file_path},
                 )
@@ -122,7 +122,7 @@ class TestUploadAudioAPI:
 
             try:
                 response = await client.post(
-                    "/api/audios",
+                    "/api/audio",
                     files={"file": audio_bytes},
                     data={"path": file_path},
                 )
@@ -146,7 +146,7 @@ class TestUploadAudioAPI:
 
             # First upload should succeed
             response = await client.post(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": file_path},
             )
@@ -154,7 +154,7 @@ class TestUploadAudioAPI:
 
             # Second upload to the same path should fail
             response = await client.post(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": file_path},
             )
@@ -185,19 +185,19 @@ class TestUploadAudioAPI:
 
 
 class TestGetAudioAPI:
-    """Test cases for the GET /api/audios endpoint."""
+    """Test cases for the GET /api/audio endpoint."""
 
     async def test_get_audio_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that GET /api/audios requires authentication."""
+        """Test that GET /api/audio requires authentication."""
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, "test.wav")
             self._create_and_save_audio(file_path)
 
             response = await no_auth_client.get(
-                "/api/audios",
+                "/api/audio",
                 params={"path": file_path},
             )
 
@@ -212,7 +212,7 @@ class TestGetAudioAPI:
             original_data = self._create_and_save_audio(file_path)
 
             response = await client.get(
-                "/api/audios",
+                "/api/audio",
                 params={"path": file_path},
             )
 
@@ -227,7 +227,7 @@ class TestGetAudioAPI:
             file_path = os.path.join(temp_dir, "nonexistent.wav")
 
             response = await client.get(
-                "/api/audios",
+                "/api/audio",
                 params={"path": file_path},
             )
 
@@ -239,7 +239,7 @@ class TestGetAudioAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.get(
-                "/api/audios",
+                "/api/audio",
                 params={"path": temp_dir},
             )
 
@@ -257,7 +257,7 @@ class TestGetAudioAPI:
                 f.write("Not an audio file")
 
             response = await client.get(
-                "/api/audios",
+                "/api/audio",
                 params={"path": file_path},
             )
 
@@ -289,12 +289,12 @@ class TestGetAudioAPI:
 
 
 class TestUpdateAudioAPI:
-    """Test cases for the PUT /api/audios endpoint."""
+    """Test cases for the PUT /api/audio endpoint."""
 
     async def test_update_audio_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that PUT /api/audios requires authentication."""
+        """Test that PUT /api/audio requires authentication."""
 
         audio_bytes = self._create_test_audio()
 
@@ -303,7 +303,7 @@ class TestUpdateAudioAPI:
             self._create_and_save_audio(file_path)
 
             response = await no_auth_client.put(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": file_path},
             )
@@ -322,7 +322,7 @@ class TestUpdateAudioAPI:
             # Update with new audio
             new_audio_bytes = self._create_test_audio(sample_rate=48000)
             response = await client.put(
-                "/api/audios",
+                "/api/audio",
                 files={"file": new_audio_bytes},
                 data={"path": file_path},
             )
@@ -347,7 +347,7 @@ class TestUpdateAudioAPI:
             file_path = os.path.join(temp_dir, "nonexistent.wav")
 
             response = await client.put(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": file_path},
             )
@@ -362,7 +362,7 @@ class TestUpdateAudioAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.put(
-                "/api/audios",
+                "/api/audio",
                 files={"file": audio_bytes},
                 data={"path": temp_dir},
             )
@@ -388,7 +388,7 @@ class TestUpdateAudioAPI:
 
             try:
                 response = await client.put(
-                    "/api/audios",
+                    "/api/audio",
                     files={"file": audio_bytes},
                     data={"path": file_path},
                 )
@@ -426,19 +426,19 @@ class TestUpdateAudioAPI:
 
 
 class TestDeleteAudioAPI:
-    """Test cases for the DELETE /api/audios endpoint."""
+    """Test cases for the DELETE /api/audio endpoint."""
 
     async def test_delete_audio_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that DELETE /api/audios requires authentication."""
+        """Test that DELETE /api/audio requires authentication."""
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, "test.wav")
             self._create_and_save_audio(file_path)
 
             response = await no_auth_client.delete(
-                "/api/audios",
+                "/api/audio",
                 params={"path": file_path},
             )
 
@@ -456,7 +456,7 @@ class TestDeleteAudioAPI:
             assert os.path.exists(file_path)
 
             response = await client.delete(
-                "/api/audios",
+                "/api/audio",
                 params={"path": file_path},
             )
 
@@ -475,7 +475,7 @@ class TestDeleteAudioAPI:
             file_path = os.path.join(temp_dir, "nonexistent.wav")
 
             response = await client.delete(
-                "/api/audios",
+                "/api/audio",
                 params={"path": file_path},
             )
 
@@ -487,7 +487,7 @@ class TestDeleteAudioAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.delete(
-                "/api/audios",
+                "/api/audio",
                 params={"path": temp_dir},
             )
 
@@ -505,7 +505,7 @@ class TestDeleteAudioAPI:
                 f.write("Not an audio file")
 
             response = await client.delete(
-                "/api/audios",
+                "/api/audio",
                 params={"path": file_path},
             )
 
@@ -526,7 +526,7 @@ class TestDeleteAudioAPI:
 
             try:
                 response = await client.delete(
-                    "/api/audios",
+                    "/api/audio",
                     params={"path": file_path},
                 )
 

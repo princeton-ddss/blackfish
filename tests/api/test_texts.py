@@ -8,12 +8,12 @@ pytestmark = pytest.mark.anyio
 
 
 class TestUploadTextAPI:
-    """Test cases for the POST /api/texts endpoint."""
+    """Test cases for the POST /api/text endpoint."""
 
     async def test_upload_text_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that /api/texts requires authentication."""
+        """Test that /api/text requires authentication."""
 
         text_bytes = self._create_test_text()
 
@@ -21,7 +21,7 @@ class TestUploadTextAPI:
             file_path = os.path.join(temp_dir, "test.txt")
 
             response = await no_auth_client.post(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": file_path},
             )
@@ -37,7 +37,7 @@ class TestUploadTextAPI:
             file_path = os.path.join(temp_dir, "test.txt")
 
             response = await client.post(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": file_path},
             )
@@ -61,7 +61,7 @@ class TestUploadTextAPI:
             file_path = os.path.join(temp_dir, "nested", "dirs", "test.txt")
 
             response = await client.post(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": file_path},
             )
@@ -80,7 +80,7 @@ class TestUploadTextAPI:
             file_path = os.path.join(temp_dir, "test.exe")
 
             response = await client.post(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": file_path},
             )
@@ -88,7 +88,7 @@ class TestUploadTextAPI:
             # Should return validation error
             assert response.status_code == 400
             result = response.json()
-            assert "Validation failed for POST /api/texts" in result["detail"]
+            assert "Validation failed for POST /api/text" in result["detail"]
 
     async def test_upload_text_valid_extensions(self, client: AsyncTestClient):
         """Test that all valid text extensions are accepted."""
@@ -109,7 +109,7 @@ class TestUploadTextAPI:
             for ext in valid_extensions:
                 file_path = os.path.join(temp_dir, f"test{ext}")
                 response = await client.post(
-                    "/api/texts",
+                    "/api/text",
                     files={"file": text_bytes},
                     data={"path": file_path},
                 )
@@ -126,7 +126,7 @@ class TestUploadTextAPI:
             file_path = os.path.join(temp_dir, "test.txt")
 
             response = await client.post(
-                "/api/texts",
+                "/api/text",
                 files={"file": invalid_data},
                 data={"path": file_path},
             )
@@ -150,7 +150,7 @@ class TestUploadTextAPI:
 
             try:
                 response = await client.post(
-                    "/api/texts",
+                    "/api/text",
                     files={"file": text_bytes},
                     data={"path": file_path},
                 )
@@ -174,7 +174,7 @@ class TestUploadTextAPI:
 
             # First upload should succeed
             response = await client.post(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": file_path},
             )
@@ -182,7 +182,7 @@ class TestUploadTextAPI:
 
             # Second upload to the same path should fail
             response = await client.post(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": file_path},
             )
@@ -198,19 +198,19 @@ class TestUploadTextAPI:
 
 
 class TestGetTextAPI:
-    """Test cases for the GET /api/texts endpoint."""
+    """Test cases for the GET /api/text endpoint."""
 
     async def test_get_text_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that GET /api/texts requires authentication."""
+        """Test that GET /api/text requires authentication."""
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, "test.txt")
             self._create_and_save_text(file_path)
 
             response = await no_auth_client.get(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -225,7 +225,7 @@ class TestGetTextAPI:
             original_data = self._create_and_save_text(file_path)
 
             response = await client.get(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -240,7 +240,7 @@ class TestGetTextAPI:
             file_path = os.path.join(temp_dir, "nonexistent.txt")
 
             response = await client.get(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -252,7 +252,7 @@ class TestGetTextAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.get(
-                "/api/texts",
+                "/api/text",
                 params={"path": temp_dir},
             )
 
@@ -270,7 +270,7 @@ class TestGetTextAPI:
                 f.write("Not a valid extension")
 
             response = await client.get(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -288,7 +288,7 @@ class TestGetTextAPI:
                 f.write(b"\x80\x81\x82\x83")  # Invalid UTF-8
 
             response = await client.get(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -306,12 +306,12 @@ class TestGetTextAPI:
 
 
 class TestUpdateTextAPI:
-    """Test cases for the PUT /api/texts endpoint."""
+    """Test cases for the PUT /api/text endpoint."""
 
     async def test_update_text_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that PUT /api/texts requires authentication."""
+        """Test that PUT /api/text requires authentication."""
 
         text_bytes = self._create_test_text()
 
@@ -320,7 +320,7 @@ class TestUpdateTextAPI:
             self._create_and_save_text(file_path)
 
             response = await no_auth_client.put(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": file_path},
             )
@@ -339,7 +339,7 @@ class TestUpdateTextAPI:
             # Update with new content
             new_text_bytes = b"Updated content\nNew line\n"
             response = await client.put(
-                "/api/texts",
+                "/api/text",
                 files={"file": new_text_bytes},
                 data={"path": file_path},
             )
@@ -364,7 +364,7 @@ class TestUpdateTextAPI:
             file_path = os.path.join(temp_dir, "nonexistent.txt")
 
             response = await client.put(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": file_path},
             )
@@ -379,7 +379,7 @@ class TestUpdateTextAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.put(
-                "/api/texts",
+                "/api/text",
                 files={"file": text_bytes},
                 data={"path": temp_dir},
             )
@@ -403,7 +403,7 @@ class TestUpdateTextAPI:
             self._create_and_save_text(file_path)
 
             response = await client.put(
-                "/api/texts",
+                "/api/text",
                 files={"file": invalid_data},
                 data={"path": file_path},
             )
@@ -425,7 +425,7 @@ class TestUpdateTextAPI:
 
             try:
                 response = await client.put(
-                    "/api/texts",
+                    "/api/text",
                     files={"file": text_bytes},
                     data={"path": file_path},
                 )
@@ -452,19 +452,19 @@ class TestUpdateTextAPI:
 
 
 class TestDeleteTextAPI:
-    """Test cases for the DELETE /api/texts endpoint."""
+    """Test cases for the DELETE /api/text endpoint."""
 
     async def test_delete_text_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):
-        """Test that DELETE /api/texts requires authentication."""
+        """Test that DELETE /api/text requires authentication."""
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, "test.txt")
             self._create_and_save_text(file_path)
 
             response = await no_auth_client.delete(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -482,7 +482,7 @@ class TestDeleteTextAPI:
             assert os.path.exists(file_path)
 
             response = await client.delete(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -501,7 +501,7 @@ class TestDeleteTextAPI:
             file_path = os.path.join(temp_dir, "nonexistent.txt")
 
             response = await client.delete(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -513,7 +513,7 @@ class TestDeleteTextAPI:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = await client.delete(
-                "/api/texts",
+                "/api/text",
                 params={"path": temp_dir},
             )
 
@@ -531,7 +531,7 @@ class TestDeleteTextAPI:
                 f.write("Not a text file")
 
             response = await client.delete(
-                "/api/texts",
+                "/api/text",
                 params={"path": file_path},
             )
 
@@ -552,7 +552,7 @@ class TestDeleteTextAPI:
 
             try:
                 response = await client.delete(
-                    "/api/texts",
+                    "/api/text",
                     params={"path": file_path},
                 )
 

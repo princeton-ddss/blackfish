@@ -2,7 +2,6 @@ import tempfile
 import pytest
 import os
 from litestar.testing import AsyncTestClient
-from io import BytesIO
 
 
 pytestmark = pytest.mark.anyio
@@ -169,19 +168,19 @@ class TestUploadAudioAPI:
         """Create a minimal valid audio content for testing (simple WAV header)."""
         # Create a minimal WAV file header
         # This is a very basic 44-byte WAV header for 1 second of silence
-        wav_header = b'RIFF'
-        wav_header += (36).to_bytes(4, 'little')  # File size - 8
-        wav_header += b'WAVE'
-        wav_header += b'fmt '
-        wav_header += (16).to_bytes(4, 'little')  # Subchunk1 size
-        wav_header += (1).to_bytes(2, 'little')   # Audio format (1 = PCM)
-        wav_header += (1).to_bytes(2, 'little')   # Number of channels
-        wav_header += (44100).to_bytes(4, 'little')  # Sample rate
-        wav_header += (88200).to_bytes(4, 'little')  # Byte rate
-        wav_header += (2).to_bytes(2, 'little')   # Block align
-        wav_header += (16).to_bytes(2, 'little')  # Bits per sample
-        wav_header += b'data'
-        wav_header += (0).to_bytes(4, 'little')   # Data size
+        wav_header = b"RIFF"
+        wav_header += (36).to_bytes(4, "little")  # File size - 8
+        wav_header += b"WAVE"
+        wav_header += b"fmt "
+        wav_header += (16).to_bytes(4, "little")  # Subchunk1 size
+        wav_header += (1).to_bytes(2, "little")  # Audio format (1 = PCM)
+        wav_header += (1).to_bytes(2, "little")  # Number of channels
+        wav_header += (44100).to_bytes(4, "little")  # Sample rate
+        wav_header += (88200).to_bytes(4, "little")  # Byte rate
+        wav_header += (2).to_bytes(2, "little")  # Block align
+        wav_header += (16).to_bytes(2, "little")  # Bits per sample
+        wav_header += b"data"
+        wav_header += (0).to_bytes(4, "little")  # Data size
         return wav_header
 
 
@@ -270,19 +269,19 @@ class TestGetAudioAPI:
     def _create_and_save_audio(self, path: str) -> bytes:
         """Create and save an audio file for testing."""
         # Create a minimal WAV file
-        wav_header = b'RIFF'
-        wav_header += (36).to_bytes(4, 'little')
-        wav_header += b'WAVE'
-        wav_header += b'fmt '
-        wav_header += (16).to_bytes(4, 'little')
-        wav_header += (1).to_bytes(2, 'little')
-        wav_header += (1).to_bytes(2, 'little')
-        wav_header += (44100).to_bytes(4, 'little')
-        wav_header += (88200).to_bytes(4, 'little')
-        wav_header += (2).to_bytes(2, 'little')
-        wav_header += (16).to_bytes(2, 'little')
-        wav_header += b'data'
-        wav_header += (0).to_bytes(4, 'little')
+        wav_header = b"RIFF"
+        wav_header += (36).to_bytes(4, "little")
+        wav_header += b"WAVE"
+        wav_header += b"fmt "
+        wav_header += (16).to_bytes(4, "little")
+        wav_header += (1).to_bytes(2, "little")
+        wav_header += (1).to_bytes(2, "little")
+        wav_header += (44100).to_bytes(4, "little")
+        wav_header += (88200).to_bytes(4, "little")
+        wav_header += (2).to_bytes(2, "little")
+        wav_header += (16).to_bytes(2, "little")
+        wav_header += b"data"
+        wav_header += (0).to_bytes(4, "little")
 
         with open(path, "wb") as f:
             f.write(wav_header)
@@ -372,7 +371,10 @@ class TestUpdateAudioAPI:
             assert response.status_code == 400
             result = response.json()
             # Check for either our specific message or the general validation failure message
-            assert "not a file" in result["detail"] or "Validation failed" in result["detail"]
+            assert (
+                "not a file" in result["detail"]
+                or "Validation failed" in result["detail"]
+            )
 
     async def test_update_audio_permission_denied(self, client: AsyncTestClient):
         """Test handling of permission denied errors."""
@@ -400,19 +402,19 @@ class TestUpdateAudioAPI:
 
     def _create_test_audio(self, sample_rate: int = 44100) -> bytes:
         """Create a minimal valid audio content for testing."""
-        wav_header = b'RIFF'
-        wav_header += (36).to_bytes(4, 'little')
-        wav_header += b'WAVE'
-        wav_header += b'fmt '
-        wav_header += (16).to_bytes(4, 'little')
-        wav_header += (1).to_bytes(2, 'little')
-        wav_header += (1).to_bytes(2, 'little')
-        wav_header += sample_rate.to_bytes(4, 'little')
-        wav_header += (sample_rate * 2).to_bytes(4, 'little')
-        wav_header += (2).to_bytes(2, 'little')
-        wav_header += (16).to_bytes(2, 'little')
-        wav_header += b'data'
-        wav_header += (0).to_bytes(4, 'little')
+        wav_header = b"RIFF"
+        wav_header += (36).to_bytes(4, "little")
+        wav_header += b"WAVE"
+        wav_header += b"fmt "
+        wav_header += (16).to_bytes(4, "little")
+        wav_header += (1).to_bytes(2, "little")
+        wav_header += (1).to_bytes(2, "little")
+        wav_header += sample_rate.to_bytes(4, "little")
+        wav_header += (sample_rate * 2).to_bytes(4, "little")
+        wav_header += (2).to_bytes(2, "little")
+        wav_header += (16).to_bytes(2, "little")
+        wav_header += b"data"
+        wav_header += (0).to_bytes(4, "little")
         return wav_header
 
     def _create_and_save_audio(self, path: str) -> bytes:
@@ -537,19 +539,19 @@ class TestDeleteAudioAPI:
 
     def _create_and_save_audio(self, path: str) -> bytes:
         """Create and save an audio file for testing."""
-        wav_header = b'RIFF'
-        wav_header += (36).to_bytes(4, 'little')
-        wav_header += b'WAVE'
-        wav_header += b'fmt '
-        wav_header += (16).to_bytes(4, 'little')
-        wav_header += (1).to_bytes(2, 'little')
-        wav_header += (1).to_bytes(2, 'little')
-        wav_header += (44100).to_bytes(4, 'little')
-        wav_header += (88200).to_bytes(4, 'little')
-        wav_header += (2).to_bytes(2, 'little')
-        wav_header += (16).to_bytes(2, 'little')
-        wav_header += b'data'
-        wav_header += (0).to_bytes(4, 'little')
+        wav_header = b"RIFF"
+        wav_header += (36).to_bytes(4, "little")
+        wav_header += b"WAVE"
+        wav_header += b"fmt "
+        wav_header += (16).to_bytes(4, "little")
+        wav_header += (1).to_bytes(2, "little")
+        wav_header += (1).to_bytes(2, "little")
+        wav_header += (44100).to_bytes(4, "little")
+        wav_header += (88200).to_bytes(4, "little")
+        wav_header += (2).to_bytes(2, "little")
+        wav_header += (16).to_bytes(2, "little")
+        wav_header += b"data"
+        wav_header += (0).to_bytes(4, "little")
 
         with open(path, "wb") as f:
             f.write(wav_header)

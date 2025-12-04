@@ -2,7 +2,6 @@ import tempfile
 import pytest
 import os
 from litestar.testing import AsyncTestClient
-from io import BytesIO
 
 
 pytestmark = pytest.mark.anyio
@@ -94,7 +93,16 @@ class TestUploadTextAPI:
     async def test_upload_text_valid_extensions(self, client: AsyncTestClient):
         """Test that all valid text extensions are accepted."""
 
-        valid_extensions = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
+        valid_extensions = [
+            ".txt",
+            ".md",
+            ".json",
+            ".csv",
+            ".xml",
+            ".yaml",
+            ".yml",
+            ".log",
+        ]
         text_bytes = self._create_test_text()
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -380,7 +388,10 @@ class TestUpdateTextAPI:
             assert response.status_code == 400
             result = response.json()
             # Check for either our specific message or the general validation failure message
-            assert "not a file" in result["detail"] or "Validation failed" in result["detail"]
+            assert (
+                "not a file" in result["detail"]
+                or "Validation failed" in result["detail"]
+            )
 
     async def test_update_text_invalid_data(self, client: AsyncTestClient):
         """Test that invalid UTF-8 data is rejected."""
@@ -430,9 +441,11 @@ class TestUpdateTextAPI:
         """Create a minimal valid text content for testing."""
         return b"This is a test text file.\n"
 
-    def _create_and_save_text(self, path: str, content: str = "Test content\n") -> bytes:
+    def _create_and_save_text(
+        self, path: str, content: str = "Test content\n"
+    ) -> bytes:
         """Create and save a text file for testing."""
-        data = content.encode('utf-8')
+        data = content.encode("utf-8")
         with open(path, "wb") as f:
             f.write(data)
         return data

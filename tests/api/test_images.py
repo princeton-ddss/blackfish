@@ -387,7 +387,10 @@ class TestUpdateImageAPI:
             assert response.status_code == 400
             result = response.json()
             # Check for either our specific message or the general validation failure message
-            assert "not a file" in result["detail"] or "Validation failed" in result["detail"]
+            assert (
+                "not a file" in result["detail"]
+                or "Validation failed" in result["detail"]
+            )
 
     async def test_update_image_invalid_data(self, client: AsyncTestClient):
         """Test that invalid image data is rejected."""

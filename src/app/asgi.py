@@ -15,7 +15,7 @@ from pathlib import Path
 import bcrypt
 from importlib import import_module
 from uuid import UUID
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 
 from fabric.connection import Connection
@@ -65,7 +65,7 @@ from litestar.params import Body
 
 from app.logger import logger
 from app import services, jobs
-from app.file_utils import (
+from app.files import (
     FileUploadResponse,
     try_write_file,
     try_delete_file,
@@ -580,7 +580,7 @@ async def upload_image(
     try:
         img = Image.open(BytesIO(content))
         img.verify()
-    except Exception as e:
+    except UnidentifiedImageError as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
     return try_write_file(path, content)

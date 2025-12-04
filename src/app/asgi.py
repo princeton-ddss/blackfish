@@ -67,12 +67,12 @@ from app.logger import logger
 from app import services, jobs
 from app.file_utils import (
     FileUploadResponse,
-    create_extension_validator,
-    validate_file_exists_and_type,
-    validate_file_size,
     try_write_file,
     try_delete_file,
     try_read_file,
+    validate_file_exists,
+    validate_file_extension,
+    validate_file_size,
 )
 from app.services.base import Service, ServiceStatus
 from app.services.speech_recognition import SpeechRecognitionConfig
@@ -547,9 +547,20 @@ IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
 TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
 AUDIO_EXTENSIONS = [".wav", ".mp3"]
 
-has_image_extension = create_extension_validator(IMAGE_EXTENSIONS)
-has_text_extension = create_extension_validator(TEXT_EXTENSIONS)
-has_audio_extension = create_extension_validator(AUDIO_EXTENSIONS)
+
+def has_image_extension(path: str) -> str:
+    validate_file_extension(Path(path), IMAGE_EXTENSIONS)
+    return path
+
+
+def has_text_extension(path: str) -> str:
+    validate_file_extension(Path(path), TEXT_EXTENSIONS)
+    return path
+
+
+def has_audio_extension(path: str) -> str:
+    validate_file_extension(Path(path), AUDIO_EXTENSIONS)
+    return path
 
 
 class ImageUploadRequest(BaseModel):
@@ -595,7 +606,10 @@ async def get_image(path: str) -> File:
 
     logger.debug(f"Attempting to retrieve image from {file_path}")
 
-    validate_file_exists_and_type(file_path, IMAGE_EXTENSIONS, "image")
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, IMAGE_EXTENSIONS)
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, IMAGE_EXTENSIONS)
 
     try:
         img = Image.open(file_path)
@@ -620,7 +634,8 @@ async def update_image(
 
     logger.debug(f"Attempting to update image {data.file.filename} at {path}")
 
-    validate_file_exists_and_type(path, IMAGE_EXTENSIONS, "image")
+    validate_file_exists(path)
+    validate_file_extension(path, IMAGE_EXTENSIONS)
     validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
     try:
@@ -640,7 +655,8 @@ async def delete_image(path: str) -> dict[str, str]:
 
     logger.debug(f"Attempting to delete image at {file_path}")
 
-    validate_file_exists_and_type(file_path, IMAGE_EXTENSIONS, "image")
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, IMAGE_EXTENSIONS)
 
     return try_delete_file(file_path)
 
@@ -686,7 +702,8 @@ async def get_text(path: str) -> File:
 
     logger.debug(f"Attempting to retrieve text file from {file_path}")
 
-    validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, TEXT_EXTENSIONS)
 
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -709,7 +726,8 @@ async def update_text(
 
     logger.debug(f"Attempting to update text file {data.file.filename} at {path}")
 
-    validate_file_exists_and_type(path, TEXT_EXTENSIONS, "text")
+    validate_file_exists(path)
+    validate_file_extension(path, TEXT_EXTENSIONS)
     validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
     try:
@@ -728,7 +746,8 @@ async def delete_text(path: str) -> dict[str, str]:
 
     logger.debug(f"Attempting to delete text file at {file_path}")
 
-    validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, TEXT_EXTENSIONS)
 
     return try_delete_file(file_path)
 
@@ -770,7 +789,8 @@ async def get_audio(path: str) -> File:
 
     logger.debug(f"Attempting to retrieve audio file from {file_path}")
 
-    validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, AUDIO_EXTENSIONS)
 
     return try_read_file(file_path)
 
@@ -789,7 +809,8 @@ async def update_audio(
 
     logger.debug(f"Attempting to update audio file {data.file.filename} at {path}")
 
-    validate_file_exists_and_type(path, AUDIO_EXTENSIONS, "audio")
+    validate_file_exists(path)
+    validate_file_extension(path, AUDIO_EXTENSIONS)
     validate_file_size(content, state.MAX_IMAGE_FILE_SIZE)
 
     return try_write_file(path, content, update=True)
@@ -803,7 +824,8 @@ async def delete_audio(path: str) -> dict[str, str]:
 
     logger.debug(f"Attempting to delete audio file at {file_path}")
 
-    validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, AUDIO_EXTENSIONS)
 
     return try_delete_file(file_path)
 

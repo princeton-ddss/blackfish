@@ -8,7 +8,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from datetime import datetime
-from typing import Callable
 from pydantic import BaseModel
 
 from litestar.exceptions import (
@@ -22,40 +21,15 @@ from litestar.response import File
 from app.logger import logger
 
 
-def create_extension_validator(extensions: list[str]) -> Callable[[str], str]:
-    """Create an extension validator function for a specific file type.
-
-    Args:
-        extensions: List of allowed file extensions (e.g., ['.txt', '.md'])
-        file_type: Human-readable file type name (e.g., 'text')
-
-    Returns:
-        A validator function that raises ValidationException if extension is invalid
-    """
-
-    def validator(path: str) -> str:
-        if not any(path.lower().endswith(ext) for ext in extensions):
-            raise ValidationException(
-                f"Invalid file extension. Allowed extensions: {', '.join(extensions)}"
-            )
-        return path
-
-    return validator
-
-
-def validate_file_exists_and_type(
-    file_path: Path, extensions: list[str], file_type: str
-) -> None:
-    """Validate that a file exists, is actually a file, and has the correct extension.
+def validate_file_exists(file_path: Path) -> None:
+    """Validate that a file exists and is actually a file (not a directory).
 
     Args:
         file_path: Path to the file to validate
-        extensions: List of allowed file extensions
-        file_type: Human-readable file type name for error messages
 
     Raises:
         NotFoundException: If the file doesn't exist
-        ValidationException: If the path is not a file or has wrong extension
+        ValidationException: If the path is not a file
     """
     if not file_path.exists():
         raise NotFoundException(f"The requested path ({file_path}) does not exist")
@@ -63,9 +37,23 @@ def validate_file_exists_and_type(
     if not file_path.is_file():
         raise ValidationException(f"The requested path ({file_path}) is not a file")
 
+
+def validate_file_extension(
+    file_path: Path,
+    extensions: list[str],
+) -> None:
+    """Validate that a file has a supported extension.
+
+    Args:
+        file_path: Path to the file to validate
+        extensions: List of allowed file extensions
+
+    Raises:
+        ValidationException: If the file extension is not supported
+    """
     if not any(str(file_path).lower().endswith(ext) for ext in extensions):
         raise ValidationException(
-            f"Invalid {file_type} file extension. Allowed extensions: {', '.join(extensions)}"
+            f"Invalid file extension. Allowed extensions: {', '.join(extensions)}"
         )
 
 
@@ -75,7 +63,6 @@ def validate_file_size(content: bytes, max_size: int) -> None:
     Args:
         content: File content bytes
         max_size: Maximum allowed file size in bytes
-        file_type: Human-readable file type name for error messages
 
     Raises:
         ValidationException: If file size exceeds the maximum

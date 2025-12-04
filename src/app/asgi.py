@@ -71,8 +71,8 @@ from app.file_utils import (
     validate_file_exists_and_type,
     validate_file_size,
     try_write_file,
-    delete_file_with_error_handling,
-    read_file_with_error_handling,
+    try_delete_file,
+    try_read_file,
 )
 from app.services.base import Service, ServiceStatus
 from app.services.speech_recognition import SpeechRecognitionConfig
@@ -604,7 +604,7 @@ async def get_image(path: str) -> File:
     except Exception as e:
         raise ValidationException(f"Invalid image file: {e}")
 
-    return read_file_with_error_handling(file_path)
+    return try_read_file(file_path)
 
 
 @put("/api/images", guards=ENDPOINT_GUARDS)
@@ -643,7 +643,7 @@ async def delete_image(path: str) -> dict[str, str]:
 
     validate_file_exists_and_type(file_path, IMAGE_EXTENSIONS, "image")
 
-    return delete_file_with_error_handling(file_path)
+    return try_delete_file(file_path)
 
 
 class TextUploadRequest(BaseModel):
@@ -695,7 +695,7 @@ async def get_text(path: str) -> File:
     except UnicodeDecodeError as e:
         raise ValidationException(f"Invalid text file: {e}")
 
-    return read_file_with_error_handling(file_path)
+    return try_read_file(file_path)
 
 
 @put("/api/texts", guards=ENDPOINT_GUARDS)
@@ -731,7 +731,7 @@ async def delete_text(path: str) -> dict[str, str]:
 
     validate_file_exists_and_type(file_path, TEXT_EXTENSIONS, "text")
 
-    return delete_file_with_error_handling(file_path)
+    return try_delete_file(file_path)
 
 
 class AudioUploadRequest(BaseModel):
@@ -773,7 +773,7 @@ async def get_audio(path: str) -> File:
 
     validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
 
-    return read_file_with_error_handling(file_path)
+    return try_read_file(file_path)
 
 
 @put("/api/audios", guards=ENDPOINT_GUARDS)
@@ -806,7 +806,7 @@ async def delete_audio(path: str) -> dict[str, str]:
 
     validate_file_exists_and_type(file_path, AUDIO_EXTENSIONS, "audio")
 
-    return delete_file_with_error_handling(file_path)
+    return try_delete_file(file_path)
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)

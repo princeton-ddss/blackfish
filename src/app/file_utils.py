@@ -144,7 +144,7 @@ def try_write_file(
         raise InternalServerException(f"Failed to {action} file: {e}")
 
 
-def delete_file_with_error_handling(file_path: Path) -> dict[str, str]:
+def try_delete_file(file_path: Path) -> dict[str, str]:
     """Delete a file with comprehensive error handling.
 
     Args:
@@ -169,7 +169,7 @@ def delete_file_with_error_handling(file_path: Path) -> dict[str, str]:
         raise InternalServerException(f"Failed to delete file: {e}")
 
 
-def read_file_with_error_handling(file_path: Path) -> File:
+def try_read_file(file_path: Path) -> File:
     """Read a file and return it with comprehensive error handling.
 
     Args:

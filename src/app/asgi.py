@@ -1524,6 +1524,25 @@ async def create_model(data: Model, session: AsyncSession) -> Model:
 
 @delete("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_model(model_id: str, session: AsyncSession) -> None:
+    """Delete a specific model by its database ID (UUID).
+
+    This endpoint removes a single model from the database using its unique identifier.
+    Use this when you have the exact model UUID and want to delete that specific record.
+
+    Args:
+        model_id: The UUID of the model to delete (e.g., "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+        session: Database session (injected)
+
+    Returns:
+        None (204 No Content on success)
+
+    Raises:
+        ValidationException: If model_id is not a valid UUID
+        NotFoundException: If no model exists with the given ID
+
+    Example:
+        DELETE /api/models/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+    """
     try:
         query = sa.delete(Model).where(Model.id == model_id)
         res = await session.execute(query)
@@ -1532,7 +1551,122 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
         raise ValidationException(detail="{model_id} is not a valid UUID.")
 
     if res.rowcount == 0:
-        raise NotFoundException(detail="No model deleted: {model_id} not found.")
+        raise NotFoundException(detail=f"No model deleted: {model_id} not found.")
+
+
+@dataclass
+class DeleteModelResponse:
+    model_id: str
+    status: str
+    message: Optional[str] = None
+
+
+@delete("/api/models", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_models(
+    session: AsyncSession,
+    repo_id: Optional[str] = None,
+    profile: Optional[str] = None,
+    revision: Optional[str] = None,
+) -> list[DeleteModelResponse]:
+    """Bulk delete models matching query parameters.
+
+    This endpoint deletes multiple models based on their attributes (repo_id, profile,
+    revision) rather than database IDs. Useful for operations like "delete all models
+    for a profile" or "delete all revisions of a specific model".
+
+    At least one query parameter must be provided to prevent accidental deletion of all
+    models. The operation attempts to delete each matching model individually and reports
+    success or failure for each. Partial success is possible - some models may be deleted
+    successfully while others fail, allowing you to identify and address specific issues.
+
+    Args:
+        session: Database session (injected)
+        repo_id: Filter by repository ID (e.g., "openai/whisper-large-v3")
+        profile: Filter by profile name (e.g., "default", "production")
+        revision: Filter by model revision/commit hash
+
+    Returns:
+        List of DeleteModelResponse objects with status ("ok" or "error") for each model.
+        Empty list if no models match the query parameters.
+
+    Raises:
+        ValidationException: If no query parameters provided or query is invalid
+
+    Examples:
+        DELETE /api/models?profile=test
+            → Deletes all models associated with the "test" profile
+
+        DELETE /api/models?repo_id=openai/whisper-large-v3&profile=default
+            → Deletes all revisions of whisper-large-v3 in the default profile
+
+        DELETE /api/models?repo_id=meta/llama-2&profile=prod&revision=abc123
+            → Deletes a specific model revision in the prod profile
+
+    Response Format:
+        [
+            {"model_id": "uuid", "status": "ok"},
+            {"model_id": "uuid", "status": "error", "message": "error details"}
+        ]
+
+    Note:
+        If you have the exact model UUID, use DELETE /api/models/{model_id} instead.
+        This bulk endpoint is designed for CLI usage and filtering by model attributes.
+    """
+
+    # Build query parameters
+    query_params = {
+        k: v
+        for k, v in {
+            "repo": repo_id,
+            "profile": profile,
+            "revision": revision,
+        }.items()
+        if v is not None
+    }
+
+    if not query_params:
+        logger.warning("No query parameters provided for model deletion.")
+        raise ValidationException(
+            detail="At least one query parameter (repo_id, profile, or revision) must be provided."
+        )
+
+    # Query database
+    query = sa.select(Model).filter_by(**query_params)
+    try:
+        query_res = await session.execute(query)
+    except StatementError as e:
+        raise ValidationException(detail=f"Invalid query statement: {e}")
+
+    models = query_res.scalars().all()
+
+    if len(models) == 0:
+        logger.warning(f"The query parameters {query_params} did not match any models.")
+        return []
+
+    # Delete models
+    res = []
+    for model in models:
+        logger.debug(f"Attempting to delete model {model.id}")
+        deletion = sa.delete(Model).where(Model.id == model.id)
+        try:
+            await session.execute(deletion)
+            res.append(
+                DeleteModelResponse(
+                    model_id=str(model.id),
+                    status="ok",
+                )
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete model {model.id}: {e}")
+            res.append(
+                DeleteModelResponse(
+                    model_id=str(model.id),
+                    status="error",
+                    message=f"Failed to delete model: {e}",
+                )
+            )
+
+    return res
 
 
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
@@ -1672,6 +1806,7 @@ app = Litestar(
         get_model,
         get_models,
         delete_model,
+        delete_models,
         read_profiles,
         read_profile,
         next_server,

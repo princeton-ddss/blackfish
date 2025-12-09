@@ -1127,6 +1127,7 @@ def models_remove(
             )
             return
 
+    success = False
     with yaspin(text="Removing model...") as spinner:
         try:
             remove_model(
@@ -1134,9 +1135,36 @@ def models_remove(
             )
             spinner.text = f"Removed model {repo_id}"
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
+            success = True
         except Exception as e:
             spinner.text = f"Failed to remove model: {e}"
             spinner.fail(f"{LogSymbols.ERROR.value}")
+
+    if success:
+        with yaspin(text="Updating database...") as spinner:
+            try:
+                res = requests.delete(
+                    f"http://{config.HOST}:{config.PORT}/api/models",
+                    params={
+                        "repo_id": repo_id,
+                        "profile": profile,
+                        "revision": revision,
+                    },
+                )
+                if not res.ok:
+                    spinner.text = f"Failed to delete model {repo_id} ({res.status_code}: {res.reason})"
+                    spinner.fail(f"{LogSymbols.ERROR.value}")
+                else:
+                    if all([model["status"] == "ok" for model in res.json()]):
+                        spinner.text = "Database updated successfully!"
+                        spinner.ok(f"{LogSymbols.SUCCESS.value}")
+                    else:
+                        spinner.text = "Database update failed. Will retry automatically on next `blackfish model ls --refresh` run."
+                        spinner.ok(f"{LogSymbols.SUCCESS.value}")
+            except requests.exceptions.ConnectionError:
+                spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
 
 
 @main.group()

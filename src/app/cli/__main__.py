@@ -29,6 +29,9 @@ from app.logger import logger
 from app.cli.classes import ServiceOptions
 
 
+DISPLAY_ID_LENGTH = 13
+
+
 # blackfish
 @click.group()
 def main() -> None:  # pragma: no cover
@@ -358,12 +361,12 @@ def stop(service_id: str) -> None:  # pragma: no cover
                 spinner.fail(f"{LogSymbols.ERROR.value}")
                 return
             elif len(matching_services) > 1:
-                spinner.text = f"Multiple services match '{service_id}': {', '.join([s['id'][:13] for s in matching_services])}. Please provide a more specific ID."
+                spinner.text = f"Multiple services match '{service_id}': {', '.join([s['id'][:DISPLAY_ID_LENGTH] for s in matching_services])}. Please provide a more specific ID."
                 spinner.fail(f"{LogSymbols.ERROR.value}")
                 return
             else:
                 full_service_id = matching_services[0]["id"]
-                spinner.text = f"Found service {full_service_id[:13]}."
+                spinner.text = f"Found service {full_service_id[:DISPLAY_ID_LENGTH]}."
                 spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
     with yaspin(text="Stopping service...") as spinner:
@@ -372,10 +375,10 @@ def stop(service_id: str) -> None:  # pragma: no cover
             json={},
         )
         if not res.ok:
-            spinner.text = f"Failed to stop service {full_service_id[:13]} (status={res.status_code})."
+            spinner.text = f"Failed to stop service {full_service_id[:DISPLAY_ID_LENGTH]} (status={res.status_code})."
             spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            spinner.text = f"Stopped service {full_service_id[:13]}."
+            spinner.text = f"Stopped service {full_service_id[:DISPLAY_ID_LENGTH]}."
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
@@ -610,7 +613,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
         if is_active(service) or all:
             tab.add_row(
                 [
-                    service["id"][:13],
+                    service["id"][:DISPLAY_ID_LENGTH],
                     service["image"],
                     service["model"],
                     format_datetime(datetime.fromisoformat(service["created_at"])),
@@ -800,7 +803,7 @@ def list_batch_jobs(
                 )
             tab.add_row(
                 [
-                    job["id"][:13],
+                    job["id"][:DISPLAY_ID_LENGTH],
                     job["pipeline"],
                     job["repo_id"],
                     format_datetime(datetime.fromisoformat(job["created_at"])),

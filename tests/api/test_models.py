@@ -319,3 +319,221 @@ class TestDeleteModelAPI:
             # Verify model is deleted by trying to fetch it
             get_response = await client.get(f"/api/models/{model_id}")
             assert get_response.status_code == 404
+
+
+class TestDeleteModelsAPI:
+    """Test cases for the DELETE /api/models endpoint with query parameters."""
+
+    async def test_delete_models_requires_authentication(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that model deletion requires authentication."""
+        response = await no_auth_client.delete(
+            "/api/models", params={"profile": "test"}
+        )
+
+        # Should require authentication
+        assert response.status_code in [401, 403] or response.is_redirect
+
+    async def test_delete_models_no_parameters(self, client: AsyncTestClient):
+        """Test deleting models without any query parameters."""
+        response = await client.delete("/api/models")
+
+        # Should return validation error
+        assert response.status_code == 400
+
+    async def test_delete_models_by_profile(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test deleting models by profile."""
+        # Create test models
+        model1 = {
+            "id": f"{uuid4()}",
+            "repo": "test/model1",
+            "profile": "delete-test-profile",
+            "revision": "v1",
+            "image": "test-image",
+            "model_dir": "/test/path1",
+        }
+        model2 = {
+            "id": f"{uuid4()}",
+            "repo": "test/model2",
+            "profile": "delete-test-profile",
+            "revision": "v1",
+            "image": "test-image",
+            "model_dir": "/test/path2",
+        }
+
+        await client.post("/api/models", json=model1)
+        await client.post("/api/models", json=model2)
+
+        # Delete by profile
+        response = await client.delete(
+            "/api/models", params={"profile": "delete-test-profile"}
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        assert isinstance(result, list)
+        assert len(result) == 2
+        for item in result:
+            assert item["status"] == "ok"
+
+    async def test_delete_models_by_repo_id(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test deleting models by repo_id."""
+        # Create test models
+        model1 = {
+            "id": f"{uuid4()}",
+            "repo": "unique/test-repo",
+            "profile": "profile1",
+            "revision": "v1",
+            "image": "test-image",
+            "model_dir": "/test/path1",
+        }
+        model2 = {
+            "id": f"{uuid4()}",
+            "repo": "unique/test-repo",
+            "profile": "profile2",
+            "revision": "v2",
+            "image": "test-image",
+            "model_dir": "/test/path2",
+        }
+
+        await client.post("/api/models", json=model1)
+        await client.post("/api/models", json=model2)
+
+        # Delete by repo_id
+        response = await client.delete(
+            "/api/models", params={"repo_id": "unique/test-repo"}
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        assert isinstance(result, list)
+        assert len(result) == 2
+        for item in result:
+            assert item["status"] == "ok"
+
+    async def test_delete_models_by_revision(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test deleting models by revision."""
+        # Create test models
+        model1 = {
+            "id": f"{uuid4()}",
+            "repo": "test/model1",
+            "profile": "profile1",
+            "revision": "unique-revision-123",
+            "image": "test-image",
+            "model_dir": "/test/path1",
+        }
+
+        await client.post("/api/models", json=model1)
+
+        # Delete by revision
+        response = await client.delete(
+            "/api/models", params={"revision": "unique-revision-123"}
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["status"] == "ok"
+
+    async def test_delete_models_by_multiple_params(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test deleting models by multiple query parameters."""
+        # Create test models
+        model1 = {
+            "id": f"{uuid4()}",
+            "repo": "multi/test-repo",
+            "profile": "multi-profile",
+            "revision": "multi-v1",
+            "image": "test-image",
+            "model_dir": "/test/path1",
+        }
+        model2 = {
+            "id": f"{uuid4()}",
+            "repo": "multi/test-repo",
+            "profile": "multi-profile",
+            "revision": "multi-v2",
+            "image": "test-image",
+            "model_dir": "/test/path2",
+        }
+
+        await client.post("/api/models", json=model1)
+        await client.post("/api/models", json=model2)
+
+        # Delete by repo_id and profile
+        response = await client.delete(
+            "/api/models",
+            params={"repo_id": "multi/test-repo", "profile": "multi-profile"},
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        assert isinstance(result, list)
+        assert len(result) == 2
+
+    async def test_delete_models_nonexistent(self, client: AsyncTestClient):
+        """Test deleting models that don't exist."""
+        response = await client.delete(
+            "/api/models", params={"profile": "nonexistent-profile"}
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        # Should return empty list
+        assert result == []
+
+    async def test_delete_models_specific_combination(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test deleting models by specific combination of repo_id, profile, and revision."""
+        # Create test models
+        model1 = {
+            "id": f"{uuid4()}",
+            "repo": "specific/repo",
+            "profile": "specific-profile",
+            "revision": "specific-v1",
+            "image": "test-image",
+            "model_dir": "/test/path1",
+        }
+        model2 = {
+            "id": f"{uuid4()}",
+            "repo": "specific/repo",
+            "profile": "specific-profile",
+            "revision": "specific-v2",
+            "image": "test-image",
+            "model_dir": "/test/path2",
+        }
+
+        await client.post("/api/models", json=model1)
+        await client.post("/api/models", json=model2)
+
+        # Delete only one specific model
+        response = await client.delete(
+            "/api/models",
+            params={
+                "repo_id": "specific/repo",
+                "profile": "specific-profile",
+                "revision": "specific-v1",
+            },
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        assert len(result) == 1
+        assert result[0]["status"] == "ok"
+
+        # Verify the other model still exists
+        get_response = await client.get(
+            "/api/models", params={"profile": "specific-profile"}
+        )
+        remaining_models = get_response.json()
+        assert len(remaining_models) == 1
+        assert remaining_models[0]["revision"] == "specific-v2"

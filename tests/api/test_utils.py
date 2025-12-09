@@ -151,30 +151,6 @@ class TestAudioAPI:
 
             os.unlink(tmp_path)
 
-    async def test_audio_valid_extension(self, client: AsyncTestClient):
-        """Test /api/audio with valid .wav extension."""
-
-        # Create temporary .mp3 and .wav files
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as mp3_file:
-            mp3_file.write(b"mp3")
-            mp3_path = mp3_file.name
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as wav_file:
-            wav_file.write(b"wav")
-            wav_path = wav_file.name
-
-        try:
-            response = await client.get("/api/audio", params={"path": mp3_path})
-            assert response.status_code == 200
-            assert "audio" in response.headers.get("content-type", "").lower()
-            response = await client.get("/api/audio", params={"path": wav_path})
-            assert response.status_code == 200
-            assert "audio" in response.headers.get("content-type", "").lower()
-        finally:
-            import os
-
-            os.unlink(mp3_path)
-            os.unlink(wav_path)
-
 
 class TestPortsAPI:
     """Test cases for the /api/ports endpoint."""

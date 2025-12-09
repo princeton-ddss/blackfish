@@ -4,9 +4,9 @@ import datetime
 from typing import Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
-from fabric.connection import Connection
 from app.models.profile import BlackfishProfile, SlurmProfile
 from app.logger import logger
+from app.ssh_manager import SSHConnectionManager
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
@@ -22,12 +22,25 @@ def get_latest_commit(repo_id: str, revisions: list[str]) -> str:  # pragma: no 
     raise Exception("List of revisions should be a (non-empty) subset of repo commits.")
 
 
-def get_models(profile: BlackfishProfile) -> list[str]:
+def get_models(
+    profile: BlackfishProfile, ssh_manager: Optional[SSHConnectionManager] = None
+) -> list[str]:
     """Return a list of models available to a given profile."""
+    # Handle CLI case where no ssh_manager is provided
+    if ssh_manager is None:
+        ssh_manager = SSHConnectionManager()
+        try:
+            return get_models(profile, ssh_manager)
+        finally:
+            ssh_manager.shutdown()
+
     if isinstance(profile, SlurmProfile) and not profile.is_local():
         models = set()
         with yaspin(text=f"Searching {profile.host} for available models") as spinner:
-            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+            with (
+                ssh_manager.connection(profile.host, profile.user) as conn,
+                conn.sftp() as sftp,
+            ):
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in cache directory {default_dir}"
                 model_dirs = sftp.listdir(default_dir)
@@ -63,8 +76,20 @@ def get_models(profile: BlackfishProfile) -> list[str]:
         return list(models)
 
 
-def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
+def get_revisions(
+    repo_id: str,
+    profile: BlackfishProfile,
+    ssh_manager: Optional[SSHConnectionManager] = None,
+) -> list[str]:
     """Return a list of revisions associated with a given model and profile."""
+    # Handle CLI case where no ssh_manager is provided
+    if ssh_manager is None:
+        ssh_manager = SSHConnectionManager()
+        try:
+            return get_revisions(repo_id, profile, ssh_manager)
+        finally:
+            ssh_manager.shutdown()
+
     if isinstance(profile, SlurmProfile) and not profile.is_local():
         revisions = set()
         namespace, model = repo_id.split("/")
@@ -72,7 +97,10 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
         with yaspin(
             text=f"Searching {profile.host} for model {repo_id} commits"
         ) as spinner:
-            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+            with (
+                ssh_manager.connection(profile.host, profile.user) as conn,
+                conn.sftp() as sftp,
+            ):
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in cache directory {default_dir}"
                 model_dirs = sftp.listdir(default_dir)
@@ -115,19 +143,33 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
 
 
 def get_model_dir(
-    repo_id: str, revision: str, profile: BlackfishProfile
+    repo_id: str,
+    revision: str,
+    profile: BlackfishProfile,
+    ssh_manager: Optional[SSHConnectionManager] = None,
 ) -> Optional[str]:
     """Find the directory of a specific model revision.
 
     The job launcher needs to know where to find model files, but these can be split across the managed cache and a user's private cache.
     """
+    # Handle CLI case where no ssh_manager is provided
+    if ssh_manager is None:
+        ssh_manager = SSHConnectionManager()
+        try:
+            return get_model_dir(repo_id, revision, profile, ssh_manager)
+        finally:
+            ssh_manager.shutdown()
+
     namespace, model = repo_id.split("/")
     model_dir = f"models--{namespace}--{model}"
     if isinstance(profile, SlurmProfile) and not profile.is_local():
         with yaspin(
             text=f"Searching {profile.host} for {repo_id}[{revision}]"
         ) as spinner:
-            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+            with (
+                ssh_manager.connection(profile.host, profile.user) as conn,
+                conn.sftp() as sftp,
+            ):
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in default directory {default_dir}"
                 if model_dir in sftp.listdir(default_dir):
@@ -177,6 +219,7 @@ def get_model_dir(
 def has_model(
     repo_id: str,
     profile: BlackfishProfile,
+    ssh_manager: Optional[SSHConnectionManager] = None,
     revision: Optional[str] = None,
 ) -> bool:
     """Check if files exist for a given model and profile.
@@ -193,6 +236,14 @@ def has_model(
     Returns:
         bool
     """
+    # Handle CLI case where no ssh_manager is provided
+    if ssh_manager is None:
+        ssh_manager = SSHConnectionManager()
+        try:
+            return has_model(repo_id, profile, ssh_manager, revision)
+        finally:
+            ssh_manager.shutdown()
+
     try:
         ModelCard.load(repo_id)
     except RepositoryNotFoundError:
@@ -204,10 +255,10 @@ def has_model(
         return False
 
     if revision is None:
-        return repo_id in get_models(profile)
+        return repo_id in get_models(profile, ssh_manager)
     else:
-        if repo_id in get_models(profile):
-            return revision in get_revisions(repo_id, profile)
+        if repo_id in get_models(profile, ssh_manager):
+            return revision in get_revisions(repo_id, profile, ssh_manager)
         else:
             return False
 

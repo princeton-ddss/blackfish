@@ -1,5 +1,5 @@
 lint:
-  uv run pre-commit
+  uv run pre-commit run --all-files
 
 test:
   uv run pytest --cache-clear --verbose --cov=app

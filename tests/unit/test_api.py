@@ -149,7 +149,7 @@ class TestSyncAPI:
     async def test_sync_methods_exist(self, blackfish_client: Blackfish):
         """Test that sync methods exist with correct signatures."""
         # Verify methods exist
-        assert hasattr(blackfish_client, "create_service")
+        assert hasattr(blackfish_client, "launch_service")
         assert hasattr(blackfish_client, "get_service")
         assert hasattr(blackfish_client, "list_services")
         assert hasattr(blackfish_client, "stop_service")
@@ -158,7 +158,7 @@ class TestSyncAPI:
         assert hasattr(blackfish_client, "close")
 
         # Verify they are callable
-        assert callable(blackfish_client.create_service)
+        assert callable(blackfish_client.launch_service)
         assert callable(blackfish_client.get_service)
         assert callable(blackfish_client.list_services)
         assert callable(blackfish_client.stop_service)

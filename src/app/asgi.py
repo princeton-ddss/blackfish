@@ -9,16 +9,18 @@ import requests
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple, Any, Type
+from typing import Optional, Tuple, Any, Type, Annotated
 import asyncio
 from pathlib import Path
 import bcrypt
 from importlib import import_module
 from uuid import UUID
+from PIL import Image, UnidentifiedImageError
+from io import BytesIO
 
 from fabric.connection import Connection
 from paramiko.sftp_client import SFTPClient
-from pydantic import BaseModel
+from pydantic import BaseModel, AfterValidator, ConfigDict
 
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound, StatementError
@@ -27,13 +29,14 @@ from sqlalchemy import Result
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
-from litestar.datastructures import State
+from litestar.datastructures import State, UploadFile
 from advanced_alchemy.extensions.litestar import (
     SQLAlchemyAsyncConfig,
     SQLAlchemyPlugin,
     AlembicAsyncConfig,
 )
 from advanced_alchemy.base import UUIDAuditBase
+from advanced_alchemy.extensions.litestar.plugins.init.config.engine import EngineConfig
 from litestar.exceptions import (
     ClientException,
     NotFoundException,
@@ -58,9 +61,20 @@ from litestar.datastructures.secret_values import SecretString
 from litestar.middleware.base import MiddlewareProtocol
 from litestar.middleware.session.client_side import CookieBackendConfig
 from litestar.response import File
+from litestar.enums import RequestEncodingType
+from litestar.params import Body
 
 from app.logger import logger
 from app import services, jobs
+from app.files import (
+    FileUploadResponse,
+    try_write_file,
+    try_delete_file,
+    try_read_file,
+    validate_file_exists,
+    validate_file_extension,
+    validate_file_size,
+)
 from app.services.base import Service, ServiceStatus
 from app.services.speech_recognition import SpeechRecognitionConfig
 from app.services.text_generation import TextGenerationConfig
@@ -518,15 +532,289 @@ async def get_files(
         raise NotFoundException(detail=f"Path {path} does not exist.")
 
 
-@get("/api/audio", guards=ENDPOINT_GUARDS, media_type="audio/wav")
-async def get_audio(path: str) -> File | None:
-    if os.path.isfile(path):
-        if path.endswith(".wav") or path.endswith(".mp3"):
-            return File(path=path)
-        else:
-            raise ValidationException("Path should specify a .wav or .mp3 file.")
-    else:
-        raise NotFoundException(f"{path} not found.")
+IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
+TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
+AUDIO_EXTENSIONS = [".wav", ".mp3"]
+
+
+def has_image_extension(path: str) -> str:
+    validate_file_extension(Path(path), IMAGE_EXTENSIONS)
+    return path
+
+
+def has_text_extension(path: str) -> str:
+    validate_file_extension(Path(path), TEXT_EXTENSIONS)
+    return path
+
+
+def has_audio_extension(path: str) -> str:
+    validate_file_extension(Path(path), AUDIO_EXTENSIONS)
+    return path
+
+
+class ImageUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_image_extension)]
+    file: UploadFile
+
+
+@post("/api/image", guards=ENDPOINT_GUARDS)
+async def upload_image(
+    data: Annotated[
+        ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> FileUploadResponse:
+    """Upload an image file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload image {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    validate_file_size(content, state.MAX_FILE_SIZE)
+
+    try:
+        img = Image.open(BytesIO(content))
+        img.verify()
+    except UnidentifiedImageError as e:
+        raise ValidationException(f"Pillow detected invalid image data: {e}")
+
+    return try_write_file(path, content)
+
+
+@get("/api/image", guards=ENDPOINT_GUARDS)
+async def get_image(path: str) -> File:
+    """Retrieve an image file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve image from {file_path}")
+
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, IMAGE_EXTENSIONS)
+
+    try:
+        img = Image.open(file_path)
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Invalid image file: {e}")
+
+    return try_read_file(file_path)
+
+
+@put("/api/image", guards=ENDPOINT_GUARDS)
+async def update_image(
+    data: Annotated[
+        ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> FileUploadResponse:
+    """Update/replace an existing image file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update image {data.file.filename} at {path}")
+
+    validate_file_exists(path)
+    validate_file_extension(path, IMAGE_EXTENSIONS)
+    validate_file_size(content, state.MAX_FILE_SIZE)
+
+    try:
+        img = Image.open(BytesIO(content))
+        img.verify()
+    except Exception as e:
+        raise ValidationException(f"Pillow detected invalid image data: {e}")
+
+    return try_write_file(path, content, update=True)
+
+
+@delete("/api/image", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_image(path: str) -> Path:
+    """Delete an image file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete image at {file_path}")
+
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, IMAGE_EXTENSIONS)
+
+    return try_delete_file(file_path)
+
+
+class TextUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_text_extension)]
+    file: UploadFile
+
+
+@post("/api/text", guards=ENDPOINT_GUARDS)
+async def upload_text(
+    data: Annotated[TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)],
+    state: State,
+) -> FileUploadResponse:
+    """Upload a text file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload text file {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    validate_file_size(content, state.MAX_FILE_SIZE)
+
+    # Text-specific validation
+    try:
+        content.decode("utf-8")
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
+
+    return try_write_file(path, content)
+
+
+@get("/api/text", guards=ENDPOINT_GUARDS)
+async def get_text(path: str) -> File:
+    """Retrieve a text file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve text file from {file_path}")
+
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, TEXT_EXTENSIONS)
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            f.read()
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"Invalid text file: {e}")
+
+    return try_read_file(file_path)
+
+
+@put("/api/text", guards=ENDPOINT_GUARDS)
+async def update_text(
+    data: Annotated[TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)],
+    state: State,
+) -> FileUploadResponse:
+    """Update/replace an existing text file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update text file {data.file.filename} at {path}")
+
+    validate_file_exists(path)
+    validate_file_extension(path, TEXT_EXTENSIONS)
+    validate_file_size(content, state.MAX_FILE_SIZE)
+
+    try:
+        content.decode("utf-8")
+    except UnicodeDecodeError as e:
+        raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
+
+    return try_write_file(path, content, update=True)
+
+
+@delete("/api/text", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_text(path: str) -> Path:
+    """Delete a text file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete text file at {file_path}")
+
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, TEXT_EXTENSIONS)
+
+    return try_delete_file(file_path)
+
+
+class AudioUploadRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    path: Annotated[str, AfterValidator(has_audio_extension)]
+    file: UploadFile
+
+
+@post("/api/audio", guards=ENDPOINT_GUARDS)
+async def upload_audio(
+    data: Annotated[
+        AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> FileUploadResponse:
+    """Upload an audio file to a specified location."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to upload audio file {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
+    validate_file_size(content, state.MAX_FILE_SIZE)
+
+    return try_write_file(path, content)
+
+
+@get("/api/audio", guards=ENDPOINT_GUARDS)
+async def get_audio(path: str) -> File:
+    """Retrieve an audio file from the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to retrieve audio file from {file_path}")
+
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, AUDIO_EXTENSIONS)
+
+    return try_read_file(file_path)
+
+
+@put("/api/audio", guards=ENDPOINT_GUARDS)
+async def update_audio(
+    data: Annotated[
+        AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
+    ],
+    state: State,
+) -> FileUploadResponse:
+    """Update/replace an existing audio file at the specified path."""
+
+    content = await data.file.read()
+    path = Path(data.path)
+
+    logger.debug(f"Attempting to update audio file {data.file.filename} at {path}")
+
+    validate_file_exists(path)
+    validate_file_extension(path, AUDIO_EXTENSIONS)
+    validate_file_size(content, state.MAX_FILE_SIZE)
+
+    return try_write_file(path, content, update=True)
+
+
+@delete("/api/audio", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_audio(path: str) -> Path:
+    """Delete an audio file at the specified path."""
+
+    file_path = Path(path)
+
+    logger.debug(f"Attempting to delete audio file at {file_path}")
+
+    validate_file_exists(file_path)
+    validate_file_extension(file_path, AUDIO_EXTENSIONS)
+
+    return try_delete_file(file_path)
 
 
 @get("/api/ports", guards=ENDPOINT_GUARDS)
@@ -640,14 +928,20 @@ async def stop_service(
 
 
 @get("/api/services/{service_id:str}", guards=ENDPOINT_GUARDS)
-async def refresh_service(
-    service_id: UUID, session: AsyncSession, state: State
+async def fetch_service(
+    service_id: UUID,
+    session: AsyncSession,
+    state: State,
+    refresh: Optional[bool] = False,
 ) -> Service:
     service = await session.get(Service, service_id)
     if service is None:
         raise NotFoundException(detail=f"Service {service_id} not found")
 
-    await service.refresh(session, state)
+    if refresh:
+        logger.info("Refreshing service status")
+        await service.refresh(session, state)
+
     return service
 
 
@@ -662,6 +956,7 @@ async def fetch_services(
     port: Optional[int] = None,
     name: Optional[str] = None,
     profile: Optional[str] = None,
+    refresh: Optional[bool] = False,
 ) -> list[Service]:
     query_params = {
         k: v
@@ -681,7 +976,9 @@ async def fetch_services(
     res = await session.execute(query)
     services = res.scalars().all()
 
-    await asyncio.gather(*[s.refresh(session, state) for s in services])
+    if refresh:
+        logger.info("Refreshing service statuses")
+        await asyncio.gather(*[s.refresh(session, state) for s in services])
 
     return list(services)
 
@@ -1237,6 +1534,25 @@ async def create_model(data: Model, session: AsyncSession) -> Model:
 
 @delete("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_model(model_id: str, session: AsyncSession) -> None:
+    """Delete a specific model by its database ID (UUID).
+
+    This endpoint removes a single model from the database using its unique identifier.
+    Use this when you have the exact model UUID and want to delete that specific record.
+
+    Args:
+        model_id: The UUID of the model to delete (e.g., "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+        session: Database session (injected)
+
+    Returns:
+        None (204 No Content on success)
+
+    Raises:
+        ValidationException: If model_id is not a valid UUID
+        NotFoundException: If no model exists with the given ID
+
+    Example:
+        DELETE /api/models/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+    """
     try:
         query = sa.delete(Model).where(Model.id == model_id)
         res = await session.execute(query)
@@ -1245,7 +1561,122 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
         raise ValidationException(detail="{model_id} is not a valid UUID.")
 
     if res.rowcount == 0:
-        raise NotFoundException(detail="No model deleted: {model_id} not found.")
+        raise NotFoundException(detail=f"No model deleted: {model_id} not found.")
+
+
+@dataclass
+class DeleteModelResponse:
+    model_id: str
+    status: str
+    message: Optional[str] = None
+
+
+@delete("/api/models", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_models(
+    session: AsyncSession,
+    repo_id: Optional[str] = None,
+    profile: Optional[str] = None,
+    revision: Optional[str] = None,
+) -> list[DeleteModelResponse]:
+    """Bulk delete models matching query parameters.
+
+    This endpoint deletes multiple models based on their attributes (repo_id, profile,
+    revision) rather than database IDs. Useful for operations like "delete all models
+    for a profile" or "delete all revisions of a specific model".
+
+    At least one query parameter must be provided to prevent accidental deletion of all
+    models. The operation attempts to delete each matching model individually and reports
+    success or failure for each. Partial success is possible - some models may be deleted
+    successfully while others fail, allowing you to identify and address specific issues.
+
+    Args:
+        session: Database session (injected)
+        repo_id: Filter by repository ID (e.g., "openai/whisper-large-v3")
+        profile: Filter by profile name (e.g., "default", "production")
+        revision: Filter by model revision/commit hash
+
+    Returns:
+        List of DeleteModelResponse objects with status ("ok" or "error") for each model.
+        Empty list if no models match the query parameters.
+
+    Raises:
+        ValidationException: If no query parameters provided or query is invalid
+
+    Examples:
+        DELETE /api/models?profile=test
+            → Deletes all models associated with the "test" profile
+
+        DELETE /api/models?repo_id=openai/whisper-large-v3&profile=default
+            → Deletes all revisions of whisper-large-v3 in the default profile
+
+        DELETE /api/models?repo_id=meta/llama-2&profile=prod&revision=abc123
+            → Deletes a specific model revision in the prod profile
+
+    Response Format:
+        [
+            {"model_id": "uuid", "status": "ok"},
+            {"model_id": "uuid", "status": "error", "message": "error details"}
+        ]
+
+    Note:
+        If you have the exact model UUID, use DELETE /api/models/{model_id} instead.
+        This bulk endpoint is designed for CLI usage and filtering by model attributes.
+    """
+
+    # Build query parameters
+    query_params = {
+        k: v
+        for k, v in {
+            "repo": repo_id,
+            "profile": profile,
+            "revision": revision,
+        }.items()
+        if v is not None
+    }
+
+    if not query_params:
+        logger.warning("No query parameters provided for model deletion.")
+        raise ValidationException(
+            detail="At least one query parameter (repo_id, profile, or revision) must be provided."
+        )
+
+    # Query database
+    query = sa.select(Model).filter_by(**query_params)
+    try:
+        query_res = await session.execute(query)
+    except StatementError as e:
+        raise ValidationException(detail=f"Invalid query statement: {e}")
+
+    models = query_res.scalars().all()
+
+    if len(models) == 0:
+        logger.warning(f"The query parameters {query_params} did not match any models.")
+        return []
+
+    # Delete models
+    res = []
+    for model in models:
+        logger.debug(f"Attempting to delete model {model.id}")
+        deletion = sa.delete(Model).where(Model.id == model.id)
+        try:
+            await session.execute(deletion)
+            res.append(
+                DeleteModelResponse(
+                    model_id=str(model.id),
+                    status="ok",
+                )
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete model {model.id}: {e}")
+            res.append(
+                DeleteModelResponse(
+                    model_id=str(model.id),
+                    status="error",
+                    message=f"Failed to delete model: {e}",
+                )
+            )
+
+    return res
 
 
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
@@ -1278,10 +1709,19 @@ async def read_profile(name: str) -> Profile | None:
 # --- Config ---
 BASE_DIR = module_to_os_path("app")
 
+# Use NullPool in test environment to prevent connection leaks across test runs
+# PYTEST_CURRENT_TEST is automatically set by pytest when tests are running
+engine_config_params: dict[str, Any] = {}
+if os.getenv("PYTEST_CURRENT_TEST"):
+    from sqlalchemy.pool import NullPool
+
+    engine_config_params["poolclass"] = NullPool
+
 db_config = SQLAlchemyAsyncConfig(
     connection_string=f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite",
     metadata=UUIDAuditBase.metadata,
     create_all=True,
+    engine_config=EngineConfig(**engine_config_params),
     alembic_config=AlembicAsyncConfig(
         version_table_name="ddl_version",
         script_config=f"{BASE_DIR}/db/migrations/alembic.ini",
@@ -1358,10 +1798,21 @@ app = Litestar(
         logout,
         get_ports,
         get_files,
+        upload_image,
+        get_image,
+        update_image,
+        delete_image,
+        upload_text,
+        get_text,
+        update_text,
+        delete_text,
+        upload_audio,
         get_audio,
+        update_audio,
+        delete_audio,
         run_service,
         stop_service,
-        refresh_service,
+        fetch_service,
         fetch_services,
         delete_service,
         prune_services,
@@ -1375,6 +1826,7 @@ app = Litestar(
         get_model,
         get_models,
         delete_model,
+        delete_models,
         read_profiles,
         read_profile,
         next_server,

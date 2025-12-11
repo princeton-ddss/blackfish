@@ -29,6 +29,9 @@ from app.logger import logger
 from app.cli.classes import ServiceOptions
 
 
+DISPLAY_ID_LENGTH = 13
+
+
 # blackfish
 @click.group()
 def main() -> None:  # pragma: no cover
@@ -335,18 +338,47 @@ run.add_command(run_speech_recognition, "speech-recognition")
 def stop(service_id: str) -> None:  # pragma: no cover
     """Stop one or more services"""
 
+    from uuid import UUID
+
+    # First, try to use the service_id as provided (full UUID)
+    try:
+        UUID(service_id)
+        full_service_id = service_id
+    except ValueError:
+        # If it's not a valid UUID, try to find a matching service by abbreviated ID
+        with yaspin(text="Looking up service...") as spinner:
+            res = requests.get(f"http://{config.HOST}:{config.PORT}/api/services")
+            if not res.ok:
+                spinner.text = f"Failed to fetch services (status={res.status_code})."
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
+
+            services = res.json()
+            matching_services = [s for s in services if s["id"].startswith(service_id)]
+
+            if len(matching_services) == 0:
+                spinner.text = f"No service found matching '{service_id}'."
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
+            elif len(matching_services) > 1:
+                spinner.text = f"Multiple services match '{service_id}': {', '.join([s['id'][:DISPLAY_ID_LENGTH] for s in matching_services])}. Please provide a more specific ID."
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
+            else:
+                full_service_id = matching_services[0]["id"]
+                spinner.text = f"Found service {full_service_id[:DISPLAY_ID_LENGTH]}."
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
+
     with yaspin(text="Stopping service...") as spinner:
         res = requests.put(
-            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}/stop",
+            f"http://{config.HOST}:{config.PORT}/api/services/{full_service_id}/stop",
             json={},
         )
         if not res.ok:
-            spinner.text = (
-                f"Failed to stop service {service_id} (status={res.status_code})."
-            )
+            spinner.text = f"Failed to stop service {full_service_id[:DISPLAY_ID_LENGTH]} (status={res.status_code})."
             spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
-            spinner.text = f"Stopped service {service_id}."
+            spinner.text = f"Stopped service {full_service_id[:DISPLAY_ID_LENGTH]}."
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
@@ -437,7 +469,8 @@ def details(service_id: str) -> None:  # pragma: no cover
 
     with yaspin(text="Fetching service...") as spinner:
         res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}"
+            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}",
+            params={"refresh": "true"},
         )  # fresh data 🥬
         if not res.ok:
             spinner.text = (
@@ -554,9 +587,10 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
             click.echo(f"Unable to parse filter: {e}")
             return
     else:
-        params = None
+        params = {}
 
     with yaspin(text="Fetching services...") as spinner:
+        params["refresh"] = "true"
         res = requests.get(
             f"http://{config.HOST}:{config.PORT}/api/services", params=params
         )  # fresh data 🥬
@@ -579,7 +613,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
         if is_active(service) or all:
             tab.add_row(
                 [
-                    service["id"][:13],
+                    service["id"][:DISPLAY_ID_LENGTH],
                     service["image"],
                     service["model"],
                     format_datetime(datetime.fromisoformat(service["created_at"])),
@@ -769,7 +803,7 @@ def list_batch_jobs(
                 )
             tab.add_row(
                 [
-                    job["id"][:13],
+                    job["id"][:DISPLAY_ID_LENGTH],
                     job["pipeline"],
                     job["repo_id"],
                     format_datetime(datetime.fromisoformat(job["created_at"])),
@@ -1096,6 +1130,7 @@ def models_remove(
             )
             return
 
+    success = False
     with yaspin(text="Removing model...") as spinner:
         try:
             remove_model(
@@ -1103,9 +1138,36 @@ def models_remove(
             )
             spinner.text = f"Removed model {repo_id}"
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
+            success = True
         except Exception as e:
             spinner.text = f"Failed to remove model: {e}"
             spinner.fail(f"{LogSymbols.ERROR.value}")
+
+    if success:
+        with yaspin(text="Updating database...") as spinner:
+            try:
+                res = requests.delete(
+                    f"http://{config.HOST}:{config.PORT}/api/models",
+                    params={
+                        "repo_id": repo_id,
+                        "profile": profile,
+                        "revision": revision,
+                    },
+                )
+                if not res.ok:
+                    spinner.text = f"Failed to delete model {repo_id} ({res.status_code}: {res.reason})"
+                    spinner.fail(f"{LogSymbols.ERROR.value}")
+                else:
+                    if all([model["status"] == "ok" for model in res.json()]):
+                        spinner.text = "Database updated successfully!"
+                        spinner.ok(f"{LogSymbols.SUCCESS.value}")
+                    else:
+                        spinner.text = "Database update failed. Will retry automatically on next `blackfish model ls --refresh` run."
+                        spinner.ok(f"{LogSymbols.SUCCESS.value}")
+            except requests.exceptions.ConnectionError:
+                spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
 
 
 @main.group()

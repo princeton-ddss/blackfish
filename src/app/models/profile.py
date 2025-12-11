@@ -13,7 +13,7 @@ class SlurmProfile:
     user: str
     home_dir: str
     cache_dir: str
-    type: str = "slurm"
+    schema: str = "slurm"
 
     def is_local(self) -> bool:
         return self.host == "localhost"
@@ -36,7 +36,7 @@ class LocalProfile:
     name: str
     home_dir: str
     cache_dir: str
-    type: str = "local"
+    schema: str = "local"
 
     def is_local(self) -> bool:
         return True
@@ -54,8 +54,8 @@ BlackfishProfile = Union[SlurmProfile, LocalProfile]
 
 
 class ProfileTypeException(Exception):
-    def __init__(self, type: str) -> None:
-        super().__init__(f"Profile type {type} is not supported.")
+    def __init__(self, schema: str) -> None:
+        super().__init__(f"Profile type {schema} is not supported.")
 
 
 def deserialize_profiles(home_dir: str) -> list[BlackfishProfile]:
@@ -71,7 +71,8 @@ def deserialize_profiles(home_dir: str) -> list[BlackfishProfile]:
     profiles: list[BlackfishProfile] = []
     for section in parser.sections():
         profile = {k: v for k, v in parser[section].items()}
-        if profile["type"] == "slurm":
+        schema = profile.get("schema") or profile.get("type")
+        if schema == "slurm":
             profiles.append(
                 SlurmProfile(
                     name=section,
@@ -81,7 +82,7 @@ def deserialize_profiles(home_dir: str) -> list[BlackfishProfile]:
                     cache_dir=profile["cache_dir"],
                 )
             )
-        elif profile["type"] == "local":
+        elif schema == "local":
             profiles.append(
                 LocalProfile(
                     name=section,
@@ -108,7 +109,8 @@ def deserialize_profile(home_dir: str, name: str) -> BlackfishProfile | None:
     for section in parser.sections():
         if section == name:
             profile = {k: v for k, v in parser[section].items()}
-            if profile["type"] == "slurm":
+            schema = profile.get("schema") or profile.get("type")
+            if schema == "slurm":
                 return SlurmProfile(
                     name=section,
                     host=profile["host"],
@@ -116,13 +118,14 @@ def deserialize_profile(home_dir: str, name: str) -> BlackfishProfile | None:
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
                 )
-            elif profile["type"] == "local":
+            elif schema == "local":
                 return LocalProfile(
                     name=section,
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
                 )
             else:
-                raise ProfileTypeException(profile["type"])
+                schema_value = profile.get("schema") or profile.get("type", "unknown")
+                raise ProfileTypeException(schema_value)
 
     return None

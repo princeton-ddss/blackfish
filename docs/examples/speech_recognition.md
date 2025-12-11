@@ -1,2 +1,0 @@
-# Speech Recognition
-Coming soon!

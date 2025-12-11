@@ -1346,7 +1346,7 @@ async def delete_job(
                 await session.execute(deletion)
             except Exception as e:
                 logger.error(
-                    f"An error occurrred while attempting to delete batch job {batch_job.id.hex}: {e}"
+                    f"An error occurred while attempting to delete batch job {batch_job.id.hex}: {e}"
                 )
                 res.append(
                     DeleteBatchJobResponse(
@@ -1560,7 +1560,7 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
         logger.error(f"{model_id} is not a valid UUID.")
         raise ValidationException(detail="{model_id} is not a valid UUID.")
 
-    if res.rowcount == 0:
+    if res.rowcount == 0:  # type: ignore[attr-defined]
         raise NotFoundException(detail=f"No model deleted: {model_id} not found.")
 
 
@@ -1753,7 +1753,8 @@ cors_config = CORSConfig(
 openapi_config = OpenAPIConfig(
     title="Blackfish API",
     version="0.0.1",
-    render_plugins=[SwaggerRenderPlugin(path="/swagger")],
+    path="/docs",
+    render_plugins=[SwaggerRenderPlugin()],
 )
 
 template_config = TemplateConfig(

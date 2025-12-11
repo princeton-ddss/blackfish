@@ -19,7 +19,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
     async_sessionmaker,
 )
-from sqlalchemy.engine import CursorResult
 from litestar.datastructures import State
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -607,8 +606,8 @@ class Blackfish:
 
         async with self._session() as session:
             query = sa.delete(Service).where(Service.id == UUID(service_id))
-            result: CursorResult[Any] = await session.execute(query)
-            return bool(result.rowcount and result.rowcount > 0)
+            result = await session.execute(query)
+            return bool(result.rowcount and result.rowcount > 0)  # type: ignore[attr-defined]
 
     @_async_to_sync
     async def delete_service(self, service_id: str) -> bool:

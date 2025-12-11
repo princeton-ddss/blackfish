@@ -26,7 +26,6 @@ import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound, StatementError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import Result
-from sqlalchemy.engine import CursorResult
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
@@ -1347,7 +1346,7 @@ async def delete_job(
                 await session.execute(deletion)
             except Exception as e:
                 logger.error(
-                    f"An error occurrred while attempting to delete batch job {batch_job.id.hex}: {e}"
+                    f"An error occurred while attempting to delete batch job {batch_job.id.hex}: {e}"
                 )
                 res.append(
                     DeleteBatchJobResponse(
@@ -1556,12 +1555,12 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
     """
     try:
         query = sa.delete(Model).where(Model.id == model_id)
-        res: CursorResult[Any] = await session.execute(query)
+        res = await session.execute(query)
     except StatementError:
         logger.error(f"{model_id} is not a valid UUID.")
         raise ValidationException(detail="{model_id} is not a valid UUID.")
 
-    if res.rowcount == 0:
+    if res.rowcount == 0:  # type: ignore[attr-defined]
         raise NotFoundException(detail=f"No model deleted: {model_id} not found.")
 
 

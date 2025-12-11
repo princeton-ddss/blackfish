@@ -577,7 +577,8 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
         ]
     )
     tab.set_style(TableStyle.PLAIN_COLUMNS)
-    tab.align = "l"
+    for field in tab.field_names:
+        tab.align[field] = "l"
     tab.right_padding_width = 3
 
     if filters is not None:
@@ -764,7 +765,8 @@ def list_batch_jobs(
         ]
     )
     tab.set_style(TableStyle.PLAIN_COLUMNS)
-    tab.align = "l"
+    for field in tab.field_names:
+        tab.align[field] = "l"
     tab.right_padding_width = 3
 
     if filters is not None:
@@ -959,7 +961,8 @@ def models_ls(
         ]
     )
     tab.set_style(TableStyle.PLAIN_COLUMNS)
-    tab.align = "l"
+    for field in tab.field_names:
+        tab.align[field] = "l"
     tab.right_padding_width = 3
 
     if len(res.json()) == 0:

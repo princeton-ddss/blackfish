@@ -172,15 +172,6 @@ wheels = [
 ]
 
 [[package]]
-name = "argcomplete"
-version = "3.6.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/38/61/0b9ae6399dd4a58d8c1b1dc5a27d6f2808023d0b5dd3104bb99f45a33ff6/argcomplete-3.6.3.tar.gz", hash = "sha256:62e8ed4fd6a45864acc8235409461b72c9a28ee785a2011cc5eb78318786c89c", size = 73754 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/74/f5/9373290775639cb67a2fce7f629a1c240dce9f12fe927bc32b2736e16dfc/argcomplete-3.6.3-py3-none-any.whl", hash = "sha256:f5007b3a600ccac5d25bbce33089211dfd49eab4a7718da3f10e3082525a92ce", size = 43846 },
-]
-
-[[package]]
 name = "asttokens"
 version = "3.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -345,10 +336,10 @@ dev = [
     { name = "mkdocs-material" },
     { name = "mkdocs-swagger-ui-tag" },
     { name = "mkdocstrings", extra = ["python"] },
-    { name = "nox" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "rust-just" },
     { name = "sniffio" },
 ]
 
@@ -390,10 +381,10 @@ dev = [
     { name = "mkdocs-material", specifier = ">=9.6.2" },
     { name = "mkdocs-swagger-ui-tag", specifier = ">=0.6.11" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.28" },
-    { name = "nox", specifier = ">=2024.10.9" },
     { name = "pre-commit", specifier = ">=4.2" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "pytest-cov", specifier = ">=6.2.1" },
+    { name = "rust-just", specifier = ">=1.44" },
     { name = "sniffio", specifier = ">=1.3.1" },
 ]
 
@@ -712,18 +703,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/43/fa/6d96a0978d19e17b68d634497769987b16c8f4cd0a7a05048bec693caa6b/decorator-5.2.1.tar.gz", hash = "sha256:65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360", size = 56711 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4e/8c/f3147f5c4b73e7550fe5f9352eaa956ae838d5c51eb58e7a25b9f3e2643b/decorator-5.2.1-py3-none-any.whl", hash = "sha256:d316bb415a2d9e2d2b3abcc4084c6502fc09240e292cd76a76afc106a1c8e04a", size = 9190 },
-]
-
-[[package]]
-name = "dependency-groups"
-version = "1.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/62/55/f054de99871e7beb81935dea8a10b90cd5ce42122b1c3081d5282fdb3621/dependency_groups-1.3.1.tar.gz", hash = "sha256:78078301090517fd938c19f64a53ce98c32834dfe0dee6b88004a569a6adfefd", size = 10093 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/c7/d1ec24fb280caa5a79b6b950db565dab30210a66259d17d5bb2b3a9f878d/dependency_groups-1.3.1-py3-none-any.whl", hash = "sha256:51aeaa0dfad72430fcfb7bcdbefbd75f3792e5919563077f30bc0d73f4493030", size = 8664 },
 ]
 
 [[package]]
@@ -1049,15 +1028,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c9/a1/397934161650e1248107fa3337f320f83f09f8113c5117ce3c2d32cfda8d/huggingface_hub-1.2.1.tar.gz", hash = "sha256:1aced061fa1bd443c0ec80a4af432b8b70041d54860f7af334ceff599611a415", size = 614603 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/af/cf/ef5cc94b1ed4e1ab8a15c17937c876b9733154a746c78f4c06c2336a05e5/huggingface_hub-1.2.1-py3-none-any.whl", hash = "sha256:8c74a41a16156337dfa1090873ca11f8c1d7b6efcbac9f6673d008a740207e6a", size = 520930 },
-]
-
-[[package]]
-name = "humanize"
-version = "4.14.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b6/43/50033d25ad96a7f3845f40999b4778f753c3901a11808a584fed7c00d9f5/humanize-4.14.0.tar.gz", hash = "sha256:2fa092705ea640d605c435b1ca82b2866a1b601cdf96f076d70b79a855eba90d", size = 82939 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/5b/9512c5fb6c8218332b530f13500c6ff5f3ce3342f35e0dd7be9ac3856fd3/humanize-4.14.0-py3-none-any.whl", hash = "sha256:d57701248d040ad456092820e6fde56c930f17749956ac47f4f655c0c547bfff", size = 132092 },
 ]
 
 [[package]]
@@ -1649,24 +1619,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/43/16/fc88b08840de0e0a72a2f9d8c6bae36be573e475a6326ae854bcc549fc45/nodeenv-1.9.1.tar.gz", hash = "sha256:6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f", size = 47437 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d2/1d/1b658dbd2b9fa9c4c9f32accbfc0205d532c8c6194dc0f2a4c0428e7128a/nodeenv-1.9.1-py2.py3-none-any.whl", hash = "sha256:ba11c9782d29c27c70ffbdda2d7415098754709be8a7056d79a737cd901155c9", size = 22314 },
-]
-
-[[package]]
-name = "nox"
-version = "2025.11.12"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "argcomplete" },
-    { name = "attrs" },
-    { name = "colorlog" },
-    { name = "dependency-groups" },
-    { name = "humanize" },
-    { name = "packaging" },
-    { name = "virtualenv" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/a8/e169497599266d176832e2232c08557ffba97eef87bf8a18f9f918e0c6aa/nox-2025.11.12.tar.gz", hash = "sha256:3d317f9e61f49d6bde39cf2f59695bb4e1722960457eee3ae19dacfe03c07259", size = 4030561 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/34/434c594e0125a16b05a7bedaea33e63c90abbfbe47e5729a735a8a8a90ea/nox-2025.11.12-py3-none-any.whl", hash = "sha256:707171f9f63bc685da9d00edd8c2ceec8405b8e38b5fb4e46114a860070ef0ff", size = 74447 },
 ]
 
 [[package]]
@@ -2316,6 +2268,28 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/bf/d8/f2c1b7e9a645ba40f756d7a5b195fc104729bc6b19061ba3ab385f342931/rich_click-1.9.4.tar.gz", hash = "sha256:af73dc68e85f3bebb80ce302a642b9fe3b65f3df0ceb42eb9a27c467c1b678c8", size = 73632 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5b/6a/1f03adcb3cc7beb6f63aecc21565e9d515ccee653187fc4619cd0b42713b/rich_click-1.9.4-py3-none-any.whl", hash = "sha256:d70f39938bcecaf5543e8750828cbea94ef51853f7d0e174cda1e10543767389", size = 70245 },
+]
+
+[[package]]
+name = "rust-just"
+version = "1.44.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/bf/f57bd02651a25822d75a86ba29ba5f392caf4f9087c6bfe90d568cc3bb9c/rust_just-1.44.0.tar.gz", hash = "sha256:acf638cadd45b71fb31d74ca71541addb033b3f1996ebc8e03bb52d505c30693", size = 1430207 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/22/e5126315d78a4d8402c887c9a484aa482633c2241e839ac2b5dcfc8d9ccf/rust_just-1.44.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:fdc28a185acd8260f7a22c6c493d74f35823db262dd9543389784aac474c6b73", size = 1684654 },
+    { url = "https://files.pythonhosted.org/packages/9c/64/dd616426dd3fc88c1e02771477332e8e880ec0ed4098a785f096f4b517af/rust_just-1.44.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:f7a80246442156d9cc1609a7ea632f93b154b71541e4ad95c723da3f1561608b", size = 1568663 },
+    { url = "https://files.pythonhosted.org/packages/28/75/1886a2c0258e5fe490dcc93a326a2173c8eeffa965fcdff4e2b6736f9173/rust_just-1.44.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e8b76d0aab59efb6ed4627305e40614a641588feb217c22aaeaf5ceecc50528d", size = 1650270 },
+    { url = "https://files.pythonhosted.org/packages/c0/f6/9182dc73b20a1bb1abe74cd39717b06b2b786d3de3e3f54a1337b659a3db/rust_just-1.44.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:c181615b16bd4a391c44335eefe42930b893e5b7e6f67dc6fd04183e6021c256", size = 1620961 },
+    { url = "https://files.pythonhosted.org/packages/50/fe/99476b6bb11e91ac3f40e52bad0ca8e1a1617d5324eb760bb8d537239e0b/rust_just-1.44.0-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:00065823fd3a831689bdd7e9879f080cd14064815ddbf9800e47365e9742c54b", size = 1794957 },
+    { url = "https://files.pythonhosted.org/packages/9a/51/a9f6180da830291f324e13e658fc85bc40a17fe8973844818a3ca010af8c/rust_just-1.44.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:708519117867731717c68defcd5d164db5a56d7a0ec843f4e7fbb07ac97c599b", size = 1866444 },
+    { url = "https://files.pythonhosted.org/packages/98/68/64ca088bb317d26de33ad6a96de2f0c36c1a8bc59e9acf9db3fb5d3825b5/rust_just-1.44.0-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:350a0117a8f74dee9ba7f7779468d8466940863ecbd1990e26614c8f0daeb76b", size = 1863672 },
+    { url = "https://files.pythonhosted.org/packages/ee/0d/fbfed0760a1ce2e79d6d09183caff5a7567d01bcb1662d0f13804375d734/rust_just-1.44.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:deb5cf3d2d48a630a4ef63f22e21720e942ee198362157ff75de72b1a075a49b", size = 1776708 },
+    { url = "https://files.pythonhosted.org/packages/95/78/11998eda1a5233c0b9ba7d9138df44a25657ad6cf60349059ce47bb27186/rust_just-1.44.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:b631029c1c5b49dd0e8749ab405c1270099fbf4794a726290cabead9a81ff7ab", size = 1666235 },
+    { url = "https://files.pythonhosted.org/packages/8a/f2/70c2ddfdf6827e61cdb0c04b849084a7a1ae7012d01c581db5b7b8071599/rust_just-1.44.0-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:7a12786b6a240aacd387d3651445c57c0105e685658a5af53faae41ef7b0c9a5", size = 1641887 },
+    { url = "https://files.pythonhosted.org/packages/03/1f/0079adfed540a2ef53a1275e3bc5f8a3f37040319d01e9dadae4d0b63a7b/rust_just-1.44.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:4acdb92272680909cb9dcaa84da221a58cc49140e28025ae6cbd5c44f4371867", size = 1786560 },
+    { url = "https://files.pythonhosted.org/packages/e5/61/20dd8ad91efb3d9e47587bdd16d2ebad1b040caa84e93bc7a8520026d896/rust_just-1.44.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:e04be73e7b78681d3a449e7e9d3561bde4e8ec13aa0450cbc198d1daea9f1e2e", size = 1842937 },
+    { url = "https://files.pythonhosted.org/packages/70/5d/19622091a534d289aeac4e889f1a9879e30ba9b049a849b1f55bcd7ff528/rust_just-1.44.0-py3-none-win32.whl", hash = "sha256:76bbedd650b7994e0c28fa52d5ce29a1d6063a8a59fdf4654030b3448a98f32e", size = 1572429 },
+    { url = "https://files.pythonhosted.org/packages/dd/8e/c57ef3056f25266f2fed7e34bf6febb5ab5eb5d71739ab7bc9d5212282c0/rust_just-1.44.0-py3-none-win_amd64.whl", hash = "sha256:cb1be5bbc6c0dc21199fe81370523b8a3eb2d96f605937e9cc958023339e2597", size = 1739301 },
 ]
 
 [[package]]

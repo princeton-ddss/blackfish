@@ -36,6 +36,7 @@ from advanced_alchemy.extensions.litestar import (
     AlembicAsyncConfig,
 )
 from advanced_alchemy.base import UUIDAuditBase
+from advanced_alchemy.extensions.litestar.plugins.init.config.engine import EngineConfig
 from litestar.exceptions import (
     ClientException,
     NotFoundException,
@@ -1708,10 +1709,19 @@ async def read_profile(name: str) -> Profile | None:
 # --- Config ---
 BASE_DIR = module_to_os_path("app")
 
+# Use NullPool in test environment to prevent connection leaks across test runs
+# PYTEST_CURRENT_TEST is automatically set by pytest when tests are running
+engine_config_params: dict[str, Any] = {}
+if os.getenv("PYTEST_CURRENT_TEST"):
+    from sqlalchemy.pool import NullPool
+
+    engine_config_params["poolclass"] = NullPool
+
 db_config = SQLAlchemyAsyncConfig(
     connection_string=f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite",
     metadata=UUIDAuditBase.metadata,
     create_all=True,
+    engine_config=EngineConfig(**engine_config_params),
     alembic_config=AlembicAsyncConfig(
         version_table_name="ddl_version",
         script_config=f"{BASE_DIR}/db/migrations/alembic.ini",

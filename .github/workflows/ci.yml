@@ -26,7 +26,7 @@ jobs:
       - name: Install uv (latest)
         uses: astral-sh/setup-uv@v6
       - name: Install Blackfish
-        run: uv sync
+        run: uv sync --python ${{ matrix.python-version }}
       - name: Lint
         run: uv run pre-commit run --all-files
   tests:
@@ -45,7 +45,7 @@ jobs:
       - name: Install uv (latest)
         uses: astral-sh/setup-uv@v6
       - name: Install Blackfish
-        run: uv sync
+        run: uv sync --python ${{ matrix.python-version }}
       - name: Run tests on ${{ matrix.os }}
         run: uv run --python ${{ matrix.python-version }} pytest
 

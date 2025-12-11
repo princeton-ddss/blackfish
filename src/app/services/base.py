@@ -348,7 +348,7 @@ class Service(UUIDAuditBase):
             return self.status
 
         # The logic for cases below is quite similar and can be extracted into
-        # reuseable functions in places, e.g., for running and failed jobs.
+        # reusable functions in places, e.g., for running and failed jobs.
         job = self.get_job(verbose=True)
         if isinstance(job, SlurmJob):
             if job.state == JobState.PENDING:

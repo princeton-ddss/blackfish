@@ -40,6 +40,15 @@ def main() -> None:  # pragma: no cover
 
 
 @main.command()
+def version() -> None:  # pragma: no cover
+    "Print the Blackfish version."
+    import importlib
+
+    version = importlib.metadata.version("blackfish-ai")
+    print(f"blackfish-ai {version}")
+
+
+@main.command()
 @click.option(
     "--app-dir",
     "-r",

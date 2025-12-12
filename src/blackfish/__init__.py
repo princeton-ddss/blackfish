@@ -17,5 +17,3 @@ __all__ = [
     "ServiceStatus",
     "set_logging_level",
 ]
-
-__version__ = "0.2.1"

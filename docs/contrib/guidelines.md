@@ -18,7 +18,7 @@ In addition to passing automated tests, PRs must pass code review before they ar
 ![Feedback is a gif](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcmR4c2FmandtZzBkeW9lOGxzMnM0anB0MWdvMTFnNjZ2ZWo0N2N5dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ZF8GoFOeBDwHFsVYqt/giphy.gif)
 
 #### Early Feedback
-Speaking of feedback, getting early feedback is one way to avoid wasted effort and dissapointment. There are two ways to request feedback on your ideas. First, you can create an issue describing the issue you wish to resolve or feature that you want to contribute. This is a good option if you are not sure about how to approach the issue and want to avoid heading down the wrong path. The other option is to open a draft PR. This option works well if you know what you're doing (you have an implementation of some sort), but would like a second opinion before you get too far (remember the 90/10 rule!). Additionally, it means the maintainers have one less issue to worry about 😊
+Speaking of feedback, getting early feedback is one way to avoid wasted effort and disappointment. There are two ways to request feedback on your ideas. First, you can create an issue describing the issue you wish to resolve or feature that you want to contribute. This is a good option if you are not sure about how to approach the issue and want to avoid heading down the wrong path. The other option is to open a draft PR. This option works well if you know what you're doing (you have an implementation of some sort), but would like a second opinion before you get too far (remember the 90/10 rule!). Additionally, it means the maintainers have one less issue to worry about 😊
 
 
 ### Code Style

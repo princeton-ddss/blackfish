@@ -13,14 +13,20 @@ class SpeechRecognitionConfig(BaseConfig):
 
 
 class SpeechRecognition(Service):
-    """A containerized service running a speech recognition API."""
+    """A containerized service running a speech recognition API.
+
+    Examples:
+        ```python
+        svc = SpeechRecognition(...)
+        res = svc("/audio/test.mp3")
+        ```
+    """
 
     __mapper_args__ = {
         "polymorphic_identity": "speech_recognition",
     }
 
-    # Call Blackfish API
-    async def call(
+    async def __call__(
         self,
         audio_path: str,
         language: Union[str, None] = None,

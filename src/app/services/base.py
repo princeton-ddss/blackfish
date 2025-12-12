@@ -348,7 +348,7 @@ class Service(UUIDAuditBase):
             return self.status
 
         # The logic for cases below is quite similar and can be extracted into
-        # reuseable functions in places, e.g., for running and failed jobs.
+        # reusable functions in places, e.g., for running and failed jobs.
         job = self.get_job(verbose=True)
         if isinstance(job, SlurmJob):
             if job.state == JobState.PENDING:
@@ -570,7 +570,7 @@ class Service(UUIDAuditBase):
         ```
         """
         if self.port is None:
-            logger.warning(
+            logger.debug(
                 f"Could not close tunnel because service {self.id} has no port set."
             )
             return
@@ -652,5 +652,5 @@ class Service(UUIDAuditBase):
             res = requests.get(f"http://localhost:{self.port}/health")
             return res
         except Exception as e:
-            logger.error(f"Failed to check health: {e}")
+            logger.debug(f"Failed to check health: {e}")
             return None

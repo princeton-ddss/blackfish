@@ -1,10 +1,10 @@
 name: CI
 on:
   push:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "*-dev"]
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "*-dev"]
 env:
   FORCE_COLOR: "1"
 concurrency:
@@ -19,17 +19,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: wntrblm/nox@main
       - name: Set up Python 3.x
         uses: actions/setup-python@v6
         with:
           python-version: "3.x"
+      - name: Install uv (latest)
+        uses: astral-sh/setup-uv@v6
       - name: Install Blackfish
-        run: |
-          python -m pip install --disable-pip-version-check .
+        run: uv sync
       - name: Lint
-        run: nox --non-interactive --error-on-missing-interpreters --session "lint"
-
+        run: uv run pre-commit run --all-files
   tests:
     name: Run tests 🧪
     runs-on: ${{ matrix.os }}
@@ -39,20 +38,16 @@ jobs:
         python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v6
-      - uses: wntrblm/nox@main
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install uv (latest)
+        uses: astral-sh/setup-uv@v6
       - name: Install Blackfish
-        run: |
-          python -m pip install --disable-pip-version-check .
-      - name: Set up Blackfish
-        run: blackfish init --auto --app-dir $HOME/.blackfish --schema local --home-dir $HOME/.blackfish --cache-dir $HOME/.blackfish
-      - name: Start Blackfish
-        run: blackfish start &
+        run: uv sync --python ${{ matrix.python-version }}
       - name: Run tests on ${{ matrix.os }}
-        run: nox --non-interactive --error-on-missing-interpreters --session "tests-${{ matrix.python-version }}" -- --full-trace
+        run: uv run --python ${{ matrix.python-version }} pytest
 
   docs-preview:
     name: Preview documentation 📖
@@ -137,5 +132,3 @@ jobs:
         path: dist/
     - name: Publish distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}

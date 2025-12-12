@@ -13,6 +13,7 @@ DEFAULT_PORT = 8000
 DEFAULT_STATIC_DIR = Path(__file__).parent.parent
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
 DEFAULT_DEBUG = True
+DEFAULT_MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
 class ContainerProvider(StrEnum):
@@ -21,10 +22,7 @@ class ContainerProvider(StrEnum):
 
 
 def get_container_provider() -> Optional[ContainerProvider]:
-    """Determine which container platform to use: Docker (preferred) or Apptainer.
-
-    Raises an exception if neither container platform is available.
-    """
+    """Determine which container platform to use: Docker (preferred) or Apptainer."""
     try:
         _ = subprocess.run(["which", "docker"], check=True, capture_output=True)
         return ContainerProvider.Docker
@@ -59,6 +57,7 @@ class BlackfishConfig:
         debug: bool = DEFAULT_DEBUG,
         auth_token: Optional[str] = None,
         container_provider: Optional[ContainerProvider] = None,
+        max_file_size: int = DEFAULT_MAX_FILE_SIZE,
     ) -> None:
         self.BASE_PATH = os.getenv("BLACKFISH_BASE_PATH", base_path)
         self.HOST = os.getenv("BLACKFISH_HOST", host)
@@ -74,12 +73,16 @@ class BlackfishConfig:
             )
         else:
             self.AUTH_TOKEN = auth_token
+        self.CONTAINER_PROVIDER: ContainerProvider | None
         if container_provider is None:
-            self.CONTAINER_PROVIDER = os.getenv(
-                "BLACKFISH_CONTAINER_PROVIDER", get_container_provider()
-            )
+            cp = os.getenv("BLACKFISH_CONTAINER_PROVIDER")
+            if cp is not None:
+                self.CONTAINER_PROVIDER = ContainerProvider(cp)
+            else:
+                self.CONTAINER_PROVIDER = get_container_provider()
         else:
             self.CONTAINER_PROVIDER = container_provider
+        self.MAX_FILE_SIZE = int(os.getenv("BLACKFISH_MAX_FILE_SIZE", max_file_size))
 
     def __str__(self) -> str:
         return str(self.__dict__)

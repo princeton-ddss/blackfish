@@ -92,6 +92,10 @@ from app.models.profile import (
 from app.models.model import Model
 from app.job import JobConfig, JobScheduler, SlurmJobConfig
 
+import importlib.metadata
+
+logger.info(f"Starting Blackfish version: {importlib.metadata.version('blackfish-ai')}")
+
 
 def load_service_classes() -> dict[str, Type[Service]]:
     service_classes: dict[str, Type[Service]] = {}

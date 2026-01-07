@@ -173,17 +173,35 @@ def add_model(
         )
         data = dict()
 
-    data[repo_id] = PIPELINE_IMAGES[pipeline]
+    try:
+        data[repo_id] = PIPELINE_IMAGES[pipeline]
+        with open(f"{cache_dir}/info.json", mode="w") as f:
+            f.write(json.dumps(data))
 
-    with open(f"{cache_dir}/info.json", mode="w") as f:
-        f.write(json.dumps(data))
+        return (
+            Model(
+                repo=repo_id,
+                revision=revision,
+                profile=profile.name,
+                image=PIPELINE_IMAGES[pipeline],
+            ),
+            path,
+        )
+    except KeyError:
+        print(
+            f"{LogSymbols.WARNING.value} {pipeline} is not a known task type. Certain functionality may not work."
+        )
+        data[repo_id] = pipeline
 
-    return (
-        Model(
-            repo=repo_id,
-            revision=revision,
-            profile=profile.name,
-            image=PIPELINE_IMAGES[pipeline],
-        ),
-        path,
-    )
+        with open(f"{cache_dir}/info.json", mode="w") as f:
+            f.write(json.dumps(data))
+
+        return (
+            Model(
+                repo=repo_id,
+                revision=revision,
+                profile=profile.name,
+                image=PIPELINE_IMAGES[pipeline],
+            ),
+            path,
+        )

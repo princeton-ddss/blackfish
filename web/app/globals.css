@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  input[type=range] {
+    @apply appearance-none bg-transparent;
+  }
+
+  input[type=range]::-webkit-slider-runnable-track {
+    @apply  bg-gray-100 rounded-lg appearance-none h-2;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    @apply rounded-full size-2 bg-blue-500 border-0 appearance-none;
+  }
+
+  input[type=range]::-moz-range-track {
+    @apply bg-gray-100 rounded-lg h-2;
+  }
+
+  input[type=range]::-moz-range-thumb {
+    @apply rounded-full size-2 bg-blue-500 border-0;
+  }
+
+  input[type=range]::-moz-range-progress {
+    @apply bg-transparent rounded-l-lg h-2;
+  }
+
+  input[type=range]::-ms-fill-lower {
+    @apply bg-pink-500;
+  }
+
+}
+
+@layer base {
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number'] {
+    margin: 0;
+    -webkit-appearance: none;
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+  }
+}

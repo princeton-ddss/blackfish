@@ -1,0 +1,173 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ModelSummary Description only 1`] = `
+<body>
+  <div>
+    <div
+      class=" flex flex-row justify-start border-b"
+    >
+      <div
+        class="grow flex flex-col justify-center mt-2 mb-6"
+      >
+        <div
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+        >
+          <div
+            class="mb-1 ml-0 flex flex-col justify-start items-left"
+          >
+            <div
+              class="inline-flex items-center mb-2"
+            >
+              <div
+                class="grow font-medium text-sm mr-1"
+              >
+                Description
+              </div>
+            </div>
+            Nostra ullamcorper phasellus fames velit taciti laoreet
+          </div>
+          <div
+            class="mt-2 mb-1 ml-0 flex flex-col justify-start items-left"
+          >
+            <div
+              class="inline-flex items-center mb-2"
+            >
+              <div
+                class="grow font-medium text-sm mr-1"
+              >
+                Link
+              </div>
+            </div>
+            <a />
+          </div>
+        </div>
+        <div>
+          <button
+            class="mt-2 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border"
+            type="button"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ModelSummary Link and description 1`] = `
+<body>
+  <div>
+    <div
+      class=" flex flex-row justify-start border-b"
+    >
+      <div
+        class="grow flex flex-col justify-center mt-2 mb-6"
+      >
+        <div
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+        >
+          <div
+            class="mb-1 ml-0 flex flex-col justify-start items-left"
+          >
+            <div
+              class="inline-flex items-center mb-2"
+            >
+              <div
+                class="grow font-medium text-sm mr-1"
+              >
+                Description
+              </div>
+            </div>
+            Mauris a quisque praesent aptent risus condimentum feugiat placerat, aenean nec elementum taciti tortor himenaeos. Scelerisque leo ipsum consequat posuere sagittis lacus volutpat taciti, sodales tristique sed laoreet placerat rhoncus nisi, platea hendrerit aliquet fermentum curae blandit mattis. Lorem donec amet luctus rhoncus praesent natoque hac torquent elit phasellus felis, consequat laoreet senectus platea condimentum feugiat tempor fames scelerisque justo.
+          </div>
+          <div
+            class="mt-2 mb-1 ml-0 flex flex-col justify-start items-left"
+          >
+            <div
+              class="inline-flex items-center mb-2"
+            >
+              <div
+                class="grow font-medium text-sm mr-1"
+              >
+                Link
+              </div>
+            </div>
+            <a
+              href="https://example.com"
+            >
+              https://example.com
+            </a>
+          </div>
+        </div>
+        <div>
+          <button
+            class="mt-2 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border"
+            type="button"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ModelSummary Link only 1`] = `
+<body>
+  <div>
+    <div
+      class=" flex flex-row justify-start border-b"
+    >
+      <div
+        class="grow flex flex-col justify-center mt-2 mb-6"
+      >
+        <div
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+        >
+          <div
+            class="mb-1 ml-0 flex flex-col justify-start items-left"
+          >
+            <div
+              class="inline-flex items-center mb-2"
+            >
+              <div
+                class="grow font-medium text-sm mr-1"
+              >
+                Description
+              </div>
+            </div>
+          </div>
+          <div
+            class="mt-2 mb-1 ml-0 flex flex-col justify-start items-left"
+          >
+            <div
+              class="inline-flex items-center mb-2"
+            >
+              <div
+                class="grow font-medium text-sm mr-1"
+              >
+                Link
+              </div>
+            </div>
+            <a
+              href="https://example.com"
+            >
+              https://example.com
+            </a>
+          </div>
+        </div>
+        <div>
+          <button
+            class="mt-2 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border"
+            type="button"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

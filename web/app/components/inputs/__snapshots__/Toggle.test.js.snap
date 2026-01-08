@@ -1,0 +1,92 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Toggle Checked 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-2"
+      data-headlessui-state=""
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="toggle-control"
+        >
+          Massa fringilla maximus neque pulvinar scelerisque interdum
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Netus consectetur imperdiet etiam eleifend leo nostra
+          </div>
+        </label>
+      </div>
+      <button
+        aria-checked="true"
+        class="bg-blue-500 mt-1 relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        data-checked=""
+        data-headlessui-state="checked"
+        id="toggle-control"
+        role="switch"
+        tabindex="0"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+        />
+      </button>
+      <span
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Toggle Unchecked 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-2"
+      data-headlessui-state=""
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="toggle-control"
+        >
+          Massa fringilla maximus neque pulvinar scelerisque interdum
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Netus consectetur imperdiet etiam eleifend leo nostra
+          </div>
+        </label>
+      </div>
+      <button
+        aria-checked="false"
+        class="bg-gray-200 mt-1 relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        data-headlessui-state=""
+        id="toggle-control"
+        role="switch"
+        tabindex="0"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+        />
+      </button>
+      <span
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;

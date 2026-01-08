@@ -1,0 +1,48 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Info 1`] = `
+<body>
+  <div>
+    <div
+      class="border-l-4 border-blue-400 bg-blue-50 p-4"
+    >
+      <div
+        class="flex"
+      >
+        <div
+          class="flex-shrink-0"
+        >
+          <svg
+            aria-hidden="true"
+            class="h-5 w-5 text-blue-400"
+            data-slot="icon"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              clip-rule="evenodd"
+              d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
+        <div
+          class="ml-3"
+        >
+          <div
+            class="text-sm text-blue-600"
+          >
+            Torquent luctus dui
+            <div
+              class="font-light text-blue-600 hover:text-blue-500"
+            >
+              Netus sollicitudin commodo nisi convallis fermentum quam.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

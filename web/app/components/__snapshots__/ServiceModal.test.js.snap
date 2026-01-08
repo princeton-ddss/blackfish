@@ -1,0 +1,145 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ServiceModal Rendering does not render modal when open is false 1`] = `
+<body>
+  <div />
+</body>
+`;
+
+exports[`ServiceModal Rendering renders modal when open is true 1`] = `
+<body>
+  <div
+    aria-hidden="true"
+  />
+  <div
+    id="headlessui-portal-root"
+  >
+    <div
+      data-headlessui-portal=""
+    >
+      <button
+        aria-hidden="true"
+        data-headlessui-focus-guard="true"
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px;"
+        type="button"
+      />
+      <div>
+        <div
+          aria-labelledby="headlessui-dialog-title-:r8:"
+          aria-modal="true"
+          class="relative z-10"
+          data-headlessui-state="open"
+          data-open=""
+          id="headlessui-dialog-:r0:"
+          role="dialog"
+          tabindex="-1"
+        >
+          <div
+            class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          />
+          <div
+            class="fixed inset-0 z-10 w-screen overflow-y-auto"
+          >
+            <div
+              class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0"
+            >
+              <div
+                class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:p-6 sm:pl-6"
+                data-headlessui-state="open"
+                data-open=""
+                id="headlessui-dialog-panel-:r7:"
+              >
+                <div>
+                  <div>
+                    <h3
+                      class="text-base font-semibold leading-6 text-gray-900"
+                      data-headlessui-state="open"
+                      data-open=""
+                      id="headlessui-dialog-title-:r8:"
+                    />
+                    <form
+                      class="mt-2"
+                    >
+                      <div
+                        class="space-y-4"
+                      >
+                        <div
+                          class="grid grid-cols-1 gap-x-12 gap-y-10 border-b border-gray-900/10 pb-12 md:grid-cols-3"
+                        >
+                          <div>
+                            <h2
+                              class="text-base font-semibold leading-7 text-gray-900"
+                            >
+                              Summary
+                            </h2>
+                            <div
+                              data-testid="service-summary"
+                            >
+                              Service:
+                              blackfish-12345
+                              Status:
+                              None
+                              Model:
+                              model-1
+                            </div>
+                          </div>
+                          <div
+                            data-testid="service-modal-form"
+                          >
+                            <button
+                              data-testid="set-model-button"
+                            >
+                              Set Model
+                            </button>
+                            <button
+                              data-testid="set-job-options-button"
+                            >
+                              Set Job Options
+                            </button>
+                            <button
+                              data-testid="set-validation-errors-button"
+                            >
+                              Set Validation Errors
+                            </button>
+                            <div
+                              data-testid="modal-children"
+                            >
+                              Test Children
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                <div
+                  class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3"
+                >
+                  <button
+                    class="inline-flex w-full justify-center rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:col-start-2 disabled:bg-blue-200"
+                    type="button"
+                  >
+                    Launch
+                  </button>
+                  <button
+                    class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button
+        aria-hidden="true"
+        data-headlessui-focus-guard="true"
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px;"
+        type="button"
+      />
+    </div>
+  </div>
+</body>
+`;

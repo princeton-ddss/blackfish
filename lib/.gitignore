@@ -18,7 +18,6 @@ __pycache__/
 env/
 venv/
 build/
-!/src/build
 develop-eggs/
 downloads/
 eggs/

@@ -149,7 +149,7 @@ def test_cli_batch_stop(
 ) -> None:
     """Test the batch rm command with various filter scenarios."""
     from unittest.mock import patch, Mock
-    from app.cli.__main__ import main
+    from blackfish.cli.__main__ import main
 
     # Prepare the command
     cmd = ["batch", "stop"]
@@ -160,9 +160,11 @@ def test_cli_batch_stop(
 
     # Mock the requests.put call
     with (
-        patch("app.cli.__main__.requests.put") as mock_put,
-        patch("app.cli.__main__.config") as mock_config,
-        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
+        patch("blackfish.cli.__main__.requests.put") as mock_put,
+        patch("blackfish.cli.__main__.config") as mock_config,
+        patch(
+            "blackfish.server.models.profile.deserialize_profile"
+        ) as mock_deserialize_profile,
     ):
         mock_response_obj = Mock()
         mock_response_obj.ok = mock_response["status_code"] == 200
@@ -269,7 +271,7 @@ def test_cli_batch_rm(
 ) -> None:
     """Test the batch rm command with various filter scenarios."""
     from unittest.mock import patch, Mock
-    from app.cli.__main__ import main
+    from blackfish.cli.__main__ import main
 
     # Prepare the command
     cmd = ["batch", "rm"]
@@ -285,9 +287,11 @@ def test_cli_batch_rm(
 
     # Mock the requests.delete call for valid cases
     with (
-        patch("app.cli.__main__.requests.delete") as mock_delete,
-        patch("app.cli.__main__.config") as mock_config,
-        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
+        patch("blackfish.cli.__main__.requests.delete") as mock_delete,
+        patch("blackfish.cli.__main__.config") as mock_config,
+        patch(
+            "blackfish.server.models.profile.deserialize_profile"
+        ) as mock_deserialize_profile,
     ):
         mock_response_obj = Mock()
         mock_response_obj.ok = mock_response["status_code"] == 200
@@ -331,7 +335,7 @@ def test_cli_batch_rm(
 def test_cli_batch_rm_with_errors_displayed(cli_runner):
     """Test that error details are properly displayed when some deletions fail."""
     from unittest.mock import patch, Mock
-    from app.cli.__main__ import main
+    from blackfish.cli.__main__ import main
 
     # Mock response with errors
     mock_response_data = [
@@ -341,9 +345,11 @@ def test_cli_batch_rm_with_errors_displayed(cli_runner):
     ]
 
     with (
-        patch("app.cli.__main__.requests.delete") as mock_delete,
-        patch("app.cli.__main__.config") as mock_config,
-        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
+        patch("blackfish.cli.__main__.requests.delete") as mock_delete,
+        patch("blackfish.cli.__main__.config") as mock_config,
+        patch(
+            "blackfish.server.models.profile.deserialize_profile"
+        ) as mock_deserialize_profile,
     ):
         mock_response_obj = Mock()
         mock_response_obj.ok = True

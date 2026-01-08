@@ -2,8 +2,8 @@ import requests
 from typing import Union, Literal, Optional
 from dataclasses import dataclass
 
-from app.services.base import Service, BaseConfig
-from app.logger import logger
+from blackfish.server.services.base import Service, BaseConfig
+from blackfish.server.logger import logger
 
 
 @dataclass

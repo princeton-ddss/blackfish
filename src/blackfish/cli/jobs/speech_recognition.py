@@ -10,20 +10,20 @@ from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 from dataclasses import asdict
 
-from app.jobs.speech_recognition import (
+from blackfish.server.jobs.speech_recognition import (
     SpeechRecognitionBatch,
     SpeechRecognitionBatchConfig,
 )
-from app.models.profile import BlackfishProfile, SlurmProfile
-from app.utils import (
+from blackfish.server.models.profile import BlackfishProfile, SlurmProfile
+from blackfish.server.utils import (
     get_models,
     get_revisions,
     get_latest_commit,
     get_model_dir,
 )
-from app.config import BlackfishConfig
-from app.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
-from app.cli.classes import ServiceOptions
+from blackfish.server.config import BlackfishConfig
+from blackfish.server.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
+from blackfish.cli.classes import ServiceOptions
 
 
 # blackfish batch [OPTIONS] speech-recognition [OPTIONS]

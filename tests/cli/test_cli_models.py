@@ -1,7 +1,7 @@
 import pytest
 import requests
 from unittest.mock import patch, Mock
-from app.cli.__main__ import main
+from blackfish.cli.__main__ import main
 
 
 @pytest.mark.parametrize(
@@ -120,7 +120,7 @@ def test_list_models(
     if refresh:
         cmd.append("-r")
 
-    with patch("app.cli.__main__.requests.get") as mock_get:
+    with patch("blackfish.cli.__main__.requests.get") as mock_get:
         mock_response_obj = Mock()
         mock_response_obj.ok = mock_response["status_code"] == 200
         mock_response_obj.status_code = mock_response["status_code"]
@@ -253,9 +253,11 @@ def test_add_model(
         cmd.append("-c")
 
     with (
-        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
-        patch("app.models.model.add_model") as mock_add_model,
-        patch("app.cli.__main__.requests.post") as mock_post,
+        patch(
+            "blackfish.server.models.profile.deserialize_profile"
+        ) as mock_deserialize_profile,
+        patch("blackfish.server.models.model.add_model") as mock_add_model,
+        patch("blackfish.cli.__main__.requests.post") as mock_post,
     ):
         # Mock profile deserialization
         if not profile_exists:
@@ -268,7 +270,7 @@ def test_add_model(
                 mock_deserialize_profile.return_value = mock_profile
             else:
                 # Mock SlurmProfile that's not local
-                from app.models.profile import SlurmProfile
+                from blackfish.server.models.profile import SlurmProfile
 
                 mock_profile = Mock(spec=SlurmProfile)
                 mock_profile.is_local.return_value = False
@@ -438,9 +440,11 @@ def test_remove_model(
         cmd.append("-c")
 
     with (
-        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
-        patch("app.models.model.remove_model") as mock_remove_model,
-        patch("app.cli.__main__.requests.delete") as mock_delete,
+        patch(
+            "blackfish.server.models.profile.deserialize_profile"
+        ) as mock_deserialize_profile,
+        patch("blackfish.server.models.model.remove_model") as mock_remove_model,
+        patch("blackfish.cli.__main__.requests.delete") as mock_delete,
     ):
         # Mock profile deserialization
         if not profile_exists:
@@ -453,7 +457,7 @@ def test_remove_model(
                 mock_deserialize_profile.return_value = mock_profile
             else:
                 # Mock SlurmProfile that's not local
-                from app.models.profile import SlurmProfile
+                from blackfish.server.models.profile import SlurmProfile
 
                 mock_profile = Mock(spec=SlurmProfile)
                 mock_profile.is_local.return_value = False
@@ -527,8 +531,8 @@ def test_list_models_connection_error(cli_runner):
     """Test that connection errors are handled gracefully."""
 
     with (
-        patch("app.config.config") as mock_config,
-        patch("app.cli.__main__.requests.get") as mock_get,
+        patch("blackfish.server.config.config") as mock_config,
+        patch("blackfish.cli.__main__.requests.get") as mock_get,
     ):
         # Mock config
         mock_config.HOST = "localhost"
@@ -545,10 +549,12 @@ def test_list_models_connection_error(cli_runner):
 
 def test_add_model_connection_error(cli_runner):
     with (
-        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
-        patch("app.models.model.add_model") as mock_add_model,
-        patch("app.cli.__main__.requests.post") as mock_post,
-        patch("app.config.config") as mock_config,
+        patch(
+            "blackfish.server.models.profile.deserialize_profile"
+        ) as mock_deserialize_profile,
+        patch("blackfish.server.models.model.add_model") as mock_add_model,
+        patch("blackfish.cli.__main__.requests.post") as mock_post,
+        patch("blackfish.server.config.config") as mock_config,
     ):
         # Mock config
         mock_config.HOST = "localhost"
@@ -580,10 +586,12 @@ def test_add_model_connection_error(cli_runner):
 def test_remove_model_connection_error(cli_runner):
     """Test that connection errors during database deletion are handled gracefully."""
     with (
-        patch("app.models.profile.deserialize_profile") as mock_deserialize_profile,
-        patch("app.models.model.remove_model") as mock_remove_model,
-        patch("app.cli.__main__.requests.delete") as mock_delete,
-        patch("app.config.config") as mock_config,
+        patch(
+            "blackfish.server.models.profile.deserialize_profile"
+        ) as mock_deserialize_profile,
+        patch("blackfish.server.models.model.remove_model") as mock_remove_model,
+        patch("blackfish.cli.__main__.requests.delete") as mock_delete,
+        patch("blackfish.server.config.config") as mock_config,
     ):
         # Mock config
         mock_config.HOST = "localhost"

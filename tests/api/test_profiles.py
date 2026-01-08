@@ -49,7 +49,9 @@ class TestFetchProfilesAPI:
         """Test behavior when profiles.cfg file doesn't exist."""
 
         # Should handle missing profiles.cfg gracefully
-        with patch("app.asgi.deserialize_profiles") as mock_deserialize_profiles:
+        with patch(
+            "blackfish.server.asgi.deserialize_profiles"
+        ) as mock_deserialize_profiles:
             mock_deserialize_profiles.side_effect = FileNotFoundError(
                 "Profiles config not found."
             )
@@ -104,7 +106,9 @@ class TestGetSingleProfileAPI:
         assert schema == "local"
 
     async def test_get_profile_file_not_found(self, client: AsyncTestClient):
-        with patch("app.asgi.deserialize_profile") as mock_deserialize_profile:
+        with patch(
+            "blackfish.server.asgi.deserialize_profile"
+        ) as mock_deserialize_profile:
             mock_deserialize_profile.side_effect = FileNotFoundError(
                 "Profile config not found."
             )

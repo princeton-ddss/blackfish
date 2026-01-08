@@ -8,7 +8,7 @@ pytestmark = pytest.mark.anyio
 class TestAuthenticationAPI:
     """Test cases for authentication endpoints."""
 
-    @patch("app.asgi.AUTH_TOKEN", None)
+    @patch("blackfish.server.asgi.AUTH_TOKEN", None)
     async def test_login_no_auth_token_set(self, no_auth_client: AsyncTestClient):
         """Test /api/login when AUTH_TOKEN is not set."""
         response = await no_auth_client.post("/api/login")
@@ -16,7 +16,7 @@ class TestAuthenticationAPI:
         # Should return internal server error because AUTH_TOKEN is None
         assert response.status_code == 500
 
-    @patch("app.asgi.AUTH_TOKEN", None)
+    @patch("blackfish.server.asgi.AUTH_TOKEN", None)
     async def test_logout_no_auth_token_set(self, no_auth_client: AsyncTestClient):
         """Test /api/logout when AUTH_TOKEN is not set."""
         response = await no_auth_client.post("/api/logout")

@@ -2,8 +2,8 @@ import os
 from unittest import mock
 import datetime
 
-from app import utils
-from app.models.profile import SlurmProfile
+from blackfish.server import utils
+from blackfish.server.models.profile import SlurmProfile
 
 
 os.environ["COLUMNS"] = "300"

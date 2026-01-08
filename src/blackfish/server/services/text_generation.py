@@ -4,8 +4,8 @@ from dataclasses import dataclass, asdict
 from pydantic import BaseModel, Field
 
 
-from app.services.base import Service, BaseConfig
-from app.logger import logger
+from blackfish.server.services.base import Service, BaseConfig
+from blackfish.server.logger import logger
 
 
 @dataclass

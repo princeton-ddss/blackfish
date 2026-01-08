@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from litestar.testing import AsyncTestClient
 
-from app.services.base import Service
+from blackfish.server.services.base import Service
 
 
 pytestmark = pytest.mark.anyio

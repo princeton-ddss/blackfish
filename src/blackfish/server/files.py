@@ -18,7 +18,7 @@ from litestar.exceptions import (
 )
 from litestar.response import File
 
-from app.logger import logger
+from blackfish.server.logger import logger
 
 
 def validate_file_exists(file_path: Path) -> None:

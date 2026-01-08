@@ -3,7 +3,7 @@ lint:
   uv run pre-commit run --all-files
 
 test:
-  uv run pytest --cache-clear --verbose --cov=app
+  uv run pytest --cache-clear --verbose --cov=blackfish
 
 coverage:
   uv run coverage-badge -o docs/assets/img/coverage.svg -f

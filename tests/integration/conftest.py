@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 from collections.abc import AsyncGenerator
-from app.models.model import Model
+from blackfish.server.models.model import Model
 
 
 pytestmark = pytest.mark.anyio

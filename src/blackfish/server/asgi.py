@@ -64,9 +64,9 @@ from litestar.response import File
 from litestar.enums import RequestEncodingType
 from litestar.params import Body
 
-from app.logger import logger
-from app import services, jobs
-from app.files import (
+from blackfish.server.logger import logger
+from blackfish.server import services, jobs
+from blackfish.server.files import (
     FileUploadResponse,
     try_write_file,
     try_delete_file,
@@ -75,22 +75,22 @@ from app.files import (
     validate_file_extension,
     validate_file_size,
 )
-from app.services.base import Service, ServiceStatus
-from app.services.speech_recognition import SpeechRecognitionConfig
-from app.services.text_generation import TextGenerationConfig
-from app.jobs.base import BatchJob, BatchJobStatus
-from app.jobs.speech_recognition import SpeechRecognitionBatchConfig
-from app.config import config as blackfish_config
-from app.utils import find_port
-from app.models.profile import (
+from blackfish.server.services.base import Service, ServiceStatus
+from blackfish.server.services.speech_recognition import SpeechRecognitionConfig
+from blackfish.server.services.text_generation import TextGenerationConfig
+from blackfish.server.jobs.base import BatchJob, BatchJobStatus
+from blackfish.server.jobs.speech_recognition import SpeechRecognitionBatchConfig
+from blackfish.server.config import config as blackfish_config
+from blackfish.server.utils import find_port
+from blackfish.server.models.profile import (
     deserialize_profiles,
     deserialize_profile,
     SlurmProfile,
     LocalProfile,
     BlackfishProfile as Profile,
 )
-from app.models.model import Model
-from app.job import JobConfig, JobScheduler, SlurmJobConfig
+from blackfish.server.models.model import Model
+from blackfish.server.job import JobConfig, JobScheduler, SlurmJobConfig
 
 import importlib.metadata
 
@@ -102,7 +102,7 @@ def load_service_classes() -> dict[str, Type[Service]]:
     directory = Path(services.__path__[0])
     for file in directory.glob("*.py"):
         if not file.stem.startswith("_") and not file.stem == "base":
-            module = import_module(f"app.{directory.stem}.{file.stem}")
+            module = import_module(f"blackfish.server.{directory.stem}.{file.stem}")
             for k, v in module.__dict__.items():
                 if isinstance(v, type) and v.__bases__[0] == Service:
                     service_classes[file.stem] = v
@@ -119,7 +119,7 @@ def load_batch_job_classes() -> dict[str, Type[BatchJob]]:
     directory = Path(jobs.__path__[0])
     for file in directory.glob("*.py"):
         if not file.stem.startswith("_") and not file.stem == "base":
-            module = import_module(f"app.{directory.stem}.{file.stem}")
+            module = import_module(f"blackfish.server.{directory.stem}.{file.stem}")
             for k, v in module.__dict__.items():
                 if isinstance(v, type) and v.__bases__[0] == BatchJob:
                     batch_job_classes[file.stem] = v
@@ -1711,7 +1711,7 @@ async def read_profile(name: str) -> Profile | None:
 
 
 # --- Config ---
-BASE_DIR = module_to_os_path("app")
+BASE_DIR = module_to_os_path("blackfish.server")
 
 # Use NullPool in test environment to prevent connection leaks across test runs
 # PYTEST_CURRENT_TEST is automatically set by pytest when tests are running

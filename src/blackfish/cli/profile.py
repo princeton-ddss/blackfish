@@ -6,13 +6,13 @@ import os
 from enum import StrEnum
 from log_symbols.symbols import LogSymbols
 
-from app.setup import (
+from blackfish.server.setup import (
     create_remote_home_dir,
     check_remote_cache_exists,
     create_local_home_dir,
     check_local_cache_exists,
 )
-from app.models.profile import SlurmProfile, LocalProfile
+from blackfish.server.models.profile import SlurmProfile, LocalProfile
 
 
 class ProfileType(StrEnum):

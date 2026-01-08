@@ -4,7 +4,7 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from litestar.testing import AsyncTestClient
 
-from app.models.model import Model
+from blackfish.server.models.model import Model
 
 pytestmark = pytest.mark.anyio
 
@@ -62,7 +62,7 @@ class TestFetchModelsAPI:
     async def test_fetch_models_refresh_with_profile(self, client: AsyncTestClient):
         """Test refreshing models for specific profile."""
 
-        with patch("app.asgi.find_models") as mock_find_models:
+        with patch("blackfish.server.asgi.find_models") as mock_find_models:
             # Return fixture data for "default" profile
             mock_find_models.return_value = [
                 Model(

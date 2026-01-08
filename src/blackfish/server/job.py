@@ -6,8 +6,8 @@ from dataclasses import dataclass
 
 from enum import StrEnum, auto
 from typing import Optional, Union
-from app.logger import logger
-from app.config import ContainerProvider
+from blackfish.server.logger import logger
+from blackfish.server.config import ContainerProvider
 
 
 class JobState(StrEnum):

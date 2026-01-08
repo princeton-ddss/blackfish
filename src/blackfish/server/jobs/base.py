@@ -12,10 +12,17 @@ from advanced_alchemy.base import UUIDAuditBase
 from litestar.datastructures import State
 from jinja2 import Environment, PackageLoader
 
-from app.config import BlackfishConfig, ContainerProvider
-from app.job import JobScheduler, JobConfig, LocalJob, SlurmJob, Job, JobState
-from app.logger import logger
-from app.models.profile import BlackfishProfile, deserialize_profile
+from blackfish.server.config import BlackfishConfig, ContainerProvider
+from blackfish.server.job import (
+    JobScheduler,
+    JobConfig,
+    LocalJob,
+    SlurmJob,
+    Job,
+    JobState,
+)
+from blackfish.server.logger import logger
+from blackfish.server.models.profile import BlackfishProfile, deserialize_profile
 
 
 @dataclass
@@ -431,7 +438,7 @@ class BatchJob(UUIDAuditBase):
     ) -> str:
         env = Environment(
             loader=PackageLoader(
-                "app",
+                "blackfish.server",
                 "templates",
             )
         )

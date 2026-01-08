@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
+import os
+from typing import Optional
 import rich_click as click
 from rich_click import Context
 import requests
@@ -9,54 +10,24 @@ from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 from dataclasses import asdict
 
-from app.services.text_generation import TextGeneration, TextGenerationConfig
-from app.models.profile import BlackfishProfile, SlurmProfile
-from app.utils import (
+from blackfish.server.services.speech_recognition import (
+    SpeechRecognition,
+    SpeechRecognitionConfig,
+)
+from blackfish.server.models.profile import BlackfishProfile, SlurmProfile
+from blackfish.server.utils import (
     get_models,
     get_revisions,
     get_latest_commit,
     get_model_dir,
 )
-from app.config import BlackfishConfig
-from app.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
-from app.cli.classes import ServiceOptions
+from blackfish.server.config import BlackfishConfig
+from blackfish.server.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
+from blackfish.cli.classes import ServiceOptions
 
 
-def try_get_model_info(
-    profile: BlackfishProfile, repo_id: str, revision: Optional[str] = None
-) -> Optional[Tuple[str, str]]:
-    if repo_id in get_models(profile):
-        if revision is None:
-            revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
-            click.echo(
-                f"{LogSymbols.WARNING.value} No revision provided. Using latest"
-                f" available commit: {revision}."
-            )
-
-        model_dir = get_model_dir(repo_id, revision, profile)
-        if model_dir is None:
-            click.echo(
-                f"{LogSymbols.ERROR.value} The model directory for repo  {repo_id}[{revision}] could not be found for profile"
-                f" '{profile.name}'. These files may have been moved or there may be a issue with permissions. You can try adding the model using `blackfish model add`."
-            )
-            return None
-    else:
-        click.echo(
-            f"{LogSymbols.ERROR.value} Model {repo_id} is unavailable for profile"
-            f" '{profile.name}'. You can try adding it using `blackfish model add`."
-        )
-        return None
-
-    return model_dir, revision
-
-
-# blackfish run [OPTIONS] text-generation [OPTIONS]
-@click.command(
-    context_settings=dict(
-        ignore_unknown_options=True,
-        allow_extra_args=True,
-    )
-)
+# blackfish run [OPTIONS] speech-recognition [OPTIONS]
+@click.command()
 @click.argument(
     "repo_id",
     required=True,
@@ -94,7 +65,7 @@ def try_get_model_info(
     help="Print the job script but do not run it.",
 )
 @click.pass_context
-def run_text_generation(
+def run_speech_recognition(
     ctx: Context,
     repo_id: str,
     name: Optional[str],
@@ -102,9 +73,11 @@ def run_text_generation(
     port: int,
     dry_run: bool,
 ) -> None:  # pragma: no cover
-    """Start a text generation service hosting a model provided by REPO_ID, e.g., openai/whisper-tiny.
+    """Start a speech recognition service hosting MODEL. MODEL is specified as a repo ID, e.g., openai/whisper-tiny. The model has access to files via a mounted directory, which defaults to the profile's
+    Blackfish home directory (e.g., $HOME/.blackfish). To use a custom directory, users should provide a
+    value for the `blackfish run` `MOUNT` option.
 
-    In addition to the options listed by `--help`, you can pass any arguments of the `vllm serve` command, such as `--api-key`, `enable_reasoning`, or `seed`.
+    See https://github.com/princeton-ddss/speech-recognition-inference for additional option details.
     """
 
     from uuid import uuid4
@@ -141,11 +114,13 @@ def run_text_generation(
     if name is None:
         name = f"blackfish-{randint(10_000, 99_999)}"
 
-    container_config = TextGenerationConfig(
+    if options.mount is None:
+        options.mount = profile.home_dir
+
+    container_config = SpeechRecognitionConfig(
         port=port,
-        model_dir=model_dir,
+        model_dir=os.path.dirname(model_dir),  # type: ignore
         revision=revision,
-        launch_kwargs=" ".join(ctx.args),
     )
 
     job_config: JobConfig
@@ -157,7 +132,7 @@ def run_text_generation(
         )
 
         if dry_run:
-            service = TextGeneration(
+            service = SpeechRecognition(
                 id=uuid4(),
                 name=name,
                 model=repo_id,
@@ -189,7 +164,7 @@ def run_text_generation(
                     f"http://{config.HOST}:{config.PORT}/api/services",
                     json={
                         "name": name,
-                        "image": "text_generation",
+                        "image": "speech_recognition",
                         "repo_id": repo_id,
                         "profile": asdict(profile),
                         "container_config": asdict(container_config),
@@ -212,7 +187,7 @@ def run_text_generation(
         )
 
         if dry_run:
-            service = TextGeneration(
+            service = SpeechRecognition(
                 name=name,
                 model=repo_id,
                 profile=profile.name,
@@ -241,7 +216,7 @@ def run_text_generation(
                     f"http://{config.HOST}:{config.PORT}/api/services",
                     json={
                         "name": name,
-                        "image": "text_generation",
+                        "image": "speech_recognition",
                         "repo_id": repo_id,
                         "profile": asdict(profile),
                         "container_config": asdict(container_config),

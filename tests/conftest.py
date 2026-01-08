@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 import pytest
 
 from litestar import Litestar
-from app import config
-from app.config import BlackfishConfig, ContainerProvider
+from blackfish.server import config
+from blackfish.server.config import BlackfishConfig, ContainerProvider
 from pytest import MonkeyPatch
 
 from sqlalchemy.ext.asyncio import (
@@ -53,7 +53,7 @@ def _patch_config(monkeypatch: MonkeyPatch) -> None:
 
 @pytest.fixture(name="app")
 def app_fixture() -> Litestar:
-    from app.asgi import app
+    from blackfish.server.asgi import app
 
     return app
 

@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from litestar.datastructures import State
 
 
-from app.jobs.base import BatchJob, BaseConfig, BatchJobProgress
-from app.logger import logger
-from app.models.profile import SlurmProfile
+from blackfish.server.jobs.base import BatchJob, BaseConfig, BatchJobProgress
+from blackfish.server.logger import logger
+from blackfish.server.models.profile import SlurmProfile
 
 
 @dataclass

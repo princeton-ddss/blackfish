@@ -2,7 +2,7 @@ from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
 
-from app.cli.__main__ import stop
+from blackfish.cli.__main__ import stop
 
 
 class TestStopCLI:
@@ -14,7 +14,7 @@ class TestStopCLI:
         full_uuid = "4c2216ea-df22-4bf6-bcea-56964df12af5"
 
         # Mock the PUT request to the stop endpoint
-        with patch("app.cli.__main__.requests.put") as mock_put:
+        with patch("blackfish.cli.__main__.requests.put") as mock_put:
             mock_put.return_value.ok = True
             mock_put.return_value.status_code = 200
 
@@ -45,10 +45,10 @@ class TestStopCLI:
 
         with (
             patch(
-                "app.cli.__main__.requests.get", return_value=mock_get_response
+                "blackfish.cli.__main__.requests.get", return_value=mock_get_response
             ) as mock_get,
             patch(
-                "app.cli.__main__.requests.put", return_value=mock_put_response
+                "blackfish.cli.__main__.requests.put", return_value=mock_put_response
             ) as mock_put,
         ):
             result = runner.invoke(stop, [abbreviated_id])
@@ -73,7 +73,7 @@ class TestStopCLI:
         ]
 
         with patch(
-            "app.cli.__main__.requests.get", return_value=mock_get_response
+            "blackfish.cli.__main__.requests.get", return_value=mock_get_response
         ) as mock_get:
             result = runner.invoke(stop, [abbreviated_id])
 
@@ -93,7 +93,7 @@ class TestStopCLI:
         mock_get_response.json.return_value = []
 
         with patch(
-            "app.cli.__main__.requests.get", return_value=mock_get_response
+            "blackfish.cli.__main__.requests.get", return_value=mock_get_response
         ) as mock_get:
             result = runner.invoke(stop, [abbreviated_id])
 
@@ -113,7 +113,7 @@ class TestStopCLI:
         mock_get_response.status_code = 500
 
         with patch(
-            "app.cli.__main__.requests.get", return_value=mock_get_response
+            "blackfish.cli.__main__.requests.get", return_value=mock_get_response
         ) as mock_get:
             result = runner.invoke(stop, [abbreviated_id])
 
@@ -133,7 +133,7 @@ class TestStopCLI:
         mock_put_response.status_code = 404
 
         with patch(
-            "app.cli.__main__.requests.put", return_value=mock_put_response
+            "blackfish.cli.__main__.requests.put", return_value=mock_put_response
         ) as mock_put:
             result = runner.invoke(stop, [full_uuid])
 
@@ -165,10 +165,10 @@ class TestStopCLI:
 
         with (
             patch(
-                "app.cli.__main__.requests.get", return_value=mock_get_response
+                "blackfish.cli.__main__.requests.get", return_value=mock_get_response
             ) as mock_get,
             patch(
-                "app.cli.__main__.requests.put", return_value=mock_put_response
+                "blackfish.cli.__main__.requests.put", return_value=mock_put_response
             ) as mock_put,
         ):
             result = runner.invoke(stop, [abbreviated_id])

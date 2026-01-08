@@ -10,23 +10,23 @@ from log_symbols.symbols import LogSymbols
 from typing import Optional, cast
 from dataclasses import asdict
 
-from app.cli.services.text_generation import run_text_generation
-from app.cli.services.speech_recognition import run_speech_recognition
+from blackfish.cli.services.text_generation import run_text_generation
+from blackfish.cli.services.speech_recognition import run_speech_recognition
 
-from app.cli.jobs.speech_recognition import (
+from blackfish.cli.jobs.speech_recognition import (
     run_speech_recognition as run_batch_speech_recognition,
 )
 
-from app.cli.profile import (
+from blackfish.cli.profile import (
     create_profile,
     show_profile,
     list_profiles,
     update_profile,
     delete_profile,
 )
-from app.config import config
-from app.logger import logger
-from app.cli.classes import ServiceOptions
+from blackfish.server.config import config
+from blackfish.server.logger import logger
+from blackfish.cli.classes import ServiceOptions
 
 
 DISPLAY_ID_LENGTH = 13
@@ -112,8 +112,8 @@ def init(
     Creates all files and directories to run Blackfish.
     """
 
-    from app.setup import create_local_home_dir
-    from app.cli.profile import _auto_profile_, _create_profile_
+    from blackfish.server.setup import create_local_home_dir
+    from blackfish.cli.profile import _auto_profile_, _create_profile_
     import configparser
 
     create_local_home_dir(app_dir)
@@ -196,8 +196,8 @@ def start(reload: bool) -> None:  # pragma: no cover
     from sqlalchemy.exc import OperationalError
     from litestar import Litestar
 
-    from app import __file__
-    from app.asgi import app
+    import blackfish.server as server
+    from blackfish.server.asgi import app
 
     if not os.path.isdir(config.HOME_DIR):
         click.echo("Home directory not found. Have you run `blackfish init`?")
@@ -222,14 +222,14 @@ def start(reload: bool) -> None:  # pragma: no cover
 
     reload = True if config.DEBUG else reload
 
-    if __name__ == "app.cli.__main__":
+    if __name__ == "blackfish.cli.__main__":
         uvicorn.run(
-            "app.asgi:app",
+            "blackfish.server.asgi:app",
             host=config.HOST,
             port=config.PORT,
             log_level="info",
-            app_dir=os.path.abspath(os.path.join(__file__, "..", "..")),
-            reload_dirs=os.path.abspath(os.path.join(__file__, ".."))
+            app_dir=os.path.abspath(os.path.join(server.__file__, "..", "..")),
+            reload_dirs=os.path.abspath(os.path.join(server.__file__, ".."))
             if reload
             else None,
             reload=reload,
@@ -312,7 +312,7 @@ def run(
     The format of options approximately follows that of Slurm's `sbatch` command.
     """
 
-    from app.models.profile import deserialize_profile
+    from blackfish.server.models.profile import deserialize_profile
 
     ctx.obj = {
         "config": config,
@@ -473,8 +473,8 @@ def details(service_id: str) -> None:  # pragma: no cover
     from uuid import UUID
     from datetime import datetime
     import json
-    from app.services.base import Service
-    from app.job import SlurmJob, LocalJob
+    from blackfish.server.services.base import Service
+    from blackfish.server.job import SlurmJob, LocalJob
 
     with yaspin(text="Fetching service...") as spinner:
         res = requests.get(
@@ -569,8 +569,8 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     from typing import Any
     from prettytable import PrettyTable, TableStyle
     from datetime import datetime
-    from app.utils import format_datetime
-    from app.services.base import ServiceStatus
+    from blackfish.server.utils import format_datetime
+    from blackfish.server.services.base import ServiceStatus
 
     tab = PrettyTable(
         field_names=[
@@ -709,7 +709,7 @@ def batch(
     The format of options approximately follows that of Slurm's `sbatch` command.
     """
 
-    from app.models.profile import deserialize_profile
+    from blackfish.server.models.profile import deserialize_profile
 
     ctx.obj = {
         "config": config,
@@ -757,8 +757,8 @@ def list_batch_jobs(
     from typing import Any
     from prettytable import PrettyTable, TableStyle
     from datetime import datetime
-    from app.utils import format_datetime
-    from app.jobs.base import BatchJobStatus
+    from blackfish.server.utils import format_datetime
+    from blackfish.server.jobs.base import BatchJobStatus
 
     tab = PrettyTable(
         field_names=[
@@ -1030,8 +1030,8 @@ def models_add(
     Models can only downloaded for local profiles.
     """
 
-    from app.models.model import add_model
-    from app.models.profile import deserialize_profile, SlurmProfile
+    from blackfish.server.models.model import add_model
+    from blackfish.server.models.profile import deserialize_profile, SlurmProfile
 
     matched = deserialize_profile(config.HOME_DIR, profile)
     if matched is None:
@@ -1124,8 +1124,8 @@ def models_remove(
 ) -> None:
     """Remove model files."""
 
-    from app.models.model import remove_model
-    from app.models.profile import deserialize_profile, SlurmProfile
+    from blackfish.server.models.model import remove_model
+    from blackfish.server.models.profile import deserialize_profile, SlurmProfile
 
     matched = deserialize_profile(config.HOME_DIR, profile)
     if matched is None:
@@ -1258,7 +1258,7 @@ def create_revision(
     from alembic.operations.ops import MigrationScript, UpgradeOps
     from litestar import Litestar
 
-    from app.asgi import app
+    from blackfish.server.asgi import app
 
     class AlembicCommands(_AlembicCommands):
         def __init__(self, app: Litestar) -> None:
@@ -1328,7 +1328,7 @@ def show_revision() -> None:
     )
     from litestar import Litestar
 
-    from app.asgi import app
+    from blackfish.server.asgi import app
 
     class AlembicCommands(_AlembicCommands):
         def __init__(self, app: Litestar) -> None:

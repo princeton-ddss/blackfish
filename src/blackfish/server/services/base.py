@@ -19,11 +19,18 @@ from jinja2 import Environment, PackageLoader
 
 from litestar.datastructures import State
 
-from app.job import Job, JobState, SlurmJob, LocalJob, JobConfig, JobScheduler
-from app.logger import logger
-from app.utils import find_port
-from app.config import ContainerProvider
-from app.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
+from blackfish.server.job import (
+    Job,
+    JobState,
+    SlurmJob,
+    LocalJob,
+    JobConfig,
+    JobScheduler,
+)
+from blackfish.server.logger import logger
+from blackfish.server.utils import find_port
+from blackfish.server.config import ContainerProvider
+from blackfish.server.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
 
 @dataclass
@@ -631,7 +638,7 @@ class Service(UUIDAuditBase):
         container_config: BaseConfig,
         job_config: JobConfig,
     ) -> str:
-        env = Environment(loader=PackageLoader("app", "templates"))
+        env = Environment(loader=PackageLoader("blackfish.server", "templates"))
         template = env.get_template(f"{self.image}_{self.scheduler or 'local'}.sh")
         job_script = template.render(
             uuid=self.id.hex,

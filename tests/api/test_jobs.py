@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from litestar.testing import AsyncTestClient
 from unittest.mock import patch, AsyncMock
 
-from app.jobs.base import BatchJob, BatchJobStatus
+from blackfish.server.jobs.base import BatchJob, BatchJobStatus
 
 pytestmark = pytest.mark.anyio
 

@@ -14,7 +14,7 @@ pytestmark = pytest.mark.anyio
 
 def _create_blackfish_client(engine: AsyncEngine, home_dir: str) -> Blackfish:
     """Helper to create a Blackfish client with test database."""
-    from app.config import BlackfishConfig, ContainerProvider
+    from blackfish.server.config import BlackfishConfig, ContainerProvider
 
     config = BlackfishConfig(
         home_dir=home_dir,
@@ -105,7 +105,7 @@ class TestBlackfishClient:
 
     async def test_flexible_initialization(self):
         """Test flexible initialization with different parameter combinations."""
-        from app.config import BlackfishConfig, ContainerProvider
+        from blackfish.server.config import BlackfishConfig, ContainerProvider
 
         # Test 1: Initialize with individual parameters
         bf1 = Blackfish(home_dir="/tmp/test", debug=False, port=9000)
@@ -180,7 +180,7 @@ class TestManagedService:
     async def test_managed_service_attributes(self, blackfish_client: Blackfish):
         """Test that ManagedService properly exposes Service attributes."""
         from blackfish import ManagedService
-        from app.services.text_generation import TextGeneration
+        from blackfish.server.services.text_generation import TextGeneration
 
         # Create a dummy service
         service = TextGeneration(
@@ -206,7 +206,7 @@ class TestManagedService:
     async def test_managed_service_methods_exist(self, blackfish_client: Blackfish):
         """Test that ManagedService has expected methods."""
         from blackfish import ManagedService
-        from app.services.text_generation import TextGeneration
+        from blackfish.server.services.text_generation import TextGeneration
 
         # Create a dummy service
         service = TextGeneration(
@@ -248,7 +248,7 @@ class TestLoggingControl:
 
     def test_set_logging_level_valid(self):
         """Test setting valid logging levels."""
-        from app.logger import logger
+        from blackfish.server.logger import logger
 
         # Test each valid level
         for level_name in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
@@ -273,7 +273,7 @@ class TestLoggingControl:
 
     def test_blackfish_sets_warning_by_default(self):
         """Test that creating a Blackfish client sets logging to WARNING."""
-        from app.logger import logger
+        from blackfish.server.logger import logger
 
         # Reset to INFO first
         set_logging_level("INFO")

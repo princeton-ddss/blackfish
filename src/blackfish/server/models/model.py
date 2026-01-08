@@ -8,7 +8,7 @@ from log_symbols.symbols import LogSymbols
 from huggingface_hub import snapshot_download, model_info, scan_cache_dir, ModelInfo
 from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy.orm import Mapped
-from app.models.profile import BlackfishProfile as Profile
+from blackfish.server.models.profile import BlackfishProfile as Profile
 
 
 PIPELINE_IMAGES = {

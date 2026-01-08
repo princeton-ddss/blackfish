@@ -1,11 +1,11 @@
 import pytest
 
 
-from app.setup import (
+from blackfish.server.setup import (
     create_local_home_dir,
     check_local_cache_exists,
 )
-from app.cli.profile import _auto_profile_
+from blackfish.cli.profile import _auto_profile_
 
 
 def test_create_local_home_dir_existing_root(tmp_path):

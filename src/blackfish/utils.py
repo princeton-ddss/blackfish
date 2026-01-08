@@ -7,7 +7,7 @@ import logging
 from typing import Any, Callable, TypeVar, ParamSpec, cast
 from functools import wraps
 
-from app.logger import logger
+from blackfish.server.logger import logger
 
 
 P = ParamSpec("P")

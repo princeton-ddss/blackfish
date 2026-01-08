@@ -1,7 +1,7 @@
 import subprocess
 from unittest import mock
 
-from app.job import JobState, SlurmJob
+from blackfish.server.job import JobState, SlurmJob
 
 
 @mock.patch.object(SlurmJob, "fetch_port")

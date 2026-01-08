@@ -5,8 +5,8 @@ import subprocess
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-import app
-from app.logger import logger
+import blackfish.server as server
+from blackfish.server.logger import logger
 
 
 def create_local_home_dir(home_dir: str | os.PathLike[str]) -> None:
@@ -123,7 +123,7 @@ def migrate_db() -> None:
         [
             "litestar",
             "--app-dir",
-            os.path.abspath(os.path.join(app.__file__, "..", "..")),
+            os.path.abspath(os.path.join(server.__file__, "..", "..")),
             "database",
             "upgrade",
             "--no-prompt",

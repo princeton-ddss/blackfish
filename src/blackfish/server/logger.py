@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import copy
 import logging
 import colorlog
-from app.config import config as app_config
+from blackfish.server.config import config as app_config
 import os
 
 

@@ -2,12 +2,12 @@ from typing import Any
 
 import pytest
 
-from app.services.base import Service
-from app.services.speech_recognition import SpeechRecognition
-from app.services.text_generation import TextGeneration
-from app.jobs.base import BatchJob
-from app.jobs.speech_recognition import SpeechRecognitionBatch
-from app.models.model import Model
+from blackfish.server.services.base import Service
+from blackfish.server.services.speech_recognition import SpeechRecognition
+from blackfish.server.services.text_generation import TextGeneration
+from blackfish.server.jobs.base import BatchJob
+from blackfish.server.jobs.speech_recognition import SpeechRecognitionBatch
+from blackfish.server.models.model import Model
 
 pytestmark = pytest.mark.anyio
 

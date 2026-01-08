@@ -23,13 +23,23 @@ from litestar.datastructures import State
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-from app.config import BlackfishConfig
-from app.models.profile import deserialize_profile, LocalProfile, SlurmProfile
-from app.services.base import Service, ServiceStatus
-from app.services.text_generation import TextGeneration, TextGenerationConfig
-from app.services.speech_recognition import SpeechRecognition, SpeechRecognitionConfig
-from app.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
-from app.utils import (
+from blackfish.server.config import BlackfishConfig
+from blackfish.server.models.profile import (
+    deserialize_profile,
+    LocalProfile,
+    SlurmProfile,
+)
+from blackfish.server.services.base import Service, ServiceStatus
+from blackfish.server.services.text_generation import (
+    TextGeneration,
+    TextGenerationConfig,
+)
+from blackfish.server.services.speech_recognition import (
+    SpeechRecognition,
+    SpeechRecognitionConfig,
+)
+from blackfish.server.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
+from blackfish.server.utils import (
     find_port,
     get_models,
     get_revisions,

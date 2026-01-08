@@ -8,7 +8,7 @@ pytestmark = pytest.mark.anyio
 class TestNoAuthTokenAPI:
     """Test API behavior when AUTH_TOKEN is not set in the environment."""
 
-    @patch("app.asgi.AUTH_TOKEN", None)
+    @patch("blackfish.server.asgi.AUTH_TOKEN", None)
     async def test_dashboard_login_page_no_auth_token(
         self, no_auth_client: AsyncTestClient
     ):
@@ -20,7 +20,7 @@ class TestNoAuthTokenAPI:
         assert response.status_code == 302
         assert response.next_request.url.path == "/dashboard"
 
-    @patch("app.asgi.AUTH_TOKEN", None)
+    @patch("blackfish.server.asgi.AUTH_TOKEN", None)
     async def test_protected_api_endpoint_no_auth_token(
         self, no_auth_client: AsyncTestClient
     ):

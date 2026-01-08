@@ -12,7 +12,7 @@ def cli_runner() -> CliRunner:
 @pytest.fixture()
 def mock_config():
     """Mock configuration for CLI tests."""
-    with patch("app.cli.__main__.config") as mock_config:
+    with patch("blackfish.cli.__main__.config") as mock_config:
         mock_config.HOST = "localhost"
         mock_config.PORT = 8000
         mock_config.HOME_DIR = (

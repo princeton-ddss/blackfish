@@ -48,7 +48,7 @@ optional-dependencies.uv = [
 ]
 urls.bug-tracker = "https://github.com/princeton-ddss/blackfish/issues"
 urls.documentation = "https://princeton-ddss.github.io/blackfish/"
-scripts.blackfish = "app.cli.__main__:main"
+scripts.blackfish = "blackfish.cli.__main__:main"
 
 [dependency-groups]
 dev = [
@@ -69,7 +69,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = [ "src/app" ]
+packages = [ "src/blackfish" ]
 
 [tool.pyproject-fmt]
 max_supported_python = "3.13"

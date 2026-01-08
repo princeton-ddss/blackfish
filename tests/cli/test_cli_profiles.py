@@ -3,7 +3,7 @@ import tempfile
 import os
 from unittest.mock import patch
 from click.testing import CliRunner
-from app.cli.__main__ import main
+from blackfish.cli.__main__ import main
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ class TestProfileList:
         """Test successful listing of profiles."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write mock profiles config
@@ -72,7 +72,7 @@ class TestProfileList:
         """Test listing profiles when no profiles exist."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Create empty profiles config
@@ -94,7 +94,7 @@ class TestProfileShow:
         """Test successful showing of a specific profile."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write mock profiles config
@@ -117,7 +117,7 @@ class TestProfileShow:
         """Test showing default profile when no name specified."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write mock profiles config
@@ -136,7 +136,7 @@ class TestProfileShow:
         """Test showing a profile that doesn't exist."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write mock profiles config
@@ -154,9 +154,9 @@ class TestProfileShow:
 class TestProfileAdd:
     """Test profile add command."""
 
-    @patch("app.cli.profile.input")
-    @patch("app.cli.profile.create_local_home_dir")
-    @patch("app.cli.profile.check_local_cache_exists")
+    @patch("blackfish.cli.profile.input")
+    @patch("blackfish.cli.profile.create_local_home_dir")
+    @patch("blackfish.cli.profile.check_local_cache_exists")
     def test_add_local_profile_success(
         self, mock_check_cache, mock_create_home, mock_input, cli_runner, temp_home_dir
     ):
@@ -171,7 +171,7 @@ class TestProfileAdd:
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Create empty profiles config
@@ -189,9 +189,9 @@ class TestProfileAdd:
                 assert "[test-local]" in content
                 assert "schema = local" in content
 
-    @patch("app.cli.profile.input")
-    @patch("app.cli.profile.create_remote_home_dir")
-    @patch("app.cli.profile.check_remote_cache_exists")
+    @patch("blackfish.cli.profile.input")
+    @patch("blackfish.cli.profile.create_remote_home_dir")
+    @patch("blackfish.cli.profile.check_remote_cache_exists")
     def test_add_slurm_profile_success(
         self, mock_check_cache, mock_create_home, mock_input, cli_runner, temp_home_dir
     ):
@@ -208,7 +208,7 @@ class TestProfileAdd:
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Create empty profiles config
@@ -227,7 +227,7 @@ class TestProfileAdd:
                 assert "schema = slurm" in content
                 assert "host = test.edu" in content
 
-    @patch("app.cli.profile.input")
+    @patch("blackfish.cli.profile.input")
     def test_add_profile_already_exists(
         self, mock_input, cli_runner, temp_home_dir, mock_profiles_config
     ):
@@ -239,7 +239,7 @@ class TestProfileAdd:
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write existing profiles config
@@ -251,7 +251,7 @@ class TestProfileAdd:
             assert result.exit_code == 1
             assert "Profile named default already exists" in result.output
 
-    @patch("app.cli.profile.input")
+    @patch("blackfish.cli.profile.input")
     def test_add_profile_invalid_schema(self, mock_input, cli_runner, temp_home_dir):
         """Test adding a profile with invalid schema."""
         # Mock user inputs
@@ -266,9 +266,9 @@ class TestProfileAdd:
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
         with (
-            patch("app.cli.__main__.config") as mock_config,
-            patch("app.cli.profile.create_local_home_dir"),
-            patch("app.cli.profile.check_local_cache_exists"),
+            patch("blackfish.cli.__main__.config") as mock_config,
+            patch("blackfish.cli.profile.create_local_home_dir"),
+            patch("blackfish.cli.profile.check_local_cache_exists"),
         ):
             mock_config.HOME_DIR = temp_home_dir
 
@@ -286,9 +286,9 @@ class TestProfileAdd:
 class TestProfileUpdate:
     """Test profile update command."""
 
-    @patch("app.cli.profile.input")
-    @patch("app.cli.profile.create_local_home_dir")
-    @patch("app.cli.profile.check_local_cache_exists")
+    @patch("blackfish.cli.profile.input")
+    @patch("blackfish.cli.profile.create_local_home_dir")
+    @patch("blackfish.cli.profile.check_local_cache_exists")
     def test_update_local_profile_success(
         self,
         mock_check_cache,
@@ -307,7 +307,7 @@ class TestProfileUpdate:
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write existing profiles config
@@ -325,7 +325,7 @@ class TestProfileUpdate:
         """Test updating a profile that doesn't exist."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write existing profiles config
@@ -343,7 +343,7 @@ class TestProfileUpdate:
 class TestProfileDelete:
     """Test profile rm command."""
 
-    @patch("app.cli.profile.input")
+    @patch("blackfish.cli.profile.input")
     def test_delete_profile_success(
         self, mock_input, cli_runner, temp_home_dir, mock_profiles_config
     ):
@@ -353,7 +353,7 @@ class TestProfileDelete:
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write existing profiles config
@@ -371,7 +371,7 @@ class TestProfileDelete:
                 assert "[slurm-test]" not in content
                 assert "[default]" in content  # should still exist
 
-    @patch("app.cli.profile.input")
+    @patch("blackfish.cli.profile.input")
     def test_delete_profile_cancelled(
         self, mock_input, cli_runner, temp_home_dir, mock_profiles_config
     ):
@@ -381,7 +381,7 @@ class TestProfileDelete:
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write existing profiles config
@@ -405,7 +405,7 @@ class TestProfileDelete:
         """Test deleting a profile that doesn't exist."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write existing profiles config
@@ -438,7 +438,7 @@ cache_dir = /scratch/legacyuser/cache
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write legacy profiles config
@@ -466,7 +466,7 @@ cache_dir = /tmp/mixed/cache
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with patch("app.cli.__main__.config") as mock_config:
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Write mixed profiles config

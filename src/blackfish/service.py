@@ -9,11 +9,11 @@ from typing import TYPE_CHECKING, Any, Self
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-from app.services.base import ServiceStatus
+from blackfish.server.services.base import ServiceStatus
 from blackfish.utils import _async_to_sync
 
 if TYPE_CHECKING:
-    from app.services.base import Service
+    from blackfish.server.services.base import Service
     from blackfish.client import Blackfish
 
 

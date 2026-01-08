@@ -4,12 +4,12 @@ from unittest import mock
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from litestar import Litestar
-from app.jobs.base import BatchJob, BatchJobStatus
-from app.jobs.speech_recognition import (
+from blackfish.server.jobs.base import BatchJob, BatchJobStatus
+from blackfish.server.jobs.speech_recognition import (
     SpeechRecognitionBatch,
     SpeechRecognitionBatchConfig,
 )
-from app.job import (
+from blackfish.server.job import (
     JobState,
     LocalJob,
     SlurmJob,

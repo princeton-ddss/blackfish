@@ -49,8 +49,29 @@ For development, clone the package's repo and `pip` install instead:
 git clone https://github.com/princeton-ddss/blackfish.git
 python -m venv .venv
 source .venv/bin/activate
-cd blackfish && pip install -e .
+cd blackfish/lib && pip install -e .
 ```
+
+### Building the UI
+
+Blackfish includes a bundled Next.js web interface. For local development, you have two options:
+
+1. **Run the Next.js dev server** (recommended for UI development):
+
+   ```shell
+   cd web && npm install && npm run dev
+   ```
+
+2. **Build a static UI bundle** (for testing the Python app with the bundled UI):
+
+   ```shell
+   cd web && npm install && npm run build:lib
+   ```
+
+   This builds the Next.js app and copies it to `lib/src/blackfish/build/`, which is where the Python app serves static files from.
+
+> [!NOTE]
+> The `lib/src/blackfish/build/` directory is not version controlled. CI builds the UI automatically before packaging the Python distribution.
 
 The following command should return the path of the installed application if installation was successful:
 

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:lib": "npm run build && rm -rf ../lib/src/blackfish/build && cp -r build ../lib/src/blackfish/build",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",

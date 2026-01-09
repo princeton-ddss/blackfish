@@ -189,7 +189,7 @@ def add_model(
         )
     except KeyError:
         print(
-            f"\n {LogSymbols.WARNING.value} WARNING: {pipeline} is not a known task type. Certain functionality may not work."
+            f"\n {LogSymbols.WARNING.value} WARNING: {pipeline} is not a known task type. Services that use this model may fail to start."
         )
         data[repo_id] = pipeline
 

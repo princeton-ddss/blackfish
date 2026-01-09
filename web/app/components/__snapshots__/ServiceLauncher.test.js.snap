@@ -1,0 +1,163 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ServiceLauncher opens the modal 1`] = `
+<body>
+  <div>
+    <div
+      class="pb-4 mb-4 border-b"
+    >
+      <button
+        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
+        type="button"
+      >
+        Open Launcher
+      </button>
+    </div>
+    <div
+      data-testid="service-modal"
+    >
+      <fieldset>
+        <legend>
+          Legend
+        </legend>
+        <p>
+          Service deployment.
+        </p>
+        <input
+          type="text"
+        />
+      </fieldset>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceLauncher renders in disabled state when missing models and loading 1`] = `
+<body>
+  <div>
+    <div
+      class="pb-4 mb-4 border-b"
+    >
+      <button
+        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
+        disabled=""
+        type="button"
+      >
+        Open Launcher
+      </button>
+    </div>
+    <div
+      data-testid="service-modal"
+    >
+      <fieldset>
+        <legend>
+          Legend
+        </legend>
+        <p>
+          Service deployment.
+        </p>
+        <input
+          type="text"
+        />
+      </fieldset>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceLauncher renders in disabled state when missing profile 1`] = `
+<body>
+  <div>
+    <div
+      class="pb-4 mb-4 border-b"
+    >
+      <button
+        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
+        disabled=""
+        type="button"
+      >
+        Open Launcher
+      </button>
+    </div>
+    <div
+      data-testid="service-modal"
+    >
+      <fieldset>
+        <legend>
+          Legend
+        </legend>
+        <p>
+          Service deployment.
+        </p>
+        <input
+          type="text"
+        />
+      </fieldset>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceLauncher renders in enabled state when missing models and not loading 1`] = `
+<body>
+  <div>
+    <div
+      class="pb-4 mb-4 border-b"
+    >
+      <button
+        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
+        type="button"
+      >
+        Open Launcher
+      </button>
+    </div>
+    <div
+      data-testid="service-modal"
+    >
+      <fieldset>
+        <legend>
+          Legend
+        </legend>
+        <p>
+          Service deployment.
+        </p>
+        <input
+          type="text"
+        />
+      </fieldset>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceLauncher renders properly with standard options 1`] = `
+<body>
+  <div>
+    <div
+      class="pb-4 mb-4 border-b"
+    >
+      <button
+        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
+        type="button"
+      >
+        Open Launcher
+      </button>
+    </div>
+    <div
+      data-testid="service-modal"
+    >
+      <fieldset>
+        <legend>
+          Legend
+        </legend>
+        <p>
+          Service deployment.
+        </p>
+        <input
+          type="text"
+        />
+      </fieldset>
+    </div>
+  </div>
+</body>
+`;

@@ -1,0 +1,82 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [
+  "hatchling",
+]
+
+[project]
+name = "blackfish-ai"
+version = "0.3.0"
+description = "An open-source AI-as-a-Service platform."
+readme = "README.md"
+license = "MIT"
+authors = [
+  { name = "Colin Swaney", email = "colinswaney@princeton.edu" },
+]
+requires-python = ">=3.12"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "advanced-alchemy>=0.27.1,<0.28",
+  "aiohttp>=3.11.11",
+  "aiosqlite>=0.20",
+  "alembic>=1.14,<1.16",
+  "colorlog>=6.9",
+  "dotenv>=0.9.9",
+  "fabric>=3.2.2",
+  "huggingface-hub>=0.27.1",
+  "jinja2>=3.1.5",
+  "litestar>=2.14",
+  "log-symbols>=0.0.14",
+  "pillow>=11.1",
+  "prettytable>=3.12",
+  "psutil>=6.1.1",
+  "pydantic>=2.10.6",
+  "requests>=2.32.3",
+  "rich-click>=1.8.9",
+  "types-paramiko>=3.5.0.20240928",
+  "types-psutil>=6.1.0.20241221",
+  "types-requests>=2.32.0.20241016",
+  "uvicorn>=0.34",
+  "yaspin>=3.1",
+]
+optional-dependencies.uv = [
+  "uv>=0.5.18",
+]
+urls.bug-tracker = "https://github.com/princeton-ddss/blackfish/issues"
+urls.documentation = "https://princeton-ddss.github.io/blackfish/"
+scripts.blackfish = "blackfish.cli.__main__:main"
+
+[dependency-groups]
+dev = [
+  "anyio>=4.9",
+  "coverage>=7.9.2",
+  "coverage-badge>=1.1.2",
+  "ipython>=9.0.2",
+  "mike>=2.1.3",
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.6.2",
+  "mkdocs-swagger-ui-tag>=0.6.11",
+  "mkdocstrings[python]>=0.28",
+  "pre-commit>=4.2",
+  "pytest>=8.3.4",
+  "pytest-cov>=6.2.1",
+  "rust-just>=1.44",
+  "sniffio>=1.3.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [ "src/blackfish" ]
+
+[tool.pyproject-fmt]
+max_supported_python = "3.13"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+show_error_codes = true
+warn_unreachable = true
+ignore_missing_imports = true

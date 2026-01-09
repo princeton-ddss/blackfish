@@ -1,0 +1,141 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`TextField renders correctly when disabled 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-300"
+          for="Conubia a velit elit"
+        >
+          Conubia a velit elit
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Aenean congue dictumst fringilla ipsum vulputate porta
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border border-gray-100 rounded-md shadow-sm px-2 py-1 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        disabled=""
+        placeholder="Justo ullamcorper tortor suscipit"
+        type="text"
+        value="123"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`TextField renders correctly with disabled and error 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-300"
+          for="Conubia a velit elit"
+        >
+          Conubia a velit elit
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Aenean congue dictumst fringilla ipsum vulputate porta
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border border-red-500 rounded-md shadow-sm px-2 py-1 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        disabled=""
+        placeholder="Justo ullamcorper tortor suscipit"
+        type="text"
+        value="123"
+      />
+      <p
+        class="text-xs text-red-500 mt-1"
+      >
+        This is an error
+      </p>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`TextField renders correctly with error 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="Conubia a velit elit"
+        >
+          Conubia a velit elit
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Aenean congue dictumst fringilla ipsum vulputate porta
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border border-red-500 rounded-md shadow-sm px-2 py-1 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        placeholder="Justo ullamcorper tortor suscipit"
+        type="text"
+        value="123"
+      />
+      <p
+        class="text-xs text-red-500 mt-1"
+      >
+        This is an error
+      </p>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`TextField renders correctly with standard options 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="Conubia a velit elit"
+        >
+          Conubia a velit elit
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Aenean congue dictumst fringilla ipsum vulputate porta
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-2 py-1 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        placeholder="Justo ullamcorper tortor suscipit"
+        type="text"
+        value="123"
+      />
+    </div>
+  </div>
+</body>
+`;

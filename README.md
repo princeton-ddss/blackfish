@@ -1,10 +1,12 @@
 ![GitHub Release](https://img.shields.io/github/v/release/princeton-ddss/blackfish)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/princeton-ddss/blackfish/ci.yml)
-![coverage](docs/assets/img/coverage.svg)
+![coverage](lib/docs/assets/img/coverage.svg)
 [![PyPI](https://img.shields.io/pypi/v/blackfish-ai.svg)](https://pypi.python.org/pypi/blackfish-ai)
 [![License](https://img.shields.io/github/license/princeton-ddss/blackfish)](https://github.com/princeton-ddss/blackfish)
 
 # Blackfish
+
+![album-cover](lib/docs/assets/img/album-cover.png)
 
 Blackfish is an open source "ML-as-a-Service" (MLaaS) platform that helps researchers use state-of-the-art, open source artificial intelligence and machine learning models. With Blackfish, researchers can spin up their own version of popular public cloud services (e.g., ChatGPT, Amazon Transcribe, etc.) using high-performance computing (HPC) resources already available on campus.
 
@@ -41,15 +43,6 @@ Or, using `uv`:
 ```shell
 uv venv
 uv pip install blackfish-ai
-```
-
-For development, clone the package's repo and `pip` install instead:
-
-```shell
-git clone https://github.com/princeton-ddss/blackfish.git
-python -m venv .venv
-source .venv/bin/activate
-cd blackfish && pip install -e .
 ```
 
 The following command should return the path of the installed application if installation was successful:
@@ -297,25 +290,24 @@ Blackfish (or rather, the services Blackfish runs) does not guarantee support fo
 
 The main requirement to run online inference is sufficient GPU memory. As a rule-of-thumb, the *minimum* memory required for a model is obtained by multiplying the number of parameters (in billions) times the number of bytes per parameter (`dtype / 8`). In practice, you need to budget an additional 5-10 GB for KV caching and keep in mind that default GPU utilization is typically set to around 90-95% by service images.
 
-
-| Model                                        | Pipeline                     | Supported | Chat     | Gated | Reasoning | Embedding [^1] | Memory | GPUs       | Cores | Size  | Dtype | Notes                                                                                          |
-|----------------------------------------------|------------------------------|-----------|----------|-------|-----------|-----------|--------|------------|-------|-------|-------|------------------------------------------------------------------------------------------------|
-| Qwen/QwQ-32B                                 | Text-generation              | ✅        | ✅       |       | ✅        |  ✅      | 16G    |  61.0/160G | 4     | 32.8B | bf16  | See https://docs.vllm.ai/en/stable/features/reasoning_outputs.html for reasoning content.      |
-| Qwen/Qwen3-32B                               | Text-generation              | ✅        | ✅       |       | ✅        | ✅       | 16G    |  64.4/160G | 4     | 32.8B | bf16  | See https://docs.vllm.ai/en/stable/features/reasoning_outputs.html for reasoning content.      |
-| Qwen/Qwen2.5-72B                             | Text-generation              | ✅        |          |       |           | ✅       | 16G    | 144.8/320G | 4     | 72.7B | bf16  | Possible to fit on 2x80B by decreasing `max_model_len` or increasing `gpu_memory_utilization`. |
-| Qwen/Qwen2.5-72B-Instruct                    | Text-generation              | ✅        | ✅       |       |           | ✅       | 16G    | 144.8/320g | 4     | 72.7B | bf16  | Possible to fit on 2x80B by decreasing `max_model_len` or increasing `gpu_memory_utilization`. |
-| Qwen/Qwen2.5-32B                             | Text-generation              | ✅        |          |       |           | ✅       | 16G    |   63.1/80G | 4     | 32.8B | bf16  |                                                                                                |
-| Qwen/Qwen2.5-32B-Instruct                    | Text-generation              | ✅        | ✅       |       |           | ✅       | 16G    |   63.1/80G | 4     | 32.8B | bf16  |                                                                                                |
-| google/gemma-3-27b-it                        | Text-generation              | ✅        | ✅       | ✅    |           | ❌       | 16G    |   54.1/80G | 4     | 27.4B | bf16  |                                                                                                |
-| google/gemma-3-1b-it                         | Text-generation              | ✅        | ✅       | ✅    |           |  ✅      | 8G     |       /10G | 4     | 27.4B | bf16  |                                                                                                |
-| meta-llama/Llama-4-Scout-17B-16E-Instruct    | Text-generation              | ✅        | ✅       | ✅    |           |          | 32G    |      /320G | 4     |  109B | bf16  | Supports multimodal inputs. See https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving. |
-| meta-llama/Llama-4-Scout-17B-16E             | Text-generation              | ✅        |          | ✅    |           |          | 32G    |      /320G | 4     |  109B | bf16  | Supports multimodal inputs. See https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving. |
-| meta-llama/Llama-3.3-70B-Instruct            | Text-generation              | ✅        | ✅       | ✅    |           |  ✅      | 16G    | 140.4/320G | 4     | 70.6B | bf16  |                                                                                                |
-| deepseek-ai/DeepSeek-R1-Distill-Llama-70B    | Text generation              | ✅        | ✅       |       | ✅        |  ✅      | 16G    | 141.2/320G | 4     | 70.6B | bf16  | See https://docs.vllm.ai/en/stable/features/reasoning_outputs.html for reasoning content.      |
-| deepseek-ai/DeepSeek-R1-Distill-Qwen-32B     | Text generation              | ✅        | ✅       |       | ✅        |  ✅      | 16G    |   64.6/80G | 4     | 32.8B | bf16  | See https://docs.vllm.ai/en/stable/features/reasoning_outputs.html for reasoning content.      |
-| deepseek-ai/DeepSeek-V2-Lite                 | Text generation              | ✅        |          |       |           |  ✅      | 16G    |   30.5/40G | 4     | 15.7B | bf16  |                                                                                                |
-| deepseek-ai/DeepSeek-V2-Lite-Chat            | Text generation              | ✅        | ✅       |       |           | ✅       | 16G    |   30.5/40G | 4     | 15.7B | bf16  |                                                                                                |
-| openai/whisper-large-v3                      | Automatic-speech-recognition | ✅        |          |       |           |          | -      |    3.6/10G | 1     | 1.54B | f16   |                                                                                                |
+| Model                                        | Pipeline                     | Supported | Chat     | Gated | Reasoning | Embedding [^1] | Memory | GPUs       | Cores | Size  | Dtype | Notes                                                                                                                  |
+|----------------------------------------------|------------------------------|-----------|----------|-------|-----------|----------------|--------|------------|-------|-------|-------|------------------------------------------------------------------------------------------------------------------------|
+| Qwen/QwQ-32B                                 | Text-generation              | ✅        | ✅       |       | ✅        |  ✅            | 16G    |  61.0/160G | 4     | 32.8B | bf16  | Supports reasonsing. See [docs](https://docs.vllm.ai/en/stable/features/reasoning_outputs.html).                       |
+| Qwen/Qwen3-32B                               | Text-generation              | ✅        | ✅       |       | ✅        | ✅             | 16G    |  64.4/160G | 4     | 32.8B | bf16  | Supports reasonsing. See [docs](https://docs.vllm.ai/en/stable/features/reasoning_outputs.html).                       |
+| Qwen/Qwen2.5-72B                             | Text-generation              | ✅        |          |       |           | ✅             | 16G    | 144.8/320G | 4     | 72.7B | bf16  | Possible to fit on 2x80B by decreasing `max_model_len` or increasing `gpu_memory_utilization`.                         |
+| Qwen/Qwen2.5-72B-Instruct                    | Text-generation              | ✅        | ✅       |       |           | ✅             | 16G    | 144.8/320g | 4     | 72.7B | bf16  | Possible to fit on 2x80B by decreasing `max_model_len` or increasing `gpu_memory_utilization`.                         |
+| Qwen/Qwen2.5-32B                             | Text-generation              | ✅        |          |       |           | ✅             | 16G    |   63.1/80G | 4     | 32.8B | bf16  |                                                                                                                        |
+| Qwen/Qwen2.5-32B-Instruct                    | Text-generation              | ✅        | ✅       |       |           | ✅             | 16G    |   63.1/80G | 4     | 32.8B | bf16  |                                                                                                                        |
+| google/gemma-3-27b-it                        | Text-generation              | ✅        | ✅       | ✅    |           | ❌             | 16G    |   54.1/80G | 4     | 27.4B | bf16  |                                                                                                                        |
+| google/gemma-3-1b-it                         | Text-generation              | ✅        | ✅       | ✅    |           |  ✅            | 8G     |       /10G | 4     | 27.4B | bf16  |                                                                                                                        |
+| meta-llama/Llama-4-Scout-17B-16E-Instruct    | Text-generation              | ✅        | ✅       | ✅    |           |                | 32G    |      /320G | 4     |  109B | bf16  | Supports multimodal inputs. See [docs](https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving). |
+| meta-llama/Llama-4-Scout-17B-16E             | Text-generation              | ✅        |          | ✅    |           |                | 32G    |      /320G | 4     |  109B | bf16  | Supports multimodal inputs. See [docs](https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving). |
+| meta-llama/Llama-3.3-70B-Instruct            | Text-generation              | ✅        | ✅       | ✅    |           |  ✅            | 16G    | 140.4/320G | 4     | 70.6B | bf16  |                                                                                                                        |
+| deepseek-ai/DeepSeek-R1-Distill-Llama-70B    | Text generation              | ✅        | ✅       |       | ✅        |  ✅            | 16G    | 141.2/320G | 4     | 70.6B | bf16  | Supports reasonsing. See [docs](https://docs.vllm.ai/en/stable/features/reasoning_outputs.html).                       |
+| deepseek-ai/DeepSeek-R1-Distill-Qwen-32B     | Text generation              | ✅        | ✅       |       | ✅        |  ✅            | 16G    |   64.6/80G | 4     | 32.8B | bf16  | Supports reasonsing. See [docs](https://docs.vllm.ai/en/stable/features/reasoning_outputs.html).                       |
+| deepseek-ai/DeepSeek-V2-Lite                 | Text generation              | ✅        |          |       |           |  ✅            | 16G    |   30.5/40G | 4     | 15.7B | bf16  |                                                                                                                        |
+| deepseek-ai/DeepSeek-V2-Lite-Chat            | Text generation              | ✅        | ✅       |       |           | ✅             | 16G    |   30.5/40G | 4     | 15.7B | bf16  |                                                                                                                        |
+| openai/whisper-large-v3                      | Automatic-speech-recognition | ✅        |          |       |           |                | -      |    3.6/10G | 1     | 1.54B | f16   |                                                                                                                        |
 
 <!--
 | Qwen/Qwen2.5-Omni-7B                         | Text-generation              | ✅        | ✅       |       |           |       |        |            |       | 10.7B | f32, bf16 | Supports multimodal inputs. See https://docs.vllm.ai/en/latest/features/multimodal_inputs.html#online-serving. |
@@ -346,7 +338,19 @@ The main requirement to run online inference is sufficient GPU memory. As a rule
 | openai/whisper-medium                        | Automatic-speech-recognition | ✅        |          |       |           |       | -      | 1.54/10G   | 1     |  764M | f32   |                                                                                           |
 -->
 
+## Development
+
+This is a monorepo containing:
+
+| Package | Description |
+|---------|-------------|
+| [lib/](lib/) | Python backend (`blackfish-ai`) - CLI, server, services |
+| [web/](web/) | Next.js frontend (`blackfish-ui`) - browser interface |
+
+See the package READMEs for development setup instructions.
+
 ## Want to learn more?
+
 You can find additional details and examples on our official [documentation page](https://princeton-ddss.github.io/blackfish/).
 
 [^1]: Models that can be used to retrieve embeddings with --task embed

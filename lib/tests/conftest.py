@@ -42,7 +42,7 @@ def _patch_config(monkeypatch: MonkeyPatch) -> None:
             base_path="",
             host="localhost",
             port=8000,
-            static_dir=Path(__file__).parent.parent / "src",
+            static_dir=Path(__file__).parent.parent / "src" / "blackfish",
             home_dir=Path(__file__).parent.parent / "tests",
             debug=0,  # False
             auth_token="sealsaretasty",

@@ -1,5 +1,5 @@
 # Services
 
-::: app.services.base
-::: app.services.text_generation
-::: app.services.speech_recognition
+::: blackfish.server.services.base
+::: blackfish.server.services.text_generation
+::: blackfish.server.services.speech_recognition

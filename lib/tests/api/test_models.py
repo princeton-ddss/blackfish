@@ -54,7 +54,7 @@ class TestFetchModelsAPI:
     async def test_fetch_models_with_refresh(self, client: AsyncTestClient):
         """Test fetching models with refresh parameter."""
 
-        # TODO: This is a bit complicated because we call app.asgi.find_models for each test profile, but there is no actual model data to find.
+        # TODO: This is a bit complicated because we call blackfish.server.asgi.find_models for each test profile, but there is no actual model data to find.
         # We can either add test data dummy files or mock the call, but the return of each mocked call should be different.
 
         pass

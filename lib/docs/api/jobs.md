@@ -1,3 +1,3 @@
 # Jobs
 
-::: app.job
+::: blackfish.server.job

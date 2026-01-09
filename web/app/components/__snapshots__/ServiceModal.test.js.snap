@@ -75,11 +75,11 @@ exports[`ServiceModal Rendering renders modal when open is true 1`] = `
                             <div
                               data-testid="service-summary"
                             >
-                              Service:
+                              Service: 
                               blackfish-12345
-                              Status:
+                              Status: 
                               None
-                              Model:
+                              Model: 
                               model-1
                             </div>
                           </div>

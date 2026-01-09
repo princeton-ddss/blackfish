@@ -116,7 +116,7 @@ exports[`Disabled RemoteFileBrowser 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -387,7 +387,7 @@ exports[`Enabled RemoteFileBrowser 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -1305,7 +1305,7 @@ exports[`Loading RemoteFileBrowser 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -1576,7 +1576,7 @@ exports[`RemoteFileBrowser back navigation 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -1907,7 +1907,7 @@ exports[`RemoteFileBrowser disabled interactions 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -2178,7 +2178,7 @@ exports[`RemoteFileBrowser folder navigation 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -2573,7 +2573,7 @@ exports[`RemoteFileBrowser loading state with files 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -2868,7 +2868,7 @@ exports[`RemoteFileBrowser with directories and interactions 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -3325,7 +3325,7 @@ exports[`RemoteFileBrowser with empty files 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -3594,7 +3594,7 @@ exports[`RemoteFileBrowser with error 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th
@@ -3863,7 +3863,7 @@ exports[`RemoteFileBrowser with no service selected 1`] = `
                         scope="col"
                       >
                         <button>
-
+                           
                         </button>
                       </th>
                       <th

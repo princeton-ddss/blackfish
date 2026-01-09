@@ -21,7 +21,7 @@ exports[`ModelSummary Description only 1`] = `
               <div
                 class="grow font-medium text-sm mr-1"
               >
-                Description
+                Description 
               </div>
             </div>
             Nostra ullamcorper phasellus fames velit taciti laoreet
@@ -35,7 +35,7 @@ exports[`ModelSummary Description only 1`] = `
               <div
                 class="grow font-medium text-sm mr-1"
               >
-                Link
+                Link 
               </div>
             </div>
             <a />
@@ -76,7 +76,7 @@ exports[`ModelSummary Link and description 1`] = `
               <div
                 class="grow font-medium text-sm mr-1"
               >
-                Description
+                Description 
               </div>
             </div>
             Mauris a quisque praesent aptent risus condimentum feugiat placerat, aenean nec elementum taciti tortor himenaeos. Scelerisque leo ipsum consequat posuere sagittis lacus volutpat taciti, sodales tristique sed laoreet placerat rhoncus nisi, platea hendrerit aliquet fermentum curae blandit mattis. Lorem donec amet luctus rhoncus praesent natoque hac torquent elit phasellus felis, consequat laoreet senectus platea condimentum feugiat tempor fames scelerisque justo.
@@ -90,7 +90,7 @@ exports[`ModelSummary Link and description 1`] = `
               <div
                 class="grow font-medium text-sm mr-1"
               >
-                Link
+                Link 
               </div>
             </div>
             <a
@@ -135,7 +135,7 @@ exports[`ModelSummary Link only 1`] = `
               <div
                 class="grow font-medium text-sm mr-1"
               >
-                Description
+                Description 
               </div>
             </div>
           </div>
@@ -148,7 +148,7 @@ exports[`ModelSummary Link only 1`] = `
               <div
                 class="grow font-medium text-sm mr-1"
               >
-                Link
+                Link 
               </div>
             </div>
             <a

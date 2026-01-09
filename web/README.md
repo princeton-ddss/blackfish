@@ -1,37 +1,56 @@
-# blackfish-ui
+![Statements](https://img.shields.io/badge/statements-13.19%25-red.svg?style=flat)
+![Branches](https://img.shields.io/badge/branches-74.4%25-red.svg?style=flat)
+![Functions](https://img.shields.io/badge/functions-42.22%25-red.svg?style=flat)
+![Lines](https://img.shields.io/badge/lines-13.19%25-red.svg?style=flat)
 
-The [Blackfish](https://github.com/princeton-ddss/blackfish) user interface.
+# Blackfish UI
 
-**Code coverage**
+Next.js web application `blackfish-ui` for the [Blackfish](../) MLaaS platform.
 
-| Statements                  | Branches                | Functions                 | Lines             |
-| --------------------------- | ----------------------- | ------------------------- | ----------------- |
-| ![Statements](https://img.shields.io/badge/statements-13.19%25-red.svg?style=flat) | ![Branches](https://img.shields.io/badge/branches-74.4%25-red.svg?style=flat) | ![Functions](https://img.shields.io/badge/functions-42.22%25-red.svg?style=flat) | ![Lines](https://img.shields.io/badge/lines-13.19%25-red.svg?style=flat) |
+For project overview and usage instructions, see the [main README](../README.md).
 
-This repo is primarily for development purposes as the Blackfish application ships with a standalone front end build. Notably, token-based authentication does not work when running the UI and API separately.
-
-## Getting Started
-
-Almost all of the UI functionality depends on the Blackfish API, so first install that if you haven't already and get it running.
-
-Next, clone the repo, install dependencies and run the development server:
+## Development Setup
 
 ```bash
-git clone https://github.com/princeton-ddss/blackfish-ui.git && cd blackfish-ui
-npm install
-npm run dev
+cd web
+npm install        # Install dependencies
+npm run dev        # Start dev server at localhost:3000
 ```
 
-Now visit [http://localhost:3000/dashboard](http://localhost:3000/dashboard) and choose your adventure!
+> [!NOTE]
+> The UI depends on the Blackfish API. Start the backend first with `blackfish start`.
 
-## Development
+## Common Commands
 
-`blackfish-ui` is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+```bash
+# Development
+npm run dev                    # Start development server
+npm run build                  # Production build
+npm run build:lib              # Build and copy to Python package
 
-## Production
+# Testing & Linting
+npm test                       # Run Jest tests
+npm run lint                   # ESLint check
+```
 
-To create a build of the UI, run `npm run build`. This will produce a `build` directory that can be served using your favorite technology.
+## Build for Production
+
+The frontend is bundled with the Python package:
+
+```bash
+npm run build:lib  # Builds and copies to ../lib/src/blackfish/build/
+```
+
+This allows the Python server to serve the UI as static files.
 
 ## Configuration
 
-By default, the UI looks for the Blackfish API at `http://localhost:8000/dashboard`. If the API is running on a different host or port, you can communicate this to the UI by setting the `NEXT_PUBLIC_BLACKFISH_HOST` and `NEXT_PUBLIC_BLACKFISH_PORT` environment variables *before* running the development server or build process.
+By default, the UI looks for the Blackfish API at `http://localhost:8000`. Set these environment variables to use a different endpoint:
+
+- `NEXT_PUBLIC_BLACKFISH_HOST` - API host
+- `NEXT_PUBLIC_BLACKFISH_PORT` - API port
+
+## Documentation
+
+- [Full Documentation](https://princeton-ddss.github.io/blackfish/)
+- [Main README](../README.md)

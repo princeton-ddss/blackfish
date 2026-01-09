@@ -26,7 +26,7 @@ class TestInfoAPI:
         assert isinstance(result, dict)
         assert result.get("HOST") == "localhost"
         assert result.get("PORT") == 8000
-        assert result.get("STATIC_DIR").endswith("src")
+        assert result.get("STATIC_DIR").endswith("blackfish")
         assert result.get("HOME_DIR").endswith("tests")
         assert result.get("DEBUG") == 0
         assert result.get("CONTAINER_PROVIDER") == "docker"

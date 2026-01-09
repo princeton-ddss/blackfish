@@ -52,7 +52,7 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 from litestar.static_files import create_static_files_router
 from litestar.template.config import TemplateConfig
 from litestar.contrib.jinja import JinjaTemplateEngine
-from litestar.response import Template, Redirect, Stream
+from litestar.response import Template, Redirect, Stream, Response
 from litestar.connection import ASGIConnection
 from litestar.handlers.base import BaseRouteHandler
 from litestar.response.redirect import ASGIRedirectResponse
@@ -1785,7 +1785,16 @@ img_server = create_static_files_router(
 )
 
 
-def not_found_exception_handler(request: Request, exc: Exception) -> Template:  # type: ignore
+def not_found_exception_handler(
+    request: Request, exc: NotFoundException
+) -> Response | Template:
+    """Handle 404 errors - return JSON for API routes, HTML for web routes."""
+    if request.url.path.startswith("/api/"):
+        return Response(
+            content={"detail": exc.detail or "Not found"},
+            status_code=HTTP_404_NOT_FOUND,
+            media_type="application/json",
+        )
     return Template(template_name="404.html", status_code=HTTP_404_NOT_FOUND)
 
 

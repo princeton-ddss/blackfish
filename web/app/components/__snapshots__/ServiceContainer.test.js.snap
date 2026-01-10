@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ServiceContainer 1`] = `
+<body>
+  <div>
+    <div
+      data-testid="service-container"
+    >
+      <div>
+        <h1>
+          Hello, world!
+        </h1>
+        <p>
+          Conubia nam a elit ullamcorper phasellus habitasse ligula nullam auctor sociosqu dis lacus, varius parturient ad vitae sollicitudin ridiculus mauris tempor dictum molestie turpis.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+`;

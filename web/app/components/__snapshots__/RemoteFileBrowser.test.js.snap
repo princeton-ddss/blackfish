@@ -1,0 +1,4020 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Disabled RemoteFileBrowser 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              disabled=""
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            disabled=""
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            disabled=""
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button
+                          disabled=""
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-300 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr>
+                      <td
+                        class="h-64"
+                        colspan="5"
+                      >
+                        <div
+                          class="font-light sm:text-sm text-center align-middle"
+                        >
+                          <img
+                            alt="File browser disabled"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            data-nimg="1"
+                            decoding="async"
+                            height="56"
+                            loading="lazy"
+                            src="/_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75"
+                            srcset="/_next/image?url=%2Fimg%2Fdead-fish.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75 2x"
+                            style="color: transparent;"
+                            width="56"
+                          />
+                          Test error.
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Enabled RemoteFileBrowser 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-900 hover:text-gray-400 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 1
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 2
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 3
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 4
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 5
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 6
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 7
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 8
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 9
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          file 10
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          64 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Loading RemoteFileBrowser 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              disabled=""
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            disabled=""
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            disabled=""
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button
+                          disabled=""
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-300 animate-spin"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr>
+                      <td
+                        class="h-64"
+                        colspan="5"
+                      >
+                        <div
+                          class="font-light sm:text-sm text-center align-middle"
+                        >
+                          <img
+                            alt="File browser disabled"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            data-nimg="1"
+                            decoding="async"
+                            height="56"
+                            loading="lazy"
+                            src="/_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75"
+                            srcset="/_next/image?url=%2Fimg%2Fdead-fish.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75 2x"
+                            style="color: transparent;"
+                            width="56"
+                          />
+                          Test error.
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RemoteFileBrowser back navigation 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              id="directory"
+              name="directory"
+              placeholder="/parent"
+              value="/parent"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-900 hover:text-gray-400 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          folder1
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          -
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <button
+                            class="text-gray-900"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              class="h-4 w-4 mt-1 hover:text-gray-400"
+                              data-slot="icon"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RemoteFileBrowser disabled interactions 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              disabled=""
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            disabled=""
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            disabled=""
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button
+                          disabled=""
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-300 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr>
+                      <td
+                        class="h-64"
+                        colspan="5"
+                      >
+                        <div
+                          class="font-light sm:text-sm text-center align-middle"
+                        >
+                          <img
+                            alt="File browser disabled"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            data-nimg="1"
+                            decoding="async"
+                            height="56"
+                            loading="lazy"
+                            src="/_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75"
+                            srcset="/_next/image?url=%2Fimg%2Fdead-fish.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75 2x"
+                            style="color: transparent;"
+                            width="56"
+                          />
+                          Service disabled
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RemoteFileBrowser folder navigation 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-900 hover:text-gray-400 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          folder1
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          -
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <button
+                            class="text-gray-900"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              class="h-4 w-4 mt-1 hover:text-gray-400"
+                              data-slot="icon"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          audio.mp3
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          1 KB
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RemoteFileBrowser loading state with files 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-900 hover:text-gray-400 animate-spin"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr>
+                      <td
+                        class="relative whitespace-nowrap py-3 px-5 animate-pulse"
+                        colspan="5"
+                      >
+                        <div
+                          class="bg-gray-100 h-9 rounded-md"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="relative whitespace-nowrap py-3 px-5 animate-pulse"
+                        colspan="5"
+                      >
+                        <div
+                          class="bg-gray-100 h-9 rounded-md"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="relative whitespace-nowrap py-3 px-5 animate-pulse"
+                        colspan="5"
+                      >
+                        <div
+                          class="bg-gray-100 h-9 rounded-md"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="relative whitespace-nowrap py-3 px-5 animate-pulse"
+                        colspan="5"
+                      >
+                        <div
+                          class="bg-gray-100 h-9 rounded-md"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="relative whitespace-nowrap py-3 px-5 animate-pulse"
+                        colspan="5"
+                      >
+                        <div
+                          class="bg-gray-100 h-9 rounded-md"
+                        />
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RemoteFileBrowser with directories and interactions 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-900 hover:text-gray-400 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          folder1
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          -
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <button
+                            class="text-gray-900"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              class="h-4 w-4 mt-1 hover:text-gray-400"
+                              data-slot="icon"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll "
+                        >
+                          audio.mp3
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          1 KB
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex "
+                        >
+                          <input
+                            class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                            type="checkbox"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6"
+                      >
+                        <div
+                          class="flex text-gray-300"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            class="h-7 w-7"
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="overflow-x-scroll text-gray-300"
+                        >
+                          document.txt
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex text-gray-300"
+                        >
+                          512 B
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex text-gray-300"
+                        >
+                          5 days ago
+                        </div>
+                      </td>
+                      <td
+                        class="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900"
+                      >
+                        <div
+                          class="flex text-gray-300"
+                        />
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RemoteFileBrowser with empty files 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-900 hover:text-gray-400 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr>
+                      <td
+                        class="h-64"
+                        colspan="5"
+                      >
+                        <div
+                          class="font-light sm:text-sm text-center align-middle"
+                        >
+                          <img
+                            alt="No files found."
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            data-nimg="1"
+                            decoding="async"
+                            height="56"
+                            loading="lazy"
+                            src="/_next/image?url=%2Fimg%2Fquestion-mark.png&w=128&q=75"
+                            srcset="/_next/image?url=%2Fimg%2Fquestion-mark.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fquestion-mark.png&w=128&q=75 2x"
+                            style="color: transparent;"
+                            width="56"
+                          />
+                          Hmm. There don't seem to be any files here...
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white text-gray-300"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RemoteFileBrowser with error 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              id="directory"
+              name="directory"
+              placeholder="/"
+              value="/"
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-900 hover:text-gray-400 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr>
+                      <td
+                        class="h-64"
+                        colspan="5"
+                      >
+                        <div
+                          class="font-light sm:text-sm text-center align-middle"
+                        >
+                          <img
+                            alt="Loading error."
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            data-nimg="1"
+                            decoding="async"
+                            height="56"
+                            loading="lazy"
+                            src="/_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75"
+                            srcset="/_next/image?url=%2Fimg%2Fdead-fish.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75 2x"
+                            style="color: transparent;"
+                            width="56"
+                          />
+                          Oops! There seems to be a problem here...
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white text-gray-300"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RemoteFileBrowser with no service selected 1`] = `
+<body>
+  <div>
+    <div
+      class="mt-2 mb-2 w-full max-w-6xl"
+      id="remote-file-browser"
+      name="remote-file-browser"
+    >
+      <label
+        class="font-medium text-sm"
+      >
+        File Browser
+      </label>
+      <div>
+        <div
+          class="mt-2 flex rounded-md"
+        >
+          <div
+            class="relative flex flex-grow items-stretch focus-within:z-10"
+          >
+            <input
+              class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+              id="directory"
+              name="directory"
+              placeholder=""
+              value=""
+            />
+          </div>
+          <button
+            class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="-ml-0.5 h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+      <div>
+        <div
+          class="mt-2 relative rounded-md"
+        >
+          <input
+            class="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="query"
+            name="query"
+            placeholder="*"
+            value=""
+          />
+          <button
+            class="absolute inset-y-0 right-0 flex items-center pr-3"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-none h-[26rem]"
+        id="remote-file-browser-table"
+        name="remote-file-browser-table"
+      >
+        <div
+          class="mt-3 flow-root"
+        >
+          <div
+            class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"
+          >
+            <div
+              class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"
+            >
+              <div
+                class="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll"
+              >
+                <table
+                  class="divide-y divide-gray-300 table-fixed w-full"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                           
+                        </button>
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Name
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Size
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        Last Modified
+                      </th>
+                      <th
+                        class="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                        scope="col"
+                      >
+                        <button>
+                          <svg
+                            aria-hidden="true"
+                            class="h-5 w-5 mt-1 text-gray-900 hover:text-gray-400 "
+                            data-slot="icon"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-gray-200 bg-white"
+                  >
+                    <tr>
+                      <td
+                        class="h-64"
+                        colspan="5"
+                      >
+                        <div
+                          class="font-light sm:text-sm text-center align-middle"
+                        >
+                          <img
+                            alt="No files found."
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            data-nimg="1"
+                            decoding="async"
+                            height="56"
+                            loading="lazy"
+                            src="/_next/image?url=%2Fimg%2Fquestion-mark.png&w=128&q=75"
+                            srcset="/_next/image?url=%2Fimg%2Fquestion-mark.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fquestion-mark.png&w=128&q=75 2x"
+                            style="color: transparent;"
+                            width="56"
+                          />
+                          Hmm. There don't seem to be any files here...
+                        </div>
+                      </td>
+                    </tr>
+                    <tr
+                      class="bg-white"
+                    >
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                      <td
+                        class="whitespace-nowrap h-16"
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex justify-center mt-2"
+        >
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white text-gray-300"
+            disabled=""
+          >
+            1
+          </button>
+          <button
+            class="disabled:text-gray-300"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

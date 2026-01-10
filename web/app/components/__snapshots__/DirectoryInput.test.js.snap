@@ -1,0 +1,377 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Disabled DirectoryInput 1`] = `
+<body>
+  <div>
+    <div>
+      <div
+        class="mt-2 flex rounded-md"
+      >
+        <div
+          class="relative flex flex-grow items-stretch focus-within:z-10"
+        >
+          <input
+            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            disabled=""
+            id="directory"
+            name="directory"
+            placeholder="/"
+            value="test-path"
+          />
+        </div>
+        <button
+          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          disabled=""
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="-ml-0.5 h-5 w-5 text-gray-400"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Disabled DirectoryInput 2`] = `
+<body>
+  <div>
+    <div>
+      <div
+        class="mt-2 flex rounded-md"
+      >
+        <div
+          class="relative flex flex-grow items-stretch focus-within:z-10"
+        >
+          <input
+            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            disabled=""
+            id="directory"
+            name="directory"
+            placeholder="/"
+            value="test-path"
+          />
+        </div>
+        <button
+          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          disabled=""
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="-ml-0.5 h-5 w-5 text-gray-400"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Disabled DirectoryInput 3`] = `
+<body>
+  <div>
+    <div>
+      <div
+        class="mt-2 flex rounded-md"
+      >
+        <div
+          class="relative flex flex-grow items-stretch focus-within:z-10"
+        >
+          <input
+            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            disabled=""
+            id="directory"
+            name="directory"
+            placeholder="/"
+            value="test-path"
+          />
+        </div>
+        <button
+          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          disabled=""
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="-ml-0.5 h-5 w-5 text-gray-400"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Disabled DirectoryInput 4`] = `
+<body>
+  <div>
+    <div>
+      <div
+        class="mt-2 flex rounded-md"
+      >
+        <div
+          class="relative flex flex-grow items-stretch focus-within:z-10"
+        >
+          <input
+            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            disabled=""
+            id="directory"
+            name="directory"
+            placeholder="/"
+            value="test-path"
+          />
+        </div>
+        <button
+          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          disabled=""
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="-ml-0.5 h-5 w-5 text-gray-400"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Enabled DirectoryInput 1`] = `
+<body>
+  <div>
+    <div>
+      <div
+        class="mt-2 flex rounded-md"
+      >
+        <div
+          class="relative flex flex-grow items-stretch focus-within:z-10"
+        >
+          <input
+            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="directory"
+            name="directory"
+            placeholder="/"
+            value="test-path"
+          />
+        </div>
+        <button
+          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="-ml-0.5 h-5 w-5 text-gray-400"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Enabled DirectoryInput 2`] = `
+<body>
+  <div>
+    <div>
+      <div
+        class="mt-2 flex rounded-md"
+      >
+        <div
+          class="relative flex flex-grow items-stretch focus-within:z-10"
+        >
+          <input
+            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="directory"
+            name="directory"
+            placeholder="/"
+            value="test-path"
+          />
+        </div>
+        <button
+          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="-ml-0.5 h-5 w-5 text-gray-400"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Enabled DirectoryInput 3`] = `
+<body>
+  <div>
+    <div>
+      <div
+        class="mt-2 flex rounded-md"
+      >
+        <div
+          class="relative flex flex-grow items-stretch focus-within:z-10"
+        >
+          <input
+            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="directory"
+            name="directory"
+            placeholder="/"
+            value="test-path"
+          />
+        </div>
+        <button
+          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="-ml-0.5 h-5 w-5 text-gray-400"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Enabled DirectoryInput 4`] = `
+<body>
+  <div>
+    <div>
+      <div
+        class="mt-2 flex rounded-md"
+      >
+        <div
+          class="relative flex flex-grow items-stretch focus-within:z-10"
+        >
+          <input
+            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            id="directory"
+            name="directory"
+            placeholder="/"
+            value="test-pathHello, world!"
+          />
+        </div>
+        <button
+          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="-ml-0.5 h-5 w-5 text-gray-400"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+`;

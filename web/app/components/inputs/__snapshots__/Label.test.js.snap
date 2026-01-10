@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Label renders correctly when disabled 1`] = `
+<body>
+  <div>
+    <label
+      class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-300"
+      for="hello-world"
+    >
+      Hello, world!
+      <div
+        class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+      >
+        Non arcu tortor hac lorem mauris ultricies.
+      </div>
+    </label>
+  </div>
+</body>
+`;
+
+exports[`Label renders correctly when enabled 1`] = `
+<body>
+  <div>
+    <label
+      class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+      for="hello-world"
+    >
+      Hello, world!
+      <div
+        class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+      >
+        Non arcu tortor hac lorem mauris ultricies.
+      </div>
+    </label>
+  </div>
+</body>
+`;
+
+exports[`Label uses label for htmlFor if missing 1`] = `
+<body>
+  <div>
+    <label
+      class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+      for="Hello, world!"
+    >
+      Hello, world!
+      <div
+        class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+      >
+        Non arcu tortor hac lorem mauris ultricies.
+      </div>
+    </label>
+  </div>
+</body>
+`;

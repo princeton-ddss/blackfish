@@ -1,0 +1,409 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ProfileProvider renders children 1`] = `
+<body>
+  <div>
+    <h1>
+      Hello, world!
+    </h1>
+  </div>
+</body>
+`;
+
+exports[`ProfileProvider restores profile from storage 1`] = `
+<body>
+  <div>
+    <h1>
+      Hello, world!
+    </h1>
+  </div>
+</body>
+`;
+
+exports[`ProfileSelect displays empty string if no name is passed 1`] = `
+<body>
+  <div>
+    <label
+      class="mt-2 block text-sm font-medium leading-6 text-gray-900"
+      data-headlessui-state=""
+      for="headlessui-listbox-button-:rh:"
+      id="headlessui-label-:rg:"
+    >
+      Profile
+    </label>
+    <div>
+      Profile is missing.
+    </div>
+    <div
+      class="relative mt-2 mb-2"
+    >
+      <button
+        aria-expanded="false"
+        aria-haspopup="listbox"
+        aria-labelledby="headlessui-label-:rg: headlessui-listbox-button-:rh:"
+        class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+        data-headlessui-state=""
+        id="headlessui-listbox-button-:rh:"
+        type="button"
+      >
+        <span
+          class="flex items-center"
+        >
+          <span
+            class="ml-3 block truncate"
+          />
+          <span
+            class="ml-2 text-slate-400 text-sm font-light"
+          >
+            @
+            example.com
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ProfileSelect displays localhost if no host is passed 1`] = `
+<body>
+  <div>
+    <label
+      class="mt-2 block text-sm font-medium leading-6 text-gray-900"
+      data-headlessui-state=""
+      for="headlessui-listbox-button-:ra:"
+      id="headlessui-label-:r9:"
+    >
+      Profile
+    </label>
+    <div
+      class="relative mt-2 mb-2"
+    >
+      <button
+        aria-expanded="false"
+        aria-haspopup="listbox"
+        aria-labelledby="headlessui-label-:r9: headlessui-listbox-button-:ra:"
+        class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+        data-headlessui-state=""
+        id="headlessui-listbox-button-:ra:"
+        type="button"
+      >
+        <span
+          class="flex items-center"
+        >
+          <span
+            class="ml-3 block truncate"
+          >
+            test-profile
+          </span>
+          <span
+            class="ml-2 text-slate-400 text-sm font-light"
+          >
+            @
+            localhost
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ProfileSelect displays no profile selected message 1`] = `
+<body>
+  <div>
+    <label
+      class="mt-2 block text-sm font-medium leading-6 text-gray-900"
+      data-headlessui-state=""
+      for="headlessui-listbox-button-:rv:"
+      id="headlessui-label-:ru:"
+    >
+      Profile
+    </label>
+    <div
+      class="relative mt-2 mb-2"
+    >
+      <button
+        aria-expanded="false"
+        aria-haspopup="listbox"
+        aria-labelledby="headlessui-label-:ru: headlessui-listbox-button-:rv:"
+        class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+        data-headlessui-state=""
+        id="headlessui-listbox-button-:rv:"
+        type="button"
+      >
+        <span
+          class="flex items-center"
+        >
+          <span
+            class="pointer-events-none flex-shrink-0 pl-3"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-yellow-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+          <span
+            class="ml-3 block truncate"
+          >
+            No profile selected
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ProfileSelect displays profile missing message 1`] = `
+<body>
+  <div>
+    <label
+      class="mt-2 block text-sm font-medium leading-6 text-gray-900"
+      data-headlessui-state=""
+      for="headlessui-listbox-button-:ro:"
+      id="headlessui-label-:rn:"
+    >
+      Profile
+    </label>
+    <div>
+      Profile is missing.
+    </div>
+    <div
+      class="relative mt-2 mb-2"
+    >
+      <button
+        aria-expanded="false"
+        aria-haspopup="listbox"
+        aria-labelledby="headlessui-label-:rn: headlessui-listbox-button-:ro:"
+        class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+        data-headlessui-state=""
+        id="headlessui-listbox-button-:ro:"
+        type="button"
+      >
+        <span
+          class="flex items-center"
+        >
+          <span
+            class="ml-3 block truncate"
+          >
+            not-listed
+          </span>
+          <span
+            class="ml-2 text-slate-400 text-sm font-light"
+          >
+            @
+            example.com
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ProfileSelect renders profiles with localhost when no host specified 1`] = `
+<body>
+  <div>
+    <label
+      class="mt-2 block text-sm font-medium leading-6 text-gray-900"
+      data-headlessui-state=""
+      for="headlessui-listbox-button-:r1d:"
+      id="headlessui-label-:r1c:"
+    >
+      Profile
+    </label>
+    <div
+      class="relative mt-2 mb-2"
+    >
+      <button
+        aria-expanded="false"
+        aria-haspopup="listbox"
+        aria-labelledby="headlessui-label-:r1c: headlessui-listbox-button-:r1d:"
+        class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+        data-headlessui-state=""
+        id="headlessui-listbox-button-:r1d:"
+        type="button"
+      >
+        <span
+          class="flex items-center"
+        >
+          <span
+            class="ml-3 block truncate"
+          >
+            no-host-profile
+          </span>
+          <span
+            class="ml-2 text-slate-400 text-sm font-light"
+          >
+            @
+            localhost
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ProfileSelect renders with standard options 1`] = `
+<body>
+  <div>
+    <label
+      class="mt-2 block text-sm font-medium leading-6 text-gray-900"
+      data-headlessui-state=""
+      for="headlessui-listbox-button-:r3:"
+      id="headlessui-label-:r2:"
+    >
+      Profile
+    </label>
+    <div
+      class="relative mt-2 mb-2"
+    >
+      <button
+        aria-expanded="false"
+        aria-haspopup="listbox"
+        aria-labelledby="headlessui-label-:r2: headlessui-listbox-button-:r3:"
+        class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+        data-headlessui-state=""
+        id="headlessui-listbox-button-:r3:"
+        type="button"
+      >
+        <span
+          class="flex items-center"
+        >
+          <span
+            class="ml-3 block truncate"
+          >
+            test-profile
+          </span>
+          <span
+            class="ml-2 text-slate-400 text-sm font-light"
+          >
+            @
+            example.com
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  </div>
+</body>
+`;

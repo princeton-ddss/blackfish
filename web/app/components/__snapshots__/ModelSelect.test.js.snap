@@ -1,0 +1,592 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ModelSelect applies disabled styling when disabled prop is true 1`] = `
+<body>
+  <div>
+    <div
+      aria-disabled="true"
+      data-disabled=""
+      data-headlessui-state="disabled"
+      disabled=""
+    >
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        data-disabled=""
+        data-headlessui-state="disabled"
+        for="headlessui-control-:r10:"
+        id="headlessui-label-:r13:"
+      >
+        Model
+      </label>
+      <div
+        class="relative mt-2"
+      >
+        <button
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-labelledby="headlessui-label-:r13: headlessui-control-:r10:"
+          class="bg-gray-100 ring-gray-300 ring-1 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          data-disabled=""
+          data-headlessui-state="disabled"
+          disabled=""
+          id="headlessui-control-:r10:"
+          type="button"
+        >
+          <span
+            class="flex items-center"
+          >
+            <span
+              class="ml-2 mr-2 block truncate"
+            >
+              model-1
+            </span>
+          </span>
+        </button>
+      </div>
+      <span
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ModelSelect changes selection when different model is clicked 1`] = `
+<body>
+  <div>
+    <div
+      data-headlessui-state=""
+    >
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        data-headlessui-state=""
+        for="headlessui-control-:rl:"
+        id="headlessui-label-:ro:"
+      >
+        Model
+      </label>
+      <div
+        class="relative mt-2"
+      >
+        <button
+          aria-controls="headlessui-listbox-options-:rq:"
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-labelledby="headlessui-label-:ro: headlessui-control-:rl:"
+          class="bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          data-headlessui-state=""
+          id="headlessui-control-:rl:"
+          type="button"
+        >
+          <span
+            class="flex items-center"
+          >
+            <span
+              class="ml-2 mr-2 block truncate"
+            >
+              model-2
+            </span>
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </button>
+        <div
+          aria-labelledby="headlessui-control-:rl:"
+          aria-orientation="vertical"
+          class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+          data-closed=""
+          data-enter=""
+          data-headlessui-state=""
+          data-transition=""
+          id="headlessui-listbox-options-:rq:"
+          role="listbox"
+          style="--button-width: 0px;"
+        >
+          <div
+            aria-selected="true"
+            class="text-gray-900 relative cursor-default select-none py-2 pl-1 pr-9"
+            data-headlessui-state="selected"
+            data-selected=""
+            id="headlessui-listbox-option-:rt:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-semibold ml-3 block truncate"
+              >
+                model-1
+              </span>
+            </div>
+            <span
+              class="text-blue-600 check-icon absolute inset-y-0 right-0 flex items-center pr-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="h-5 w-5"
+                data-slot="icon"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  clip-rule="evenodd"
+                  d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
+                  fill-rule="evenodd"
+                />
+              </svg>
+            </span>
+          </div>
+          <div
+            aria-selected="false"
+            class="text-gray-900 relative cursor-default select-none py-2 pl-1 pr-9"
+            data-headlessui-state=""
+            id="headlessui-listbox-option-:ru:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-normal ml-3 block truncate"
+              >
+                model-2
+              </span>
+            </div>
+          </div>
+          <div
+            aria-selected="false"
+            class="text-gray-900 relative cursor-default select-none py-2 pl-1 pr-9"
+            data-headlessui-state=""
+            id="headlessui-listbox-option-:rv:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-normal ml-3 block truncate"
+              >
+                model-3
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ModelSelect displays check icon for selected option in dropdown 1`] = `
+<body>
+  <div>
+    <div
+      data-headlessui-state=""
+    >
+      <label
+        aria-hidden="true"
+        class="block text-sm font-medium leading-6 text-gray-900"
+        data-headlessui-state="open"
+        data-open=""
+        for="headlessui-control-:r1f:"
+        id="headlessui-label-:r1i:"
+      >
+        Model
+      </label>
+      <div
+        class="relative mt-2"
+      >
+        <button
+          aria-controls="headlessui-listbox-options-:r1k:"
+          aria-expanded="true"
+          aria-haspopup="listbox"
+          aria-labelledby="headlessui-label-:r1i: headlessui-control-:r1f:"
+          class="bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          data-active=""
+          data-headlessui-state="open active hover"
+          data-hover=""
+          data-open=""
+          id="headlessui-control-:r1f:"
+          type="button"
+        >
+          <span
+            class="flex items-center"
+          >
+            <span
+              class="ml-2 mr-2 block truncate"
+            >
+              model-1
+            </span>
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </button>
+        <div
+          aria-activedescendant="headlessui-listbox-option-:r1n:"
+          aria-labelledby="headlessui-control-:r1f:"
+          aria-orientation="vertical"
+          class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+          data-closed=""
+          data-enter=""
+          data-headlessui-state="open"
+          data-open=""
+          data-transition=""
+          id="headlessui-listbox-options-:r1k:"
+          role="listbox"
+          style="--button-width: 0px;"
+          tabindex="0"
+        >
+          <div
+            aria-selected="true"
+            class="bg-blue-500 text-white relative cursor-default select-none py-2 pl-1 pr-9"
+            data-active=""
+            data-focus=""
+            data-headlessui-state="active focus selected"
+            data-selected=""
+            id="headlessui-listbox-option-:r1n:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-semibold ml-3 block truncate"
+              >
+                model-1
+              </span>
+            </div>
+            <span
+              class="text-white check-icon absolute inset-y-0 right-0 flex items-center pr-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="h-5 w-5"
+                data-slot="icon"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  clip-rule="evenodd"
+                  d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
+                  fill-rule="evenodd"
+                />
+              </svg>
+            </span>
+          </div>
+          <div
+            aria-selected="false"
+            class="text-gray-900 relative cursor-default select-none py-2 pl-1 pr-9"
+            data-headlessui-state=""
+            id="headlessui-listbox-option-:r1o:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-normal ml-3 block truncate"
+              >
+                model-2
+              </span>
+            </div>
+          </div>
+          <div
+            aria-selected="false"
+            class="text-gray-900 relative cursor-default select-none py-2 pl-1 pr-9"
+            data-headlessui-state=""
+            id="headlessui-listbox-option-:r1p:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-normal ml-3 block truncate"
+              >
+                model-3
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        aria-hidden="true"
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ModelSelect displays unique repo_ids in dropdown when opened 1`] = `
+<body>
+  <div>
+    <div
+      data-headlessui-state=""
+    >
+      <label
+        aria-hidden="true"
+        class="block text-sm font-medium leading-6 text-gray-900"
+        data-headlessui-state="open"
+        data-open=""
+        for="headlessui-control-:ra:"
+        id="headlessui-label-:rd:"
+      >
+        Model
+      </label>
+      <div
+        class="relative mt-2"
+      >
+        <button
+          aria-controls="headlessui-listbox-options-:rf:"
+          aria-expanded="true"
+          aria-haspopup="listbox"
+          aria-labelledby="headlessui-label-:rd: headlessui-control-:ra:"
+          class="bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          data-active=""
+          data-headlessui-state="open active hover"
+          data-hover=""
+          data-open=""
+          id="headlessui-control-:ra:"
+          type="button"
+        >
+          <span
+            class="flex items-center"
+          >
+            <span
+              class="ml-2 mr-2 block truncate"
+            >
+              model-1
+            </span>
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </button>
+        <div
+          aria-activedescendant="headlessui-listbox-option-:ri:"
+          aria-labelledby="headlessui-control-:ra:"
+          aria-orientation="vertical"
+          class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+          data-closed=""
+          data-enter=""
+          data-headlessui-state="open"
+          data-open=""
+          data-transition=""
+          id="headlessui-listbox-options-:rf:"
+          role="listbox"
+          style="--button-width: 0px;"
+          tabindex="0"
+        >
+          <div
+            aria-selected="true"
+            class="bg-blue-500 text-white relative cursor-default select-none py-2 pl-1 pr-9"
+            data-active=""
+            data-focus=""
+            data-headlessui-state="active focus selected"
+            data-selected=""
+            id="headlessui-listbox-option-:ri:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-semibold ml-3 block truncate"
+              >
+                model-1
+              </span>
+            </div>
+            <span
+              class="text-white check-icon absolute inset-y-0 right-0 flex items-center pr-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="h-5 w-5"
+                data-slot="icon"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  clip-rule="evenodd"
+                  d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
+                  fill-rule="evenodd"
+                />
+              </svg>
+            </span>
+          </div>
+          <div
+            aria-selected="false"
+            class="text-gray-900 relative cursor-default select-none py-2 pl-1 pr-9"
+            data-headlessui-state=""
+            id="headlessui-listbox-option-:rj:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-normal ml-3 block truncate"
+              >
+                model-2
+              </span>
+            </div>
+          </div>
+          <div
+            aria-selected="false"
+            class="text-gray-900 relative cursor-default select-none py-2 pl-1 pr-9"
+            data-headlessui-state=""
+            id="headlessui-listbox-option-:rk:"
+            role="option"
+            tabindex="-1"
+          >
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="font-normal ml-3 block truncate"
+              >
+                model-3
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        aria-hidden="true"
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ModelSelect renders model select with first model selected by default 1`] = `
+<body>
+  <div>
+    <div
+      data-headlessui-state=""
+    >
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        data-headlessui-state=""
+        for="headlessui-control-:r0:"
+        id="headlessui-label-:r3:"
+      >
+        Model
+      </label>
+      <div
+        class="relative mt-2"
+      >
+        <button
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-labelledby="headlessui-label-:r3: headlessui-control-:r0:"
+          class="bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          data-headlessui-state=""
+          id="headlessui-control-:r0:"
+          type="button"
+        >
+          <span
+            class="flex items-center"
+          >
+            <span
+              class="ml-2 mr-2 block truncate"
+            >
+              model-1
+            </span>
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </button>
+      </div>
+      <span
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;

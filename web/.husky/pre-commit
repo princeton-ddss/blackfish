@@ -1,0 +1,5 @@
+#!/bin/sh
+export PATH="/usr/local/bin:$PATH"
+
+npm run lint $(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g')
+git update-index --again

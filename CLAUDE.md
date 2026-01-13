@@ -52,6 +52,16 @@ npm run build:lib  # Build and copy to Python package
 - Frontend: `npm test` (Jest + React Testing Library)
 - CI runs path-dependent workflows (lib.yml, web.yml)
 
+## Pull Requests
+
+Always use `/pr` to create pull requests. This command:
+- Validates branch state
+- Runs lint and tests for affected packages
+- Updates coverage badge (Python changes)
+- Creates PR with proper format
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full PR checklist.
+
 ## See Also
 
 - [lib/CLAUDE.md](lib/CLAUDE.md) - Python backend details

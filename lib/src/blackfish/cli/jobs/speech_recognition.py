@@ -98,6 +98,9 @@ def run_speech_recognition(
         else:
             model_dir = get_model_dir(repo_id, revision, profile)
             if model_dir is None:
+                click.echo(
+                    f"{LogSymbols.ERROR.value} Model directory not found 😔. The requested revision ({revision}) is missing."
+                )
                 return
     else:
         click.echo(

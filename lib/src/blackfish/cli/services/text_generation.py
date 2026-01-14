@@ -39,8 +39,7 @@ def try_get_model_info(
         model_dir = get_model_dir(repo_id, revision, profile)
         if model_dir is None:
             click.echo(
-                f"{LogSymbols.ERROR.value} The model directory for repo  {repo_id}[{revision}] could not be found for profile"
-                f" '{profile.name}'. These files may have been moved or there may be a issue with permissions. You can try adding the model using `blackfish model add`."
+                f"{LogSymbols.ERROR.value} Model directory not found 😔. The requested revision ({revision}) is missing."
             )
             return None
     else:
@@ -133,6 +132,9 @@ def run_text_generation(
         else:
             model_dir = get_model_dir(repo_id, revision, profile)
             if model_dir is None:
+                click.echo(
+                    f"{LogSymbols.ERROR.value} Model directory not found 😔. The requested revision ({revision}) is missing."
+                )
                 return
     else:
         click.echo(

@@ -11,11 +11,6 @@ from blackfish.cli.__main__ import main
 from blackfish.server.models.profile import LocalProfile, SlurmProfile
 
 
-# =============================================================================
-# Test Fixtures
-# =============================================================================
-
-
 @pytest.fixture
 def local_profile():
     """Create a LocalProfile for testing."""
@@ -38,11 +33,6 @@ def slurm_profile():
     )
 
 
-# =============================================================================
-# Tests: run text-generation
-# =============================================================================
-
-
 class TestRunTextGeneration:
     """Tests for the `blackfish run text-generation` command."""
 
@@ -57,6 +47,7 @@ class TestRunTextGeneration:
 
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0
         assert "Profile not found" in result.output
 
     def test_model_not_found(self, cli_runner, mock_config, local_profile):
@@ -76,6 +67,7 @@ class TestRunTextGeneration:
 
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0
         assert "Unable to find openai/gpt-2" in result.output
 
     def test_dry_run_local_profile(self, cli_runner, mock_config, local_profile):
@@ -287,6 +279,7 @@ class TestRunTextGeneration:
 
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0
         assert "Failed to start service" in result.output
 
     def test_missing_repo_id(self, cli_runner, mock_config, local_profile):
@@ -472,13 +465,8 @@ class TestRunTextGeneration:
 
             result = cli_runner.invoke(main, cmd)
 
-        # Command should exit early without calling API
         assert result.exit_code == 0
-
-
-# =============================================================================
-# Tests: run speech-recognition
-# =============================================================================
+        assert "Model directory not found" in result.output
 
 
 class TestRunSpeechRecognition:
@@ -495,6 +483,7 @@ class TestRunSpeechRecognition:
 
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0
         assert "Profile not found" in result.output
 
     def test_model_not_found(self, cli_runner, mock_config, local_profile):
@@ -514,6 +503,7 @@ class TestRunSpeechRecognition:
 
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0
         assert "Unable to find openai/whisper-tiny" in result.output
 
     def test_dry_run_local_profile(self, cli_runner, mock_config, local_profile):
@@ -731,6 +721,7 @@ class TestRunSpeechRecognition:
 
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0
         assert "Failed to start service" in result.output
 
     def test_missing_repo_id(self, cli_runner, mock_config, local_profile):
@@ -836,6 +827,38 @@ class TestRunSpeechRecognition:
         assert "abc123" in result.output
         mock_get_latest.assert_called_once()
 
+    def test_model_dir_not_found(self, cli_runner, mock_config, local_profile):
+        """Test error when model directory cannot be found."""
+        cmd = [
+            "run",
+            "-p",
+            "default",
+            "speech-recognition",
+            "openai/whisper-tiny",
+            "--revision",
+            "nonexistent",
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_model_dir"
+            ) as mock_get_model_dir,
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/whisper-tiny"]
+            mock_get_model_dir.return_value = None
+
+            result = cli_runner.invoke(main, cmd)
+
+        assert result.exit_code == 0
+        assert "Model directory not found" in result.output
+
     def test_mount_defaults_to_home_dir(self, cli_runner, mock_config, local_profile):
         """Test that mount defaults to profile's home_dir when not provided."""
         cmd = ["run", "-p", "default", "speech-recognition", "openai/whisper-tiny"]
@@ -877,11 +900,6 @@ class TestRunSpeechRecognition:
         # Verify mount is set to profile's home_dir
         call_args = mock_post.call_args
         assert call_args[1]["json"]["mount"] == local_profile.home_dir
-
-
-# =============================================================================
-# Tests: run group options
-# =============================================================================
 
 
 class TestRunGroupOptions:

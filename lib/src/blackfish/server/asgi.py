@@ -91,6 +91,7 @@ from blackfish.server.models.profile import (
 )
 from blackfish.server.models.model import Model
 from blackfish.server.job import JobConfig, JobScheduler, SlurmJobConfig
+from blackfish.server.browser import RemoteFileBrowserSession
 
 import importlib.metadata
 
@@ -1810,6 +1811,7 @@ app = Litestar(
         login,
         logout,
         get_ports,
+        RemoteFileBrowserSession,
         get_files,
         upload_image,
         get_image,

@@ -11,7 +11,7 @@ for branch in "${PROTECTED_BRANCHES[@]}"; do
     echo "ERROR: Cannot checkout protected branch: $branch" >&2
     exit 2
   fi
-  
+
   # Block push to protected branches
   if echo "$command" | grep -qE "git\s+push.*${branch}"; then
     echo "ERROR: Cannot push to protected branch: $branch" >&2

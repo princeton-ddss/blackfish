@@ -70,7 +70,9 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = [ "src/blackfish" ]
-artifacts = [ "src/blackfish/build" ]
+
+[tool.hatch.build]
+artifacts = [ "src/blackfish/build/**" ]
 
 [tool.pyproject-fmt]
 max_supported_python = "3.13"

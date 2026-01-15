@@ -1,5 +1,5 @@
 ![GitHub Release](https://img.shields.io/github/v/release/princeton-ddss/blackfish)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/princeton-ddss/blackfish/ci.yml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/princeton-ddss/blackfish/lib.yml)
 ![coverage](lib/docs/assets/img/coverage.svg)
 [![PyPI](https://img.shields.io/pypi/v/blackfish-ai.svg)](https://pypi.python.org/pypi/blackfish-ai)
 [![License](https://img.shields.io/github/license/princeton-ddss/blackfish)](https://github.com/princeton-ddss/blackfish)

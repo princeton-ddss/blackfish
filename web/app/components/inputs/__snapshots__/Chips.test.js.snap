@@ -1,0 +1,1745 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Chips calls onChange with ADD action when Enter is pressed 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Test chips
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          />
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value=""
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            existing
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips calls onChange with REMOVE action when remove button is clicked 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Test chips
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          />
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value=""
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            chip1
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            chip2
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-1"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            chip3
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-2"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips clears input when onChange returns true 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Test chips
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          />
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value=""
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            existing
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips does not clear input when onChange returns false 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Test chips
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          />
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value="invalid chip"
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            existing
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips input updates correctly on typing 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Test chips
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          />
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value="typing test"
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips renders correctly with initial values 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Hello, world!
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Feugiat lacinia montes sem himenaeos varius placerat curae nunc scelerisque cubilia a vitae, pellentesque enim odio nascetur lobortis libero penatibus facilisis aenean justo.
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value=""
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            one
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            two
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-1"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            three
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-2"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            four
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-3"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            five
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-4"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            six
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-5"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            seven
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-6"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            eight
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-7"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            nine
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-8"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            ten
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-9"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips renders correctly with initial values 2`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Hello, world!
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Feugiat lacinia montes sem himenaeos varius placerat curae nunc scelerisque cubilia a vitae, pellentesque enim odio nascetur lobortis libero penatibus facilisis aenean justo.
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value="More text"
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            one
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            two
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-1"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            three
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-2"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            four
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-3"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            five
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-4"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            six
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-5"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            seven
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-6"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            eight
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-7"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            nine
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-8"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            ten
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-9"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips renders correctly with initial values 3`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Hello, world!
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Feugiat lacinia montes sem himenaeos varius placerat curae nunc scelerisque cubilia a vitae, pellentesque enim odio nascetur lobortis libero penatibus facilisis aenean justo.
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value=""
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            one
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            two
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-1"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            three
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-2"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            four
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-3"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            five
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-4"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            six
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-5"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            seven
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-6"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            eight
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-7"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            nine
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-8"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            ten
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-9"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips renders correctly with initial values 4`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Hello, world!
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            Feugiat lacinia montes sem himenaeos varius placerat curae nunc scelerisque cubilia a vitae, pellentesque enim odio nascetur lobortis libero penatibus facilisis aenean justo.
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value=""
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            one
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            two
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-1"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            three
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-2"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            four
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-3"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            five
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-4"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            six
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-5"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            seven
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-6"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            eight
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-7"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            nine
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-8"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            ten
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-9"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips renders with empty values array 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          Empty chips
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          >
+            No chips yet
+          </div>
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value=""
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Chips renders without label and tooltip 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-start"
+      >
+        <label
+          class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+          for="chips-control"
+        >
+          <div
+            class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+          />
+        </label>
+      </div>
+      <input
+        class="mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm"
+        id="chips-control"
+        type="text"
+        value=""
+      />
+      <div
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <div
+          class="flex items-center bg-blue-500 text-white font-extralight sm:text-sm pl-3 pr-2 py-1 rounded-full"
+        >
+          <span>
+            test
+          </span>
+          <button
+            class="ml-1 text-white font-light hover:text-blue-200"
+            id="remove-button-0"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-4 w-4"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 18 18 6M6 6l12 12"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

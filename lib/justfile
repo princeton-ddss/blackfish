@@ -1,0 +1,12 @@
+lint:
+  uv run pre-commit autoupdate
+  uv run pre-commit run --all-files
+
+test:
+  uv run pytest --cache-clear --verbose --cov=blackfish
+
+coverage:
+  uv run coverage-badge -o lib/docs/assets/img/coverage.svg -f
+
+docs:
+  uv run mkdocs build

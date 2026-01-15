@@ -1,0 +1,4 @@
+# Keep this in sync when nodejs is updated in ddev itself.
+# Since this project doesn't use advanced nodejs features, we prefer to keep to
+# the version ddev ships with to reduce ddev start time.
+22.11.0

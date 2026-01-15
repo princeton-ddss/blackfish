@@ -1,0 +1,78 @@
+name: Python CI
+on:
+  push:
+    branches: [main, dev, "*-dev"]
+    paths:
+      - 'lib/**'
+      - '!lib/docs/**'
+      - '.pre-commit-config.yaml'
+      - '.github/workflows/lib.yml'
+  pull_request:
+    branches: [main, dev, "*-dev"]
+    paths:
+      - 'lib/**'
+      - '!lib/docs/**'
+      - '.pre-commit-config.yaml'
+      - '.github/workflows/lib.yml'
+env:
+  FORCE_COLOR: "1"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+
+  lint:
+    name: Lint code 🧹
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lib
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - name: Install uv (latest)
+        uses: astral-sh/setup-uv@v6
+      - name: Install Blackfish
+        run: uv sync
+      - name: Lint
+        run: uv run pre-commit run --all-files
+
+  tests:
+    name: Run tests 🧪
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: lib
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv (latest)
+        uses: astral-sh/setup-uv@v6
+      - name: Install Blackfish
+        run: uv sync --python ${{ matrix.python-version }}
+      - name: Run tests on ${{ matrix.os }}
+        run: uv run --python ${{ matrix.python-version }} pytest
+
+  build:
+    name: Build distribution 📦
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+      - name: Install uv (latest)
+        uses: astral-sh/setup-uv@v7
+      - name: Build wheel
+        run: uv build lib/

@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Page 1`] = `
+<body>
+  <div>
+    <main
+      class="flex min-h-screen flex-col items-center justify-between p-24"
+    >
+      <div
+        class="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left"
+      />
+    </main>
+  </div>
+</body>
+`;

@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`SidebarContainer 1`] = `
+<body>
+  <div>
+    <div
+      class="bg-white flex flex-col lg:w-96 lg:p-8 lg:pr-12"
+    >
+      <div
+        data-testid="profile-select"
+      >
+        Profile Select
+      </div>
+      <div
+        data-testid="service-container"
+      >
+        <div
+          data-testid="service-launcher"
+        >
+          Service Launcher
+        </div>
+      </div>
+      <h1>
+        Hello, world!
+      </h1>
+    </div>
+  </div>
+</body>
+`;

@@ -1,0 +1,392 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NavbarLight > Login 1`] = `
+<body>
+  <div>
+    <nav
+      class="bg-white"
+      data-headlessui-state=""
+    >
+      <div
+        class="mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="flex h-16 justify-between"
+        >
+          <div
+            class="flex"
+          >
+            <div
+              class="flex flex-shrink-0 items-center"
+            >
+              <a
+                href="/dashboard"
+              >
+                <img
+                  alt="blackfish"
+                  height="32"
+                  src="./img/orca.png"
+                  width="32"
+                />
+              </a>
+              <a
+                href="/dashboard"
+              >
+                <div
+                  class="pl-4 text-4xl text-gray-900 font-bold"
+                >
+                  blackfish
+                </div>
+              </a>
+              <div
+                class="pl-4 text-4xl font-extralight text-slate-300 italic"
+              >
+                test
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </div>
+</body>
+`;
+
+exports[`NavbarLight > Standard 1`] = `
+<body>
+  <div
+    aria-hidden="true"
+    inert=""
+  >
+    <nav
+      class="bg-white"
+      data-headlessui-state=""
+    >
+      <div
+        class="mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="flex h-16 justify-between"
+        >
+          <div
+            class="flex"
+          >
+            <div
+              class="flex flex-shrink-0 items-center"
+            >
+              <a
+                href="/dashboard"
+              >
+                <img
+                  alt="blackfish"
+                  height="32"
+                  src="./img/orca.png"
+                  width="32"
+                />
+              </a>
+              <a
+                href="/dashboard"
+              >
+                <div
+                  class="pl-4 text-4xl text-gray-900 font-bold"
+                >
+                  blackfish
+                </div>
+              </a>
+              <div
+                class="pl-4 text-4xl font-extralight text-slate-300 italic"
+              >
+                test
+              </div>
+            </div>
+          </div>
+          <div
+            class="flex items-center"
+          >
+            <button
+              aria-label="Help"
+              class="text-black hover:text-blue-600 focus:outline-none transition-transform transform hover:scale-110"
+            >
+              <svg
+                aria-hidden="true"
+                class="h-6 w-6"
+                data-slot="icon"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16.712 4.33a9.027 9.027 0 0 1 1.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 0 0-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 0 1 0 9.424m-4.138-5.976a3.736 3.736 0 0 0-.88-1.388 3.737 3.737 0 0 0-1.388-.88m2.268 2.268a3.765 3.765 0 0 1 0 2.528m-2.268-4.796a3.765 3.765 0 0 0-2.528 0m4.796 4.796c-.181.506-.475.982-.88 1.388a3.736 3.736 0 0 1-1.388.88m2.268-2.268 4.138 3.448m0 0a9.027 9.027 0 0 1-1.306 1.652c-.51.51-1.064.944-1.652 1.306m0 0-3.448-4.138m3.448 4.138a9.014 9.014 0 0 1-9.424 0m5.976-4.138a3.765 3.765 0 0 1-2.528 0m0 0a3.736 3.736 0 0 1-1.388-.88 3.737 3.737 0 0 1-.88-1.388m2.268 2.268L7.288 19.67m0 0a9.024 9.024 0 0 1-1.652-1.306 9.027 9.027 0 0 1-1.306-1.652m0 0 4.138-3.448M4.33 16.712a9.014 9.014 0 0 1 0-9.424m4.138 5.976a3.765 3.765 0 0 1 0-2.528m0 0c.181-.506.475-.982.88-1.388a3.736 3.736 0 0 1 1.388-.88m-2.268 2.268L4.33 7.288m6.406 1.18L7.288 4.33m0 0a9.024 9.024 0 0 0-1.652 1.306A9.025 9.025 0 0 0 4.33 7.288"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </div>
+  <div
+    id="headlessui-portal-root"
+  >
+    <div
+      data-headlessui-portal=""
+    >
+      <button
+        aria-hidden="true"
+        data-headlessui-focus-guard="true"
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0px;"
+        type="button"
+      />
+      <div>
+        <div
+          aria-describedby="headlessui-description-:r8:"
+          aria-labelledby="headlessui-dialog-title-:r7:"
+          aria-modal="true"
+          class="fixed inset-0 z-10 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          data-headlessui-state="open"
+          data-open=""
+          id="headlessui-dialog-:r0:"
+          role="dialog"
+          tabindex="-1"
+        >
+          <div
+            class="relative rounded-lg bg-white p-6 sm:max-w-lg shadow-md"
+            data-headlessui-state="open"
+            data-open=""
+            id="headlessui-dialog-panel-:r6:"
+          >
+            <button
+              aria-label="Close"
+              class="absolute top-3 right-3 text-black hover:text-gray-700 focus:outline-none"
+            >
+              <svg
+                aria-hidden="true"
+                class="h-5 w-5"
+                data-slot="icon"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M6 18 18 6M6 6l12 12"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <h2
+              class="text-lg font-bold"
+              data-headlessui-state="open"
+              data-open=""
+              id="headlessui-dialog-title-:r7:"
+            >
+              Having issues?
+            </h2>
+            <p
+              class="mt-2 text-sm text-gray-600"
+              data-headlessui-state="open"
+              data-open=""
+              id="headlessui-description-:r8:"
+            >
+              Check out our issues page on GitHub. There, you can search for known bugs, find solutions to common problems, or create a new issue if nothing seems to meet your needs. Go ahead—drop us a line!
+            </p>
+            <div
+              class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3"
+            >
+              <a
+                class="inline-flex items-center w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2"
+                href="https://github.com/princeton-ddss/blackfish/issues"
+                rel="noopener noreferrer"
+                target="_blank"
+                type="button"
+              >
+                View on GitHub
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button
+        aria-hidden="true"
+        data-headlessui-focus-guard="true"
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0px;"
+        type="button"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`NavbarLight > Standard 2`] = `
+<body>
+  <div>
+    <nav
+      class="bg-white"
+      data-headlessui-state=""
+    >
+      <div
+        class="mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="flex h-16 justify-between"
+        >
+          <div
+            class="flex"
+          >
+            <div
+              class="flex flex-shrink-0 items-center"
+            >
+              <a
+                href="/dashboard"
+              >
+                <img
+                  alt="blackfish"
+                  height="32"
+                  src="./img/orca.png"
+                  width="32"
+                />
+              </a>
+              <a
+                href="/dashboard"
+              >
+                <div
+                  class="pl-4 text-4xl text-gray-900 font-bold"
+                >
+                  blackfish
+                </div>
+              </a>
+              <div
+                class="pl-4 text-4xl font-extralight text-slate-300 italic"
+              >
+                test
+              </div>
+            </div>
+          </div>
+          <div
+            class="flex items-center"
+          >
+            <button
+              aria-label="Help"
+              class="text-black hover:text-blue-600 focus:outline-none transition-transform transform hover:scale-110"
+            >
+              <svg
+                aria-hidden="true"
+                class="h-6 w-6"
+                data-slot="icon"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16.712 4.33a9.027 9.027 0 0 1 1.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 0 0-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 0 1 0 9.424m-4.138-5.976a3.736 3.736 0 0 0-.88-1.388 3.737 3.737 0 0 0-1.388-.88m2.268 2.268a3.765 3.765 0 0 1 0 2.528m-2.268-4.796a3.765 3.765 0 0 0-2.528 0m4.796 4.796c-.181.506-.475.982-.88 1.388a3.736 3.736 0 0 1-1.388.88m2.268-2.268 4.138 3.448m0 0a9.027 9.027 0 0 1-1.306 1.652c-.51.51-1.064.944-1.652 1.306m0 0-3.448-4.138m3.448 4.138a9.014 9.014 0 0 1-9.424 0m5.976-4.138a3.765 3.765 0 0 1-2.528 0m0 0a3.736 3.736 0 0 1-1.388-.88 3.737 3.737 0 0 1-.88-1.388m2.268 2.268L7.288 19.67m0 0a9.024 9.024 0 0 1-1.652-1.306 9.027 9.027 0 0 1-1.306-1.652m0 0 4.138-3.448M4.33 16.712a9.014 9.014 0 0 1 0-9.424m4.138 5.976a3.765 3.765 0 0 1 0-2.528m0 0c.181-.506.475-.982.88-1.388a3.736 3.736 0 0 1 1.388-.88m-2.268 2.268L4.33 7.288m6.406 1.18L7.288 4.33m0 0a9.024 9.024 0 0 0-1.652 1.306A9.025 9.025 0 0 0 4.33 7.288"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </div>
+  <div
+    id="headlessui-portal-root"
+  >
+    <div
+      data-headlessui-portal=""
+    >
+      <button
+        aria-hidden="true"
+        data-headlessui-focus-guard="true"
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0px;"
+        type="button"
+      />
+      <div>
+        <div
+          aria-describedby="headlessui-description-:rh:"
+          aria-labelledby="headlessui-dialog-title-:rg:"
+          aria-modal="true"
+          class="fixed inset-0 z-10 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          data-headlessui-state="open"
+          data-open=""
+          id="headlessui-dialog-:r9:"
+          role="dialog"
+          tabindex="-1"
+        >
+          <div
+            class="relative rounded-lg bg-white p-6 sm:max-w-lg shadow-md"
+            data-headlessui-state="open"
+            data-open=""
+            id="headlessui-dialog-panel-:rf:"
+          >
+            <button
+              aria-label="Close"
+              class="absolute top-3 right-3 text-black hover:text-gray-700 focus:outline-none"
+            >
+              <svg
+                aria-hidden="true"
+                class="h-5 w-5"
+                data-slot="icon"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M6 18 18 6M6 6l12 12"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <h2
+              class="text-lg font-bold"
+              data-headlessui-state="open"
+              data-open=""
+              id="headlessui-dialog-title-:rg:"
+            >
+              Having issues?
+            </h2>
+            <p
+              class="mt-2 text-sm text-gray-600"
+              data-headlessui-state="open"
+              data-open=""
+              id="headlessui-description-:rh:"
+            >
+              Check out our issues page on GitHub. There, you can search for known bugs, find solutions to common problems, or create a new issue if nothing seems to meet your needs. Go ahead—drop us a line!
+            </p>
+            <div
+              class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3"
+            >
+              <a
+                class="inline-flex items-center w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:col-start-2"
+                href="https://github.com/princeton-ddss/blackfish/issues"
+                rel="noopener noreferrer"
+                target="_blank"
+                type="button"
+              >
+                View on GitHub
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button
+        aria-hidden="true"
+        data-headlessui-focus-guard="true"
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0px;"
+        type="button"
+      />
+    </div>
+  </div>
+</body>
+`;

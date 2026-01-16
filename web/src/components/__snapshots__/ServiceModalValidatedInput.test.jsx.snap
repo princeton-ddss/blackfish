@@ -1,0 +1,303 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ServiceModalValidatedInput > renders correctly when disabled 1`] = `
+<body>
+  <div>
+    <div>
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        for="service-modal-validated-input-42"
+      >
+        Tempus proin donec
+      </label>
+      <p
+        class="mt-1 text-sm leading-6 text-gray-600"
+      >
+        Lobortis amet quam ut consectetur rhoncus ornare
+      </p>
+      <div
+        class="relative mt-2 rounded-md shadow-sm"
+      >
+        <input
+          aria-describedby="email-error"
+          aria-invalid="true"
+          class="ring-gray-300 focus:ring-blue-500 block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:ring-1 disabled:ring-gray-300 ring-1"
+          disabled=""
+          id="service-modal-validated-input-42"
+          placeholder="Et efficitur nunc lectus"
+          type="text"
+          value="Maximus duis neque mauris elementum id vestibulum"
+        />
+        <span
+          class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-light italic text-sm text-slate-500"
+        >
+          kg
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalValidatedInput > renders correctly when invalid after user input 1`] = `
+<body>
+  <div>
+    <div>
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        for="service-modal-validated-input-42"
+      >
+        Tempus proin donec
+      </label>
+      <p
+        class="mt-1 text-sm leading-6 text-gray-600"
+      >
+        Lobortis amet quam ut consectetur rhoncus ornare
+      </p>
+      <div
+        class="relative mt-2 rounded-md shadow-sm"
+      >
+        <input
+          aria-describedby="email-error"
+          aria-invalid="true"
+          class="text-red-600 ring-red-300 placeholder:text-red-300 focus:ring-red-600 block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:ring-1 disabled:ring-gray-300 ring-1"
+          id="service-modal-validated-input-42"
+          placeholder="Et efficitur nunc lectus"
+          type="text"
+          value=""
+        />
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"
+        >
+          <svg
+            aria-hidden="true"
+            class="h-5 w-5 text-red-600"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+      <p
+        class="mt-2 text-sm text-red-600"
+        id="email-error"
+      >
+        Invalid value
+      </p>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalValidatedInput > renders correctly with an error 1`] = `
+<body>
+  <div>
+    <div>
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        for="service-modal-validated-input-42"
+      >
+        Tempus proin donec
+      </label>
+      <p
+        class="mt-1 text-sm leading-6 text-gray-600"
+      >
+        Lobortis amet quam ut consectetur rhoncus ornare
+      </p>
+      <div
+        class="relative mt-2 rounded-md shadow-sm"
+      >
+        <input
+          aria-describedby="email-error"
+          aria-invalid="true"
+          class="text-red-600 ring-red-300 placeholder:text-red-300 focus:ring-red-600 block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:ring-1 disabled:ring-gray-300 ring-1"
+          id="service-modal-validated-input-42"
+          placeholder="Et efficitur nunc lectus"
+          type="text"
+          value=""
+        />
+        <div
+          class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"
+        >
+          <svg
+            aria-hidden="true"
+            class="h-5 w-5 text-red-600"
+            data-slot="icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+      <p
+        class="mt-2 text-sm text-red-600"
+        id="email-error"
+      >
+        500 Internal Server Error
+      </p>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalValidatedInput > renders correctly with htmlFor prop 1`] = `
+<body>
+  <div>
+    <div>
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        for="custom-input-42"
+      >
+        Tempus proin donec
+      </label>
+      <p
+        class="mt-1 text-sm leading-6 text-gray-600"
+      >
+        Lobortis amet quam ut consectetur rhoncus ornare
+      </p>
+      <div
+        class="relative mt-2 rounded-md shadow-sm"
+      >
+        <input
+          aria-describedby="email-error"
+          aria-invalid="true"
+          class="ring-gray-300 focus:ring-blue-500 block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:ring-1 disabled:ring-gray-300 ring-1"
+          id="custom-input-42"
+          placeholder="Et efficitur nunc lectus"
+          type="text"
+          value="Maximus duis neque mauris elementum id vestibulum"
+        />
+        <span
+          class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-light italic text-sm text-slate-500"
+        >
+          kg
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalValidatedInput > renders correctly with standard parameters 1`] = `
+<body>
+  <div>
+    <div>
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        for="service-modal-validated-input-42"
+      >
+        Tempus proin donec
+      </label>
+      <p
+        class="mt-1 text-sm leading-6 text-gray-600"
+      >
+        Lobortis amet quam ut consectetur rhoncus ornare
+      </p>
+      <div
+        class="relative mt-2 rounded-md shadow-sm"
+      >
+        <input
+          aria-describedby="email-error"
+          aria-invalid="true"
+          class="ring-gray-300 focus:ring-blue-500 block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:ring-1 disabled:ring-gray-300 ring-1"
+          id="service-modal-validated-input-42"
+          placeholder="Et efficitur nunc lectus"
+          type="text"
+          value="Maximus duis neque mauris elementum id vestibulum"
+        />
+        <span
+          class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-light italic text-sm text-slate-500"
+        >
+          kg
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalValidatedInput > renders correctly without help text 1`] = `
+<body>
+  <div>
+    <div>
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        for="service-modal-validated-input-42"
+      >
+        Tempus proin donec
+      </label>
+      <div
+        class="relative mt-2 rounded-md shadow-sm"
+      >
+        <input
+          aria-describedby="email-error"
+          aria-invalid="true"
+          class="ring-gray-300 focus:ring-blue-500 block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:ring-1 disabled:ring-gray-300 ring-1"
+          id="service-modal-validated-input-42"
+          placeholder="Et efficitur nunc lectus"
+          type="text"
+          value="Maximus duis neque mauris elementum id vestibulum"
+        />
+        <span
+          class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-light italic text-sm text-slate-500"
+        >
+          kg
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalValidatedInput > renders correctly without units 1`] = `
+<body>
+  <div>
+    <div>
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        for="service-modal-validated-input-42"
+      >
+        Tempus proin donec
+      </label>
+      <p
+        class="mt-1 text-sm leading-6 text-gray-600"
+      >
+        Lobortis amet quam ut consectetur rhoncus ornare
+      </p>
+      <div
+        class="relative mt-2 rounded-md shadow-sm"
+      >
+        <input
+          aria-describedby="email-error"
+          aria-invalid="true"
+          class="ring-gray-300 focus:ring-blue-500 block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:ring-1 disabled:ring-gray-300 ring-1"
+          id="service-modal-validated-input-42"
+          placeholder="Et efficitur nunc lectus"
+          type="text"
+          value="Maximus duis neque mauris elementum id vestibulum"
+        />
+        <span
+          class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-light italic text-sm text-slate-500"
+        />
+      </div>
+    </div>
+  </div>
+</body>
+`;

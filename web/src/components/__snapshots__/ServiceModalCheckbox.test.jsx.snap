@@ -1,0 +1,147 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ServiceModalCheckbox > renders in checked and disabled state 1`] = `
+<body>
+  <div>
+    <div
+      class="relative flex gap-x-3"
+    >
+      <div
+        class="flex h-6 items-center"
+      >
+        <input
+          class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          disabled=""
+          id="gpu-service-checkbox"
+          name="gpu-service-checkbox"
+          type="checkbox"
+        />
+      </div>
+      <div
+        class="text-sm leading-6"
+      >
+        <label
+          class="font-medium text-gray-900"
+          for="gpu-service-checkbox"
+        >
+          Hello, world!
+        </label>
+        <p
+          class="text-gray-500"
+        >
+          Ultrices porttitor pellentesque ut quis amet volutpat
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalCheckbox > renders in disabled state 1`] = `
+<body>
+  <div>
+    <div
+      class="relative flex gap-x-3"
+    >
+      <div
+        class="flex h-6 items-center"
+      >
+        <input
+          class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          disabled=""
+          id="gpu-service-checkbox"
+          name="gpu-service-checkbox"
+          type="checkbox"
+        />
+      </div>
+      <div
+        class="text-sm leading-6"
+      >
+        <label
+          class="font-medium text-gray-900"
+          for="gpu-service-checkbox"
+        >
+          Hello, world!
+        </label>
+        <p
+          class="text-gray-500"
+        >
+          Ultrices porttitor pellentesque ut quis amet volutpat
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalCheckbox > renders properly when checked 1`] = `
+<body>
+  <div>
+    <div
+      class="relative flex gap-x-3"
+    >
+      <div
+        class="flex h-6 items-center"
+      >
+        <input
+          class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          id="gpu-service-checkbox"
+          name="gpu-service-checkbox"
+          type="checkbox"
+        />
+      </div>
+      <div
+        class="text-sm leading-6"
+      >
+        <label
+          class="font-medium text-gray-900"
+          for="gpu-service-checkbox"
+        >
+          Hello, world!
+        </label>
+        <p
+          class="text-gray-500"
+        >
+          Ultrices porttitor pellentesque ut quis amet volutpat
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`ServiceModalCheckbox > renders properly with standard options 1`] = `
+<body>
+  <div>
+    <div
+      class="relative flex gap-x-3"
+    >
+      <div
+        class="flex h-6 items-center"
+      >
+        <input
+          class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          id="gpu-service-checkbox"
+          name="gpu-service-checkbox"
+          type="checkbox"
+        />
+      </div>
+      <div
+        class="text-sm leading-6"
+      >
+        <label
+          class="font-medium text-gray-900"
+          for="gpu-service-checkbox"
+        >
+          Hello, world!
+        </label>
+        <p
+          class="text-gray-500"
+        >
+          Ultrices porttitor pellentesque ut quis amet volutpat
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+`;

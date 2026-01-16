@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TaskContainer 1`] = `
+<body>
+  <div>
+    <div
+      class="bg-white"
+    >
+      <h1>
+        Hello, world!
+      </h1>
+      <p>
+        Platea mi vel etiam quam ante arcu
+      </p>
+    </div>
+  </div>
+</body>
+`;

@@ -11,8 +11,7 @@
     <title>Blackfish</title>
     <script>
       (function () {
-        var apiUrl =
-          "http://{{ request.app.state.HOST }}:{{ request.app.state.PORT }}{{ request.app.state.BASE_PATH }}";
+        var apiUrl = "{{ request.app.state.BASE_PATH }}";
         var basePath = "{{ request.app.state.BASE_PATH }}";
 
         // Check if HOST was replaced (won't contain "request.app")

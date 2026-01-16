@@ -1,5 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
-
 import { useContext } from "react";
 import { useServices } from "@/lib/loaders";
 import { useSelectedService } from "@/lib/hooks";
@@ -19,7 +17,7 @@ function Page({ task, children }) {
         <div className="flex flex-row justify-center items-center">
           <img
             className="h-16 w-auto mb-8"
-            src={"/img/dead-fish.png"}
+            src={assetPath("/img/dead-fish.png")}
             alt="blackfish-error"
           />
         </div>

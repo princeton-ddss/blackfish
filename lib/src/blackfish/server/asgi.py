@@ -1795,8 +1795,7 @@ def not_found_exception_handler(
             status_code=HTTP_404_NOT_FOUND,
             media_type="application/json",
         )
-    return Template(template_name="index.html")
-    # return Template(template_name="404.html", status_code=HTTP_404_NOT_FOUND)
+    return Template(template_name="index.html", status_code=HTTP_404_NOT_FOUND)
 
 
 app = Litestar(

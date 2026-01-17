@@ -3,7 +3,7 @@ import { test, expect, vi } from "vitest";
 import ServiceContainer from "@/components/ServiceContainer";
 
 vi.mock("@/components/ServiceContainer", () => {
-  // eslint-disable-next-line react/prop-types
+   
   return {
     default: function MockServiceContainer({ children }) {
       return <div data-testid="service-container">{children}</div>;

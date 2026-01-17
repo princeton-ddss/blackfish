@@ -22,6 +22,7 @@ export default defineConfig([
       globals: {
         ...globals.browser,
         ...globals.es2021,
+        process: "readonly",
       },
     },
   },
@@ -39,6 +40,14 @@ export default defineConfig([
         afterEach: "readonly",
         beforeAll: "readonly",
         afterAll: "readonly",
+        global: "readonly",
+      },
+    },
+  },
+{
+    settings: {
+      react: {
+        version: "detect",
       },
     },
   },

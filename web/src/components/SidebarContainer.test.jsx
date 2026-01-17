@@ -5,7 +5,7 @@ import { ProfileContext } from "@/components/ProfileSelect";
 import TextGenerationContainerOptionsForm from "@/routes/text-generation/components/TextGenerationContainerOptionsForm";
 
 vi.mock("@/components/ServiceContainer", () => {
-  // eslint-disable-next-line react/prop-types
+   
   return {
     default: function MockServiceContainer({ children }) {
       return <div data-testid="service-container">{children}</div>;

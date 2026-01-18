@@ -75,6 +75,12 @@ from blackfish.server.files import (
     validate_file_extension,
     validate_file_size,
 )
+from blackfish.server.remote_files import (
+    get_remote_profile,
+    remote_read_file,
+    remote_write_file,
+    remote_delete_file,
+)
 from blackfish.server.services.base import Service, ServiceStatus
 from blackfish.server.services.speech_recognition import SpeechRecognitionConfig
 from blackfish.server.services.text_generation import TextGenerationConfig
@@ -570,16 +576,11 @@ async def upload_image(
         ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
     ],
     state: State,
+    profile: Optional[str] = None,
 ) -> FileUploadResponse:
     """Upload an image file to a specified location."""
 
     content = await data.file.read()
-    path = Path(data.path)
-
-    logger.debug(f"Attempting to upload image {data.file.filename} to {path}")
-
-    if path.exists():
-        raise ValidationException(f"The requested path ({path}) already exists")
 
     validate_file_size(content, state.MAX_FILE_SIZE)
 
@@ -589,13 +590,65 @@ async def upload_image(
     except UnidentifiedImageError as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
+    
+    if profile is not None:
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Uploading image to remote profile {profile}: {data.path}")
+        response = remote_write_file(remote_profile, data.path, content, update=False)
+        return FileUploadResponse(
+            filename=response.filename,
+            size=response.size,
+            created_at=response.created_at,
+        )
+
+    
+    path = Path(data.path)
+    logger.debug(f"Attempting to upload image {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
     return try_write_file(path, content)
 
 
 @get("/api/image", guards=ENDPOINT_GUARDS)
-async def get_image(path: str) -> File:
+async def get_image(path: str, profile: Optional[str] = None) -> File | Response[bytes]:
     """Retrieve an image file from the specified path."""
 
+    
+    if profile is not None:
+        validate_file_extension(Path(path), IMAGE_EXTENSIONS)
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Downloading image from remote profile {profile}: {path}")
+        content = remote_read_file(remote_profile, path)
+
+        try:
+            img = Image.open(BytesIO(content))
+            img.verify()
+        except Exception as e:
+            raise ValidationException(f"Invalid image file: {e}")
+
+        # Determine content type from extension
+        ext = os.path.splitext(path)[1].lower()
+        content_type = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".bmp": "image/bmp",
+            ".tiff": "image/tiff",
+            ".webp": "image/webp",
+        }.get(ext, "application/octet-stream")
+
+        return Response(
+            content=content,
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{os.path.basename(path)}"'
+            },
+        )
+
+    
     file_path = Path(path)
 
     logger.debug(f"Attempting to retrieve image from {file_path}")
@@ -618,16 +671,13 @@ async def update_image(
         ImageUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
     ],
     state: State,
+    profile: Optional[str] = None,
 ) -> FileUploadResponse:
     """Update/replace an existing image file at the specified path."""
 
     content = await data.file.read()
-    path = Path(data.path)
 
-    logger.debug(f"Attempting to update image {data.file.filename} at {path}")
-
-    validate_file_exists(path)
-    validate_file_extension(path, IMAGE_EXTENSIONS)
+    validate_file_extension(Path(data.path), IMAGE_EXTENSIONS)
     validate_file_size(content, state.MAX_FILE_SIZE)
 
     try:
@@ -636,13 +686,38 @@ async def update_image(
     except Exception as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
+    
+    if profile is not None:
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Updating image on remote profile {profile}: {data.path}")
+        response = remote_write_file(remote_profile, data.path, content, update=True)
+        return FileUploadResponse(
+            filename=response.filename,
+            size=response.size,
+            created_at=response.created_at,
+        )
+
+    
+    path = Path(data.path)
+    logger.debug(f"Attempting to update image {data.file.filename} at {path}")
+
+    validate_file_exists(path)
+
     return try_write_file(path, content, update=True)
 
 
 @delete("/api/image", guards=ENDPOINT_GUARDS, status_code=200)
-async def delete_image(path: str) -> Path:
+async def delete_image(path: str, profile: Optional[str] = None) -> Path | str:
     """Delete an image file at the specified path."""
 
+    # Remote delete
+    if profile is not None:
+        validate_file_extension(Path(path), IMAGE_EXTENSIONS)
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Deleting image on remote profile {profile}: {path}")
+        return remote_delete_file(remote_profile, path)
+
+    # Local delete
     file_path = Path(path)
 
     logger.debug(f"Attempting to delete image at {file_path}")
@@ -664,16 +739,11 @@ class TextUploadRequest(BaseModel):
 async def upload_text(
     data: Annotated[TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)],
     state: State,
+    profile: Optional[str] = None,
 ) -> FileUploadResponse:
     """Upload a text file to a specified location."""
 
     content = await data.file.read()
-    path = Path(data.path)
-
-    logger.debug(f"Attempting to upload text file {data.file.filename} to {path}")
-
-    if path.exists():
-        raise ValidationException(f"The requested path ({path}) already exists")
 
     validate_file_size(content, state.MAX_FILE_SIZE)
 
@@ -683,13 +753,65 @@ async def upload_text(
     except UnicodeDecodeError as e:
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
+    
+    if profile is not None:
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Uploading text file to remote profile {profile}: {data.path}")
+        response = remote_write_file(remote_profile, data.path, content, update=False)
+        return FileUploadResponse(
+            filename=response.filename,
+            size=response.size,
+            created_at=response.created_at,
+        )
+
+    
+    path = Path(data.path)
+    logger.debug(f"Attempting to upload text file {data.file.filename} to {path}")
+
+    if path.exists():
+        raise ValidationException(f"The requested path ({path}) already exists")
+
     return try_write_file(path, content)
 
 
 @get("/api/text", guards=ENDPOINT_GUARDS)
-async def get_text(path: str) -> File:
+async def get_text(path: str, profile: Optional[str] = None) -> File | Response[bytes]:
     """Retrieve a text file from the specified path."""
 
+    
+    if profile is not None:
+        validate_file_extension(Path(path), TEXT_EXTENSIONS)
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Downloading text file from remote profile {profile}: {path}")
+        content = remote_read_file(remote_profile, path)
+
+        try:
+            content.decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise ValidationException(f"Invalid text file: {e}")
+
+        # Determine content type from extension
+        ext = os.path.splitext(path)[1].lower()
+        content_type = {
+            ".txt": "text/plain",
+            ".md": "text/markdown",
+            ".json": "application/json",
+            ".csv": "text/csv",
+            ".xml": "application/xml",
+            ".yaml": "application/yaml",
+            ".yml": "application/yaml",
+            ".log": "text/plain",
+        }.get(ext, "text/plain")
+
+        return Response(
+            content=content,
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{os.path.basename(path)}"'
+            },
+        )
+
+    
     file_path = Path(path)
 
     logger.debug(f"Attempting to retrieve text file from {file_path}")
@@ -710,16 +832,13 @@ async def get_text(path: str) -> File:
 async def update_text(
     data: Annotated[TextUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)],
     state: State,
+    profile: Optional[str] = None,
 ) -> FileUploadResponse:
     """Update/replace an existing text file at the specified path."""
 
     content = await data.file.read()
-    path = Path(data.path)
 
-    logger.debug(f"Attempting to update text file {data.file.filename} at {path}")
-
-    validate_file_exists(path)
-    validate_file_extension(path, TEXT_EXTENSIONS)
+    validate_file_extension(Path(data.path), TEXT_EXTENSIONS)
     validate_file_size(content, state.MAX_FILE_SIZE)
 
     try:
@@ -727,12 +846,33 @@ async def update_text(
     except UnicodeDecodeError as e:
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
+    if profile is not None:
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Updating text file on remote profile {profile}: {data.path}")
+        response = remote_write_file(remote_profile, data.path, content, update=True)
+        return FileUploadResponse(
+            filename=response.filename,
+            size=response.size,
+            created_at=response.created_at,
+        )
+
+    path = Path(data.path)
+    logger.debug(f"Attempting to update text file {data.file.filename} at {path}")
+
+    validate_file_exists(path)
+
     return try_write_file(path, content, update=True)
 
 
 @delete("/api/text", guards=ENDPOINT_GUARDS, status_code=200)
-async def delete_text(path: str) -> Path:
+async def delete_text(path: str, profile: Optional[str] = None) -> Path | str:
     """Delete a text file at the specified path."""
+
+    if profile is not None:
+        validate_file_extension(Path(path), TEXT_EXTENSIONS)
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Deleting text file on remote profile {profile}: {path}")
+        return remote_delete_file(remote_profile, path)
 
     file_path = Path(path)
 
@@ -757,25 +897,57 @@ async def upload_audio(
         AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
     ],
     state: State,
+    profile: Optional[str] = None,
 ) -> FileUploadResponse:
     """Upload an audio file to a specified location."""
 
     content = await data.file.read()
-    path = Path(data.path)
 
+    validate_file_size(content, state.MAX_FILE_SIZE)
+
+    if profile is not None:
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Uploading audio file to remote profile {profile}: {data.path}")
+        response = remote_write_file(remote_profile, data.path, content, update=False)
+        return FileUploadResponse(
+            filename=response.filename,
+            size=response.size,
+            created_at=response.created_at,
+        )
+    
+    path = Path(data.path)
     logger.debug(f"Attempting to upload audio file {data.file.filename} to {path}")
 
     if path.exists():
         raise ValidationException(f"The requested path ({path}) already exists")
 
-    validate_file_size(content, state.MAX_FILE_SIZE)
-
     return try_write_file(path, content)
 
 
 @get("/api/audio", guards=ENDPOINT_GUARDS)
-async def get_audio(path: str) -> File:
+async def get_audio(path: str, profile: Optional[str] = None) -> File | Response[bytes]:
     """Retrieve an audio file from the specified path."""
+
+    if profile is not None:
+        validate_file_extension(Path(path), AUDIO_EXTENSIONS)
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Downloading audio file from remote profile {profile}: {path}")
+        content = remote_read_file(remote_profile, path)
+
+        # Determine content type from extension
+        ext = os.path.splitext(path)[1].lower()
+        content_type = {
+            ".wav": "audio/wav",
+            ".mp3": "audio/mpeg",
+        }.get(ext, "application/octet-stream")
+
+        return Response(
+            content=content,
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{os.path.basename(path)}"'
+            },
+        )
 
     file_path = Path(path)
 
@@ -793,24 +965,41 @@ async def update_audio(
         AudioUploadRequest, Body(media_type=RequestEncodingType.MULTI_PART)
     ],
     state: State,
+    profile: Optional[str] = None,
 ) -> FileUploadResponse:
     """Update/replace an existing audio file at the specified path."""
 
     content = await data.file.read()
-    path = Path(data.path)
+    validate_file_extension(Path(data.path), AUDIO_EXTENSIONS)
+    validate_file_size(content, state.MAX_FILE_SIZE)
 
+    if profile is not None:
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Updating audio file on remote profile {profile}: {data.path}")
+        response = remote_write_file(remote_profile, data.path, content, update=True)
+        return FileUploadResponse(
+            filename=response.filename,
+            size=response.size,
+            created_at=response.created_at,
+        )
+
+    path = Path(data.path)
     logger.debug(f"Attempting to update audio file {data.file.filename} at {path}")
 
     validate_file_exists(path)
-    validate_file_extension(path, AUDIO_EXTENSIONS)
-    validate_file_size(content, state.MAX_FILE_SIZE)
 
     return try_write_file(path, content, update=True)
 
 
 @delete("/api/audio", guards=ENDPOINT_GUARDS, status_code=200)
-async def delete_audio(path: str) -> Path:
+async def delete_audio(path: str, profile: Optional[str] = None) -> Path | str:
     """Delete an audio file at the specified path."""
+
+    if profile is not None:
+        validate_file_extension(Path(path), AUDIO_EXTENSIONS)
+        remote_profile = get_remote_profile(profile)
+        logger.debug(f"Deleting audio file on remote profile {profile}: {path}")
+        return remote_delete_file(remote_profile, path)
 
     file_path = Path(path)
 

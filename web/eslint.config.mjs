@@ -2,16 +2,14 @@ import js from "@eslint/js";
 import globals from "globals";
 import pluginReact from "eslint-plugin-react";
 import pluginReactHooks from "eslint-plugin-react-hooks";
-import { defineConfig, globalIgnores } from "eslint/config";
 
-export default defineConfig([
+export default [
+  js.configs.recommended,
   {
     files: ["src/**/*.{js,jsx}"],
     plugins: {
-      js,
       "react-hooks": pluginReactHooks,
     },
-    extends: ["js/recommended"],
     rules: {
       ...pluginReactHooks.configs.recommended.rules,
     },
@@ -44,7 +42,7 @@ export default defineConfig([
       },
     },
   },
-{
+  {
     settings: {
       react: {
         version: "detect",
@@ -53,5 +51,7 @@ export default defineConfig([
   },
   pluginReact.configs.flat.recommended,
   pluginReact.configs.flat["jsx-runtime"],
-  globalIgnores(["build/*", "dist/*"]),
-]);
+  {
+    ignores: ["build/*", "dist/*"],
+  },
+];

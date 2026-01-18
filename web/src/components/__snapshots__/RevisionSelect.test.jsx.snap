@@ -1,0 +1,117 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RevisionSelect > Disabled 1`] = `
+<body>
+  <div>
+    <div
+      aria-disabled="true"
+      data-disabled=""
+      data-headlessui-state="disabled"
+      disabled=""
+    >
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        data-disabled=""
+        data-headlessui-state="disabled"
+        for="headlessui-control-:r5:"
+        id="headlessui-label-:r8:"
+      >
+        Revision
+      </label>
+      <div
+        class="relative mt-2"
+      >
+        <button
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-labelledby="headlessui-label-:r8: headlessui-control-:r5:"
+          class="bg-gray-100 ring-gray-300 ring-1 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          data-disabled=""
+          data-headlessui-state="disabled"
+          disabled=""
+          id="headlessui-control-:r5:"
+          type="button"
+        >
+          <span
+            class="flex items-center"
+          >
+            <span
+              class="ml-2 mr-2 block truncate"
+            >
+              169d4a4341b33bc18d8881c4b69c2e104e1cc0af
+            </span>
+          </span>
+        </button>
+      </div>
+      <span
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;
+
+exports[`RevisionSelect > Standard 1`] = `
+<body>
+  <div>
+    <div
+      data-headlessui-state=""
+    >
+      <label
+        class="block text-sm font-medium leading-6 text-gray-900"
+        data-headlessui-state=""
+        for="headlessui-control-:r0:"
+        id="headlessui-label-:r3:"
+      >
+        Revision
+      </label>
+      <div
+        class="relative mt-2"
+      >
+        <button
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-labelledby="headlessui-label-:r3: headlessui-control-:r0:"
+          class="bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          data-headlessui-state=""
+          id="headlessui-control-:r0:"
+          type="button"
+        >
+          <span
+            class="flex items-center"
+          >
+            <span
+              class="ml-2 mr-2 block truncate"
+            >
+              169d4a4341b33bc18d8881c4b69c2e104e1cc0af
+            </span>
+          </span>
+          <span
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5 text-gray-400"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </button>
+      </div>
+      <span
+        hidden=""
+        style="position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0px; display: none;"
+      />
+    </div>
+  </div>
+</body>
+`;

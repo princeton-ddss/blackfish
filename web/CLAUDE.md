@@ -1,6 +1,6 @@
 # Blackfish Frontend
 
-Next.js 14 web application `blackfish-ui` for the Blackfish platform.
+Vite + React application `blackfish-ui` for the Blackfish platform.
 
 ## Development Setup
 
@@ -17,11 +17,12 @@ npm run dev          # Start dev server at localhost:3000
 npm run dev                    # Start development server
 npm run build                  # Production build
 npm run build:lib              # Build and copy to Python package
-npm start                      # Start production server
+npm run preview                # Preview production build
 
 # Testing
-npm test                       # Run Jest tests
-npm run test:update-snapshots  # Update Jest snapshots
+npm test                       # Run Vitest tests
+npm run test:watch             # Run tests in watch mode
+npm run test:coverage          # Run tests with coverage
 
 # Linting
 npm run lint                   # ESLint check
@@ -32,38 +33,39 @@ npm run lint:fix               # Auto-fix lint issues
 
 ```
 web/
-├── app/                       # Next.js App Router
-│   ├── layout.js              # Root layout
-│   ├── page.js                # Home page
-│   ├── globals.css            # Global styles
-│   ├── config.js              # App configuration
-│   ├── lib/                   # Utilities
-│   ├── providers/             # React context providers
+├── index.html                 # Entry point (Jinja template)
+├── vite.config.js             # Vite configuration
+├── vitest.config.js           # Vitest test configuration
+├── src/
+│   ├── main.jsx               # React entry point
+│   ├── router.jsx             # React Router configuration
+│   ├── config.js              # Runtime configuration
+│   ├── index.css              # Global styles
 │   ├── components/            # Shared components
-│   ├── dashboard/             # Dashboard page
-│   ├── login/                 # Auth page
-│   ├── text-generation/       # Text generation service
-│   │   ├── page.js
-│   │   ├── lib/
-│   │   └── components/
-│   └── speech-recognition/    # Speech recognition service
-│       ├── page.js
-│       ├── lib/
-│       └── components/
+│   ├── layouts/               # Layout components
+│   ├── lib/                   # Utilities and hooks
+│   ├── providers/             # React context providers
+│   ├── routes/                # Page components
+│   │   ├── dashboard.jsx
+│   │   ├── login.jsx
+│   │   ├── text-generation.jsx
+│   │   ├── speech-recognition.jsx
+│   │   └── {service}/components/  # Service-specific components
+│   └── test/                  # Test setup
 ├── public/                    # Static assets
-└── __mocks__/                 # Jest mocks
+└── build/                     # Production output
 ```
 
 ## Code Patterns
 
 ### Adding a New Page
-1. Create directory in `app/{page-name}/`
-2. Add `page.js` (and `layout.js` if needed)
-3. Service pages should have `lib/` and `components/` subdirectories
+1. Create component in `src/routes/{page-name}.jsx`
+2. Add route to `src/router.jsx`
+3. Service pages should have `src/routes/{service}/components/` for service-specific components
 
 ### Component Guidelines
-- Shared components go in `app/components/`
-- Service-specific components in `app/{service}/components/`
+- Shared components go in `src/components/`
+- Service-specific components in `src/routes/{service}/components/`
 - Use Tailwind CSS for styling
 - Use Headless UI for accessible interactive components
 - Use Heroicons for icons
@@ -71,19 +73,35 @@ web/
 ### Data Fetching
 - Use SWR for client-side data fetching
 - API calls go through the backend at configured endpoint
+- Runtime config available via `src/config.js`
 
 ### Testing
-- Tests are colocated with components (`.test.js` suffix)
+- Tests are colocated with components (`.test.jsx` suffix)
 - Use React Testing Library patterns
-- Snapshots in `__snapshots__/` directories
+- Vitest stores snapshots in `__snapshots__/` directories next to test files
 
 ## Key Files
 
-- `app/layout.js` - Root layout, providers, global styles
-- `app/config.js` - API endpoint configuration
-- `app/providers/` - React context providers
-- `next.config.js` - Next.js configuration
+- `index.html` - Entry point, includes runtime config injection
+- `src/main.jsx` - React app entry point
+- `src/router.jsx` - React Router configuration with basename support
+- `src/config.js` - Runtime configuration (API URL, base path)
+- `vite.config.js` - Vite build configuration
+- `vitest.config.js` - Test configuration
 - `tailwind.config.js` - Tailwind theme customization
+
+## Configuration
+
+Runtime configuration is injected by the Python backend into `index.html`:
+
+```javascript
+window.__BLACKFISH_CONFIG__ = {
+  apiUrl: "http://host:port/basepath",
+  basePath: "/basepath"
+};
+```
+
+This enables deployment at arbitrary base paths (e.g., Open OnDemand).
 
 ## Building for Production
 
@@ -92,4 +110,4 @@ The frontend is bundled with the Python package:
 npm run build:lib  # Builds and copies to ../lib/src/blackfish/build/
 ```
 
-This allows the Python server to serve the UI as static files.
+The build uses `base: './'` for relative asset paths, allowing the app to work from any URL path.

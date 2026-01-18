@@ -1,0 +1,488 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Disabled Pagination 1`] = `
+<body>
+  <div>
+    <div
+      class="flex justify-center mt-2"
+    >
+      <button
+        class="disabled:text-gray-300"
+        disabled=""
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        1
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+        disabled=""
+      >
+        2
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        3
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        4
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        5
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        6
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        7
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        8
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        9
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        10
+      </button>
+      <button
+        class="disabled:text-gray-300"
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Disabled Pagination 2`] = `
+<body>
+  <div>
+    <div
+      class="flex justify-center mt-2"
+    >
+      <button
+        class="disabled:text-gray-300"
+        disabled=""
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        1
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+        disabled=""
+      >
+        2
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        3
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        4
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        5
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        6
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        7
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        8
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        9
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        disabled=""
+      >
+        10
+      </button>
+      <button
+        class="disabled:text-gray-300"
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Enabled Pagination 1`] = `
+<body>
+  <div>
+    <div
+      class="flex justify-center mt-2"
+    >
+      <button
+        class="disabled:text-gray-300"
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        1
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+        disabled=""
+      >
+        2
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        3
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        4
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        5
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        6
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        7
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        8
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        9
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        10
+      </button>
+      <button
+        class="disabled:text-gray-300"
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Enabled Pagination 2`] = `
+<body>
+  <div>
+    <div
+      class="flex justify-center mt-2"
+    >
+      <button
+        class="disabled:text-gray-300"
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        1
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+        disabled=""
+      >
+        2
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        3
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        4
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        5
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        6
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        7
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        8
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        9
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+      >
+        10
+      </button>
+      <button
+        class="disabled:text-gray-300"
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Pagination with no files 1`] = `
+<body>
+  <div>
+    <div
+      class="flex justify-center mt-2"
+    >
+      <button
+        class="disabled:text-gray-300"
+        disabled=""
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white text-gray-300"
+        disabled=""
+      >
+        1
+      </button>
+      <button
+        class="disabled:text-gray-300"
+        disabled=""
+      >
+        <svg
+          aria-hidden="true"
+          class="w-4 h-4"
+          data-slot="icon"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</body>
+`;

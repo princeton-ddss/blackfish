@@ -416,7 +416,7 @@ async def index() -> Redirect:
 
 @get(path="/dashboard", middleware=PAGE_MIDDLEWARE)
 async def dashboard() -> Template:
-    return Template(template_name="dashboard.html")
+    return Template(template_name="index.html")
 
 
 @get(path="/login")
@@ -431,17 +431,17 @@ async def dashboard_login(request: Request) -> Template | Redirect:  # type: ign
             return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
 
     logger.debug("User not authenticated. Returning login page.")
-    return Template(template_name="login.html")
+    return Template(template_name="index.html")
 
 
 @get(path="/text-generation", middleware=PAGE_MIDDLEWARE)
 async def text_generation() -> Template:
-    return Template(template_name="text-generation.html")
+    return Template(template_name="index.html")
 
 
 @get(path="/speech-recognition", middleware=PAGE_MIDDLEWARE)
 async def speech_recognition() -> Template:
-    return Template(template_name="speech-recognition.html")
+    return Template(template_name="index.html")
 
 
 # --- Endpoints ---
@@ -1772,9 +1772,9 @@ session_config = CookieBackendConfig(
     # samesite="none",
 )
 
-next_server = create_static_files_router(
-    path="_next",
-    directories=[blackfish_config.STATIC_DIR / "build" / "_next"],
+assets_server = create_static_files_router(
+    path="assets",
+    directories=[blackfish_config.STATIC_DIR / "build" / "assets"],
     html_mode=True,
 )
 
@@ -1795,7 +1795,7 @@ def not_found_exception_handler(
             status_code=HTTP_404_NOT_FOUND,
             media_type="application/json",
         )
-    return Template(template_name="404.html", status_code=HTTP_404_NOT_FOUND)
+    return Template(template_name="index.html", status_code=HTTP_404_NOT_FOUND)
 
 
 app = Litestar(
@@ -1842,7 +1842,7 @@ app = Litestar(
         delete_models,
         read_profiles,
         read_profile,
-        next_server,
+        assets_server,
         img_server,
     ],
     dependencies={"session": session_provider},

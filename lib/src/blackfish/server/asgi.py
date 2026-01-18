@@ -146,7 +146,6 @@ AUTH_TOKEN: Optional[bytes] = None
 if blackfish_config.AUTH_TOKEN is not None:
     AUTH_TOKEN = bcrypt.hashpw(blackfish_config.AUTH_TOKEN.encode(), bcrypt.gensalt())
 else:
-    AUTH_TOKEN = None
     logger.warning("AUTH_TOKEN is not set. Blackfish API endpoints are unprotected.")
 
 

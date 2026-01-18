@@ -1,39 +1,57 @@
 import js from "@eslint/js";
 import globals from "globals";
 import pluginReact from "eslint-plugin-react";
-import pluginJest from "eslint-plugin-jest";
-import { defineConfig, globalIgnores } from "eslint/config";
-import { FlatCompat } from "@eslint/eslintrc";
+import pluginReactHooks from "eslint-plugin-react-hooks";
 
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname + "/app",
-});
-
-export default defineConfig([
-  ...compat.config({
-    extends: ["next/core-web-vitals"]
-  }),
+export default [
+  js.configs.recommended,
   {
-    files: ["app/**/*.{js,mjs,cjs,jsx}"],
-    plugins: { js },
-    extends: [
-      "js/recommended",
-    ]
+    files: ["src/**/*.{js,jsx}"],
+    plugins: {
+      "react-hooks": pluginReactHooks,
+    },
+    rules: {
+      ...pluginReactHooks.configs.recommended.rules,
+    },
   },
   {
-    files: ["app/**/*.{js,mjs,cjs,jsx}"],
+    files: ["src/**/*.{js,jsx}"],
     languageOptions: {
-      globals: globals.browser
-    }
+      globals: {
+        ...globals.browser,
+        ...globals.es2021,
+        process: "readonly",
+      },
+    },
   },
   {
-    files: ["app/**/*.{spec.js,test.js}"],
-    plugins: { jest: pluginJest },
+    files: ["src/**/*.{spec,test}.{js,jsx}"],
     languageOptions: {
-      globals: pluginJest.environments.globals.globals
-    }
+      globals: {
+        // Vitest globals
+        describe: "readonly",
+        it: "readonly",
+        test: "readonly",
+        expect: "readonly",
+        vi: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
+        beforeAll: "readonly",
+        afterAll: "readonly",
+        global: "readonly",
+      },
+    },
+  },
+  {
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
   },
   pluginReact.configs.flat.recommended,
   pluginReact.configs.flat["jsx-runtime"],
-  globalIgnores(["build/*", ".next/*"]),
-]);
+  {
+    ignores: ["build/*", "dist/*"],
+  },
+];

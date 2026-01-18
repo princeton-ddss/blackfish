@@ -5,7 +5,7 @@
 
 # Blackfish UI
 
-Next.js web application `blackfish-ui` for the [Blackfish](../) MLaaS platform.
+Vite + React application `blackfish-ui` for the [Blackfish](../) MLaaS platform.
 
 For project overview and usage instructions, see the [main README](../README.md).
 
@@ -29,7 +29,8 @@ npm run build                  # Production build
 npm run build:lib              # Build and copy to Python package
 
 # Testing & Linting
-npm test                       # Run Jest tests
+npm test                       # Run Vitest tests
+npm run test:coverage          # Run tests with coverage
 npm run lint                   # ESLint check
 ```
 
@@ -45,10 +46,18 @@ This allows the Python server to serve the UI as static files.
 
 ## Configuration
 
-By default, the UI looks for the Blackfish API at `http://localhost:8000`. Set these environment variables to use a different endpoint:
+The UI receives runtime configuration from the Python backend, which injects values into `index.html`:
 
-- `NEXT_PUBLIC_BLACKFISH_HOST` - API host
-- `NEXT_PUBLIC_BLACKFISH_PORT` - API port
+```javascript
+window.__BLACKFISH_CONFIG__ = {
+  apiUrl: "http://host:port/basepath",
+  basePath: "/basepath"
+};
+```
+
+This enables deployment at arbitrary base paths (e.g., Open OnDemand integration).
+
+For local development, the Vite dev server proxies API requests to `http://localhost:8000`.
 
 ## Documentation
 

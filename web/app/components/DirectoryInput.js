@@ -1,20 +1,17 @@
 import { useEffect, useState } from "react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
-import DirectoryInputAlert from "@/app/components/DirectoryInputAlert";
 
 /**
  * Directory Input component.
  * @param {object} options
- * @param {string} options.root - Directory root.
- * @param {string} options.path - Directory path, relative to `root`.
+ * @param {string} options.root - Initial directory path.
+ * @param {string} options.path - Current directory path.
  * @param {Function} options.setPath - React hook to update `path`.
- * @param {boolean} options.pathError - If there was an error finding the `path`.
- * @param {Function} options.setPathError - React hook to update `pathError`.
  * @param {boolean} options.disabled - If the inputs are disabled.
  * @return {JSX.Element}
  */
-function DirectoryInput({ root, path, setPath, pathError, setPathError, disabled }) {
+function DirectoryInput({ root, path, setPath, disabled }) {
   const [input, setInput] = useState(root);
 
   useEffect(() => {
@@ -22,13 +19,8 @@ function DirectoryInput({ root, path, setPath, pathError, setPathError, disabled
   }, [path])
 
   const handleButtonClick = () => {
-    if (input.startsWith(root)) {
-      setPath(input);
-      setPathError(false);
-    } else {
-      setInput(path); // sync input
-      setPathError(true);
-    }
+    // Path validation is handled by the parent component (FileManager)
+    setPath(input);
   };
 
   return (
@@ -69,8 +61,6 @@ function DirectoryInput({ root, path, setPath, pathError, setPathError, disabled
           Search
         </button>
       </div>
-
-      <DirectoryInputAlert root={root} isVisible={pathError} />
     </div>
   );
 }
@@ -79,8 +69,6 @@ DirectoryInput.propTypes = {
   root: PropTypes.string,
   path: PropTypes.string,
   setPath: PropTypes.func,
-  pathError: PropTypes.bool,
-  setPathError: PropTypes.func,
   disabled: PropTypes.bool,
 };
 

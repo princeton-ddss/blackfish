@@ -450,6 +450,11 @@ async def speech_recognition() -> Template:
     return Template(template_name="speech-recognition.html")
 
 
+@get(path="/file-manager", middleware=PAGE_MIDDLEWARE)
+async def file_manager() -> Template:
+    return Template(template_name="file-manager.html")
+
+
 # --- Endpoints ---
 @get("/api/info", guards=ENDPOINT_GUARDS)
 async def info(state: State) -> dict[str, Any]:
@@ -1994,6 +1999,7 @@ app = Litestar(
         dashboard_login,
         text_generation,
         speech_recognition,
+        file_manager,
         index,
         info,
         login,

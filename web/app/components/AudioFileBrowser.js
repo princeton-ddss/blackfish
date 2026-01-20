@@ -10,13 +10,14 @@ import {
 import { useFileSystem } from "@/app/lib/loaders";
 import { basePath } from "../config";
 import { fileSize, lastModified } from "@/app/lib/util";
+import { isRootPath } from "@/app/utils/pathUtils";
 import Pagination from "@/app/components/Pagination";
 import DirectoryInput from "@/app/components/DirectoryInput";
 import FilterInput from "@/app/components/FilterInput";
 import PropTypes from "prop-types";
 
 /**
- * Remote File Browser Table component.
+ * Audio File Picker Table component.
  * @param {object} options
  * @param {Array.<Object>} options.content
  * @param {string} options.path
@@ -33,7 +34,7 @@ import PropTypes from "prop-types";
  * @param {Object} options.status
  * @return {JSX.Element}
  */
-function RemoteFileBrowserTable({
+function AudioFileBrowserTable({
   content,
   path,
   root,
@@ -65,8 +66,8 @@ function RemoteFileBrowserTable({
 
   return (
     <div
-      id="remote-file-browser-table"
-      name="remote-file-browser-table"
+      id="audio-file-browser-table"
+      name="audio-file-browser-table"
       className="flex-none h-[26rem]"
     >
       <div className="mt-3 flow-root">
@@ -82,14 +83,18 @@ function RemoteFileBrowserTable({
                     >
                       <button
                         onClick={() => {
-                          const parts = path.split("/");
-                          const newPath = parts
-                            .slice(0, parts.length - 1)
-                            .join("/");
-                          setPath(newPath);
+                          const parts = path.split("/").filter(p => p !== "");
+                          if (parts.length <= 1) {
+                            // Going back to root
+                            setPath(path === root || path.startsWith(root) ? root : "/");
+                          } else {
+                            const newPath = parts.slice(0, parts.length - 1).join("/");
+                            setPath(newPath);
+                          }
                         }}
                       >
-                        {path !== root && path != `${root}/` && (
+                        {/* Hide back button at root - check for local root match or remote root "/" */}
+                        {path !== root && !isRootPath(path) && path !== `${root}/` && (
                           <ChevronLeftIcon className="h-4 w-4 mt-1 ml-4 text-gray-900 hover:text-gray-400" />
                         )}{" "}
                       </button>
@@ -298,7 +303,7 @@ function RemoteFileBrowserTable({
   );
 }
 
-RemoteFileBrowserTable.propTypes = {
+AudioFileBrowserTable.propTypes = {
   content: PropTypes.array,
   path: PropTypes.string,
   root: PropTypes.string,
@@ -315,14 +320,14 @@ RemoteFileBrowserTable.propTypes = {
 };
 
 /**
- * Remote File Browser component.
+ * Audio File Picker component for selecting audio files (mp3, wav, flac).
  * @param {object} options
  * @param {string} options.root - File browser root path.
  * @param {Function} options.setAudioPath - React hook to update audio path.
  * @param {Object} options.status - Health of file browser connection.
  * @return {JSX.Element}
  */
-function RemoteFileBrowser({ root, setAudioPath, status }) {
+function AudioFileBrowser({ root, setAudioPath, status }) {
   const [path, setPath] = useState(root);
   const [pathError, setPathError] = useState(false);
   const [selected, setSelected] = useState("");
@@ -335,8 +340,8 @@ function RemoteFileBrowser({ root, setAudioPath, status }) {
 
   return (
     <div
-      id="remote-file-browser"
-      name="remote-file-browser"
+      id="audio-file-browser"
+      name="audio-file-browser"
       className="mt-2 mb-2 w-full max-w-6xl"
     >
       <label className="font-medium text-sm">File Browser</label>
@@ -351,7 +356,7 @@ function RemoteFileBrowser({ root, setAudioPath, status }) {
 
       <FilterInput className="sm:flex-auto" query={query} setQuery={setQuery} disabled={status.disabled} />
 
-      <RemoteFileBrowserTable
+      <AudioFileBrowserTable
         content={files}
         path={path}
         root={root}
@@ -371,10 +376,10 @@ function RemoteFileBrowser({ root, setAudioPath, status }) {
   );
 }
 
-RemoteFileBrowser.propTypes = {
+AudioFileBrowser.propTypes = {
   root: PropTypes.string,
   setAudioPath: PropTypes.func,
   status: PropTypes.object,
 };
 
-export default RemoteFileBrowser;
+export default AudioFileBrowser;

@@ -1,7 +1,7 @@
 import {render, act} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
-import RemoteFileBrowser from "@/app/components/RemoteFileBrowser";
+import AudioFileBrowser from "@/app/components/AudioFileBrowser";
 import { useFileSystem } from "@/app/lib/loaders";
 
 jest.mock("@/app/lib/loaders", () => ({
@@ -50,10 +50,10 @@ beforeEach(() => {
   });
 });
 
-test("Enabled RemoteFileBrowser", async () => {
+test("Enabled AudioFileBrowser", async () => {
   const {baseElement} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={(e) => e}
         status={{disabled: false}}
@@ -63,10 +63,10 @@ test("Enabled RemoteFileBrowser", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("Disabled RemoteFileBrowser", async () => {
+test("Disabled AudioFileBrowser", async () => {
   const {baseElement} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={(e) => e}
         status={{disabled: true, detail: "Test error."}}
@@ -76,7 +76,7 @@ test("Disabled RemoteFileBrowser", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("Loading RemoteFileBrowser", async () => {
+test("Loading AudioFileBrowser", async () => {
   useFileSystem.mockReturnValue({
     files: [
       {name: "file 1", is_dir: false, path: "path/to/file_1.mp3", size: 64, modified_at: "2025-06-19T14:16:50"},
@@ -96,7 +96,7 @@ test("Loading RemoteFileBrowser", async () => {
   });
   const {baseElement} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={(e) => e}
         status={{disabled: true, detail: "Test error."}}
@@ -106,7 +106,7 @@ test("Loading RemoteFileBrowser", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("RemoteFileBrowser with error", async () => {
+test("AudioFileBrowser with error", async () => {
   useFileSystem.mockReturnValue({
     files: [],
     error: {message: "Network error"},
@@ -115,7 +115,7 @@ test("RemoteFileBrowser with error", async () => {
   });
   const {baseElement} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={(e) => e}
         status={{disabled: false}}
@@ -125,7 +125,7 @@ test("RemoteFileBrowser with error", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("RemoteFileBrowser with empty files", async () => {
+test("AudioFileBrowser with empty files", async () => {
   useFileSystem.mockReturnValue({
     files: [],
     error: null,
@@ -134,7 +134,7 @@ test("RemoteFileBrowser with empty files", async () => {
   });
   const {baseElement} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={(e) => e}
         status={{disabled: false}}
@@ -144,7 +144,7 @@ test("RemoteFileBrowser with empty files", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("RemoteFileBrowser with no service selected", async () => {
+test("AudioFileBrowser with no service selected", async () => {
   useFileSystem.mockReturnValue({
     files: [],
     error: null,
@@ -153,7 +153,7 @@ test("RemoteFileBrowser with no service selected", async () => {
   });
   const {baseElement} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root=""
         setAudioPath={(e) => e}
         status={{disabled: false}}
@@ -163,7 +163,7 @@ test("RemoteFileBrowser with no service selected", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("RemoteFileBrowser with directories and interactions", async () => {
+test("AudioFileBrowser with directories and interactions", async () => {
   const mockSetAudioPath = jest.fn();
   const mockRefresh = jest.fn();
   useFileSystem.mockReturnValue({
@@ -180,7 +180,7 @@ test("RemoteFileBrowser with directories and interactions", async () => {
   const user = userEvent.setup();
   const {baseElement, container} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={mockSetAudioPath}
         status={{disabled: false}}
@@ -201,7 +201,7 @@ test("RemoteFileBrowser with directories and interactions", async () => {
   }
 });
 
-test("RemoteFileBrowser file selection", async () => {
+test("AudioFileBrowser file selection", async () => {
   const mockSetAudioPath = jest.fn();
   useFileSystem.mockReturnValue({
     files: [
@@ -216,7 +216,7 @@ test("RemoteFileBrowser file selection", async () => {
   const user = userEvent.setup();
   const {container} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={mockSetAudioPath}
         status={{disabled: false}}
@@ -240,7 +240,7 @@ test("RemoteFileBrowser file selection", async () => {
   }
 });
 
-test("RemoteFileBrowser with filtering", async () => {
+test("AudioFileBrowser with filtering", async () => {
   useFileSystem.mockReturnValue({
     files: [
       {
@@ -273,7 +273,7 @@ test("RemoteFileBrowser with filtering", async () => {
   const user = userEvent.setup();
   const {baseElement, container} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={(e) => e}
         status={{disabled: false}}
@@ -291,7 +291,7 @@ test("RemoteFileBrowser with filtering", async () => {
   }
 });
 
-test("RemoteFileBrowser back navigation", async () => {
+test("AudioFileBrowser back navigation", async () => {
   useFileSystem.mockReturnValue({
     files: [
       {name: "folder1", is_dir: true, path: "/parent/child", size: 0, modified_at: "2025-06-19T14:16:50"},
@@ -305,7 +305,7 @@ test("RemoteFileBrowser back navigation", async () => {
   // Test with a nested path to trigger back navigation
   const {baseElement, container} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/parent"
         setAudioPath={(e) => e}
         status={{disabled: false}}
@@ -324,7 +324,7 @@ test("RemoteFileBrowser back navigation", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("RemoteFileBrowser folder navigation", async () => {
+test("AudioFileBrowser folder navigation", async () => {
   const mockSetAudioPath = jest.fn();
   useFileSystem.mockReturnValue({
     files: [
@@ -339,7 +339,7 @@ test("RemoteFileBrowser folder navigation", async () => {
   const user = userEvent.setup();
   const {baseElement, container} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={mockSetAudioPath}
         status={{disabled: false}}
@@ -362,7 +362,7 @@ test("RemoteFileBrowser folder navigation", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("RemoteFileBrowser disabled interactions", async () => {
+test("AudioFileBrowser disabled interactions", async () => {
   const mockSetAudioPath = jest.fn();
   const mockRefresh = jest.fn();
   useFileSystem.mockReturnValue({
@@ -378,7 +378,7 @@ test("RemoteFileBrowser disabled interactions", async () => {
   const user = userEvent.setup();
   const {baseElement, container} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={mockSetAudioPath}
         status={{disabled: true, detail: "Service disabled"}}
@@ -403,7 +403,7 @@ test("RemoteFileBrowser disabled interactions", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
-test("RemoteFileBrowser loading state with files", async () => {
+test("AudioFileBrowser loading state with files", async () => {
   useFileSystem.mockReturnValue({
     files: [
       {
@@ -421,7 +421,7 @@ test("RemoteFileBrowser loading state with files", async () => {
 
   const {baseElement, container} = await act(async () => {
     return render(
-      <RemoteFileBrowser
+      <AudioFileBrowser
         root="/"
         setAudioPath={(e) => e}
         status={{disabled: false}}

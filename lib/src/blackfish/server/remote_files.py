@@ -184,15 +184,22 @@ def sftp_listdir(
         logger.error(f"SFTP listdir error: {e}")
         raise SFTPConnectionError(str(e))
 
+    # Normalize relative_path for building entry paths
+    base_relative = relative_path.strip("/") if relative_path else ""
+
     results = []
     for attr in entries:
         if not hidden and attr.filename.startswith("."):
             continue
-        entry_path = os.path.join(full_path, attr.filename)
+        # Return paths relative to home_dir, not absolute paths
+        if base_relative:
+            entry_relative_path = f"{base_relative}/{attr.filename}"
+        else:
+            entry_relative_path = attr.filename
         results.append(
             RemoteFileStats(
                 name=attr.filename,
-                path=entry_path,
+                path=entry_relative_path,
                 is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
                 size=attr.st_size or 0,
                 modified_at=(
@@ -242,9 +249,11 @@ def sftp_stat(
         logger.error(f"SFTP stat error: {e}")
         raise SFTPConnectionError(str(e))
 
+    # Return relative path, not absolute
+    normalized_relative = relative_path.strip("/") if relative_path else ""
     return RemoteFileStats(
         name=os.path.basename(full_path),
-        path=full_path,
+        path=normalized_relative,
         is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
         size=attr.st_size or 0,
         modified_at=(

@@ -6,6 +6,7 @@ via SFTP, with persistent connections for efficient file operations.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Annotated, Any, Literal, TYPE_CHECKING
 from enum import StrEnum
@@ -47,7 +48,7 @@ class FileEntry(BaseModel):
     is_dir: bool
     size: int
     modified_at: datetime
-    permissions: str  # TODO: use class?
+    permissions: str
 
 
 class ErrorCode(StrEnum):
@@ -260,7 +261,6 @@ class RemoteFileBrowserSession(WebsocketListener):
         """
         self.profile_name = profile_name
 
-        # Look up profile
         try:
             profile = deserialize_profile(blackfish_config.HOME_DIR, profile_name)
         except FileNotFoundError:
@@ -302,10 +302,9 @@ class RemoteFileBrowserSession(WebsocketListener):
             await socket.close()
             return
 
-        # Establish SFTP connection
         try:
             self.browser = RemoteFileBrowser(profile)
-            self.browser.connect()
+            await asyncio.to_thread(self.browser.connect)
             await socket.send_json(
                 {
                     "status": "connected",
@@ -330,7 +329,7 @@ class RemoteFileBrowserSession(WebsocketListener):
         """Handle WebSocket disconnection - clean up SFTP connection."""
         if self.browser:
             try:
-                self.browser.disconnect()
+                await asyncio.to_thread(self.browser.disconnect)
             except Exception as e:
                 logger.warning(f"Error during disconnect cleanup: {e}")
             self.browser = None
@@ -386,7 +385,7 @@ class RemoteFileBrowserSession(WebsocketListener):
                 }
             )
 
-        response = self.handle_message(message)
+        response = await asyncio.to_thread(self.handle_message, message)
         return json.dumps(response, default=str)
 
     def handle_message(self, message: BrowserMessage) -> dict[str, Any]:

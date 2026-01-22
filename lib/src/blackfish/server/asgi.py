@@ -594,7 +594,6 @@ async def upload_image(
     except UnidentifiedImageError as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
-    
     if profile is not None:
         remote_profile = get_remote_profile(profile)
         logger.debug(f"Uploading image to remote profile {profile}: {data.path}")
@@ -605,7 +604,6 @@ async def upload_image(
             created_at=response.created_at,
         )
 
-    
     path = Path(data.path)
     logger.debug(f"Attempting to upload image {data.file.filename} to {path}")
 
@@ -619,7 +617,6 @@ async def upload_image(
 async def get_image(path: str, profile: Optional[str] = None) -> File | Response[bytes]:
     """Retrieve an image file from the specified path."""
 
-    
     if profile is not None:
         validate_file_extension(Path(path), IMAGE_EXTENSIONS)
         remote_profile = get_remote_profile(profile)
@@ -652,7 +649,6 @@ async def get_image(path: str, profile: Optional[str] = None) -> File | Response
             },
         )
 
-    
     file_path = Path(path)
 
     logger.debug(f"Attempting to retrieve image from {file_path}")
@@ -690,7 +686,6 @@ async def update_image(
     except Exception as e:
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
-    
     if profile is not None:
         remote_profile = get_remote_profile(profile)
         logger.debug(f"Updating image on remote profile {profile}: {data.path}")
@@ -701,7 +696,6 @@ async def update_image(
             created_at=response.created_at,
         )
 
-    
     path = Path(data.path)
     logger.debug(f"Attempting to update image {data.file.filename} at {path}")
 
@@ -757,7 +751,6 @@ async def upload_text(
     except UnicodeDecodeError as e:
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
-    
     if profile is not None:
         remote_profile = get_remote_profile(profile)
         logger.debug(f"Uploading text file to remote profile {profile}: {data.path}")
@@ -768,7 +761,6 @@ async def upload_text(
             created_at=response.created_at,
         )
 
-    
     path = Path(data.path)
     logger.debug(f"Attempting to upload text file {data.file.filename} to {path}")
 
@@ -782,7 +774,6 @@ async def upload_text(
 async def get_text(path: str, profile: Optional[str] = None) -> File | Response[bytes]:
     """Retrieve a text file from the specified path."""
 
-    
     if profile is not None:
         validate_file_extension(Path(path), TEXT_EXTENSIONS)
         remote_profile = get_remote_profile(profile)
@@ -815,7 +806,6 @@ async def get_text(path: str, profile: Optional[str] = None) -> File | Response[
             },
         )
 
-    
     file_path = Path(path)
 
     logger.debug(f"Attempting to retrieve text file from {file_path}")
@@ -918,7 +908,7 @@ async def upload_audio(
             size=response.size,
             created_at=response.created_at,
         )
-    
+
     path = Path(data.path)
     logger.debug(f"Attempting to upload audio file {data.file.filename} to {path}")
 
@@ -1001,7 +991,7 @@ async def delete_audio(path: str, profile: Optional[str] = None) -> Path | str:
 
     if profile is not None:
         validate_file_extension(Path(path), AUDIO_EXTENSIONS)
-        remote_profile = get_remote_profile(profile) # TODO: Replace get_remote_profile
+        remote_profile = get_remote_profile(profile)  # TODO: Replace get_remote_profile
         logger.debug(f"Deleting audio file on remote profile {profile}: {path}")
         return remote_delete_file(remote_profile, path)
 

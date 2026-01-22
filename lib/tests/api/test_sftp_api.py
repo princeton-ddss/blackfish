@@ -79,9 +79,7 @@ class TestRemoteImageUpload:
         """Test that image validation happens before remote upload attempt."""
         invalid_data = b"This is not an image"
 
-        with mock.patch(
-            "blackfish.server.asgi.get_remote_profile"
-        ) as mock_get_profile:
+        with mock.patch("blackfish.server.asgi.get_remote_profile") as mock_get_profile:
             response = await client.post(
                 "/api/image",
                 files={"file": invalid_data},

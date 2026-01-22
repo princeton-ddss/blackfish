@@ -133,7 +133,6 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
@@ -170,18 +169,19 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 # Receive connection success
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
                 # Send list request
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "list",
-                    "path": "/documents",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "list",
+                        "path": "/documents",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -224,18 +224,19 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 # Receive connection success
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
                 # Send stat request
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "stat",
-                    "path": "file.txt",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "stat",
+                        "path": "file.txt",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -272,16 +273,17 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "exists",
-                    "path": "existing_file.txt",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "exists",
+                        "path": "existing_file.txt",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -316,16 +318,17 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "exists",
-                    "path": "nonexistent.txt",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "exists",
+                        "path": "nonexistent.txt",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -359,16 +362,17 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "mkdir",
-                    "path": "new_directory",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "mkdir",
+                        "path": "new_directory",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -405,16 +409,17 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "delete",
-                    "path": "file_to_delete.txt",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "delete",
+                        "path": "file_to_delete.txt",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -450,17 +455,18 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "rename",
-                    "old_path": "old_name.txt",
-                    "new_path": "new_name.txt",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "rename",
+                        "old_path": "old_name.txt",
+                        "new_path": "new_name.txt",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -497,16 +503,17 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "invalid_action",
-                    "path": "/some/path",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "invalid_action",
+                        "path": "/some/path",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -539,16 +546,17 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "stat",
-                    # Missing "path" field
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "stat",
+                        # Missing "path" field
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -582,16 +590,17 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "list",
-                    "path": "/nonexistent",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "list",
+                        "path": "/nonexistent",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"
@@ -625,16 +634,17 @@ class TestRemoteFileBrowserWebSocket:
                 mock_connection_class,
             ),
         ):
-
             with await client.websocket_connect("/ws/files/remote") as ws:
                 data = ws.receive_json()
                 assert data["status"] == "connected"
 
-                ws.send_json({
-                    "id": "req-1",
-                    "action": "list",
-                    "path": "/protected",
-                })
+                ws.send_json(
+                    {
+                        "id": "req-1",
+                        "action": "list",
+                        "path": "/protected",
+                    }
+                )
 
                 response = ws.receive_json()
                 assert response["id"] == "req-1"

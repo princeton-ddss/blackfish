@@ -41,7 +41,7 @@ dependencies = [
   "types-psutil>=6.1.0.20241221",
   "types-requests>=2.32.0.20241016",
   "uvicorn>=0.34",
-  "websockets>=14.0",
+  "websockets>=14",
   "yaspin>=3.1",
 ]
 optional-dependencies.uv = [

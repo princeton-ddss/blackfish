@@ -95,7 +95,12 @@ class RenameMessage(BaseModel):
 
 
 BrowserMessage = Annotated[
-    ListMessage | StatMessage | ExistsMessage | MkdirMessage | DeleteMessage | RenameMessage,
+    ListMessage
+    | StatMessage
+    | ExistsMessage
+    | MkdirMessage
+    | DeleteMessage
+    | RenameMessage,
     Field(discriminator="action"),
 ]
 
@@ -355,11 +360,22 @@ class RemoteFileBrowserSession(WebsocketListener):
         try:
             message = BrowserMessageAdapter.validate_python(raw_message)
         except ValidationError as e:
-            action = raw_message.get("action") if isinstance(raw_message, dict) else None
-            if action is not None and action not in ("list", "stat", "exists", "mkdir", "delete", "rename"):
+            action = (
+                raw_message.get("action") if isinstance(raw_message, dict) else None
+            )
+            if action is not None and action not in (
+                "list",
+                "stat",
+                "exists",
+                "mkdir",
+                "delete",
+                "rename",
+            ):
                 return json.dumps(
                     {
-                        "id": raw_message.get("id") if isinstance(raw_message, dict) else None,
+                        "id": raw_message.get("id")
+                        if isinstance(raw_message, dict)
+                        else None,
                         "status": "error",
                         "action": action,
                         "error": {
@@ -370,7 +386,9 @@ class RemoteFileBrowserSession(WebsocketListener):
                 )
             return json.dumps(
                 {
-                    "id": raw_message.get("id") if isinstance(raw_message, dict) else None,
+                    "id": raw_message.get("id")
+                    if isinstance(raw_message, dict)
+                    else None,
                     "status": "error",
                     "action": action,
                     "error": {
@@ -404,7 +422,9 @@ class RemoteFileBrowserSession(WebsocketListener):
         try:
             match message:
                 case ListMessage():
-                    entries = self.browser.list_dir(message.path, show_hidden=message.show_hidden)
+                    entries = self.browser.list_dir(
+                        message.path, show_hidden=message.show_hidden
+                    )
                     return {
                         "id": message.id,
                         "status": "ok",

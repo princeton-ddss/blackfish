@@ -14,10 +14,6 @@ from blackfish.server.sftp import (
     sftp_mkdir,
     sftp_delete,
     sftp_rename,
-    SFTPPathNotFoundError,
-    SFTPPermissionDeniedError,
-    SFTPInvalidRequestError,
-    SFTPConnectionError,
 )
 from blackfish.server.models.profile import SlurmProfile
 
@@ -142,14 +138,14 @@ class TestSftpListdir:
         mock_sftp = mock.MagicMock()
         mock_sftp.listdir_attr.side_effect = FileNotFoundError()
 
-        with pytest.raises(SFTPPathNotFoundError):
+        with pytest.raises(FileNotFoundError):
             sftp_listdir(mock_sftp, remote_profile, "nonexistent")
 
     def test_list_permission_denied(self, remote_profile):
         mock_sftp = mock.MagicMock()
         mock_sftp.listdir_attr.side_effect = PermissionError()
 
-        with pytest.raises(SFTPPermissionDeniedError):
+        with pytest.raises(PermissionError):
             sftp_listdir(mock_sftp, remote_profile, "protected")
 
     def test_list_empty_directory(self, remote_profile):
@@ -164,9 +160,9 @@ class TestSftpListdir:
         mock_sftp = mock.MagicMock()
         mock_sftp.listdir_attr.side_effect = Exception("Connection reset by peer")
 
-        with pytest.raises(SFTPConnectionError) as exc_info:
+        with pytest.raises(OSError) as exc_info:
             sftp_listdir(mock_sftp, remote_profile, "somedir")
-        assert "Connection reset by peer" in str(exc_info.value.message)
+        assert "Connection reset by peer" in str(exc_info.value)
 
 
 class TestSftpStat:
@@ -203,14 +199,14 @@ class TestSftpStat:
         mock_sftp = mock.MagicMock()
         mock_sftp.stat.side_effect = FileNotFoundError()
 
-        with pytest.raises(SFTPPathNotFoundError):
+        with pytest.raises(FileNotFoundError):
             sftp_stat(mock_sftp, remote_profile, "nonexistent")
 
     def test_stat_permission_denied(self, remote_profile):
         mock_sftp = mock.MagicMock()
         mock_sftp.stat.side_effect = PermissionError()
 
-        with pytest.raises(SFTPPermissionDeniedError):
+        with pytest.raises(PermissionError):
             sftp_stat(mock_sftp, remote_profile, "protected")
 
 
@@ -241,23 +237,23 @@ class TestSftpMkdir:
         mock_sftp = mock.MagicMock()
         mock_sftp.mkdir.side_effect = FileNotFoundError()
 
-        with pytest.raises(SFTPPathNotFoundError):
+        with pytest.raises(FileNotFoundError):
             sftp_mkdir(mock_sftp, remote_profile, "nonexistent/newdir")
 
     def test_mkdir_permission_denied(self, remote_profile):
         mock_sftp = mock.MagicMock()
         mock_sftp.mkdir.side_effect = PermissionError()
 
-        with pytest.raises(SFTPPermissionDeniedError):
+        with pytest.raises(PermissionError):
             sftp_mkdir(mock_sftp, remote_profile, "protected/newdir")
 
     def test_mkdir_already_exists(self, remote_profile):
         mock_sftp = mock.MagicMock()
         mock_sftp.mkdir.side_effect = IOError("File exists")
 
-        with pytest.raises(SFTPInvalidRequestError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             sftp_mkdir(mock_sftp, remote_profile, "existing")
-        assert "already exists" in str(exc_info.value.message).lower()
+        assert "already exists" in str(exc_info.value).lower()
 
 
 class TestSftpDelete:
@@ -287,14 +283,14 @@ class TestSftpDelete:
         mock_sftp = mock.MagicMock()
         mock_sftp.stat.side_effect = FileNotFoundError()
 
-        with pytest.raises(SFTPPathNotFoundError):
+        with pytest.raises(FileNotFoundError):
             sftp_delete(mock_sftp, remote_profile, "nonexistent")
 
     def test_delete_permission_denied(self, remote_profile):
         mock_sftp = mock.MagicMock()
         mock_sftp.stat.side_effect = PermissionError()
 
-        with pytest.raises(SFTPPermissionDeniedError):
+        with pytest.raises(PermissionError):
             sftp_delete(mock_sftp, remote_profile, "protected")
 
     def test_delete_directory_not_empty(self, remote_profile):
@@ -304,9 +300,9 @@ class TestSftpDelete:
         mock_sftp.stat.return_value = mock_attr
         mock_sftp.rmdir.side_effect = IOError("Directory not empty")
 
-        with pytest.raises(SFTPInvalidRequestError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             sftp_delete(mock_sftp, remote_profile, "nonemptydir")
-        assert "not empty" in str(exc_info.value.message).lower()
+        assert "not empty" in str(exc_info.value).lower()
 
 
 class TestSftpRename:
@@ -324,14 +320,14 @@ class TestSftpRename:
         mock_sftp = mock.MagicMock()
         mock_sftp.rename.side_effect = FileNotFoundError()
 
-        with pytest.raises(SFTPPathNotFoundError):
+        with pytest.raises(FileNotFoundError):
             sftp_rename(mock_sftp, remote_profile, "nonexistent", "newname")
 
     def test_rename_permission_denied(self, remote_profile):
         mock_sftp = mock.MagicMock()
         mock_sftp.rename.side_effect = PermissionError()
 
-        with pytest.raises(SFTPPermissionDeniedError):
+        with pytest.raises(PermissionError):
             sftp_rename(mock_sftp, remote_profile, "protected", "newname")
 
     def test_rename_move_to_different_dir(self, remote_profile):

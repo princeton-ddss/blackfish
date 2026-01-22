@@ -29,35 +29,6 @@ if TYPE_CHECKING:
     from paramiko.sftp_client import SFTPClient
 
 
-class SFTPError(Exception):
-    """Base SFTP error with error code for WebSocket responses."""
-
-    def __init__(self, code: str, message: str):
-        self.code = code
-        self.message = message
-        super().__init__(message)
-
-
-class SFTPPathNotFoundError(SFTPError):
-    def __init__(self, path: str):
-        super().__init__("PATH_NOT_FOUND", f"Path not found: {path}")
-
-
-class SFTPPermissionDeniedError(SFTPError):
-    def __init__(self, path: str):
-        super().__init__("PERMISSION_DENIED", f"Permission denied: {path}")
-
-
-class SFTPConnectionError(SFTPError):
-    def __init__(self, message: str):
-        super().__init__("CONNECTION_FAILED", message)
-
-
-class SFTPInvalidRequestError(SFTPError):
-    def __init__(self, message: str):
-        super().__init__("INVALID_REQUEST", message)
-
-
 @dataclass
 class RemoteFileStats:
     """File statistics for remote files."""
@@ -169,20 +140,19 @@ def sftp_listdir(
         List of RemoteFileStats
 
     Raises:
-        SFTPPathNotFoundError: If path doesn't exist
-        SFTPPermissionDeniedError: If no read access
+        FileNotFoundError: If path doesn't exist
+        PermissionError: If no read access
+        OSError: If connection fails
     """
     full_path = resolve_remote_path(profile, relative_path)
 
     try:
         entries = sftp.listdir_attr(full_path)
-    except FileNotFoundError:
-        raise SFTPPathNotFoundError(full_path)
-    except PermissionError:
-        raise SFTPPermissionDeniedError(full_path)
+    except (FileNotFoundError, PermissionError):
+        raise
     except Exception as e:
         logger.error(f"SFTP listdir error: {e}")
-        raise SFTPConnectionError(str(e))
+        raise OSError(str(e)) from e
 
     # Normalize relative_path for building entry paths
     base_relative = relative_path.strip("/") if relative_path else ""
@@ -234,20 +204,19 @@ def sftp_stat(
         RemoteFileStats for the path
 
     Raises:
-        SFTPPathNotFoundError: If path doesn't exist
-        SFTPPermissionDeniedError: If no read access
+        FileNotFoundError: If path doesn't exist
+        PermissionError: If no read access
+        OSError: If connection fails
     """
     full_path = resolve_remote_path(profile, relative_path)
 
     try:
         attr = sftp.stat(full_path)
-    except FileNotFoundError:
-        raise SFTPPathNotFoundError(full_path)
-    except PermissionError:
-        raise SFTPPermissionDeniedError(full_path)
+    except (FileNotFoundError, PermissionError):
+        raise
     except Exception as e:
         logger.error(f"SFTP stat error: {e}")
-        raise SFTPConnectionError(str(e))
+        raise OSError(str(e)) from e
 
     # Return relative path, not absolute
     normalized_relative = relative_path.strip("/") if relative_path else ""
@@ -289,7 +258,7 @@ def sftp_exists(
         return False
     except Exception as e:
         logger.error(f"SFTP exists check error: {e}")
-        raise SFTPConnectionError(str(e))
+        raise OSError(str(e)) from e
 
 
 def sftp_mkdir(
@@ -305,25 +274,25 @@ def sftp_mkdir(
         relative_path: Path relative to profile's home_dir
 
     Raises:
-        SFTPPathNotFoundError: If parent path doesn't exist
-        SFTPPermissionDeniedError: If no write access
+        FileNotFoundError: If parent path doesn't exist
+        PermissionError: If no write access
+        ValueError: If directory already exists
+        OSError: If connection fails
     """
     full_path = resolve_remote_path(profile, relative_path)
 
     try:
         sftp.mkdir(full_path)
-    except FileNotFoundError:
-        raise SFTPPathNotFoundError(os.path.dirname(full_path))
-    except PermissionError:
-        raise SFTPPermissionDeniedError(full_path)
+    except (FileNotFoundError, PermissionError):
+        raise
     except IOError as e:
         if "exists" in str(e).lower():
-            raise SFTPInvalidRequestError(f"Directory already exists: {full_path}")
+            raise ValueError(f"Directory already exists: {full_path}") from e
         logger.error(f"SFTP mkdir error: {e}")
-        raise SFTPConnectionError(str(e))
+        raise OSError(str(e)) from e
     except Exception as e:
         logger.error(f"SFTP mkdir error: {e}")
-        raise SFTPConnectionError(str(e))
+        raise OSError(str(e)) from e
 
 
 def sftp_delete(
@@ -339,8 +308,10 @@ def sftp_delete(
         relative_path: Path relative to profile's home_dir
 
     Raises:
-        SFTPPathNotFoundError: If path doesn't exist
-        SFTPPermissionDeniedError: If no write access
+        FileNotFoundError: If path doesn't exist
+        PermissionError: If no write access
+        ValueError: If directory not empty
+        OSError: If connection fails
     """
     full_path = resolve_remote_path(profile, relative_path)
 
@@ -350,18 +321,16 @@ def sftp_delete(
             sftp.rmdir(full_path)
         else:
             sftp.remove(full_path)
-    except FileNotFoundError:
-        raise SFTPPathNotFoundError(full_path)
-    except PermissionError:
-        raise SFTPPermissionDeniedError(full_path)
+    except (FileNotFoundError, PermissionError):
+        raise
     except IOError as e:
         if "not empty" in str(e).lower():
-            raise SFTPInvalidRequestError(f"Directory not empty: {full_path}")
+            raise ValueError(f"Directory not empty: {full_path}") from e
         logger.error(f"SFTP delete error: {e}")
-        raise SFTPConnectionError(str(e))
+        raise OSError(str(e)) from e
     except Exception as e:
         logger.error(f"SFTP delete error: {e}")
-        raise SFTPConnectionError(str(e))
+        raise OSError(str(e)) from e
 
 
 def sftp_rename(
@@ -379,21 +348,20 @@ def sftp_rename(
         new_relative_path: New path relative to profile's home_dir
 
     Raises:
-        SFTPPathNotFoundError: If source path doesn't exist
-        SFTPPermissionDeniedError: If no write access
+        FileNotFoundError: If source path doesn't exist
+        PermissionError: If no write access
+        OSError: If connection fails
     """
     old_full_path = resolve_remote_path(profile, old_relative_path)
     new_full_path = resolve_remote_path(profile, new_relative_path)
 
     try:
         sftp.rename(old_full_path, new_full_path)
-    except FileNotFoundError:
-        raise SFTPPathNotFoundError(old_full_path)
-    except PermissionError:
-        raise SFTPPermissionDeniedError(old_full_path)
+    except (FileNotFoundError, PermissionError):
+        raise
     except Exception as e:
         logger.error(f"SFTP rename error: {e}")
-        raise SFTPConnectionError(str(e))
+        raise OSError(str(e)) from e
 
 
 def remote_file_exists(profile: SlurmProfile, relative_path: str) -> bool:

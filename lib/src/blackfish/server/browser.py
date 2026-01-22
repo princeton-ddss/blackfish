@@ -30,11 +30,6 @@ from blackfish.server.sftp import (
     sftp_mkdir,
     sftp_delete,
     sftp_rename,
-    SFTPError,
-    SFTPPathNotFoundError,
-    SFTPPermissionDeniedError,
-    SFTPConnectionError,
-    SFTPInvalidRequestError,
     RemoteFileStats,
 )
 
@@ -119,15 +114,15 @@ def _remote_file_stats_to_file_entry(stats: RemoteFileStats) -> FileEntry:
     )
 
 
-def _map_sftp_error_to_error_code(error: SFTPError) -> ErrorCode:
-    """Map SFTP exception to ErrorCode enum."""
-    if isinstance(error, SFTPPathNotFoundError):
+def _map_exception_to_error_code(error: Exception) -> ErrorCode:
+    """Map exception to ErrorCode enum."""
+    if isinstance(error, FileNotFoundError):
         return ErrorCode.NOT_FOUND
-    elif isinstance(error, SFTPPermissionDeniedError):
+    elif isinstance(error, PermissionError):
         return ErrorCode.PERMISSION_DENIED
-    elif isinstance(error, SFTPInvalidRequestError):
+    elif isinstance(error, ValueError):
         return ErrorCode.INVALID_PATH
-    elif isinstance(error, SFTPConnectionError):
+    elif isinstance(error, OSError):
         return ErrorCode.CONNECTION_ERROR
     else:
         return ErrorCode.CONNECTION_ERROR
@@ -459,14 +454,14 @@ class RemoteFileBrowserSession(WebsocketListener):
                         "action": message.action,
                     }
 
-        except SFTPError as e:
+        except (FileNotFoundError, PermissionError, ValueError, OSError) as e:
             return {
                 "id": message.id,
                 "status": "error",
                 "action": message.action,
                 "error": {
-                    "code": _map_sftp_error_to_error_code(e),
-                    "message": e.message,
+                    "code": _map_exception_to_error_code(e),
+                    "message": str(e),
                 },
             }
         except Exception as e:

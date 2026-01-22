@@ -234,7 +234,7 @@ class TestRemoteFileBrowserWebSocket:
                     {
                         "id": "req-1",
                         "action": "stat",
-                        "path": "file.txt",
+                        "path": "/home/testuser/file.txt",
                     }
                 )
 
@@ -281,7 +281,7 @@ class TestRemoteFileBrowserWebSocket:
                     {
                         "id": "req-1",
                         "action": "exists",
-                        "path": "existing_file.txt",
+                        "path": "/home/testuser/existing_file.txt",
                     }
                 )
 
@@ -326,7 +326,7 @@ class TestRemoteFileBrowserWebSocket:
                     {
                         "id": "req-1",
                         "action": "exists",
-                        "path": "nonexistent.txt",
+                        "path": "/home/testuser/nonexistent.txt",
                     }
                 )
 
@@ -370,7 +370,7 @@ class TestRemoteFileBrowserWebSocket:
                     {
                         "id": "req-1",
                         "action": "mkdir",
-                        "path": "new_directory",
+                        "path": "/home/testuser/new_directory",
                     }
                 )
 
@@ -417,7 +417,7 @@ class TestRemoteFileBrowserWebSocket:
                     {
                         "id": "req-1",
                         "action": "delete",
-                        "path": "file_to_delete.txt",
+                        "path": "/home/testuser/file_to_delete.txt",
                     }
                 )
 
@@ -463,8 +463,8 @@ class TestRemoteFileBrowserWebSocket:
                     {
                         "id": "req-1",
                         "action": "rename",
-                        "old_path": "old_name.txt",
-                        "new_path": "new_name.txt",
+                        "old_path": "/home/testuser/old_name.txt",
+                        "new_path": "/home/testuser/new_name.txt",
                     }
                 )
 

@@ -188,62 +188,62 @@ class RemoteFileBrowser:
         """List directory contents.
 
         Args:
-            path: Path relative to profile's home_dir
+            path: Absolute path to directory
             show_hidden: Include hidden files (starting with .)
 
         Returns:
             List of FileEntry models
         """
-        stats_list = sftp_listdir(self.sftp, self.profile, path, hidden=show_hidden)
+        stats_list = sftp_listdir(self.sftp, path, hidden=show_hidden)
         return [_remote_file_stats_to_file_entry(s) for s in stats_list]
 
     def stat(self, path: str) -> FileEntry:
         """Get file statistics.
 
         Args:
-            path: Path relative to profile's home_dir
+            path: Absolute path to file or directory
 
         Returns:
             FileEntry model
         """
-        stats = sftp_stat(self.sftp, self.profile, path)
+        stats = sftp_stat(self.sftp, path)
         return _remote_file_stats_to_file_entry(stats)
 
     def exists(self, path: str) -> bool:
         """Check if path exists.
 
         Args:
-            path: Path relative to profile's home_dir
+            path: Absolute path to check
 
         Returns:
             True if path exists
         """
-        return sftp_exists(self.sftp, self.profile, path)
+        return sftp_exists(self.sftp, path)
 
     def mkdir(self, path: str) -> None:
         """Create directory.
 
         Args:
-            path: Path relative to profile's home_dir
+            path: Absolute path to create
         """
-        sftp_mkdir(self.sftp, self.profile, path)
+        sftp_mkdir(self.sftp, path)
 
     def delete(self, path: str) -> None:
         """Delete file or directory.
 
         Args:
-            path: Path relative to profile's home_dir
+            path: Absolute path to delete
         """
-        sftp_delete(self.sftp, self.profile, path)
+        sftp_delete(self.sftp, path)
 
     def rename(self, old_path: str, new_path: str) -> None:
         """Rename file or directory.
 
         Args:
-            old_path: Current path relative to profile's home_dir
-            new_path: New path relative to profile's home_dir
+            old_path: Current absolute path
+            new_path: New absolute path
         """
-        sftp_rename(self.sftp, self.profile, old_path, new_path)
+        sftp_rename(self.sftp, old_path, new_path)
 
 
 class RemoteFileBrowserSession(WebsocketListener):

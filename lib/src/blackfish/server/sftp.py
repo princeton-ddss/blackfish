@@ -50,40 +50,6 @@ class RemoteFileUploadResponse(BaseModel):
     remote_path: str
 
 
-def resolve_remote_path(profile: SlurmProfile, relative_path: str) -> str:
-    """Resolve a path relative to the profile's home_dir.
-
-    Args:
-        profile: The SFTP profile containing home_dir
-        relative_path: Path relative to home_dir
-
-    Returns:
-        Absolute path on remote system
-
-    Raises:
-        ValidationException: If path attempts directory traversal
-    """
-    # Handle empty or root path
-    stripped = relative_path.lstrip("/")
-    if not stripped:
-        return profile.home_dir
-
-    # Normalize the path
-    normalized = os.path.normpath(stripped)
-
-    # Check for directory traversal
-    if normalized.startswith("..") or "/../" in relative_path:
-        raise ValidationException("Path traversal not allowed")
-
-    full_path = os.path.join(profile.home_dir, normalized)
-
-    # Ensure result is still under home_dir
-    if not os.path.normpath(full_path).startswith(os.path.normpath(profile.home_dir)):
-        raise ValidationException("Path must be within profile home directory")
-
-    return full_path
-
-
 def format_permissions(mode: int) -> str:
     """Convert numeric mode to rwx string format."""
     perms = ["r", "w", "x"]
@@ -124,16 +90,14 @@ def get_remote_profile(profile_name: str) -> SlurmProfile:
 
 def sftp_listdir(
     sftp: "SFTPClient",
-    profile: SlurmProfile,
-    relative_path: str,
+    path: str,
     hidden: bool = False,
 ) -> list[RemoteFileStats]:
     """List directory contents via SFTP.
 
     Args:
         sftp: Active SFTP client
-        profile: Remote profile
-        relative_path: Path relative to profile's home_dir
+        path: Absolute path to directory
         hidden: Include hidden files (starting with .)
 
     Returns:
@@ -144,32 +108,22 @@ def sftp_listdir(
         PermissionError: If no read access
         OSError: If connection fails
     """
-    full_path = resolve_remote_path(profile, relative_path)
-
     try:
-        entries = sftp.listdir_attr(full_path)
+        entries = sftp.listdir_attr(path)
     except (FileNotFoundError, PermissionError):
         raise
     except Exception as e:
         logger.error(f"SFTP listdir error: {e}")
         raise OSError(str(e)) from e
 
-    # Normalize relative_path for building entry paths
-    base_relative = relative_path.strip("/") if relative_path else ""
-
     results = []
     for attr in entries:
         if not hidden and attr.filename.startswith("."):
             continue
-        # Return paths relative to home_dir, not absolute paths
-        if base_relative:
-            entry_relative_path = f"{base_relative}/{attr.filename}"
-        else:
-            entry_relative_path = attr.filename
         results.append(
             RemoteFileStats(
                 name=attr.filename,
-                path=entry_relative_path,
+                path=os.path.join(path, attr.filename),
                 is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
                 size=attr.st_size or 0,
                 modified_at=(
@@ -190,15 +144,13 @@ def sftp_listdir(
 
 def sftp_stat(
     sftp: "SFTPClient",
-    profile: SlurmProfile,
-    relative_path: str,
+    path: str,
 ) -> RemoteFileStats:
     """Get file statistics via SFTP.
 
     Args:
         sftp: Active SFTP client
-        profile: Remote profile
-        relative_path: Path relative to profile's home_dir
+        path: Absolute path to file or directory
 
     Returns:
         RemoteFileStats for the path
@@ -208,21 +160,17 @@ def sftp_stat(
         PermissionError: If no read access
         OSError: If connection fails
     """
-    full_path = resolve_remote_path(profile, relative_path)
-
     try:
-        attr = sftp.stat(full_path)
+        attr = sftp.stat(path)
     except (FileNotFoundError, PermissionError):
         raise
     except Exception as e:
         logger.error(f"SFTP stat error: {e}")
         raise OSError(str(e)) from e
 
-    # Return relative path, not absolute
-    normalized_relative = relative_path.strip("/") if relative_path else ""
     return RemoteFileStats(
-        name=os.path.basename(full_path),
-        path=normalized_relative,
+        name=os.path.basename(path),
+        path=path,
         is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
         size=attr.st_size or 0,
         modified_at=(
@@ -236,23 +184,19 @@ def sftp_stat(
 
 def sftp_exists(
     sftp: "SFTPClient",
-    profile: SlurmProfile,
-    relative_path: str,
+    path: str,
 ) -> bool:
     """Check if path exists via SFTP.
 
     Args:
         sftp: Active SFTP client
-        profile: Remote profile
-        relative_path: Path relative to profile's home_dir
+        path: Absolute path to check
 
     Returns:
         True if path exists, False otherwise
     """
-    full_path = resolve_remote_path(profile, relative_path)
-
     try:
-        sftp.stat(full_path)
+        sftp.stat(path)
         return True
     except FileNotFoundError:
         return False
@@ -263,15 +207,13 @@ def sftp_exists(
 
 def sftp_mkdir(
     sftp: "SFTPClient",
-    profile: SlurmProfile,
-    relative_path: str,
+    path: str,
 ) -> None:
     """Create directory via SFTP.
 
     Args:
         sftp: Active SFTP client
-        profile: Remote profile
-        relative_path: Path relative to profile's home_dir
+        path: Absolute path to create
 
     Raises:
         FileNotFoundError: If parent path doesn't exist
@@ -279,15 +221,13 @@ def sftp_mkdir(
         ValueError: If directory already exists
         OSError: If connection fails
     """
-    full_path = resolve_remote_path(profile, relative_path)
-
     try:
-        sftp.mkdir(full_path)
+        sftp.mkdir(path)
     except (FileNotFoundError, PermissionError):
         raise
     except IOError as e:
         if "exists" in str(e).lower():
-            raise ValueError(f"Directory already exists: {full_path}") from e
+            raise ValueError(f"Directory already exists: {path}") from e
         logger.error(f"SFTP mkdir error: {e}")
         raise OSError(str(e)) from e
     except Exception as e:
@@ -297,15 +237,13 @@ def sftp_mkdir(
 
 def sftp_delete(
     sftp: "SFTPClient",
-    profile: SlurmProfile,
-    relative_path: str,
+    path: str,
 ) -> None:
     """Delete file or directory via SFTP.
 
     Args:
         sftp: Active SFTP client
-        profile: Remote profile
-        relative_path: Path relative to profile's home_dir
+        path: Absolute path to delete
 
     Raises:
         FileNotFoundError: If path doesn't exist
@@ -313,19 +251,17 @@ def sftp_delete(
         ValueError: If directory not empty
         OSError: If connection fails
     """
-    full_path = resolve_remote_path(profile, relative_path)
-
     try:
-        attr = sftp.stat(full_path)
+        attr = sftp.stat(path)
         if stat.S_ISDIR(attr.st_mode) if attr.st_mode else False:
-            sftp.rmdir(full_path)
+            sftp.rmdir(path)
         else:
-            sftp.remove(full_path)
+            sftp.remove(path)
     except (FileNotFoundError, PermissionError):
         raise
     except IOError as e:
         if "not empty" in str(e).lower():
-            raise ValueError(f"Directory not empty: {full_path}") from e
+            raise ValueError(f"Directory not empty: {path}") from e
         logger.error(f"SFTP delete error: {e}")
         raise OSError(str(e)) from e
     except Exception as e:
@@ -335,28 +271,23 @@ def sftp_delete(
 
 def sftp_rename(
     sftp: "SFTPClient",
-    profile: SlurmProfile,
-    old_relative_path: str,
-    new_relative_path: str,
+    old_path: str,
+    new_path: str,
 ) -> None:
     """Rename file or directory via SFTP.
 
     Args:
         sftp: Active SFTP client
-        profile: Remote profile
-        old_relative_path: Current path relative to profile's home_dir
-        new_relative_path: New path relative to profile's home_dir
+        old_path: Current absolute path
+        new_path: New absolute path
 
     Raises:
         FileNotFoundError: If source path doesn't exist
         PermissionError: If no write access
         OSError: If connection fails
     """
-    old_full_path = resolve_remote_path(profile, old_relative_path)
-    new_full_path = resolve_remote_path(profile, new_relative_path)
-
     try:
-        sftp.rename(old_full_path, new_full_path)
+        sftp.rename(old_path, new_path)
     except (FileNotFoundError, PermissionError):
         raise
     except Exception as e:
@@ -364,12 +295,12 @@ def sftp_rename(
         raise OSError(str(e)) from e
 
 
-def remote_read_file(profile: SlurmProfile, relative_path: str) -> bytes:
+def remote_read_file(profile: SlurmProfile, path: str) -> bytes:
     """Read file content from remote server.
 
     Args:
         profile: Remote profile
-        relative_path: Path relative to profile's home_dir
+        path: Absolute path to file
 
     Returns:
         File content as bytes
@@ -379,18 +310,16 @@ def remote_read_file(profile: SlurmProfile, relative_path: str) -> bytes:
         NotAuthorizedException: If permission denied
         InternalServerException: If connection fails
     """
-    full_path = resolve_remote_path(profile, relative_path)
-
     try:
         with Connection(host=profile.host, user=profile.user) as conn:
             with conn.sftp() as sftp:
-                with sftp.open(full_path, "rb") as f:
+                with sftp.open(path, "rb") as f:
                     content: bytes = f.read()
                     return content
     except FileNotFoundError:
-        raise NotFoundException(f"Remote file not found: {full_path}")
+        raise NotFoundException(f"Remote file not found: {path}")
     except PermissionError:
-        raise NotAuthorizedException(f"Permission denied: {full_path}")
+        raise NotAuthorizedException(f"Permission denied: {path}")
     except Exception as e:
         logger.error(f"Remote file read failed: {e}")
         raise InternalServerException(f"SFTP read failed: {e}")
@@ -398,7 +327,7 @@ def remote_read_file(profile: SlurmProfile, relative_path: str) -> bytes:
 
 def remote_write_file(
     profile: SlurmProfile,
-    relative_path: str,
+    path: str,
     content: bytes,
     update: bool = False,
 ) -> RemoteFileUploadResponse:
@@ -406,7 +335,7 @@ def remote_write_file(
 
     Args:
         profile: Remote profile
-        relative_path: Path relative to profile's home_dir
+        path: Absolute path to file
         content: File content as bytes
         update: If True, update existing file; if False, create new
 
@@ -418,75 +347,69 @@ def remote_write_file(
         NotAuthorizedException: If permission denied
         InternalServerException: If connection fails
     """
-    full_path = resolve_remote_path(profile, relative_path)
-
     try:
         with Connection(host=profile.host, user=profile.user) as conn:
             with conn.sftp() as sftp:
                 # Check existence
                 exists = True
                 try:
-                    sftp.stat(full_path)
+                    sftp.stat(path)
                 except FileNotFoundError:
                     exists = False
 
                 if not update and exists:
-                    raise ValidationException(
-                        f"Remote file already exists: {full_path}"
-                    )
+                    raise ValidationException(f"Remote file already exists: {path}")
                 if update and not exists:
-                    raise NotFoundException(f"Remote file not found: {full_path}")
+                    raise NotFoundException(f"Remote file not found: {path}")
 
                 # Create parent directories if needed (for new files)
                 if not update:
-                    parent_dir = os.path.dirname(full_path)
+                    parent_dir = os.path.dirname(path)
                     _ensure_remote_dir(sftp, parent_dir)
 
                 # Write file
-                with sftp.open(full_path, "wb") as f:
+                with sftp.open(path, "wb") as f:
                     f.write(content)
 
                 return RemoteFileUploadResponse(
-                    filename=os.path.basename(full_path),
+                    filename=os.path.basename(path),
                     size=len(content),
                     created_at=datetime.now(),
-                    remote_path=full_path,
+                    remote_path=path,
                 )
     except (ValidationException, NotFoundException):
         raise
     except PermissionError:
-        raise NotAuthorizedException(f"Permission denied: {full_path}")
+        raise NotAuthorizedException(f"Permission denied: {path}")
     except Exception as e:
         logger.error(f"Remote file write failed: {e}")
         raise InternalServerException(f"SFTP write failed: {e}")
 
 
-def remote_delete_file(profile: SlurmProfile, relative_path: str) -> str:
+def remote_delete_file(profile: SlurmProfile, path: str) -> str:
     """Delete file from remote server.
 
     Args:
         profile: Remote profile
-        relative_path: Path relative to profile's home_dir
+        path: Absolute path to file
 
     Returns:
-        Full path of deleted file
+        Path of deleted file
 
     Raises:
         NotFoundException: If file doesn't exist
         NotAuthorizedException: If permission denied
         InternalServerException: If connection fails
     """
-    full_path = resolve_remote_path(profile, relative_path)
-
     try:
         with Connection(host=profile.host, user=profile.user) as conn:
             with conn.sftp() as sftp:
-                sftp.remove(full_path)
-                return full_path
+                sftp.remove(path)
+                return path
     except FileNotFoundError:
-        raise NotFoundException(f"Remote file not found: {full_path}")
+        raise NotFoundException(f"Remote file not found: {path}")
     except PermissionError:
-        raise NotAuthorizedException(f"Permission denied: {full_path}")
+        raise NotAuthorizedException(f"Permission denied: {path}")
     except Exception as e:
         logger.error(f"Remote file delete failed: {e}")
         raise InternalServerException(f"SFTP delete failed: {e}")

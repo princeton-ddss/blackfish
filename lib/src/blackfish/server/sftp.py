@@ -364,22 +364,6 @@ def sftp_rename(
         raise OSError(str(e)) from e
 
 
-def remote_file_exists(profile: SlurmProfile, relative_path: str) -> bool:
-    """Check if remote file exists using ephemeral connection."""
-    full_path = resolve_remote_path(profile, relative_path)
-
-    try:
-        with Connection(host=profile.host, user=profile.user) as conn:
-            with conn.sftp() as sftp:
-                sftp.stat(full_path)
-                return True
-    except FileNotFoundError:
-        return False
-    except Exception as e:
-        logger.error(f"Remote file exists check failed: {e}")
-        raise InternalServerException(f"SFTP connection failed: {e}")
-
-
 def remote_read_file(profile: SlurmProfile, relative_path: str) -> bytes:
     """Read file content from remote server.
 

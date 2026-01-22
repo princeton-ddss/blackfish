@@ -7,7 +7,7 @@ from PIL import Image
 from litestar.testing import AsyncTestClient
 
 from blackfish.server.models.profile import SlurmProfile
-from blackfish.server.remote_files import RemoteFileUploadResponse
+from blackfish.server.sftp import RemoteFileUploadResponse
 from datetime import datetime
 
 

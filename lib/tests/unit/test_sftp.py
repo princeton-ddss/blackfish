@@ -5,7 +5,7 @@ from unittest import mock
 
 from litestar.exceptions import ValidationException
 
-from blackfish.server.remote_files import (
+from blackfish.server.sftp import (
     resolve_remote_path,
     format_permissions,
     sftp_listdir,

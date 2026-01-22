@@ -75,7 +75,7 @@ from blackfish.server.files import (
     validate_file_extension,
     validate_file_size,
 )
-from blackfish.server.remote_files import (
+from blackfish.server.sftp import (
     get_remote_profile,
     remote_read_file,
     remote_write_file,
@@ -1001,7 +1001,7 @@ async def delete_audio(path: str, profile: Optional[str] = None) -> Path | str:
 
     if profile is not None:
         validate_file_extension(Path(path), AUDIO_EXTENSIONS)
-        remote_profile = get_remote_profile(profile)
+        remote_profile = get_remote_profile(profile) # TODO: Replace get_remote_profile
         logger.debug(f"Deleting audio file on remote profile {profile}: {path}")
         return remote_delete_file(remote_profile, path)
 

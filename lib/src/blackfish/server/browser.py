@@ -23,7 +23,7 @@ from blackfish.server.models.profile import (
     deserialize_profile,
 )
 from blackfish.server.config import config as blackfish_config
-from blackfish.server.remote_files import (
+from blackfish.server.sftp import (
     sftp_listdir,
     sftp_stat,
     sftp_exists,

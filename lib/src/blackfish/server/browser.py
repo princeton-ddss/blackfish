@@ -254,7 +254,9 @@ class RemoteFileBrowserSession(WebsocketListener):
     browser: RemoteFileBrowser | None = None
     profile_name: str | None = None
 
-    async def on_accept(self, socket: WebSocket[Any, Any, Any], profile_name: str) -> None:
+    async def on_accept(
+        self, socket: WebSocket[Any, Any, Any], profile_name: str
+    ) -> None:
         """Handle WebSocket connection acceptance.
 
         Validates the profile and establishes SFTP connection.

@@ -1404,7 +1404,7 @@
 <p>Before you use Blackfish for the first time, you need to initialize it:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>blackfish<span class="w"> </span>init
 </span></code></pre></div>
-<p>Answer the prompts to create a new default profile. If you are installing Blackfish on your laptop and intend run Blackfish services on a cluster, your default profile should be a <em>Slurm profile</em>:</p>
+<p>Answer the prompts to create a new default profile. If you are installing Blackfish on your laptop and intend to run Blackfish services on a cluster, your default profile should be a <em>Slurm profile</em>:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># &gt; name: default</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># &gt; type: slurm</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># &gt; host: cluster.organization.edu</span>
@@ -1420,12 +1420,12 @@
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># &gt; home: /home/shamu/.blackfish</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># &gt; cache: /shared/.blackfish</span>
 </span></code></pre></div>
-<p>If you are installing Blackfish on your laptop and you want to run Blackfish services locally, your default profile should be a <em>local profile</em> :</p>
+<p>If you are installing Blackfish on your laptop and you want to run Blackfish services locally, your default profile should be a <em>local profile</em>:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># &gt; name: default</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># &gt; type: local</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># &gt; user: shamu</span>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># &gt; home: /home/shamu/.blackfish</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># &gt; cache: /shared/.blackfish</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># &gt; cache: /home/shamu/.blackfish</span>
 </span></code></pre></div>
 <p>The home directory supplied must be a directory for which your user has read-write permissions; the cache directory only requires read permissions. You can modify this profile or add additional profiles later. See <a href="../../usage/cli/#profiles">Profiles</a> for details.</p>
 <div class="admonition note">

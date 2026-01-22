@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import stat
 from typing import Annotated, Any, Literal, TYPE_CHECKING
 from enum import StrEnum
 from datetime import datetime
@@ -23,15 +25,6 @@ from blackfish.server.models.profile import (
     deserialize_profile,
 )
 from blackfish.server.config import config as blackfish_config
-from blackfish.server.sftp import (
-    sftp_listdir,
-    sftp_stat,
-    sftp_exists,
-    sftp_mkdir,
-    sftp_delete,
-    sftp_rename,
-    RemoteFileStats,
-)
 
 if TYPE_CHECKING:
     from paramiko.sftp_client import SFTPClient
@@ -107,16 +100,15 @@ BrowserMessage = Annotated[
 BrowserMessageAdapter: TypeAdapter[BrowserMessage] = TypeAdapter(BrowserMessage)
 
 
-def _remote_file_stats_to_file_entry(stats: RemoteFileStats) -> FileEntry:
-    """Convert RemoteFileStats dataclass to FileEntry Pydantic model."""
-    return FileEntry(
-        name=stats.name,
-        path=stats.path,
-        is_dir=stats.is_dir,
-        size=stats.size,
-        modified_at=stats.modified_at,
-        permissions=stats.permissions,
-    )
+def _format_permissions(mode: int) -> str:
+    """Convert numeric mode to rwx string format."""
+    perms = ["r", "w", "x"]
+    result = ""
+    for i in range(2, -1, -1):
+        bits = (mode >> (i * 3)) & 0o7
+        for j, p in enumerate(perms):
+            result += p if bits & (4 >> j) else "-"
+    return result
 
 
 def _map_exception_to_error_code(error: Exception) -> ErrorCode:
@@ -194,8 +186,37 @@ class RemoteFileBrowser:
         Returns:
             List of FileEntry models
         """
-        stats_list = sftp_listdir(self.sftp, path, hidden=show_hidden)
-        return [_remote_file_stats_to_file_entry(s) for s in stats_list]
+        try:
+            entries = self.sftp.listdir_attr(path)
+        except (FileNotFoundError, PermissionError):
+            raise
+        except Exception as e:
+            logger.error(f"SFTP listdir error: {e}")
+            raise OSError(str(e)) from e
+
+        results = []
+        for attr in entries:
+            if not show_hidden and attr.filename.startswith("."):
+                continue
+            results.append(
+                FileEntry(
+                    name=attr.filename,
+                    path=os.path.join(path, attr.filename),
+                    is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
+                    size=attr.st_size or 0,
+                    modified_at=(
+                        datetime.fromtimestamp(attr.st_mtime)
+                        if attr.st_mtime
+                        else datetime.now()
+                    ),
+                    permissions=(
+                        _format_permissions(attr.st_mode & 0o777)
+                        if attr.st_mode
+                        else "rwxrwxrwx"
+                    ),
+                )
+            )
+        return results
 
     def stat(self, path: str) -> FileEntry:
         """Get file statistics.
@@ -206,8 +227,30 @@ class RemoteFileBrowser:
         Returns:
             FileEntry model
         """
-        stats = sftp_stat(self.sftp, path)
-        return _remote_file_stats_to_file_entry(stats)
+        try:
+            attr = self.sftp.stat(path)
+        except (FileNotFoundError, PermissionError):
+            raise
+        except Exception as e:
+            logger.error(f"SFTP stat error: {e}")
+            raise OSError(str(e)) from e
+
+        return FileEntry(
+            name=os.path.basename(path),
+            path=path,
+            is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
+            size=attr.st_size or 0,
+            modified_at=(
+                datetime.fromtimestamp(attr.st_mtime)
+                if attr.st_mtime
+                else datetime.now()
+            ),
+            permissions=(
+                _format_permissions(attr.st_mode & 0o777)
+                if attr.st_mode
+                else "rwxrwxrwx"
+            ),
+        )
 
     def exists(self, path: str) -> bool:
         """Check if path exists.
@@ -218,7 +261,14 @@ class RemoteFileBrowser:
         Returns:
             True if path exists
         """
-        return sftp_exists(self.sftp, path)
+        try:
+            self.sftp.stat(path)
+            return True
+        except FileNotFoundError:
+            return False
+        except Exception as e:
+            logger.error(f"SFTP exists check error: {e}")
+            raise OSError(str(e)) from e
 
     def mkdir(self, path: str) -> None:
         """Create directory.
@@ -226,7 +276,18 @@ class RemoteFileBrowser:
         Args:
             path: Absolute path to create
         """
-        sftp_mkdir(self.sftp, path)
+        try:
+            self.sftp.mkdir(path)
+        except (FileNotFoundError, PermissionError):
+            raise
+        except IOError as e:
+            if "exists" in str(e).lower():
+                raise ValueError(f"Directory already exists: {path}") from e
+            logger.error(f"SFTP mkdir error: {e}")
+            raise OSError(str(e)) from e
+        except Exception as e:
+            logger.error(f"SFTP mkdir error: {e}")
+            raise OSError(str(e)) from e
 
     def delete(self, path: str) -> None:
         """Delete file or directory.
@@ -234,7 +295,22 @@ class RemoteFileBrowser:
         Args:
             path: Absolute path to delete
         """
-        sftp_delete(self.sftp, path)
+        try:
+            attr = self.sftp.stat(path)
+            if stat.S_ISDIR(attr.st_mode) if attr.st_mode else False:
+                self.sftp.rmdir(path)
+            else:
+                self.sftp.remove(path)
+        except (FileNotFoundError, PermissionError):
+            raise
+        except IOError as e:
+            if "not empty" in str(e).lower():
+                raise ValueError(f"Directory not empty: {path}") from e
+            logger.error(f"SFTP delete error: {e}")
+            raise OSError(str(e)) from e
+        except Exception as e:
+            logger.error(f"SFTP delete error: {e}")
+            raise OSError(str(e)) from e
 
     def rename(self, old_path: str, new_path: str) -> None:
         """Rename file or directory.
@@ -243,7 +319,13 @@ class RemoteFileBrowser:
             old_path: Current absolute path
             new_path: New absolute path
         """
-        sftp_rename(self.sftp, old_path, new_path)
+        try:
+            self.sftp.rename(old_path, new_path)
+        except (FileNotFoundError, PermissionError):
+            raise
+        except Exception as e:
+            logger.error(f"SFTP rename error: {e}")
+            raise OSError(str(e)) from e
 
 
 class RemoteFileBrowserSession(WebsocketListener):

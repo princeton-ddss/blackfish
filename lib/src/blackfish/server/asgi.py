@@ -1970,8 +1970,8 @@ img_server = create_static_files_router(
 
 
 def not_found_exception_handler(
-    request: Request, exc: NotFoundException
-) -> Response | Template:
+    request: Request[Any, Any, Any], exc: NotFoundException
+) -> Response[Any] | Template:
     """Handle 404 errors - return JSON for API routes, HTML for web routes."""
     if request.url.path.startswith("/api/"):
         return Response(

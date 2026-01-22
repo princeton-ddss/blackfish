@@ -7,7 +7,7 @@ from PIL import Image
 from litestar.testing import AsyncTestClient
 
 from blackfish.server.models.profile import SlurmProfile
-from blackfish.server.sftp import RemoteFileUploadResponse
+from blackfish.server.sftp import WriteFileResponse
 from datetime import datetime
 
 
@@ -41,20 +41,20 @@ class TestRemoteImageUpload:
         png_bytes = create_test_png()
         remote_profile = create_remote_profile()
 
-        mock_response = RemoteFileUploadResponse(
+        mock_response = WriteFileResponse(
             filename="test.png",
             size=len(png_bytes),
             created_at=datetime.now(),
-            remote_path="/home/testuser/images/test.png",
+            path="/home/testuser/images/test.png",
         )
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_write_file",
+                "blackfish.server.asgi.sftp.write_file",
                 return_value=mock_response,
             ) as mock_write,
         ):
@@ -79,7 +79,9 @@ class TestRemoteImageUpload:
         """Test that image validation happens before remote upload attempt."""
         invalid_data = b"This is not an image"
 
-        with mock.patch("blackfish.server.asgi.get_remote_profile") as mock_get_profile:
+        with mock.patch(
+            "blackfish.server.asgi._get_validated_slurm_profile"
+        ) as mock_get_profile:
             response = await client.post(
                 "/api/image",
                 files={"file": invalid_data},
@@ -104,11 +106,11 @@ class TestRemoteImageDownload:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_read_file",
+                "blackfish.server.asgi.sftp.read_file",
                 return_value=png_bytes,
             ) as mock_read,
         ):
@@ -133,20 +135,20 @@ class TestRemoteImageUpdate:
         png_bytes = create_test_png()
         remote_profile = create_remote_profile()
 
-        mock_response = RemoteFileUploadResponse(
+        mock_response = WriteFileResponse(
             filename="test.png",
             size=len(png_bytes),
             created_at=datetime.now(),
-            remote_path="/home/testuser/images/test.png",
+            path="/home/testuser/images/test.png",
         )
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_write_file",
+                "blackfish.server.asgi.sftp.write_file",
                 return_value=mock_response,
             ) as mock_write,
         ):
@@ -176,11 +178,11 @@ class TestRemoteImageDelete:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_delete_file",
+                "blackfish.server.asgi.sftp.delete_file",
                 return_value="/home/testuser/images/test.png",
             ) as mock_delete,
         ):
@@ -203,20 +205,20 @@ class TestRemoteTextUpload:
         text_content = b"Hello, world!"
         remote_profile = create_remote_profile()
 
-        mock_response = RemoteFileUploadResponse(
+        mock_response = WriteFileResponse(
             filename="test.txt",
             size=len(text_content),
             created_at=datetime.now(),
-            remote_path="/home/testuser/docs/test.txt",
+            path="/home/testuser/docs/test.txt",
         )
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_write_file",
+                "blackfish.server.asgi.sftp.write_file",
                 return_value=mock_response,
             ) as mock_write,
         ):
@@ -247,11 +249,11 @@ class TestRemoteTextDownload:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_read_file",
+                "blackfish.server.asgi.sftp.read_file",
                 return_value=text_content,
             ) as mock_read,
         ):
@@ -274,11 +276,11 @@ class TestRemoteTextDownload:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.asgi.remote_read_file",
+                "blackfish.server.asgi.sftp.read_file",
                 return_value=json_content,
             ),
         ):
@@ -299,20 +301,20 @@ class TestRemoteTextUpdate:
         text_content = b"Updated content"
         remote_profile = create_remote_profile()
 
-        mock_response = RemoteFileUploadResponse(
+        mock_response = WriteFileResponse(
             filename="test.txt",
             size=len(text_content),
             created_at=datetime.now(),
-            remote_path="/home/testuser/docs/test.txt",
+            path="/home/testuser/docs/test.txt",
         )
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_write_file",
+                "blackfish.server.asgi.sftp.write_file",
                 return_value=mock_response,
             ) as mock_write,
         ):
@@ -340,11 +342,11 @@ class TestRemoteTextDelete:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_delete_file",
+                "blackfish.server.asgi.sftp.delete_file",
                 return_value="/home/testuser/docs/test.txt",
             ) as mock_delete,
         ):
@@ -368,20 +370,20 @@ class TestRemoteAudioUpload:
         audio_content = b"RIFF" + b"\x00" * 100
         remote_profile = create_remote_profile()
 
-        mock_response = RemoteFileUploadResponse(
+        mock_response = WriteFileResponse(
             filename="test.wav",
             size=len(audio_content),
             created_at=datetime.now(),
-            remote_path="/home/testuser/audio/test.wav",
+            path="/home/testuser/audio/test.wav",
         )
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_write_file",
+                "blackfish.server.asgi.sftp.write_file",
                 return_value=mock_response,
             ) as mock_write,
         ):
@@ -412,11 +414,11 @@ class TestRemoteAudioDownload:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_read_file",
+                "blackfish.server.asgi.sftp.read_file",
                 return_value=audio_content,
             ) as mock_read,
         ):
@@ -439,11 +441,11 @@ class TestRemoteAudioDownload:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.asgi.remote_read_file",
+                "blackfish.server.asgi.sftp.read_file",
                 return_value=mp3_content,
             ),
         ):
@@ -464,20 +466,20 @@ class TestRemoteAudioUpdate:
         audio_content = b"RIFF" + b"\x00" * 100
         remote_profile = create_remote_profile()
 
-        mock_response = RemoteFileUploadResponse(
+        mock_response = WriteFileResponse(
             filename="test.wav",
             size=len(audio_content),
             created_at=datetime.now(),
-            remote_path="/home/testuser/audio/test.wav",
+            path="/home/testuser/audio/test.wav",
         )
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_write_file",
+                "blackfish.server.asgi.sftp.write_file",
                 return_value=mock_response,
             ) as mock_write,
         ):
@@ -505,11 +507,11 @@ class TestRemoteAudioDelete:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.remote_delete_file",
+                "blackfish.server.asgi.sftp.delete_file",
                 return_value="/home/testuser/audio/test.wav",
             ) as mock_delete,
         ):
@@ -534,7 +536,7 @@ class TestRemoteFileErrorHandling:
         png_bytes = create_test_png()
 
         with mock.patch(
-            "blackfish.server.asgi.get_remote_profile",
+            "blackfish.server.asgi._get_validated_slurm_profile",
             side_effect=NotFoundException("Profile 'nonexistent' not found"),
         ):
             response = await client.post(
@@ -556,11 +558,11 @@ class TestRemoteFileErrorHandling:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.asgi.remote_write_file",
+                "blackfish.server.asgi.sftp.write_file",
                 side_effect=InternalServerException("SFTP connection failed"),
             ),
         ):
@@ -584,11 +586,11 @@ class TestRemoteFileErrorHandling:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.asgi.remote_write_file",
+                "blackfish.server.asgi.sftp.write_file",
                 side_effect=NotAuthorizedException("Permission denied"),
             ),
         ):
@@ -609,11 +611,11 @@ class TestRemoteFileErrorHandling:
 
         with (
             mock.patch(
-                "blackfish.server.asgi.get_remote_profile",
+                "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.asgi.remote_read_file",
+                "blackfish.server.asgi.sftp.read_file",
                 side_effect=NotFoundException("Remote file not found"),
             ),
         ):
@@ -639,7 +641,7 @@ class TestLocalFallback:
             file_path = os.path.join(temp_dir, "test.png")
 
             with mock.patch(
-                "blackfish.server.asgi.get_remote_profile"
+                "blackfish.server.asgi._get_validated_slurm_profile"
             ) as mock_get_profile:
                 response = await client.post(
                     "/api/image",

@@ -75,12 +75,7 @@ from blackfish.server.files import (
     validate_file_extension,
     validate_file_size,
 )
-from blackfish.server.sftp import (
-    get_remote_profile,
-    remote_read_file,
-    remote_write_file,
-    remote_delete_file,
-)
+from blackfish.server import sftp
 from blackfish.server.services.base import Service, ServiceStatus
 from blackfish.server.services.speech_recognition import SpeechRecognitionConfig
 from blackfish.server.services.text_generation import TextGenerationConfig
@@ -219,6 +214,33 @@ async def get_batch_job(job_id: str, session: AsyncSession) -> BatchJob | None:
 
 
 ModelInfoResult = dict[str, str]
+
+
+def _get_validated_slurm_profile(profile_name: str) -> SlurmProfile:
+    """Get and validate a profile for remote SFTP operations.
+
+    Args:
+        profile_name: Name of the profile to lookup
+
+    Returns:
+        Validated SlurmProfile
+
+    Raises:
+        NotFoundException: If profile doesn't exist
+        ValidationException: If profile is not a remote SlurmProfile
+    """
+    try:
+        profile = deserialize_profile(blackfish_config.HOME_DIR, profile_name)
+    except FileNotFoundError:
+        raise NotFoundException(f"Profile configuration not found: {profile_name}")
+
+    if profile is None:
+        raise NotFoundException(f"Profile '{profile_name}' not found")
+
+    if not isinstance(profile, SlurmProfile) or profile.is_local():
+        raise ValidationException(f"Profile '{profile_name}' is not a remote profile")
+
+    return profile
 
 
 def model_info(profile: Profile) -> Tuple[ModelInfoResult, ModelInfoResult]:
@@ -595,9 +617,9 @@ async def upload_image(
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
     if profile is not None:
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Uploading image to remote profile {profile}: {data.path}")
-        response = remote_write_file(remote_profile, data.path, content, update=False)
+        response = sftp.write_file(remote_profile, data.path, content, update=False)
         return FileUploadResponse(
             filename=response.filename,
             size=response.size,
@@ -619,9 +641,9 @@ async def get_image(path: str, profile: Optional[str] = None) -> File | Response
 
     if profile is not None:
         validate_file_extension(Path(path), IMAGE_EXTENSIONS)
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Downloading image from remote profile {profile}: {path}")
-        content = remote_read_file(remote_profile, path)
+        content = sftp.read_file(remote_profile, path)
 
         try:
             img = Image.open(BytesIO(content))
@@ -687,9 +709,9 @@ async def update_image(
         raise ValidationException(f"Pillow detected invalid image data: {e}")
 
     if profile is not None:
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Updating image on remote profile {profile}: {data.path}")
-        response = remote_write_file(remote_profile, data.path, content, update=True)
+        response = sftp.write_file(remote_profile, data.path, content, update=True)
         return FileUploadResponse(
             filename=response.filename,
             size=response.size,
@@ -711,9 +733,9 @@ async def delete_image(path: str, profile: Optional[str] = None) -> Path | str:
     # Remote delete
     if profile is not None:
         validate_file_extension(Path(path), IMAGE_EXTENSIONS)
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Deleting image on remote profile {profile}: {path}")
-        return remote_delete_file(remote_profile, path)
+        return sftp.delete_file(remote_profile, path)
 
     # Local delete
     file_path = Path(path)
@@ -752,9 +774,9 @@ async def upload_text(
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
     if profile is not None:
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Uploading text file to remote profile {profile}: {data.path}")
-        response = remote_write_file(remote_profile, data.path, content, update=False)
+        response = sftp.write_file(remote_profile, data.path, content, update=False)
         return FileUploadResponse(
             filename=response.filename,
             size=response.size,
@@ -776,9 +798,9 @@ async def get_text(path: str, profile: Optional[str] = None) -> File | Response[
 
     if profile is not None:
         validate_file_extension(Path(path), TEXT_EXTENSIONS)
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Downloading text file from remote profile {profile}: {path}")
-        content = remote_read_file(remote_profile, path)
+        content = sftp.read_file(remote_profile, path)
 
         try:
             content.decode("utf-8")
@@ -841,9 +863,9 @@ async def update_text(
         raise ValidationException(f"File contains invalid UTF-8 text data: {e}")
 
     if profile is not None:
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Updating text file on remote profile {profile}: {data.path}")
-        response = remote_write_file(remote_profile, data.path, content, update=True)
+        response = sftp.write_file(remote_profile, data.path, content, update=True)
         return FileUploadResponse(
             filename=response.filename,
             size=response.size,
@@ -864,9 +886,9 @@ async def delete_text(path: str, profile: Optional[str] = None) -> Path | str:
 
     if profile is not None:
         validate_file_extension(Path(path), TEXT_EXTENSIONS)
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Deleting text file on remote profile {profile}: {path}")
-        return remote_delete_file(remote_profile, path)
+        return sftp.delete_file(remote_profile, path)
 
     file_path = Path(path)
 
@@ -900,9 +922,9 @@ async def upload_audio(
     validate_file_size(content, state.MAX_FILE_SIZE)
 
     if profile is not None:
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Uploading audio file to remote profile {profile}: {data.path}")
-        response = remote_write_file(remote_profile, data.path, content, update=False)
+        response = sftp.write_file(remote_profile, data.path, content, update=False)
         return FileUploadResponse(
             filename=response.filename,
             size=response.size,
@@ -924,9 +946,9 @@ async def get_audio(path: str, profile: Optional[str] = None) -> File | Response
 
     if profile is not None:
         validate_file_extension(Path(path), AUDIO_EXTENSIONS)
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Downloading audio file from remote profile {profile}: {path}")
-        content = remote_read_file(remote_profile, path)
+        content = sftp.read_file(remote_profile, path)
 
         # Determine content type from extension
         ext = os.path.splitext(path)[1].lower()
@@ -968,9 +990,9 @@ async def update_audio(
     validate_file_size(content, state.MAX_FILE_SIZE)
 
     if profile is not None:
-        remote_profile = get_remote_profile(profile)
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Updating audio file on remote profile {profile}: {data.path}")
-        response = remote_write_file(remote_profile, data.path, content, update=True)
+        response = sftp.write_file(remote_profile, data.path, content, update=True)
         return FileUploadResponse(
             filename=response.filename,
             size=response.size,
@@ -991,9 +1013,9 @@ async def delete_audio(path: str, profile: Optional[str] = None) -> Path | str:
 
     if profile is not None:
         validate_file_extension(Path(path), AUDIO_EXTENSIONS)
-        remote_profile = get_remote_profile(profile)  # TODO: Replace get_remote_profile
+        remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Deleting audio file on remote profile {profile}: {path}")
-        return remote_delete_file(remote_profile, path)
+        return sftp.delete_file(remote_profile, path)
 
     file_path = Path(path)
 

@@ -20,54 +20,26 @@ from litestar.exceptions import (
 )
 
 from blackfish.server.logger import logger
-from blackfish.server.models.profile import SlurmProfile, deserialize_profile
-from blackfish.server.config import config as blackfish_config
+from blackfish.server.models.profile import SlurmProfile
 
 if TYPE_CHECKING:
     from paramiko.sftp_client import SFTPClient
 
 
-class RemoteFileUploadResponse(BaseModel):
-    """Response for successful remote file upload."""
+class WriteFileResponse(BaseModel):
+    """Response for successful file write."""
 
     filename: str
     size: int
     created_at: datetime
-    remote_path: str
+    path: str
 
 
-def get_remote_profile(profile_name: str) -> SlurmProfile:
-    """Look up a remote profile by name.
-
-    Args:
-        profile_name: Name of the profile to look up
-
-    Returns:
-        SlurmProfile instance
-
-    Raises:
-        NotFoundException: If profile not found
-        ValidationException: If profile is local (not remote)
-    """
-    try:
-        profile = deserialize_profile(blackfish_config.HOME_DIR, profile_name)
-    except FileNotFoundError:
-        raise NotFoundException("Profile configuration not found")
-
-    if profile is None:
-        raise NotFoundException(f"Profile '{profile_name}' not found")
-
-    if not isinstance(profile, SlurmProfile) or profile.is_local():
-        raise ValidationException(f"Profile '{profile_name}' is not a remote profile")
-
-    return profile
-
-
-def remote_read_file(profile: SlurmProfile, path: str) -> bytes:
+def read_file(profile: SlurmProfile, path: str) -> bytes:
     """Read file content from remote server.
 
     Args:
-        profile: Remote profile
+        profile: Remote SlurmProfile
         path: Absolute path to file
 
     Returns:
@@ -93,22 +65,22 @@ def remote_read_file(profile: SlurmProfile, path: str) -> bytes:
         raise InternalServerException(f"SFTP read failed: {e}")
 
 
-def remote_write_file(
+def write_file(
     profile: SlurmProfile,
     path: str,
     content: bytes,
     update: bool = False,
-) -> RemoteFileUploadResponse:
+) -> WriteFileResponse:
     """Write file content to remote server.
 
     Args:
-        profile: Remote profile
+        profile: Remote SlurmProfile
         path: Absolute path to file
         content: File content as bytes
         update: If True, update existing file; if False, create new
 
     Returns:
-        RemoteFileUploadResponse with file details
+        WriteResponse with file details
 
     Raises:
         ValidationException: If file exists (update=False) or doesn't exist (update=True)
@@ -139,11 +111,11 @@ def remote_write_file(
                 with sftp.open(path, "wb") as f:
                     f.write(content)
 
-                return RemoteFileUploadResponse(
+                return WriteFileResponse(
                     filename=os.path.basename(path),
                     size=len(content),
                     created_at=datetime.now(),
-                    remote_path=path,
+                    path=path,
                 )
     except (ValidationException, NotFoundException):
         raise
@@ -154,11 +126,11 @@ def remote_write_file(
         raise InternalServerException(f"SFTP write failed: {e}")
 
 
-def remote_delete_file(profile: SlurmProfile, path: str) -> str:
+def delete_file(profile: SlurmProfile, path: str) -> str:
     """Delete file from remote server.
 
     Args:
-        profile: Remote profile
+        profile: Remote SlurmProfile
         path: Absolute path to file
 
     Returns:

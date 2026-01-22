@@ -1,0 +1,77 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TextGenerationChatContainer > Component rendering > renders the main container with system message input and user message input 1`] = `
+<body>
+  <div>
+    <div
+      class="flex flex-col grow pt-2 bg-white"
+    >
+      <div
+        class="mb-10"
+      >
+        <label
+          class="block text-sm font-medium leading-6 text-gray-900"
+        >
+          System Message
+        </label>
+        <textarea
+          class="w-full rounded-lg bg-white p-2 mt-2 resize-none shadow-md px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 border-0 focus:ring-1 focus:ring-gray-300 sm:text-sm/6 outline outline-1 outline-gray-300"
+          placeholder="You are a helpful assistant."
+          rows="5"
+        />
+      </div>
+      <div
+        class="block overflow-y-auto h-[calc(100vh-50vh)] px-8"
+      >
+        <div />
+      </div>
+      <div
+        class="flex items-start space-x-4 mt-10"
+      >
+        <div
+          class="min-w-0 flex-1"
+        >
+          bound HTMLFormElement {
+            "0": <textarea
+              class="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6"
+              id="comment"
+              name="comment"
+              placeholder="Why are orcas so awesome?"
+              rows="3"
+            />,
+            "1": <button
+              class="-m-2.5 flex size-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
+              type="button"
+            >
+              <div
+                aria-hidden="true"
+                class="size-5"
+                data-testid="paper-clip-icon"
+              />
+              <span
+                class="sr-only"
+              >
+                Attach a file
+              </span>
+            </button>,
+            "2": <button
+              class="inline-flex items-center rounded-full bg-white p-2 text-sm font-semibold text-gray-900 border border-gray-300 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white disabled:border-gray-200 disabled:shadow-none"
+              type="submit"
+            >
+              <div
+                class="size-5"
+                data-testid="paper-airplane-icon"
+              />
+              <span
+                class="sr-only"
+              >
+                Submit
+              </span>
+            </button>,
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

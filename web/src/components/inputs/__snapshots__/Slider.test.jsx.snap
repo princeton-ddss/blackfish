@@ -1,0 +1,475 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Slider > Disabled 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-between items-center"
+      >
+        <div
+          class="flex items-center space-x-1"
+        >
+          <label
+            class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-300"
+            for="test-slider"
+          >
+            Test slider
+            <div
+              class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+            >
+              Ad leo bibendum nisi tempus purus vivamus senectus pellentesque est finibus fermentum a taciti, potenti tortor pharetra condimentum interdum ex dis nisl lectus lacus quam phasellus.
+            </div>
+          </label>
+        </div>
+        <div
+          class="flex items-center space-x-2"
+        >
+          <button
+            class="mr-0.5 cursor-not-allowed opacity-40"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-3 w-3 text-gray-500"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <input
+            class="block w-20 border border-gray-300 rounded-md shadow-sm h-7 text-right sm:text-sm font-light text-gray-900 focus:ring-inset focus:ring-2 focus:ring-blue-500 focus:border-white"
+            disabled=""
+            step="0.01"
+            type="number"
+            value="0"
+          />
+        </div>
+      </div>
+      <div
+        class="mt-0"
+      >
+        <div
+          class="flex sm:max-w-md"
+        >
+          <input
+            class="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+            disabled=""
+            id="test-slider"
+            max="10"
+            min="0"
+            name="test-slider"
+            step="0.01"
+            type="range"
+            value="0"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Slider > Disabled, optional, and not enabled 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-between items-center"
+      >
+        <div
+          class="flex items-center space-x-1"
+        >
+          <input
+            class="mr-1 ml-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            type="checkbox"
+          />
+          <label
+            class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-300"
+            for="test-slider"
+          >
+            Test slider
+            <div
+              class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+            >
+              Ad leo bibendum nisi tempus purus vivamus senectus pellentesque est finibus fermentum a taciti, potenti tortor pharetra condimentum interdum ex dis nisl lectus lacus quam phasellus.
+            </div>
+          </label>
+        </div>
+        <div
+          class="flex items-center space-x-2"
+        >
+          <button
+            class="mr-0.5 cursor-not-allowed opacity-40"
+            disabled=""
+          >
+            <svg
+              aria-hidden="true"
+              class="h-3 w-3 text-gray-500"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <input
+            class="block w-20 border border-gray-300 rounded-md shadow-sm h-7 text-right sm:text-sm font-light text-gray-900 focus:ring-inset focus:ring-2 focus:ring-blue-500 focus:border-white"
+            disabled=""
+            step="0.01"
+            type="number"
+            value="0"
+          />
+        </div>
+      </div>
+      <div
+        class="mt-0"
+      >
+        <div
+          class="flex sm:max-w-md"
+        >
+          <input
+            class="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+            disabled=""
+            id="test-slider"
+            max="10"
+            min="0"
+            name="test-slider"
+            step="0.01"
+            type="range"
+            value="0"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Slider > Not enabled 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-between items-center"
+      >
+        <div
+          class="flex items-center space-x-1"
+        >
+          <label
+            class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+            for="test-slider"
+          >
+            Test slider
+            <div
+              class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+            >
+              Ad leo bibendum nisi tempus purus vivamus senectus pellentesque est finibus fermentum a taciti, potenti tortor pharetra condimentum interdum ex dis nisl lectus lacus quam phasellus.
+            </div>
+          </label>
+        </div>
+        <div
+          class="flex items-center space-x-2"
+        >
+          <button
+            class="mr-0.5"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-3 w-3 text-gray-500"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <input
+            class="block w-20 border border-gray-300 rounded-md shadow-sm h-7 text-right sm:text-sm font-light text-gray-900 focus:ring-inset focus:ring-2 focus:ring-blue-500 focus:border-white"
+            step="0.01"
+            type="number"
+            value="0"
+          />
+        </div>
+      </div>
+      <div
+        class="mt-0"
+      >
+        <div
+          class="flex sm:max-w-md"
+        >
+          <input
+            class="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+            id="test-slider"
+            max="10"
+            min="0"
+            name="test-slider"
+            step="0.01"
+            type="range"
+            value="0"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Slider > Optional 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-between items-center"
+      >
+        <div
+          class="flex items-center space-x-1"
+        >
+          <input
+            class="mr-1 ml-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            type="checkbox"
+          />
+          <label
+            class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+            for="test-slider"
+          >
+            Test slider
+            <div
+              class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+            >
+              Ad leo bibendum nisi tempus purus vivamus senectus pellentesque est finibus fermentum a taciti, potenti tortor pharetra condimentum interdum ex dis nisl lectus lacus quam phasellus.
+            </div>
+          </label>
+        </div>
+        <div
+          class="flex items-center space-x-2"
+        >
+          <button
+            class="mr-0.5"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-3 w-3 text-gray-500"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <input
+            class="block w-20 border border-gray-300 rounded-md shadow-sm h-7 text-right sm:text-sm font-light text-gray-900 focus:ring-inset focus:ring-2 focus:ring-blue-500 focus:border-white"
+            step="0.01"
+            type="number"
+            value="0"
+          />
+        </div>
+      </div>
+      <div
+        class="mt-0"
+      >
+        <div
+          class="flex sm:max-w-md"
+        >
+          <input
+            class="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+            id="test-slider"
+            max="10"
+            min="0"
+            name="test-slider"
+            step="0.01"
+            type="range"
+            value="0"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Slider > Optional 2`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-between items-center"
+      >
+        <div
+          class="flex items-center space-x-1"
+        >
+          <input
+            class="mr-1 ml-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            type="checkbox"
+          />
+          <label
+            class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+            for="test-slider"
+          >
+            Test slider
+            <div
+              class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+            >
+              Ad leo bibendum nisi tempus purus vivamus senectus pellentesque est finibus fermentum a taciti, potenti tortor pharetra condimentum interdum ex dis nisl lectus lacus quam phasellus.
+            </div>
+          </label>
+        </div>
+        <div
+          class="flex items-center space-x-2"
+        >
+          <button
+            class="mr-0.5"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-3 w-3 text-gray-500"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <input
+            class="block w-20 border border-gray-300 rounded-md shadow-sm h-7 text-right sm:text-sm font-light text-gray-900 focus:ring-inset focus:ring-2 focus:ring-blue-500 focus:border-white"
+            step="0.01"
+            type="number"
+            value="0"
+          />
+        </div>
+      </div>
+      <div
+        class="mt-0"
+      >
+        <div
+          class="flex sm:max-w-md"
+        >
+          <input
+            class="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+            id="test-slider"
+            max="10"
+            min="0"
+            name="test-slider"
+            step="0.01"
+            type="range"
+            value="0"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;
+
+exports[`Slider > Standard 1`] = `
+<body>
+  <div>
+    <div
+      class="sm:col-span-4"
+    >
+      <div
+        class="flex flex-row justify-between items-center"
+      >
+        <div
+          class="flex items-center space-x-1"
+        >
+          <label
+            class="relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted text-gray-900"
+            for="test-slider"
+          >
+            Test slider
+            <div
+              class="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10"
+            >
+              Ad leo bibendum nisi tempus purus vivamus senectus pellentesque est finibus fermentum a taciti, potenti tortor pharetra condimentum interdum ex dis nisl lectus lacus quam phasellus.
+            </div>
+          </label>
+        </div>
+        <div
+          class="flex items-center space-x-2"
+        >
+          <button
+            class="mr-0.5"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-3 w-3 text-gray-500"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                clip-rule="evenodd"
+                d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <input
+            class="block w-20 border border-gray-300 rounded-md shadow-sm h-7 text-right sm:text-sm font-light text-gray-900 focus:ring-inset focus:ring-2 focus:ring-blue-500 focus:border-white"
+            step="0.01"
+            type="number"
+            value="0"
+          />
+        </div>
+      </div>
+      <div
+        class="mt-0"
+      >
+        <div
+          class="flex sm:max-w-md"
+        >
+          <input
+            class="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+            id="test-slider"
+            max="10"
+            min="0"
+            name="test-slider"
+            step="0.01"
+            type="range"
+            value="0"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

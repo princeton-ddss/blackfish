@@ -48,7 +48,7 @@ pip install blackfish-ai
 
 ```shell
 uv venv
-uv add blackfish-ai
+uv pip install blackfish-ai
 ```
 
 ### Initialization
@@ -59,17 +59,7 @@ Before you use Blackfish for the first time, you need to initialize it:
 blackfish init
 ```
 
-Answer the prompts to create a new default profile. If you are setting up Blackfish on a cluster, your default profile should be a "local" profile:
-
-```shell
-# > name: default
-# > type: local
-# > user: shamu
-# > home: /home/shamu/.blackfish
-# > cache: /shared/.blackfish
-```
-
-If you are installing Blackfish on your laptop, then you probably want your default profile to be a "Slurm" profile:
+Answer the prompts to create a new default profile. If you are installing Blackfish on your laptop and intend run Blackfish services on a cluster, your default profile should be a *Slurm profile*:
 
 ```shell
 # > name: default
@@ -80,7 +70,28 @@ If you are installing Blackfish on your laptop, then you probably want your defa
 # > cache: /shared/.blackfish
 ```
 
-The home directory supplied must be a directory for which your user has read-write permissions; the cache directory only requires read permissions.
+If you are installing Blackfish on a cluster, your default profile should be a Slurm profile with `host` set to `localhost`:
+
+```shell
+# > name: default
+# > type: slurm
+# > host: localhost
+# > user: shamu
+# > home: /home/shamu/.blackfish
+# > cache: /shared/.blackfish
+```
+
+If you are installing Blackfish on your laptop and you want to run Blackfish services locally, your default profile should be a *local profile* :
+
+```shell
+# > name: default
+# > type: local
+# > user: shamu
+# > home: /home/shamu/.blackfish
+# > cache: /shared/.blackfish
+```
+
+The home directory supplied must be a directory for which your user has read-write permissions; the cache directory only requires read permissions. You can modify this profile or add additional profiles later. See [Profiles](../usage/cli.md#profiles) for details.
 
 !!! note
 

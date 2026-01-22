@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'npm'
@@ -28,7 +28,7 @@ jobs:
       - name: Build app
         run: npm run build
       - name: Upload UI build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ui-build
           path: web/build/
@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download UI build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: ui-build
           path: lib/src/blackfish/build/
@@ -53,7 +53,7 @@ jobs:
       - name: Build wheel
         run: uv build lib/
       - name: Store distribution packages
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: python-package-distributions
           path: lib/dist/
@@ -69,7 +69,7 @@ jobs:
       id-token: write
     steps:
       - name: Download distributions
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: python-package-distributions
           path: dist/

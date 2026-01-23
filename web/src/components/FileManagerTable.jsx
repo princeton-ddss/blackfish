@@ -42,7 +42,7 @@ function getFileTypeLabel(filename, isDir) {
     if (isDir) return "Folder";
 
     const fileType = getFileType(filename);
-    if (!fileType) return "Unknown";
+    if (!fileType) return "-";
 
     return fileType.charAt(0).toUpperCase() + fileType.slice(1);
 }
@@ -237,9 +237,13 @@ function FileManagerTable({
                                                     <div className="overflow-x-scroll">{item.name}</div>
                                                 </td>
                                                 <td className="whitespace-nowrap w-[5rem] py-3 px-3 text-left text-sm text-gray-600">
-                                                    <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                                                        {getFileTypeLabel(item.name, item.is_dir)}
-                                                    </span>
+                                                    {getFileTypeLabel(item.name, item.is_dir) === "-" ? (
+                                                        <span>-</span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                                                            {getFileTypeLabel(item.name, item.is_dir)}
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="whitespace-nowrap w-[4.5rem] py-3 px-3 text-left text-sm text-gray-900">
                                                     <div className="flex">

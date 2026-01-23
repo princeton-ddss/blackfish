@@ -178,7 +178,7 @@ function FileReplaceDialog({
                                                                 {fileType
                                                                     ? fileType.charAt(0).toUpperCase() +
                                                                     fileType.slice(1)
-                                                                    : "Unknown"}
+                                                                    : "-"}
                                                             </span>
                                                         </div>
                                                     </div>

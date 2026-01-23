@@ -68,7 +68,7 @@ function FilePreview({ file, profile = null }) {
                 <div className="flex justify-between">
                     <span className="text-gray-500">Type:</span>
                     <span className="text-gray-900 capitalize">
-                        {file.type || "Unknown"}
+                        {file.type || "-"}
                     </span>
                 </div>
                 <div className="flex justify-between">

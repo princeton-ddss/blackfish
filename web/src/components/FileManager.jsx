@@ -13,7 +13,6 @@ import FilterInput from "@/components/FilterInput";
 import FileUploadDialog from "@/components/FileUploadDialog";
 import FileDeleteDialog from "@/components/FileDeleteDialog";
 import { getFileType } from "@/lib/fileApi";
-import { toRelativePath, normalizeRelativePath } from "@/lib/pathUtils";
 import PropTypes from "prop-types";
 
 /** File Manager component with CRUD operations. */
@@ -37,34 +36,28 @@ function FileManager({
 
     const { files, error, isLoading, refresh, isConnected, homeDir } = useFileSystem(path, profile);
 
+    // Reset path when profile changes
     useEffect(() => {
-        if (!isRemote) setPath(root);
-    }, [root, isRemote]);
+        if (isRemote) {
+            setPath(null); // Reset when switching to remote
+        } else {
+            setPath(root);
+        }
+    }, [isRemote, root, profile?.name]);
 
+    // Set initial path for remote profiles when connected
     useEffect(() => {
-        if (isRemote && homeDir && path === null) setPath("/");
+        if (isRemote && homeDir && path === null) setPath(homeDir);
     }, [isRemote, homeDir, path]);
 
-    const effectiveRoot = isRemote ? (homeDir || root) : root;
-    const displayPath = isRemote
-        ? (path === "/" || path === null ? homeDir : `${homeDir}/${path}`)
-        : path;
+    const effectiveRoot = isRemote ? homeDir : root;
 
     const handlePathChange = (newPath) => {
-        if (!isRemote) {
-            if (root && !newPath.startsWith(root)) {
-                setOperationError(`Path must be within ${root}`);
-                return;
-            }
-            setPath(newPath);
+        if (!isRemote && root && !newPath.startsWith(root)) {
+            setOperationError(`Path must be within ${root}`);
             return;
         }
-        const relativePath = toRelativePath(newPath, homeDir);
-        if (relativePath === null) {
-            setOperationError(`Path must be within ${homeDir}`);
-            return;
-        }
-        setPath(normalizeRelativePath(relativePath));
+        setPath(newPath);
     };
 
     useEffect(() => {
@@ -128,7 +121,7 @@ function FileManager({
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-4">
                     <label className="font-medium text-sm">File Manager</label>
-                    {profile && profile.schema !== "local" && (
+                    {isRemote && profile && (
                         <div className="flex items-center gap-1.5">
                             <span
                                 className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${isConnected ? "bg-green-500" : "animate-pulse bg-yellow-500"
@@ -154,7 +147,7 @@ function FileManager({
 
             <DirectoryInput
                 root={effectiveRoot}
-                path={displayPath}
+                path={path}
                 setPath={handlePathChange}
                 disabled={status.disabled || operationInProgress}
             />
@@ -166,7 +159,7 @@ function FileManager({
                         <div className="ml-3">
                             <p className="text-sm font-medium text-red-800">Access Denied</p>
                             <p className="text-sm text-red-700 mt-1">
-                                You don&apos;t have permission to access: {displayPath}
+                                You don&apos;t have permission to access: {path}
                             </p>
                         </div>
                     </div>
@@ -180,7 +173,7 @@ function FileManager({
                         <div className="ml-3">
                             <p className="text-sm font-medium text-yellow-800">Path Not Found</p>
                             <p className="text-sm text-yellow-700 mt-1">
-                                The path does not exist: {displayPath}
+                                The path does not exist: {path}
                             </p>
                         </div>
                     </div>

@@ -12,10 +12,10 @@ import PropTypes from "prop-types";
  * @return {JSX.Element}
  */
 function DirectoryInput({ root, path, setPath, disabled }) {
-  const [input, setInput] = useState(root);
+  const [input, setInput] = useState(root || "");
 
   useEffect(() => {
-    setInput(path);
+    setInput(path || "");
   }, [path])
 
   const handleButtonClick = () => {

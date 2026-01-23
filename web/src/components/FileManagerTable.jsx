@@ -101,12 +101,16 @@ function FileManagerTable({
                                         >
                                             <button
                                                 onClick={() => {
+                                                    if (!path) return; // No path set
                                                     const parts = path.split("/").filter(p => p !== "");
-                                                    if (parts.length <= 1) {
-                                                        setPath(path === root || path.startsWith(root) ? root : "/");
-                                                    } else {
-                                                        setPath(parts.slice(0, -1).join("/"));
+                                                    if (parts.length === 0) return; // Already at root
+                                                    const parentPath = parts.length === 1 ? "/" : "/" + parts.slice(0, -1).join("/");
+                                                    // If root is set, don't navigate above it
+                                                    if (root && !parentPath.startsWith(root) && parentPath !== root) {
+                                                        setPath(root);
+                                                        return;
                                                     }
+                                                    setPath(parentPath);
                                                 }}
                                                 disabled={isDisabled}
                                             >

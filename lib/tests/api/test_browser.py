@@ -25,26 +25,29 @@ def create_mock_connection_class(mock_sftp):
     """Create a mock Connection class with SFTP support.
 
     The mock needs to support this pattern:
-        self._connection = Connection(host=..., user=...)
-        self._connection.__enter__()
-        self._sftp = self._connection.sftp().__enter__()
+        self._connection = Connection(host=..., user=..., connect_timeout=..., connect_kwargs=...)
+        self._connection.open()
+        self._sftp = self._connection.sftp()
+        # ... operations ...
+        self._sftp.close()
+        self._connection.close()
     """
     mock_connection_class = mock.MagicMock()
 
     # The Connection() call returns a mock instance
     mock_connection_instance = mock.MagicMock()
 
-    # __enter__ returns self (the connection instance)
-    mock_connection_instance.__enter__ = mock.MagicMock(
-        return_value=mock_connection_instance
-    )
-    mock_connection_instance.__exit__ = mock.MagicMock(return_value=False)
+    # open() establishes the connection
+    mock_connection_instance.open = mock.MagicMock()
 
-    # .sftp() returns a context manager that yields the mock_sftp
-    mock_sftp_context = mock.MagicMock()
-    mock_sftp_context.__enter__ = mock.MagicMock(return_value=mock_sftp)
-    mock_sftp_context.__exit__ = mock.MagicMock(return_value=False)
-    mock_connection_instance.sftp.return_value = mock_sftp_context
+    # close() closes the connection
+    mock_connection_instance.close = mock.MagicMock()
+
+    # .sftp() returns the mock_sftp directly (no context manager)
+    mock_connection_instance.sftp.return_value = mock_sftp
+
+    # mock_sftp also needs close()
+    mock_sftp.close = mock.MagicMock()
 
     mock_connection_class.return_value = mock_connection_instance
     return mock_connection_class

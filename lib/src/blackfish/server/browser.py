@@ -7,6 +7,7 @@ via SFTP, with persistent connections for efficient file operations.
 from __future__ import annotations
 
 import asyncio
+import errno
 import json
 import os
 import stat
@@ -28,6 +29,10 @@ from blackfish.server.config import config as blackfish_config
 
 if TYPE_CHECKING:
     from paramiko.sftp_client import SFTPClient
+
+# WebSocket close codes (RFC 6455)
+WS_CLOSE_NORMAL = 1000  # Normal closure
+WS_CLOSE_POLICY_VIOLATION = 1008  # Policy violation (invalid profile, etc.)
 
 
 class FileEntry(BaseModel):
@@ -54,6 +59,8 @@ class ListMessage(BaseModel):
     id: str | None = None
     path: str = "/"
     show_hidden: bool = False
+    limit: int = 1000
+    offset: int = 0
 
 
 class StatMessage(BaseModel):
@@ -139,9 +146,24 @@ class RemoteFileBrowser:
         self._connection = Connection(
             host=self.profile.host,
             user=self.profile.user,
+            connect_timeout=30,
+            connect_kwargs={
+                "timeout": 30,
+                "banner_timeout": 30,
+            },
         )
-        self._connection.__enter__()
-        self._sftp = self._connection.sftp().__enter__()
+        try:
+            self._connection.open()
+            self._sftp = self._connection.sftp()
+        except Exception:
+            # Clean up connection if SFTP session fails to open
+            if self._connection:
+                try:
+                    self._connection.close()
+                except Exception as cleanup_error:
+                    logger.warning(f"Error during connection cleanup: {cleanup_error}")
+                self._connection = None
+            raise
         logger.info(
             f"SFTP connection established to {self.profile.user}@{self.profile.host}"
         )
@@ -150,12 +172,12 @@ class RemoteFileBrowser:
         """Close SFTP session and SSH connection."""
         if self._sftp:
             try:
-                self._sftp.__exit__(None, None, None)
+                self._sftp.close()
             except Exception as e:
                 logger.warning(f"Error closing SFTP session: {e}")
         if self._connection:
             try:
-                self._connection.__exit__(None, None, None)
+                self._connection.close()
             except Exception as e:
                 logger.warning(f"Error closing SSH connection: {e}")
         self._sftp = None
@@ -176,15 +198,23 @@ class RemoteFileBrowser:
             raise RuntimeError("SFTP connection not established")
         return self._sftp
 
-    def list_dir(self, path: str, show_hidden: bool = False) -> list[FileEntry]:
-        """List directory contents.
+    def list_dir(
+        self,
+        path: str,
+        show_hidden: bool = False,
+        limit: int = 1000,
+        offset: int = 0,
+    ) -> tuple[list[FileEntry], int]:
+        """List directory contents with pagination.
 
         Args:
             path: Absolute path to directory
             show_hidden: Include hidden files (starting with .)
+            limit: Maximum number of entries to return
+            offset: Number of entries to skip
 
         Returns:
-            List of FileEntry models
+            Tuple of (list of FileEntry models, total count)
         """
         try:
             entries = self.sftp.listdir_attr(path)
@@ -194,10 +224,17 @@ class RemoteFileBrowser:
             logger.error(f"SFTP listdir error: {e}")
             raise OSError(str(e)) from e
 
+        # Filter hidden files first
+        if not show_hidden:
+            entries = [e for e in entries if not e.filename.startswith(".")]
+
+        total_count = len(entries)
+
+        # Apply pagination
+        entries = entries[offset : offset + limit]
+
         results = []
         for attr in entries:
-            if not show_hidden and attr.filename.startswith("."):
-                continue
             results.append(
                 FileEntry(
                     name=attr.filename,
@@ -216,7 +253,7 @@ class RemoteFileBrowser:
                     ),
                 )
             )
-        return results
+        return results, total_count
 
     def stat(self, path: str) -> FileEntry:
         """Get file statistics.
@@ -281,7 +318,8 @@ class RemoteFileBrowser:
         except (FileNotFoundError, PermissionError):
             raise
         except IOError as e:
-            if "exists" in str(e).lower():
+            # Use errno codes for reliable error detection (locale-independent)
+            if getattr(e, "errno", None) == errno.EEXIST:
                 raise ValueError(f"Directory already exists: {path}") from e
             logger.error(f"SFTP mkdir error: {e}")
             raise OSError(str(e)) from e
@@ -304,7 +342,9 @@ class RemoteFileBrowser:
         except (FileNotFoundError, PermissionError):
             raise
         except IOError as e:
-            if "not empty" in str(e).lower():
+            # Use errno codes for reliable error detection (locale-independent)
+            # ENOTEMPTY indicates directory is not empty
+            if getattr(e, "errno", None) == errno.ENOTEMPTY:
                 raise ValueError(f"Directory not empty: {path}") from e
             logger.error(f"SFTP delete error: {e}")
             raise OSError(str(e)) from e
@@ -357,7 +397,7 @@ class RemoteFileBrowserSession(WebsocketListener):
                     },
                 }
             )
-            await socket.close()
+            await socket.close(code=WS_CLOSE_POLICY_VIOLATION)
             return
 
         if profile is None:
@@ -370,7 +410,7 @@ class RemoteFileBrowserSession(WebsocketListener):
                     },
                 }
             )
-            await socket.close()
+            await socket.close(code=WS_CLOSE_POLICY_VIOLATION)
             return
 
         if not isinstance(profile, SlurmProfile) or profile.is_local():
@@ -383,7 +423,7 @@ class RemoteFileBrowserSession(WebsocketListener):
                     },
                 }
             )
-            await socket.close()
+            await socket.close(code=WS_CLOSE_POLICY_VIOLATION)
             return
 
         try:
@@ -407,7 +447,7 @@ class RemoteFileBrowserSession(WebsocketListener):
                     },
                 }
             )
-            await socket.close()
+            await socket.close(code=WS_CLOSE_NORMAL)
 
     async def on_disconnect(self, socket: WebSocket[Any, Any, Any]) -> None:
         """Handle WebSocket disconnection - clean up SFTP connection."""
@@ -506,14 +546,20 @@ class RemoteFileBrowserSession(WebsocketListener):
         try:
             match message:
                 case ListMessage():
-                    entries = self.browser.list_dir(
-                        message.path, show_hidden=message.show_hidden
+                    entries, total = self.browser.list_dir(
+                        message.path,
+                        show_hidden=message.show_hidden,
+                        limit=message.limit,
+                        offset=message.offset,
                     )
                     return {
                         "id": message.id,
                         "status": "ok",
                         "action": message.action,
                         "entries": [e.model_dump(mode="json") for e in entries],
+                        "total": total,
+                        "limit": message.limit,
+                        "offset": message.offset,
                     }
 
                 case StatMessage():

@@ -16,7 +16,7 @@ function ServiceProvider({ selectedService, setSelectedServiceId, children }) {
 
 ServiceProvider.propTypes = {
   selectedService: PropTypes.string,
-  setSelectedServiceId: PropTypes.string,
+  setSelectedServiceId: PropTypes.func,
   children: PropTypes.node,
 };
 

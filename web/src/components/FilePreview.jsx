@@ -150,7 +150,7 @@ FilePreview.propTypes = {
     file: PropTypes.shape({
         path: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
-        type: PropTypes.string.isRequired,
+        type: PropTypes.string,
         size: PropTypes.number.isRequired,
         modified_at: PropTypes.string,
     }),

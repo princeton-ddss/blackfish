@@ -2,8 +2,7 @@
  * Path utilities for consistent handling across file management.
  *
  * Path Contract:
- * - Remote profiles: Use relative paths (e.g., "/", "data", "data/models")
- * - Local profiles: Use absolute paths (e.g., "/home/user/data")
+ * - All profiles use absolute paths (e.g., "/home/user/data")
  * - Root representation: Forward slash "/" (never "" or null for connected state)
  */
 
@@ -35,29 +34,4 @@ export function joinPath(...parts) {
  */
 export function isRootPath(path) {
   return path === "/" || path === "" || path === null;
-}
-
-/**
- * Normalize a relative path: remove leading/trailing slashes, collapse doubles.
- * @param {string} path - Path to normalize
- * @returns {string} Normalized path
- */
-export function normalizeRelativePath(path) {
-  if (!path) return "";
-  return path.replace(/^\/+|\/+$/g, "").replace(/\/+/g, "/");
-}
-
-/**
- * Convert absolute path to relative (for remote profiles).
- * @param {string} absolutePath - Absolute path to convert
- * @param {string} homeDir - Home directory base
- * @returns {string|null} Relative path ("/" for root), or null if outside homeDir
- */
-export function toRelativePath(absolutePath, homeDir) {
-  if (!absolutePath || !homeDir) return "/";
-  if (absolutePath === homeDir || absolutePath === homeDir + "/") return "/";
-  if (absolutePath.startsWith(homeDir + "/")) {
-    return absolutePath.slice(homeDir.length + 1);
-  }
-  return null; // Path outside homeDir
 }

@@ -90,7 +90,6 @@ def write_file(
     try:
         with Connection(host=profile.host, user=profile.user) as conn:
             with conn.sftp() as sftp:
-                # Check existence
                 exists = True
                 try:
                     sftp.stat(path)
@@ -102,12 +101,10 @@ def write_file(
                 if update and not exists:
                     raise NotFoundException(f"Remote file not found: {path}")
 
-                # Create parent directories if needed (for new files)
                 if not update:
                     parent_dir = os.path.dirname(path)
                     _ensure_remote_dir(sftp, parent_dir)
 
-                # Write file
                 with sftp.open(path, "wb") as f:
                     f.write(content)
 
@@ -121,6 +118,21 @@ def write_file(
         raise
     except PermissionError:
         raise NotAuthorizedException(f"Permission denied: {path}")
+    except IOError as e:
+        import errno as errno_module
+        err_num = getattr(e, "errno", None)
+        logger.error(f"Remote file write IOError: {e} (errno={err_num})")
+
+        if err_num == errno_module.ENOSPC:
+            raise InternalServerException("SFTP write failed: No space left on device")
+        elif err_num == errno_module.EDQUOT:
+            raise InternalServerException("SFTP write failed: Disk quota exceeded")
+        elif str(e) == "Failure" and err_num is None:
+            raise InternalServerException(
+                "SFTP write failed: Server returned generic failure "
+                "(possible causes: disk quota exceeded, no space left, or permission issue)"
+            )
+        raise InternalServerException(f"SFTP write failed: {e}")
     except Exception as e:
         logger.error(f"Remote file write failed: {e}")
         raise InternalServerException(f"SFTP write failed: {e}")

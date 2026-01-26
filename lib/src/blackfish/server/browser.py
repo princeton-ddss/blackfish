@@ -146,17 +146,15 @@ class RemoteFileBrowser:
         self._connection = Connection(
             host=self.profile.host,
             user=self.profile.user,
-            connect_timeout=30,
             connect_kwargs={
-                "timeout": 30,
-                "banner_timeout": 30,
+                "timeout": 15,
+                "banner_timeout": 10,
             },
         )
         try:
             self._connection.open()
             self._sftp = self._connection.sftp()
         except Exception:
-            # Clean up connection if SFTP session fails to open
             if self._connection:
                 try:
                     self._connection.close()
@@ -433,7 +431,6 @@ class RemoteFileBrowserSession(WebsocketListener):
                 {
                     "status": "connected",
                     "profile": profile_name,
-                    "home_dir": profile.home_dir,
                 }
             )
         except Exception as e:

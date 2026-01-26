@@ -12,12 +12,18 @@ function FileManagerContainer() {
         setSelectedFile(null);
     }, [profile?.name]);
 
+    // Reset selected file when path changes
+    const handlePathChange = () => {
+        setSelectedFile(null);
+    };
+
     return (
         <div className="bg-white">
             <FileManager
                 key={profile?.name ?? "default"}
                 root={null}
                 onFileSelect={setSelectedFile}
+                onPathChange={handlePathChange}
                 enableUpload={true}
                 enableDelete={true}
                 status={{ disabled: false }}

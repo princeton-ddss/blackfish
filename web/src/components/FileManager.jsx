@@ -19,6 +19,7 @@ import PropTypes from "prop-types";
 function FileManager({
     root,
     onFileSelect = null,
+    onPathChange = null,
     enableUpload = true,
     enableDelete = true,
     status,
@@ -50,22 +51,9 @@ function FileManager({
             return;
         }
         setPath(newPath);
+        if (onPathChange) onPathChange(newPath);
     };
 
-    useEffect(() => {
-        if (files && files.length > 0 && onFileSelect) {
-            const firstFile = files.find(f => !f.is_dir);
-            if (firstFile) {
-                onFileSelect({
-                    path: firstFile.path,
-                    name: firstFile.name,
-                    type: getFileType(firstFile.name),
-                    size: firstFile.size,
-                    modified_at: firstFile.modified_at
-                });
-            }
-        }
-    }, [files, onFileSelect]);
 
     const handleFileClick = (file) => {
         if (onFileSelect && !file.is_dir) {
@@ -185,7 +173,7 @@ function FileManager({
                 root={root}
                 filesPerPage={20}
                 query={query}
-                setPath={setPath}
+                setPath={handlePathChange}
                 isLoading={isLoading}
                 error={error}
                 refresh={refresh}
@@ -252,6 +240,7 @@ function FileManager({
 FileManager.propTypes = {
     root: PropTypes.string,
     onFileSelect: PropTypes.func,
+    onPathChange: PropTypes.func,
     enableUpload: PropTypes.bool,
     enableDelete: PropTypes.bool,
     status: PropTypes.object,

@@ -109,9 +109,11 @@ export function useRemoteFileSystem(path, profile, options = {}) {
             return;
         }
 
-        // Reset reconnection state on new profile
+        // Reset state on new profile
         shouldReconnect.current = true;
         reconnectAttempts.current = 0;
+        setHomeDir(null);
+        setFiles(null);
 
         const wsProtocol = blackfishApiURL.startsWith("https") ? "wss" : "ws";
         const wsHost = blackfishApiURL.replace(/^https?:\/\//, "");

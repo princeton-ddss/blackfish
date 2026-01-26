@@ -46,7 +46,7 @@ function Page({ task, children }) {
   }
 
   return (
-    <div className="grid lg:grid-cols-[1fr_24rem] gap-12">
+    <div className="grid lg:grid-cols-[1fr_24rem] gap-12 px-4 sm:px-6 lg:px-8">
       <ServiceProvider
         selectedService={selectedService}
         setSelectedServiceId={setSelectedServiceId}

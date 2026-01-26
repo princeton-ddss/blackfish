@@ -33,7 +33,7 @@ exports[`DirectoryInputAlert visible and dismissible 1`] = `
           <p
             class="text-sm font-normal text-red-700"
           >
-            Only audio files in the mounted directory 
+            Only files in the mounted directory 
             /
              are accessible.
           </p>

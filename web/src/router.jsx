@@ -6,6 +6,7 @@ import DashboardPage from "./routes/dashboard/dashboard";
 import LoginPage from "./routes/login/login";
 import TextGenerationPage from "./routes/text-generation/text-generation";
 import SpeechRecognitionPage from "./routes/speech-recognition/speech-recognition";
+import FileManagerPage from "./routes/file-manager/file-manager";
 import NotFoundPage from "./routes/not-found";
 
 export const router = createBrowserRouter(
@@ -19,6 +20,7 @@ export const router = createBrowserRouter(
         { path: "login", element: <LoginPage /> },
         { path: "text-generation", element: <TextGenerationPage /> },
         { path: "speech-recognition", element: <SpeechRecognitionPage /> },
+        { path: "file-manager", element: <FileManagerPage /> },
         { path: "*", element: <NotFoundPage /> },
       ],
     },

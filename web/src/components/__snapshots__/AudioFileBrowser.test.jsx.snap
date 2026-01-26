@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`AudioFileBrowser back navigation 1`] = `
 <body>
@@ -506,13 +506,8 @@ exports[`AudioFileBrowser disabled interactions 1`] = `
                           <img
                             alt="File browser disabled"
                             class="h-16 ml-auto mr-auto opacity-80 mb-5"
-                            data-nimg="1"
-                            decoding="async"
                             height="56"
-                            loading="lazy"
-                            src="/_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75"
-                            srcset="/_next/image?url=%2Fimg%2Fdead-fish.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75 2x"
-                            style="color: transparent;"
+                            src="./img/dead-fish.png"
                             width="56"
                           />
                           Service disabled
@@ -1922,13 +1917,8 @@ exports[`AudioFileBrowser with empty files 1`] = `
                           <img
                             alt="No files found."
                             class="h-16 ml-auto mr-auto opacity-80 mb-5"
-                            data-nimg="1"
-                            decoding="async"
                             height="56"
-                            loading="lazy"
-                            src="/_next/image?url=%2Fimg%2Fquestion-mark.png&w=128&q=75"
-                            srcset="/_next/image?url=%2Fimg%2Fquestion-mark.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fquestion-mark.png&w=128&q=75 2x"
-                            style="color: transparent;"
+                            src="./img/question-mark.png"
                             width="56"
                           />
                           Hmm. There don't seem to be any files here...
@@ -2191,13 +2181,8 @@ exports[`AudioFileBrowser with error 1`] = `
                           <img
                             alt="Loading error."
                             class="h-16 ml-auto mr-auto opacity-80 mb-5"
-                            data-nimg="1"
-                            decoding="async"
                             height="56"
-                            loading="lazy"
-                            src="/_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75"
-                            srcset="/_next/image?url=%2Fimg%2Fdead-fish.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75 2x"
-                            style="color: transparent;"
+                            src="./img/dead-fish.png"
                             width="56"
                           />
                           Oops! There seems to be a problem here...
@@ -2460,13 +2445,8 @@ exports[`AudioFileBrowser with no service selected 1`] = `
                           <img
                             alt="No files found."
                             class="h-16 ml-auto mr-auto opacity-80 mb-5"
-                            data-nimg="1"
-                            decoding="async"
                             height="56"
-                            loading="lazy"
-                            src="/_next/image?url=%2Fimg%2Fquestion-mark.png&w=128&q=75"
-                            srcset="/_next/image?url=%2Fimg%2Fquestion-mark.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fquestion-mark.png&w=128&q=75 2x"
-                            style="color: transparent;"
+                            src="./img/question-mark.png"
                             width="56"
                           />
                           Hmm. There don't seem to be any files here...
@@ -2734,13 +2714,8 @@ exports[`Disabled AudioFileBrowser 1`] = `
                           <img
                             alt="File browser disabled"
                             class="h-16 ml-auto mr-auto opacity-80 mb-5"
-                            data-nimg="1"
-                            decoding="async"
                             height="56"
-                            loading="lazy"
-                            src="/_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75"
-                            srcset="/_next/image?url=%2Fimg%2Fdead-fish.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75 2x"
-                            style="color: transparent;"
+                            src="./img/dead-fish.png"
                             width="56"
                           />
                           Test error.
@@ -3923,13 +3898,8 @@ exports[`Loading AudioFileBrowser 1`] = `
                           <img
                             alt="File browser disabled"
                             class="h-16 ml-auto mr-auto opacity-80 mb-5"
-                            data-nimg="1"
-                            decoding="async"
                             height="56"
-                            loading="lazy"
-                            src="/_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75"
-                            srcset="/_next/image?url=%2Fimg%2Fdead-fish.png&w=64&q=75 1x, /_next/image?url=%2Fimg%2Fdead-fish.png&w=128&q=75 2x"
-                            style="color: transparent;"
+                            src="./img/dead-fish.png"
                             width="56"
                           />
                           Test error.

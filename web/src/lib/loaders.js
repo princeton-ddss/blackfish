@@ -1,6 +1,7 @@
 import useSWR from "swr";
 import { fetchModels, fetchServices, fetchProfiles, fetchFiles } from "./requests";
 import { ServiceStatus } from "./util";
+import { useRemoteFileSystem } from "../hooks/useRemoteFileSystem";
 
 
 export const useModels = (profile, image) => {
@@ -63,12 +64,39 @@ export const useProfiles = () => {
   };
 };
 
-export const useFileSystem = (path) => {
-  const { data, error, isLoading, mutate } = useSWR(path ? `files?path=${path}` : null, fetchFiles);
-  return {
-    files: data,
-    error: error,
-    isLoading: isLoading,
-    refresh: mutate,
+export const useFileSystem = (path, profile = null) => {
+  // Determine if this is a remote profile
+  const isRemote = profile && profile.schema !== "local";
+
+  // WebSocket hook for remote profiles
+  const remoteFs = useRemoteFileSystem(
+    isRemote ? path : null,
+    isRemote ? profile : null
+  );
+
+  // SWR hook for local profiles (only runs when not remote)
+  // Uses ~ as default to fetch home directory when path is null
+  const localKey = !isRemote ? `files?path=${path ?? "~"}` : null;
+  const localFs = useSWR(localKey, fetchFiles);
+
+  // Return appropriate source based on profile type
+  if (isRemote) {
+    return {
+      files: remoteFs.files,
+      error: remoteFs.error,
+      isLoading: remoteFs.isLoading,
+      refresh: remoteFs.refresh,
+      isConnected: remoteFs.isConnected,
+      homeDir: remoteFs.homeDir,
+    };
   }
+
+  return {
+    files: localFs.data?.files ?? null,
+    error: localFs.error,
+    isLoading: localFs.isLoading,
+    refresh: localFs.mutate,
+    isConnected: true, // Local is always "connected"
+    homeDir: localFs.data?.path ?? null,
+  };
 }

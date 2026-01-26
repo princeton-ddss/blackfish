@@ -196,6 +196,10 @@ class RemoteFileBrowser:
             raise RuntimeError("SFTP connection not established")
         return self._sftp
 
+    def get_home_dir(self) -> str:
+        """Get the home directory on the remote server."""
+        return self.sftp.normalize(".")
+
     def list_dir(
         self,
         path: str,
@@ -427,10 +431,12 @@ class RemoteFileBrowserSession(WebsocketListener):
         try:
             self.browser = RemoteFileBrowser(profile)
             await asyncio.to_thread(self.browser.connect)
+            home_dir = await asyncio.to_thread(self.browser.get_home_dir)
             await socket.send_json(
                 {
                     "status": "connected",
                     "profile": profile_name,
+                    "home_dir": home_dir,
                 }
             )
         except Exception as e:

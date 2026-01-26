@@ -25,7 +25,7 @@ function FileManager({
     profile = null,
 }) {
     const isRemote = profile && profile.schema !== "local";
-    const [path, setPath] = useState(isRemote ? null : root);
+    const [path, setPath] = useState(null);
     const [query, setQuery] = useState("");
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -36,24 +36,16 @@ function FileManager({
 
     const { files, error, isLoading, refresh, isConnected, homeDir } = useFileSystem(path, profile);
 
-    // Reset path when profile changes
+    // Set path to homeDir when it becomes available
     useEffect(() => {
-        if (isRemote) {
-            setPath(null); // Reset when switching to remote
-        } else {
-            setPath(root);
-        }
-    }, [isRemote, root, profile?.name]);
+        if (homeDir && path === null) setPath(homeDir);
+    }, [homeDir, path]);
 
-    // Set initial path for remote profiles when connected
-    useEffect(() => {
-        if (isRemote && homeDir && path === null) setPath(homeDir);
-    }, [isRemote, homeDir, path]);
-
-    const effectiveRoot = isRemote ? homeDir : root;
+    const displayRoot = homeDir ?? root;
 
     const handlePathChange = (newPath) => {
-        if (!isRemote && root && !newPath.startsWith(root)) {
+        // Only enforce path boundary if root is an explicit path (not ~)
+        if (!isRemote && root?.startsWith("/") && !newPath.startsWith(root)) {
             setOperationError(`Path must be within ${root}`);
             return;
         }
@@ -128,7 +120,7 @@ function FileManager({
                                     }`}
                             />
                             <span className="text-sm text-gray-600">
-                                {isConnected ? `Connected to: ${profile.host}` : "Connecting..."}
+                                {isConnected ? `Connected to ${profile.host}` : "Connecting..."}
                             </span>
                         </div>
                     )}
@@ -146,7 +138,7 @@ function FileManager({
             </div>
 
             <DirectoryInput
-                root={effectiveRoot}
+                root={displayRoot}
                 path={path}
                 setPath={handlePathChange}
                 disabled={status.disabled || operationInProgress}
@@ -190,7 +182,7 @@ function FileManager({
             <FileManagerTable
                 content={files}
                 path={path}
-                root={effectiveRoot}
+                root={root}
                 filesPerPage={20}
                 query={query}
                 setPath={setPath}

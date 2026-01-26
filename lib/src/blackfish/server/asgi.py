@@ -555,18 +555,19 @@ def listdir(path: str, hidden: bool = False) -> list[FileStats]:
 
 @get("/api/files", guards=ENDPOINT_GUARDS)
 async def get_files(
-    path: str,
+    path: str = "~",
     hidden: bool = False,
-) -> list[FileStats] | HTTPException:
-    if os.path.isdir(path):
+) -> dict[str, Any] | HTTPException:
+    resolved_path = os.path.expanduser(path)
+    if os.path.isdir(resolved_path):
         try:
-            return listdir(path, hidden=hidden)
+            return {"path": resolved_path, "files": listdir(resolved_path, hidden=hidden)}
         except PermissionError:
             logger.debug("Permission error raised")
-            raise NotAuthorizedException(f"User not authorized to access {path}")
+            raise NotAuthorizedException(f"User not authorized to access {resolved_path}")
     else:
         logger.debug("Not found error")
-        raise NotFoundException(detail=f"Path {path} does not exist.")
+        raise NotFoundException(detail=f"Path {resolved_path} does not exist.")
 
 
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]

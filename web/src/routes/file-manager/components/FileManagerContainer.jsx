@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import FileManager from "@/components/FileManager";
 import FilePreview from "@/components/FilePreview";
 import { ProfileContext } from "@/components/ProfileSelect";
@@ -7,13 +7,16 @@ function FileManagerContainer() {
     const { profile } = useContext(ProfileContext);
     const [selectedFile, setSelectedFile] = useState(null);
 
-    // Local profiles start at /tmp; remote profiles ignore this and use homeDir from WebSocket
-    const initialPath = "/tmp";
+    // Reset selected file when profile changes to avoid stale file references
+    useEffect(() => {
+        setSelectedFile(null);
+    }, [profile?.name]);
 
     return (
         <div className="bg-white">
             <FileManager
-                root={initialPath}
+                key={profile?.name ?? "default"}
+                root={null}
                 onFileSelect={setSelectedFile}
                 enableUpload={true}
                 enableDelete={true}

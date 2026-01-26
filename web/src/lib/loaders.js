@@ -75,8 +75,8 @@ export const useFileSystem = (path, profile = null) => {
   );
 
   // SWR hook for local profiles (only runs when not remote)
-  // Note: path can be "" for remote root, but local profiles use absolute paths
-  const localKey = (!isRemote && path !== null) ? `files?path=${path}` : null;
+  // Uses ~ as default to fetch home directory when path is null
+  const localKey = !isRemote ? `files?path=${path ?? "~"}` : null;
   const localFs = useSWR(localKey, fetchFiles);
 
   // Return appropriate source based on profile type
@@ -92,11 +92,11 @@ export const useFileSystem = (path, profile = null) => {
   }
 
   return {
-    files: localFs.data,
+    files: localFs.data?.files ?? null,
     error: localFs.error,
     isLoading: localFs.isLoading,
     refresh: localFs.mutate,
     isConnected: true, // Local is always "connected"
-    homeDir: null,
+    homeDir: localFs.data?.path ?? null,
   };
 }

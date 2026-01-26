@@ -311,7 +311,7 @@ function FileUploadDialog({
 FileUploadDialog.propTypes = {
     open: PropTypes.bool.isRequired,
     setOpen: PropTypes.func.isRequired,
-    currentPath: PropTypes.string.isRequired,
+    currentPath: PropTypes.string,
     profile: PropTypes.object,
     onSuccess: PropTypes.func.isRequired,
     onError: PropTypes.func.isRequired,

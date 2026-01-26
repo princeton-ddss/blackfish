@@ -9,11 +9,21 @@ import {
 import { useFileSystem } from "@/lib/loaders";
 import { assetPath } from "@/config";
 import { fileSize, lastModified } from "@/lib/util";
-import { isRootPath } from "@/lib/pathUtils";
+import { isFileSystemRoot } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import DirectoryInput from "@/components/DirectoryInput";
 import FilterInput from "@/components/FilterInput";
 import PropTypes from "prop-types";
+
+/**
+ * Check if path is at the security boundary (cannot navigate above).
+ * @param {string} path - Current path
+ * @param {string} root - Security boundary root
+ * @returns {boolean} True if at boundary
+ */
+function isAtSecurityBoundary(path, root) {
+    return path === root || path === `${root}/`;
+}
 
 /**
  * Audio File Picker Table component.
@@ -92,8 +102,8 @@ function AudioFileBrowserTable({
                           }
                         }}
                       >
-                        {/* Hide back button at root - check for local root match or remote root "/" */}
-                        {path !== root && !isRootPath(path) && path !== `${root}/` && (
+                        {/* Hide back button at filesystem root or security boundary */}
+                        {!isFileSystemRoot(path) && !isAtSecurityBoundary(path, root) && (
                           <ChevronLeftIcon className="h-4 w-4 mt-1 ml-4 text-gray-900 hover:text-gray-400" />
                         )}{" "}
                       </button>

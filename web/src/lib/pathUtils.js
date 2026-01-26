@@ -28,10 +28,10 @@ export function joinPath(...parts) {
 }
 
 /**
- * Check if path represents the root directory.
+ * Check if path represents the filesystem root directory.
  * @param {string|null} path - Path to check
- * @returns {boolean} True if path is root
+ * @returns {boolean} True if path is filesystem root
  */
-export function isRootPath(path) {
+export function isFileSystemRoot(path) {
   return path === "/" || path === "" || path === null;
 }

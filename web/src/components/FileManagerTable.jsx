@@ -13,7 +13,7 @@ import {
 import { assetPath } from "@/config";
 import { fileSize, lastModified } from "@/lib/util";
 import { getFileType } from "@/lib/fileApi";
-import { isRootPath } from "@/lib/pathUtils";
+import { isFileSystemRoot } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import PropTypes from "prop-types";
 
@@ -45,6 +45,17 @@ function getFileTypeLabel(filename, isDir) {
     if (!fileType) return "-";
 
     return fileType.charAt(0).toUpperCase() + fileType.slice(1);
+}
+
+/**
+ * Check if path is at the security boundary (cannot navigate above).
+ * @param {string} path - Current path
+ * @param {string|null} root - Security boundary root (null = no boundary)
+ * @returns {boolean} True if at boundary
+ */
+function isAtSecurityBoundary(path, root) {
+    if (root == null) return false;
+    return path === root || path === `${root}/`;
 }
 
 function FileManagerTable({
@@ -114,7 +125,7 @@ function FileManagerTable({
                                                 }}
                                                 disabled={isDisabled}
                                             >
-                                                {path !== root && !isRootPath(path) && path !== `${root}/` && (
+                                                {!isFileSystemRoot(path) && !isAtSecurityBoundary(path, root) && (
                                                     <ChevronLeftIcon className={`h-4 w-4 mt-1 ml-4 ${isDisabled ? "text-gray-300" : "text-gray-900 hover:text-gray-400"}`} />
                                                 )}{" "}
                                             </button>
@@ -177,6 +188,16 @@ function FileManagerTable({
                                                 </div>
                                             </td>
                                         </tr>
+                                    ) : isLoading ? (
+                                        <>
+                                            {Array.from({ length: 5 }).map((_, i) => (
+                                                <tr key={i}>
+                                                    <td colSpan={6} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
+                                                        <div className="bg-gray-100 h-9 rounded-md"></div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </>
                                     ) : error ? (
                                         <tr>
                                             <td colSpan={6} className="h-64">
@@ -192,16 +213,6 @@ function FileManagerTable({
                                                 </div>
                                             </td>
                                         </tr>
-                                    ) : isLoading ? (
-                                        <>
-                                            {Array.from({ length: 5 }).map((_, i) => (
-                                                <tr key={i}>
-                                                    <td colSpan={6} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
-                                                        <div className="bg-gray-100 h-9 rounded-md"></div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </>
                                     ) : content?.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="h-64">

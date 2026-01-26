@@ -9,11 +9,15 @@ import { blackfishApiURL } from "@/config";
  * @param {Object} options - Optional configuration
  * @param {number} options.timeout - Request timeout in ms (default: 60000)
  * @param {boolean} options.autoReconnect - Enable auto-reconnection (default: true)
+ * @param {number} options.maxReconnectAttempts - Max reconnection attempts (default: 2)
+ * @param {number} options.reconnectDelayMs - Delay between reconnection attempts in ms (default: 2000)
  */
 export function useRemoteFileSystem(path, profile, options = {}) {
     const {
         timeout = 60000,
         autoReconnect = true,
+        maxReconnectAttempts = 2,
+        reconnectDelayMs = 2000,
     } = options;
 
     const [files, setFiles] = useState(null);
@@ -106,6 +110,8 @@ export function useRemoteFileSystem(path, profile, options = {}) {
             setIsConnected(false);
             setFiles(null);
             setHomeDir(null);
+            setError(null);
+            setIsLoading(false);
             return;
         }
 
@@ -114,6 +120,8 @@ export function useRemoteFileSystem(path, profile, options = {}) {
         reconnectAttempts.current = 0;
         setHomeDir(null);
         setFiles(null);
+        setError(null);
+        setIsLoading(true);
 
         const wsProtocol = blackfishApiURL.startsWith("https") ? "wss" : "ws";
         const wsHost = blackfishApiURL.replace(/^https?:\/\//, "");
@@ -180,21 +188,25 @@ export function useRemoteFileSystem(path, profile, options = {}) {
                     autoReconnect &&
                     shouldReconnect.current &&
                     isTransientFailure &&
-                    reconnectAttempts.current < 2
+                    reconnectAttempts.current < maxReconnectAttempts
                 ) {
                     reconnectAttempts.current += 1;
-                    console.log(`WebSocket closed, reconnecting in 2s (attempt ${reconnectAttempts.current}/2)`);
+                    console.log(`WebSocket closed, reconnecting in ${reconnectDelayMs}ms (attempt ${reconnectAttempts.current}/${maxReconnectAttempts})`);
 
                     reconnectTimeoutRef.current = setTimeout(() => {
                         if (shouldReconnect.current) {
                             connect();
                         }
-                    }, 2000);
-                } else if (reconnectAttempts.current >= 2) {
+                    }, reconnectDelayMs);
+                } else if (reconnectAttempts.current >= maxReconnectAttempts) {
                     setError({
                         message: "Connection failed after maximum retry attempts",
                         code: "MAX_RETRIES_EXCEEDED"
                     });
+                    setIsLoading(false);
+                } else if (!isTransientFailure) {
+                    // Non-transient failure (policy violation, intentional close)
+                    setIsLoading(false);
                 }
             };
         };

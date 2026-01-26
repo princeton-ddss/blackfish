@@ -1,6 +1,6 @@
 import { blackfishApiURL } from "../config";
 
-/* Return a list of local files */
+/* Return a list of local files with resolved path */
 export async function fetchFiles(path) {
   const res = await fetch(`${blackfishApiURL}/api/${path}`)
   if (!res.ok) {

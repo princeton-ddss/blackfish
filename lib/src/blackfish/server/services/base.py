@@ -583,13 +583,19 @@ class Service(UUIDAuditBase):
             return
 
         logger.info(f"Closing tunnel for service {self.id} on port {self.port}.")
-        ps = [p for p in psutil.process_iter() if p.name() == "ssh"]
+        ps = []
+        for p in psutil.process_iter(["name"]):
+            try:
+                if p.info.get("name") == "ssh":
+                    ps.append(p)
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
         for p in ps:
             pid = p.pid
             try:
                 cs = p.net_connections()
             except psutil.AccessDenied:
-                logger.warning(f"Access denied to process {p}.")
+                logger.warning(f"Access denied to process {pid}.")
                 continue
             for c in cs:
                 if c.laddr.port == self.port:

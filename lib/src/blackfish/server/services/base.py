@@ -595,7 +595,7 @@ class Service(UUIDAuditBase):
             try:
                 cs = p.net_connections()
             except psutil.AccessDenied:
-                logger.warning(f"Access denied to process {p}.")
+                logger.warning(f"Access denied to process {pid}.")
                 continue
             for c in cs:
                 if c.laddr.port == self.port:

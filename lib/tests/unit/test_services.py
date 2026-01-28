@@ -15,22 +15,16 @@ class TestCloseTunnel:
         """Test that AccessDenied on p.info['name'] doesn't crash close_tunnel."""
         service = Service(port=8080)
 
-        # Create mock process that raises AccessDenied when accessing info
-        mock_proc = MagicMock()
-        mock_proc.info = property(
-            lambda self: (_ for _ in ()).throw(psutil.AccessDenied(pid=1234))
-        )
-
-        # Simulate AccessDenied by having info.get() raise
+        # Simulate AccessDenied
         mock_proc_with_error = MagicMock()
         mock_proc_with_error.info.get.side_effect = psutil.AccessDenied(pid=1234)
 
         with patch("blackfish.server.services.base.psutil.process_iter") as mock_iter:
             mock_iter.return_value = [mock_proc_with_error]
-            # Should not raise - this is the bug we fixed
+            # Should not raise
             await service.close_tunnel(session)
 
-        # Port should be set to None even if we couldn't find the tunnel
+        # Port should always be set to None
         assert service.port is None
 
     async def test_close_tunnel_handles_no_such_process(self, session):

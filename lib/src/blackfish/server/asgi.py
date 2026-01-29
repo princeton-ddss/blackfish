@@ -91,6 +91,7 @@ from blackfish.server.models.profile import (
 )
 from blackfish.server.models.model import Model
 from blackfish.server.job import JobConfig, JobScheduler, SlurmJobConfig
+from blackfish.server.cluster import SlurmClusterInfo
 
 import importlib.metadata
 
@@ -1710,6 +1711,113 @@ async def read_profile(name: str) -> Profile | None:
         raise NotFoundException(detail="Profile not found.")
 
 
+# --- Cluster Status ---
+@dataclass
+class GpuAvailabilityResponse:
+    gpu_type: str
+    total: int
+    used: int
+    idle: int
+
+
+@dataclass
+class PartitionResourcesResponse:
+    name: str
+    state: str
+    nodes_total: int
+    nodes_idle: int
+    nodes_allocated: int
+    nodes_down: int
+    cpus_total: int
+    cpus_idle: int
+    cpus_allocated: int
+    memory_total_mb: int
+    memory_allocated_mb: int
+    gpus: list[GpuAvailabilityResponse]
+    max_time_minutes: int | None
+    features: list[str]  # Convert set to list for JSON serialization
+
+
+@dataclass
+class QueueStatsResponse:
+    running: int
+    pending: int
+    pending_reasons: dict[str, int]
+
+
+@dataclass
+class ClusterStatusResponse:
+    partitions: dict[str, PartitionResourcesResponse]
+    queue: dict[str, QueueStatsResponse]
+    timestamp: str  # ISO format string
+
+
+@get("/api/cluster/{profile_name:str}/status", guards=ENDPOINT_GUARDS)
+async def get_cluster_status(profile_name: str) -> ClusterStatusResponse:
+    """Get current cluster resource availability for a Slurm profile."""
+    try:
+        profile = deserialize_profile(blackfish_config.HOME_DIR, profile_name)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profile config not found.")
+
+    if profile is None:
+        raise NotFoundException(detail=f"Profile '{profile_name}' not found.")
+
+    if not isinstance(profile, SlurmProfile):
+        raise ValidationException(
+            detail=f"Profile '{profile_name}' is not a Slurm profile. "
+            "Cluster status is only available for Slurm profiles."
+        )
+
+    try:
+        cluster_info = SlurmClusterInfo(user=profile.user, host=profile.host)
+        status = cluster_info.get_status()
+    except Exception as e:
+        logger.error(f"Failed to get cluster status: {e}")
+        raise InternalServerException(detail=f"Failed to query cluster: {e}")
+
+    # Convert to response format (sets -> lists for JSON)
+    partitions = {
+        name: PartitionResourcesResponse(
+            name=p.name,
+            state=p.state,
+            nodes_total=p.nodes_total,
+            nodes_idle=p.nodes_idle,
+            nodes_allocated=p.nodes_allocated,
+            nodes_down=p.nodes_down,
+            cpus_total=p.cpus_total,
+            cpus_idle=p.cpus_idle,
+            cpus_allocated=p.cpus_allocated,
+            memory_total_mb=p.memory_total_mb,
+            memory_allocated_mb=p.memory_allocated_mb,
+            gpus=[
+                GpuAvailabilityResponse(
+                    gpu_type=g.gpu_type, total=g.total, used=g.used, idle=g.idle
+                )
+                for g in p.gpus
+            ],
+            max_time_minutes=p.max_time_minutes,
+            features=sorted(p.features),
+        )
+        for name, p in status.partitions.items()
+    }
+
+    queue = {
+        name: QueueStatsResponse(
+            running=q.running,
+            pending=q.pending,
+            pending_reasons=q.pending_reasons,
+        )
+        for name, q in status.queue.items()
+    }
+
+    return ClusterStatusResponse(
+        partitions=partitions,
+        queue=queue,
+        timestamp=status.timestamp.isoformat(),
+    )
+
+
 # --- Config ---
 BASE_DIR = module_to_os_path("blackfish.server")
 
@@ -1842,6 +1950,7 @@ app = Litestar(
         delete_models,
         read_profiles,
         read_profile,
+        get_cluster_status,
         assets_server,
         img_server,
     ],

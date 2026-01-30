@@ -18,22 +18,29 @@ function FileManagerContainer() {
     };
 
     return (
-        <div className="bg-white">
-            <FileManager
-                key={profile?.name ?? "default"}
-                root={null}
-                onFileSelect={setSelectedFile}
-                onPathChange={handlePathChange}
-                enableUpload={true}
-                enableDelete={true}
-                status={{ disabled: false }}
-                profile={profile}
-            />
-            <div className="mt-4">
-                <FilePreview
-                    file={selectedFile}
+        <div className="flex flex-col lg:flex-row lg:items-start gap-8">
+            <div className="w-full lg:w-[48rem] lg:flex-shrink-0">
+                <FileManager
+                    key={profile?.name ?? "default"}
+                    root={null}
+                    onFileSelect={setSelectedFile}
+                    onPathChange={handlePathChange}
+                    enableUpload={true}
+                    enableDelete={true}
+                    status={{ disabled: false }}
                     profile={profile}
                 />
+            </div>
+            <div className="w-full lg:flex-1 lg:min-w-[24rem] mb-2 lg:mr-6">
+                <div className="flex items-center justify-between mb-2 h-9">
+                    <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Preview</label>
+                </div>
+                <div className="ring-1 ring-gray-300 dark:ring-gray-600 rounded-lg h-[26rem] overflow-y-auto">
+                    <FilePreview
+                        file={selectedFile}
+                        profile={profile}
+                    />
+                </div>
             </div>
         </div>
     );

@@ -38,14 +38,13 @@ function FilePreview({ file, profile = null }) {
 
     if (!file) {
         return (
-            <div className="bg-white p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">File Preview</h3>
-                <div className="text-center py-12">
+            <div className="bg-white dark:bg-gray-800 p-6 h-full flex flex-col justify-center">
+                <div className="text-center">
                     <DocumentIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <p className="mt-4 text-sm font-semibold text-gray-700">
+                    <p className="mt-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                         No file selected
                     </p>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                         Click on a file in the browser to preview it here
                     </p>
                 </div>
@@ -54,30 +53,27 @@ function FilePreview({ file, profile = null }) {
     }
 
     return (
-        <div className="bg-white p-6 rounded-lg">
+        <div className="bg-white dark:bg-gray-800 p-6">
             <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">
-                    File Preview
-                </h3>
-                <p className="text-xs text-gray-500 truncate" title={file.name}>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={file.name}>
                     {file.name}
                 </p>
             </div>
 
             <div className="mb-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                    <span className="text-gray-500">Type:</span>
-                    <span className="text-gray-900 capitalize">
+                    <span className="text-gray-500 dark:text-gray-400">Type:</span>
+                    <span className="text-gray-900 dark:text-gray-100 capitalize">
                         {file.type || "-"}
                     </span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-500">Size:</span>
-                    <span className="text-gray-900">{fileSize(file.size)}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Size:</span>
+                    <span className="text-gray-900 dark:text-gray-100">{fileSize(file.size)}</span>
                 </div>
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 {file.type === "image" && (
                     <div className="relative">
                         <img
@@ -103,8 +99,8 @@ function FilePreview({ file, profile = null }) {
                                 <p className="text-sm text-red-700">{textError}</p>
                             </div>
                         ) : (
-                            <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                                <pre className="text-xs text-gray-900 whitespace-pre-wrap font-mono">
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto">
+                                <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
                                     {textContent}
                                 </pre>
                             </div>
@@ -119,7 +115,7 @@ function FilePreview({ file, profile = null }) {
                             controls
                             className="w-full"
                         />
-                        <div className="mt-2 text-xs text-gray-500 truncate" title={file.path}>
+                        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 truncate" title={file.path}>
                             {file.path}
                         </div>
                     </div>
@@ -127,15 +123,15 @@ function FilePreview({ file, profile = null }) {
 
                 {(!file.type || (file.type !== "image" && file.type !== "text" && file.type !== "audio")) && (
                     <div className="text-center py-8">
-                        <DocumentIcon className="mx-auto h-12 w-12 text-gray-300" />
-                        <p className="mt-4 text-sm font-medium text-gray-900">
+                        <DocumentIcon className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
+                        <p className="mt-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                             Preview not available
                         </p>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             This file type cannot be previewed
                         </p>
                         {file.type && (
-                            <p className="mt-2 text-xs text-gray-400">
+                            <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
                                 File type: {file.type}
                             </p>
                         )}

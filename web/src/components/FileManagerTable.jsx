@@ -91,7 +91,7 @@ function FileManagerTable({
     const currentFiles = sortedContent.slice(indexOfFirstFile, indexOfLastFile);
     const isDisabled = status.disabled || operationInProgress;
     const showPlaceholderState = status.disabled || error || isLoading || content?.length === 0 || root === "";
-    const heightClass = showPlaceholderState ? "h-[26rem]" : "max-h-[26rem]";
+    const heightClass = "h-[26rem]";
 
     return (
         <div
@@ -102,13 +102,13 @@ function FileManagerTable({
             <div className="mt-3 flow-root">
                 <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                     <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                        <div className={`ring-1 ring-gray-300 sm:rounded-lg ${heightClass} overflow-y-auto`}>
-                            <table className="divide-y divide-gray-300 table-fixed w-full">
+                        <div className={`ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg ${heightClass} overflow-y-auto`}>
+                            <table className="divide-y divide-gray-300 dark:divide-gray-600 table-fixed w-full">
                                 <thead>
                                     <tr>
                                         <th
                                             scope="col"
-                                            className="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-12 backdrop-blur bg-gray-50"
+                                            className="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-12 backdrop-blur bg-gray-50 dark:bg-gray-800"
                                         >
                                             <button
                                                 onClick={() => {
@@ -126,37 +126,37 @@ function FileManagerTable({
                                                 disabled={isDisabled}
                                             >
                                                 {!isFileSystemRoot(path) && !isAtSecurityBoundary(path, root) && (
-                                                    <ChevronLeftIcon className={`h-4 w-4 mt-1 ml-4 ${isDisabled ? "text-gray-300" : "text-gray-900 hover:text-gray-400"}`} />
+                                                    <ChevronLeftIcon className={`h-4 w-4 mt-1 ml-4 ${isDisabled ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100 hover:text-gray-400"}`} />
                                                 )}{" "}
                                             </button>
                                         </th>
                                         <th
                                             scope="col"
-                                            className="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/3 backdrop-blur bg-gray-50"
+                                            className="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pl-6 w-1/3 backdrop-blur bg-gray-50 dark:bg-gray-800"
                                         >
                                             Name
                                         </th>
                                         <th
                                             scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-[5rem] backdrop-blur bg-gray-50"
+                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-[5rem] backdrop-blur bg-gray-50 dark:bg-gray-800"
                                         >
                                             Type
                                         </th>
                                         <th
                                             scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-[4.5rem] backdrop-blur bg-gray-50"
+                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-[4.5rem] backdrop-blur bg-gray-50 dark:bg-gray-800"
                                         >
                                             Size
                                         </th>
                                         <th
                                             scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-36 backdrop-blur bg-gray-50"
+                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-36 backdrop-blur bg-gray-50 dark:bg-gray-800"
                                         >
                                             Last Modified
                                         </th>
                                         <th
                                             scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                                            className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 w-12 backdrop-blur bg-gray-50 dark:bg-gray-800"
                                         >
                                             <div className="flex gap-2 justify-end">
                                                 <button
@@ -165,18 +165,18 @@ function FileManagerTable({
                                                     title="Refresh"
                                                 >
                                                     <ArrowPathIcon
-                                                        className={`h-5 w-5 ${isDisabled ? "text-gray-300" : "text-gray-900 hover:text-gray-400"} ${isLoading ? "animate-spin" : ""}`}
+                                                        className={`h-5 w-5 ${isDisabled ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100 hover:text-gray-400"} ${isLoading ? "animate-spin" : ""}`}
                                                     />
                                                 </button>
                                             </div>
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200 bg-white">
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
                                     {status.disabled ? (
                                         <tr>
                                             <td colSpan={6} className="h-64">
-                                                <div className="font-light sm:text-sm text-center align-middle">
+                                                <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                                                     <img
                                                         className="h-16 ml-auto mr-auto opacity-80 mb-5"
                                                         height="56"
@@ -201,7 +201,7 @@ function FileManagerTable({
                                     ) : error ? (
                                         <tr>
                                             <td colSpan={6} className="h-64">
-                                                <div className="font-light sm:text-sm text-center align-middle">
+                                                <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                                                     <img
                                                         className="h-16 ml-auto mr-auto opacity-80 mb-5"
                                                         height="56"
@@ -216,7 +216,7 @@ function FileManagerTable({
                                     ) : content?.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="h-64">
-                                                <div className="font-light sm:text-sm text-center align-middle">
+                                                <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                                                     <img
                                                         className="h-16 ml-auto mr-auto opacity-80 mb-5"
                                                         height="56"
@@ -231,7 +231,7 @@ function FileManagerTable({
                                     ) : root === "" ? (
                                         <tr>
                                             <td colSpan={6} className="h-64">
-                                                <div className="font-light sm:text-sm text-center align-middle">
+                                                <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                                                     {"No service selected."}
                                                 </div>
                                             </td>
@@ -240,32 +240,32 @@ function FileManagerTable({
                                         currentFiles.map((item) => (
                                             <tr
                                                 key={item.path}
-                                                className={`bg-white hover:bg-gray-50 ${onFileClick && !item.is_dir ? 'cursor-pointer' : ''}`}
+                                                className={`bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 ${onFileClick && !item.is_dir ? 'cursor-pointer' : ''}`}
                                                 onClick={() => onFileClick && !item.is_dir && onFileClick(item)}
                                             >
-                                                <td className="relative whitespace-nowrap w-12 py-3 px-3 text-gray-700 text-left text-sm font-medium">
+                                                <td className="relative whitespace-nowrap w-12 py-3 px-3 text-gray-700 dark:text-gray-300 text-left text-sm font-medium">
                                                     <div className="flex">
                                                         {getFileIcon(item.name, item.is_dir)}
                                                     </div>
                                                 </td>
-                                                <td className="whitespace-nowrap w-1/4 py-3 pl-4 pr-3 text-left text-sm text-gray-900">
+                                                <td className="whitespace-nowrap w-1/4 py-3 pl-4 pr-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     <div className="overflow-x-scroll">{item.name}</div>
                                                 </td>
-                                                <td className="whitespace-nowrap w-[5rem] py-3 px-3 text-left text-sm text-gray-600">
+                                                <td className="whitespace-nowrap w-[5rem] py-3 px-3 text-left text-sm text-gray-600 dark:text-gray-400">
                                                     {getFileTypeLabel(item.name, item.is_dir) === "-" ? (
                                                         <span>-</span>
                                                     ) : (
-                                                        <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                                                        <span className="inline-flex items-center rounded-md bg-gray-50 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 ring-1 ring-inset ring-gray-500/10 dark:ring-gray-600">
                                                             {getFileTypeLabel(item.name, item.is_dir)}
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="whitespace-nowrap w-[4.5rem] py-3 px-3 text-left text-sm text-gray-900">
+                                                <td className="whitespace-nowrap w-[4.5rem] py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     <div className="flex">
                                                         {item.is_dir ? "-" : fileSize(item.size)}
                                                     </div>
                                                 </td>
-                                                <td className="whitespace-nowrap w-36 py-3 px-3 text-left text-sm text-gray-900">
+                                                <td className="whitespace-nowrap w-36 py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     <div className="flex">
                                                         {lastModified(item.modified_at)}
                                                     </div>
@@ -280,7 +280,7 @@ function FileManagerTable({
                                                                     }
                                                                 }}
                                                                 disabled={isDisabled}
-                                                                className={`${isDisabled ? "text-gray-300" : "text-gray-900"}`}
+                                                                className={`${isDisabled ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100"}`}
                                                             >
                                                                 <ChevronRightIcon className="h-4 w-4 hover:text-gray-400" />
                                                             </button>
@@ -292,7 +292,7 @@ function FileManagerTable({
                                                                         onDeleteClick(item);
                                                                     }}
                                                                     disabled={isDisabled}
-                                                                    className={`${isDisabled ? "text-gray-200" : "text-gray-400 hover:text-red-500"}`}
+                                                                    className={`${isDisabled ? "text-gray-200 dark:text-gray-700" : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}
                                                                     title="Delete file"
                                                                 >
                                                                     <TrashIcon className="h-5 w-5" />
@@ -304,7 +304,7 @@ function FileManagerTable({
                                             </tr>
                                         ))
                                     )}
-                                    <tr className="bg-white">
+                                    <tr className="bg-white dark:bg-gray-800">
                                         <td className="whitespace-nowrap h-16"></td>
                                         <td className="whitespace-nowrap h-16"></td>
                                         <td className="whitespace-nowrap h-16"></td>

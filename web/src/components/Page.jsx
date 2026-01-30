@@ -6,7 +6,7 @@ import ServiceProvider from "@/providers/ServiceProvider";
 import { assetPath } from "../config";
 import PropTypes from "prop-types";
 
-function Page({ task, children }) {
+function Page({ task, fullWidth = false, children }) {
   const { profile } = useContext(ProfileContext);
   const { services, error, isLoading } = useServices(profile, task);
   const { selectedService, setSelectedServiceId } = useSelectedService(services);
@@ -45,8 +45,12 @@ function Page({ task, children }) {
     );
   }
 
+  const gridClass = fullWidth
+    ? ""
+    : "grid lg:grid-cols-[1fr_24rem] gap-12";
+
   return (
-    <div className="grid lg:grid-cols-[1fr_24rem] gap-12 px-4 sm:px-6 lg:px-8">
+    <div className={gridClass}>
       <ServiceProvider
         selectedService={selectedService}
         setSelectedServiceId={setSelectedServiceId}
@@ -59,6 +63,7 @@ function Page({ task, children }) {
 
 Page.propTypes = {
   task: PropTypes.string,
+  fullWidth: PropTypes.bool,
   children: PropTypes.node,
 };
 

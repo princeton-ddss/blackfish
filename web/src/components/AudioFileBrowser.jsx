@@ -69,7 +69,7 @@ function AudioFileBrowserTable({
         return item.name.toLowerCase().includes(query.toLowerCase());
       });
   const currentFiles =
-    filteredContent === undefined
+    !filteredContent
       ? []
       : filteredContent.slice(indexOfFirstFile, indexOfLastFile);
 
@@ -82,13 +82,13 @@ function AudioFileBrowserTable({
       <div className="mt-3 flow-root">
         <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="ring-1 ring-gray-300 sm:rounded-lg h-[26rem] overflow-y-scroll">
-              <table className="divide-y divide-gray-300 table-fixed w-full">
+            <div className="ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg h-[26rem] overflow-y-scroll">
+              <table className="divide-y divide-gray-300 dark:divide-gray-600 table-fixed w-full">
                 <thead>
                   <tr>
                     <th
                       scope="col"
-                      className="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50"
+                      className="sticky top-0 z-10 whitespace-nowrap py-4 text-left text-sm font-medium sm:pr-4 w-24 backdrop-blur bg-gray-50 dark:bg-gray-800"
                     >
                       <button
                         onClick={() => {
@@ -104,31 +104,31 @@ function AudioFileBrowserTable({
                       >
                         {/* Hide back button at filesystem root or security boundary */}
                         {!isFileSystemRoot(path) && !isAtSecurityBoundary(path, root) && (
-                          <ChevronLeftIcon className="h-4 w-4 mt-1 ml-4 text-gray-900 hover:text-gray-400" />
+                          <ChevronLeftIcon className="h-4 w-4 mt-1 ml-4 text-gray-900 dark:text-gray-100 hover:text-gray-400" />
                         )}{" "}
                       </button>
                     </th>
                     <th
                       scope="col"
-                      className="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-1/2 backdrop-blur bg-gray-50"
+                      className="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pl-6 w-1/2 backdrop-blur bg-gray-50 dark:bg-gray-800"
                     >
                       Name
                     </th>
                     <th
                       scope="col"
-                      className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24 backdrop-blur bg-gray-50"
+                      className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-24 backdrop-blur bg-gray-50 dark:bg-gray-800"
                     >
                       Size
                     </th>
                     <th
                       scope="col"
-                      className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-48 backdrop-blur bg-gray-50"
+                      className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-48 backdrop-blur bg-gray-50 dark:bg-gray-800"
                     >
                       Last Modified
                     </th>
                     <th
                       scope="col"
-                      className="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 w-12 backdrop-blur bg-gray-50"
+                      className="sticky top-0 z-10 px-2.5 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-12 backdrop-blur bg-gray-50 dark:bg-gray-800"
                     >
                       <button
                         onClick={async () => {
@@ -137,17 +137,17 @@ function AudioFileBrowserTable({
                         disabled={status.disabled}
                       >
                         <ArrowPathIcon
-                          className={`h-5 w-5 mt-1 ${status.disabled ? "text-gray-300" : "text-gray-900 hover:text-gray-400"} ${isLoading ? "animate-spin" : ""}`}
+                          className={`h-5 w-5 mt-1 ${status.disabled ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100 hover:text-gray-400"} ${isLoading ? "animate-spin" : ""}`}
                         />
                       </button>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
                   {status.disabled ? (
                     <tr>
                       <td colSpan={5} className="h-64">
-                        <div className="font-light sm:text-sm text-center align-middle">
+                        <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                           <img
                             className="h-16 ml-auto mr-auto opacity-80 mb-5"
                             height="56"
@@ -162,7 +162,7 @@ function AudioFileBrowserTable({
                   ) : error ? (
                     <tr>
                       <td colSpan={5} className="h-64">
-                        <div className="font-light sm:text-sm text-center align-middle">
+                        <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                           <img
                             className="h-16 ml-auto mr-auto opacity-80 mb-5"
                             height="56"
@@ -179,7 +179,7 @@ function AudioFileBrowserTable({
                       {Array.from({ length: 5 }).map((_, i) => (
                         <tr key={i}>
                           <td colSpan={5} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
-                            <div className="bg-gray-100 h-9 rounded-md"></div>
+                            <div className="bg-gray-100 dark:bg-gray-700 h-9 rounded-md"></div>
                           </td>
                         </tr>
                       ))}
@@ -187,7 +187,7 @@ function AudioFileBrowserTable({
                   ) : content?.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="h-64">
-                        <div className="font-light sm:text-sm text-center align-middle">
+                        <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                           <img
                             className="h-16 ml-auto mr-auto opacity-80 mb-5"
                             height="56"
@@ -202,17 +202,17 @@ function AudioFileBrowserTable({
                   ) : root === "" ? (
                     <tr>
                       <td colSpan={5} className="h-64">
-                        <div className="font-light sm:text-sm text-center align-middle">
+                        <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                           {"No service selected."}
                         </div>
                       </td>
                     </tr>
                   ) : (
                     currentFiles.map((item) => (
-                      <tr key={item.path} className={selected === item.path ? "bg-gray-50" : "bg-white"}>
-                        <td className="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 text-left text-sm font-medium sm:pr-6">
+                      <tr key={item.path} className={selected === item.path ? "bg-gray-50 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}>
+                        <td className="relative whitespace-nowrap w-24 py-4 px-5 text-gray-700 dark:text-gray-300 text-left text-sm font-medium sm:pr-6">
                           <div
-                            className={`flex ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300"
+                            className={`flex ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300 dark:text-gray-600"
                               }`}
                           >
                             {item.is_dir ? (
@@ -222,33 +222,33 @@ function AudioFileBrowserTable({
                             )}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900">
+                        <td className="whitespace-nowrap w-1/2 py-4 pl-4 pr-3 text-left text-sm text-gray-900 dark:text-gray-100">
                           <div
-                            className={`overflow-x-scroll ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300"
+                            className={`overflow-x-scroll ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300 dark:text-gray-600"
                               }`}
                           >
                             {item.name}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900">
+                        <td className="whitespace-nowrap w-24 py-3.5 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                           <div
-                            className={`flex ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300"
+                            className={`flex ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300 dark:text-gray-600"
                               }`}
                           >
                             {item.is_dir ? "-" : fileSize(item.size)}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900">
+                        <td className="whitespace-nowrap w-48 py-4 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                           <div
-                            className={`flex ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300"
+                            className={`flex ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300 dark:text-gray-600"
                               }`}
                           >
                             {lastModified(item.modified_at)}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900">
+                        <td className="whitespace-nowrap w-12 py-4 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                           <div
-                            className={`flex ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300"
+                            className={`flex ${item.is_dir || item.path.match(/\.(mp3|wav|flac)$/i) ? "" : "text-gray-300 dark:text-gray-600"
                               }`}
                           >
                             {item.is_dir ? (
@@ -259,7 +259,7 @@ function AudioFileBrowserTable({
                                   }
                                 }}
                                 disabled={status.disabled}
-                                className={`${status.disabled ? "text-gray-300" : "text-gray-900"}`}
+                                className={`${status.disabled ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100"}`}
                               >
                                 <ChevronRightIcon className="h-4 w-4 mt-1 hover:text-gray-400" />
                               </button>
@@ -279,7 +279,7 @@ function AudioFileBrowserTable({
                                       setAudioPath(item.path);
                                     }
                                   }}
-                                  className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-600"
+                                  className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-600 dark:bg-gray-700"
                                 />
                               )
                             )}
@@ -288,7 +288,7 @@ function AudioFileBrowserTable({
                       </tr>
                     ))
                   )}
-                  <tr className="bg-white">
+                  <tr className="bg-white dark:bg-gray-800">
                     <td className="whitespace-nowrap h-16"></td>
                     <td className="whitespace-nowrap h-16"></td>
                     <td className="whitespace-nowrap h-16"></td>
@@ -303,7 +303,7 @@ function AudioFileBrowserTable({
       </div>
       <Pagination
         filesPerPage={filesPerPage}
-        totalFiles={filteredContent === undefined ? 0 : filteredContent.length}
+        totalFiles={!filteredContent ? 0 : filteredContent.length}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         disabled={status.disabled}
@@ -351,9 +351,9 @@ function AudioFileBrowser({ root, setAudioPath, status }) {
     <div
       id="audio-file-browser"
       name="audio-file-browser"
-      className="mt-2 mb-2 w-full max-w-6xl"
+      className="mb-2 w-full max-w-6xl"
     >
-      <label className="font-medium text-sm">File Browser</label>
+      <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Browser</label>
       <DirectoryInput
         root={root}
         path={path}

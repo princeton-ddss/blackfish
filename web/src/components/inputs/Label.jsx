@@ -14,11 +14,11 @@ function Label({ label, htmlFor, description, disabled }) {
     <label
       htmlFor={htmlFor ?? label}
       className={`relative group inline-flex grow text-sm font-normal leading-6 hover:underline hover:decoration-dotted ${
-        disabled ? "text-gray-300" : "text-gray-900"
+        disabled ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100"
       }`}
     >
       {label}
-      <div className="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 text-sm rounded-md bg-white shadow-sm ring-1 ring-inset ring-gray-300 z-10">
+      <div className="hidden group-hover:block absolute bottom-6 left-0 lg:-bottom-1 lg:-left-64 w-60 p-2 font-light text-gray-800 dark:text-gray-200 text-sm rounded-md bg-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 z-10">
         {description}
       </div>
     </label>

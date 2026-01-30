@@ -1,11 +1,9 @@
 import { useContext, Fragment } from "react";
 import {
-  Field,
   Listbox,
   ListboxButton,
   ListboxOption,
   ListboxOptions,
-  Label,
   Transition,
 } from "@headlessui/react";
 import {
@@ -67,29 +65,24 @@ function ServiceSelect({ profile, task }) {
 
   if (profile && services.length === 0) {
     return (
-      <Field>
-        <Label className="pt-2 block text-sm font-medium leading-6 text-gray-900">
-          Services
-        </Label>
-        <div className="rounded-md bg-yellow-50 border-yellow-100 ring-1 ring-yellow-300 p-4 mt-2 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <ExclamationTriangleIcon
-                aria-hidden="true"
-                className="h-5 w-5 text-yellow-400"
-              />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">
-                No services available
-              </h3>
-              <div className="mt-2 font-light text-sm text-yellow-800">
-                <p>Click on the button below to create a new service under the selected profile.</p>
-              </div>
+      <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-800 ring-1 ring-yellow-300 dark:ring-yellow-700 p-4 mt-2 mb-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <ExclamationTriangleIcon
+              aria-hidden="true"
+              className="h-5 w-5 text-yellow-400"
+            />
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-yellow-800">
+              No services available
+            </h3>
+            <div className="mt-2 font-light text-sm text-yellow-800">
+              <p>Click on the button below to create a new service under the selected profile.</p>
             </div>
           </div>
         </div>
-      </Field>
+      </div>
     );
   }
 
@@ -97,13 +90,10 @@ function ServiceSelect({ profile, task }) {
     <Listbox value={selectedService} onChange={setSelectedServiceId}>
       {({ open }) => (
         <>
-          <Label className="pt-2 block text-sm font-medium leading-6 text-gray-900">
-            Services
-          </Label>
-          <div className="relative mt-2">
+          <div className="relative">
             {
               selectedService
-                ? <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6">
+                ? <ListboxButton className="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6">
                   <span className="flex items-center">
                     {
                       selectedService &&
@@ -144,7 +134,7 @@ function ServiceSelect({ profile, task }) {
                 </ListboxButton>
                 : (
                   profile
-                    ? <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6">
+                    ? <ListboxButton className="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6">
                       <span className="flex items-center">
                         {
                           selectedService &&
@@ -184,7 +174,7 @@ function ServiceSelect({ profile, task }) {
                       </span>
                     </ListboxButton>
                     : <ListboxButton
-                      className="relative w-full cursor-default rounded-md bg-gray-50 py-1.5 pl-1 pr-10 text-left text-gray-400 font-light shadow-sm ring-1 ring-inset ring-gray-200 focus:outline-none sm:text-sm sm:leading-6"
+                      className="relative w-full cursor-default rounded-md bg-gray-50 dark:bg-gray-800 py-1.5 pl-1 pr-10 text-left text-gray-400 dark:text-gray-500 font-light shadow-sm ring-1 ring-inset ring-gray-200 dark:ring-gray-700 focus:outline-none sm:text-sm sm:leading-6"
                       disabled
                     >
                       <span className="flex items-center">
@@ -214,13 +204,13 @@ function ServiceSelect({ profile, task }) {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+              <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
                 {services.map((service) => (
                   <ListboxOption
                     key={service.id}
                     className={({ focus }) =>
                       classNames(
-                        focus ? "bg-blue-500 text-white" : "text-gray-900",
+                        focus ? "bg-blue-500 text-white" : "text-gray-900 dark:text-gray-100",
                         "relative cursor-default select-none py-2 pl-3 pr-9"
                       )
                     }

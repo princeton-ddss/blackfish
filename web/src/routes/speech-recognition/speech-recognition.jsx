@@ -41,12 +41,12 @@ export default function SpeechRecognitionPage() {
         task="speech-recognition"
         defaultContainerOptions={defaultContainerOptions}
         ContainerOptionsFormComponent={SpeechRecognitionContainerOptionsForm}
-      >
-        <SpeechRecognitionParametersForm
-          parameters={parameters}
-          setParameters={setParameters}
-        />
-      </SidebarContainer>
+        ParametersFormComponent={SpeechRecognitionParametersForm}
+        parametersFormProps={{
+          parameters,
+          setParameters,
+        }}
+      />
     </Page>
   );
 }

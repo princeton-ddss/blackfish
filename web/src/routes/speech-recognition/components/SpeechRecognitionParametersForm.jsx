@@ -22,11 +22,11 @@ const languages = [
 function LanguageSelect({ language, setLanguage }) {
   return (
     <Listbox value={language} onChange={setLanguage}>
-      <Label className="mt-4 block text-sm font-medium leading-6 text-gray-900">
+      <Label className="mt-4 block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">
         Language
       </Label>
       <div className="relative mt-2">
-        <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6">
+        <ListboxButton className="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6">
           <span className="block truncate">{language.name}</span>
           <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
             <ChevronUpDownIcon
@@ -38,13 +38,13 @@ function LanguageSelect({ language, setLanguage }) {
 
         <ListboxOptions
           transition
-          className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:data-[leave]:opacity-0 data-[leave]:transition data-[leave]:duration-100 data-[leave]:ease-in sm:text-sm"
+          className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:data-[leave]:opacity-0 data-[leave]:transition data-[leave]:duration-100 data-[leave]:ease-in sm:text-sm"
         >
           {languages.map((person) => (
             <ListboxOption
               key={person.id}
               value={person}
-              className="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 data-[focus]:bg-blue-500 data-[focus]:text-white"
+              className="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 data-[focus]:bg-blue-500 data-[focus]:text-white"
             >
               <span className="block truncate font-normal group-data-[selected]:font-semibold">
                 {person.name}

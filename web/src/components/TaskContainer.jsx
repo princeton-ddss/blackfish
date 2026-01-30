@@ -8,7 +8,7 @@ import PropTypes from "prop-types";
  */
 function TaskContainer({ children }) {
   return (
-    <div className="bg-white">
+    <div className="bg-white pt-2 dark:bg-gray-800">
       {children}
     </div>
   );

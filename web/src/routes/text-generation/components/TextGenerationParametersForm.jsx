@@ -48,7 +48,7 @@ function StopInput({ label, tooltip, parameters, setParameters }) {
         value={input}
         onChange={(event) => setInput(event.target.value)}
         onKeyDown={(event) => handleAdd(event)}
-        className={`mt-1 block w-full border-1 border-gray-300 rounded-md shadow-sm py-1 px-2 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm`}
+        className={`mt-1 block w-full border-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm py-1 px-2 focus:border-white dark:focus:border-gray-500 focus:ring-2 focus:ring-blue-500 sm:text-sm`}
       />
 
       <div className="mt-1.5 flex flex-wrap gap-1">
@@ -223,7 +223,7 @@ function TextGenerateParameterForm({
   };
 
   return (
-    <div className="bg-white sm:rounded-md mt-2 grow">
+    <div className="bg-white dark:bg-gray-800 sm:rounded-md mt-2 grow">
       <div className="mt-4">
         <form>
           <div className="grid grid-cols-1 sm:grid-cols-1 gap-y-4">

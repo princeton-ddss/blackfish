@@ -96,18 +96,18 @@ function FileManager({
         <div
             id="file-manager"
             name="file-manager"
-            className="mt-2 mb-2 w-full"
+            className="mb-2 w-full"
         >
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-4">
-                    <label className="font-medium text-sm">File Manager</label>
+                    <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Manager</label>
                     {isRemote && profile && (
                         <div className="flex items-center gap-1.5">
                             <span
                                 className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${isConnected ? "bg-green-500" : "animate-pulse bg-yellow-500"
                                     }`}
                             />
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
                                 {isConnected ? `Connected to ${profile.host}` : "Connecting..."}
                             </span>
                         </div>
@@ -117,10 +117,10 @@ function FileManager({
                     <button
                         onClick={() => setUploadDialogOpen(true)}
                         disabled={status.disabled || operationInProgress}
-                        className="inline-flex items-center gap-x-1.5 rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 disabled:bg-blue-200 disabled:cursor-not-allowed"
+                        className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed"
+                        aria-label="Upload file"
                     >
                         <ArrowUpTrayIcon className="h-5 w-5" />
-                        Upload File
                     </button>
                 )}
             </div>

@@ -54,9 +54,9 @@ function TextField({
           error
             ? "border-red-500"
             : disabled
-            ? "border-gray-100"
-            : "border-gray-300"
-        } rounded-md shadow-sm px-2 py-1 focus:border-white focus:ring-2 focus:ring-blue-500 sm:text-sm`}
+            ? "border-gray-100 dark:border-gray-700"
+            : "border-gray-300 dark:border-gray-600"
+        } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm px-2 py-1 focus:border-white dark:focus:border-gray-500 focus:ring-2 focus:ring-blue-500 sm:text-sm`}
       />
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>

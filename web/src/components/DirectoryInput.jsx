@@ -43,7 +43,7 @@ function DirectoryInput({ root, path, setPath, disabled }) {
                 setInput(event.target.value);
               }
             }}
-            className={`block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 ${disabled ? "bg-gray-100 text-gray-400" : "text-gray-900"} ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6`}
+            className={`block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"} ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6`}
           />
         </div>
         <button
@@ -52,7 +52,7 @@ function DirectoryInput({ root, path, setPath, disabled }) {
             if (!disabled) handleButtonClick();
           }}
           disabled={disabled}
-          className="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          className="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
         >
           <MagnifyingGlassIcon
             aria-hidden="true"

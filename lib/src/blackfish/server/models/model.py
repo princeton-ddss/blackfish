@@ -9,6 +9,7 @@ from huggingface_hub import snapshot_download, model_info, scan_cache_dir, Model
 from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy.orm import Mapped
 from blackfish.server.models.profile import BlackfishProfile as Profile
+from blackfish.server.models.metadata import fetch_model_metadata, update_cached_metadata
 
 
 PIPELINE_IMAGES = {
@@ -164,44 +165,34 @@ def add_model(
     res = model_info(repo_id=repo_id)
     pipeline = get_pipeline(res)  # e.g., "text-generation"
 
+    # Determine the image type
     try:
-        with open(cache_dir.joinpath("info.json"), mode="r") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        print(
-            f"{LogSymbols.WARNING.value} No info.json file found. Creating a new one."
-        )
-        data = dict()
-
-    try:
-        data[repo_id] = PIPELINE_IMAGES[pipeline]
-        with open(f"{cache_dir}/info.json", mode="w") as f:
-            f.write(json.dumps(data))
-
-        return (
-            Model(
-                repo=repo_id,
-                revision=revision,
-                profile=profile.name,
-                image=PIPELINE_IMAGES[pipeline],
-            ),
-            path,
-        )
+        image = PIPELINE_IMAGES[pipeline]
     except KeyError:
         print(
             f"\n {LogSymbols.WARNING.value} WARNING: {pipeline} is not a known task type. Services that use this model may fail to start."
         )
-        data[repo_id] = pipeline
+        image = pipeline if pipeline else "unknown"
 
-        with open(f"{cache_dir}/info.json", mode="w") as f:
-            f.write(json.dumps(data))
+    # Fetch model metadata for resource recommendations
+    print(f"{LogSymbols.INFO.value} Fetching model metadata...")
+    metadata = fetch_model_metadata(repo_id, token)
 
-        return (
-            Model(
-                repo=repo_id,
-                revision=revision,
-                profile=profile.name,
-                image=pipeline,
-            ),
-            path,
+    # Update info.json with extended format (includes metadata)
+    update_cached_metadata(repo_id, str(cache_dir), metadata, image)
+
+    if metadata.model_size_gb > 0:
+        print(
+            f"{LogSymbols.SUCCESS.value} Model size: {metadata.model_size_gb:.1f} GB "
+            f"(source: {metadata.size_source})"
         )
+
+    return (
+        Model(
+            repo=repo_id,
+            revision=revision,
+            profile=profile.name,
+            image=image,
+        ),
+        path,
+    )

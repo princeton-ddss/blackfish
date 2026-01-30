@@ -90,6 +90,14 @@ from blackfish.server.models.profile import (
     BlackfishProfile as Profile,
 )
 from blackfish.server.models.model import Model
+from blackfish.server.models.metadata import get_cached_metadata, refresh_metadata
+from blackfish.server.models.tiers import (
+    load_resource_specs,
+    get_default_specs,
+    get_default_partition,
+    get_partition_by_name,
+    select_tier_for_model,
+)
 from blackfish.server.job import JobConfig, JobScheduler, SlurmJobConfig
 
 import importlib.metadata
@@ -1708,6 +1716,129 @@ async def read_profile(name: str) -> Profile | None:
     else:
         logger.error("Profile not found.")
         raise NotFoundException(detail="Profile not found.")
+
+
+@get("/api/profiles/{name: str}/resources", guards=ENDPOINT_GUARDS)
+async def get_profile_resources(name: str) -> dict:
+    """Get resource tiers and time constraints for a profile.
+
+    Returns partitions with their available tiers, and time constraints.
+    Used by the frontend to populate the tier selection UI.
+    """
+    try:
+        profile = deserialize_profile(blackfish_config.HOME_DIR, name)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profile config not found.")
+
+    if profile is None:
+        raise NotFoundException(detail="Profile not found.")
+
+    # Load resource specs from profile's cache directory
+    specs = load_resource_specs(profile.cache_dir)
+    if specs is None:
+        # Use default specs if no config file exists
+        specs = get_default_specs()
+
+    return specs.to_dict()
+
+
+@get("/api/models/{model_id:str}/tier", guards=ENDPOINT_GUARDS)
+async def get_model_tier(
+    model_id: str,
+    session: AsyncSession,
+    profile: Optional[str] = None,
+    partition: Optional[str] = None,
+    refresh: bool = False,
+) -> dict:
+    """Get recommended tier for a model based on its size.
+
+    Args:
+        model_id: UUID of the model
+        profile: Profile name (uses model's profile if not specified)
+        partition: Partition name (uses default partition if not specified)
+        refresh: Force refresh of model metadata from HF Hub
+
+    Returns:
+        Recommended tier information including partition, tier name, and source
+    """
+    # Get model from database
+    query = sa.select(Model).where(Model.id == model_id)
+    try:
+        res = await session.execute(query)
+    except StatementError:
+        raise ValidationException(detail=f"{model_id} is not a valid UUID.")
+    try:
+        model = res.scalar_one()
+    except NoResultFound:
+        raise NotFoundException(detail=f"Model {model_id} not found")
+
+    # Get profile
+    profile_name = profile or model.profile
+    try:
+        profile_obj = deserialize_profile(blackfish_config.HOME_DIR, profile_name)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profile config not found.")
+
+    if profile_obj is None:
+        raise NotFoundException(detail=f"Profile {profile_name} not found.")
+
+    # Get model metadata
+    if refresh:
+        token = getattr(profile_obj, "token", None)
+        metadata = refresh_metadata(model.repo, profile_obj.cache_dir, token)
+    else:
+        metadata = get_cached_metadata(model.repo, profile_obj.cache_dir)
+
+    if metadata is None or metadata.model_size_gb == 0:
+        return {
+            "partition": partition or "default",
+            "tier": None,
+            "model_size_gb": None,
+            "source": "no_metadata",
+        }
+
+    # Load resource specs
+    specs = load_resource_specs(profile_obj.cache_dir)
+    if specs is None:
+        specs = get_default_specs()
+
+    # Get partition
+    if partition:
+        partition_obj = get_partition_by_name(specs, partition)
+    else:
+        partition_obj = get_default_partition(specs)
+
+    if partition_obj is None:
+        return {
+            "partition": partition or "default",
+            "tier": None,
+            "model_size_gb": metadata.model_size_gb,
+            "source": "no_partition",
+        }
+
+    # Select tier
+    result = select_tier_for_model(
+        metadata.model_size_gb,
+        partition_obj,
+        repo_id=model.repo,
+        specs=specs,
+    )
+
+    if result is None:
+        return {
+            "partition": partition_obj.name,
+            "tier": None,
+            "model_size_gb": metadata.model_size_gb,
+            "source": "no_match",
+        }
+
+    tier, source = result
+    return {
+        "partition": partition_obj.name,
+        "tier": tier.name,
+        "model_size_gb": metadata.model_size_gb,
+        "source": source,
+    }
 
 
 # --- Config ---

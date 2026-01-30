@@ -7,11 +7,10 @@ import {
   Transition,
   TransitionChild,
 } from "@headlessui/react";
-import ServiceSummary from "@/components/ServiceSummary";
 import ServiceModalForm from "@/components/ServiceModalForm";
 import ServiceLaunchErrorAlert from "@/components/ServiceLaunchErrorAlert";
 import { ServiceContext } from "@/providers/ServiceProvider";
-import { runService } from "@/lib/requests";
+import { runService, fetchProfileResources } from "@/lib/requests";
 import { useModels, useServices } from "@/lib/loaders";
 import { sleep, randomInt, isDeepEmpty } from "@/lib/util";
 import PropTypes from "prop-types";
@@ -87,12 +86,26 @@ function ServiceModal({
     models,
   } = useModels(profile, task);
 
-  const { selectedService, setSelectedServiceId } = useContext(ServiceContext);
+  const { setSelectedServiceId } = useContext(ServiceContext);
 
 
   const [jobOptions, setJobOptions] = React.useState({ ...defaultJobOptions, name: randomName() });
   const [model, setModel] = useState(null);
+  const [resources, setResources] = useState(null);
 
+  // Fetch resources when profile changes
+  useEffect(() => {
+    if (profile && profile.schema === "slurm") {
+      fetchProfileResources(profile.name)
+        .then(data => setResources(data))
+        .catch(err => {
+          console.debug("from ServiceModal: failed to fetch resources", err);
+          setResources(null);
+        });
+    } else {
+      setResources(null);
+    }
+  }, [profile]);
 
   // initialize on model refresh
   useEffect(() => {
@@ -172,7 +185,7 @@ function ServiceModal({
     <Transition show={open} as={Fragment}>
       <Dialog
         as="div"
-        className="relative z-10"
+        className="relative z-[60]"
         initialFocus={cancelButtonRef}
         onClose={() => {
           setOpen(false);
@@ -187,7 +200,7 @@ function ServiceModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 transition-opacity" />
         </TransitionChild>
 
         <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
@@ -201,108 +214,70 @@ function ServiceModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:p-6 sm:pl-6">
-                <div>
-                  <div>
-                    <DialogTitle
-                      as="h3"
-                      className="text-base font-semibold leading-6 text-gray-900"
-                    ></DialogTitle>
+              <DialogPanel className="relative transform rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:mt-4 sm:mb-8 sm:w-full sm:max-w-4xl max-h-[90vh] flex flex-col">
+                {/* Scrollable content area */}
+                <div className="flex-1 overflow-y-auto px-4 pt-5 sm:p-6 sm:pl-6">
+                  <DialogTitle
+                    as="h3"
+                    className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100"
+                  ></DialogTitle>
 
-                    {launchError &&
-                      <ServiceLaunchErrorAlert error={launchError} onClick={() => setLaunchError(null)} />
-                    }
+                  {launchError &&
+                    <ServiceLaunchErrorAlert error={launchError} onClick={() => setLaunchError(null)} />
+                  }
 
-                    <form className="mt-2">
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-x-12 gap-y-10 border-b border-gray-900/10 pb-12 md:grid-cols-3">
-                          <div>
-                            <h2 className="text-base font-semibold leading-7 text-gray-900">
-                              Summary
-                            </h2>
-                            {isLaunching ? (
-                              <div aria-label="Services are loading" className="flex justify-center items-center h-48">
-                                <span className="relative flex h-5 w-5">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-5 w-5 bg-blue-500"></span>
-                                </span>
-                              </div>
-                            ) : (
-                              <ServiceSummary
-                                service={
-                                  launchSuccess
-                                    ? selectedService
-                                    : {
-                                      model: model ? model.repo_id : null,
-                                      name: jobOptions.name,
-                                      status: null,
-                                      created_at: null,
-                                      updated_at: null,
-                                      host: profile ? (profile.schema === "local" ? "localhost" : profile.host) : null,
-                                      port: null,
-                                      ntasks_per_node: profile ? (profile.schema === "local" ? null : jobOptions.ntasks_per_node) : null,
-                                      mem: profile ? (profile.schema === "local" ? null : jobOptions.mem) : null,
-                                      gres: jobOptions.gres,
-                                    }
-                                }
-                                profile={profile}
-                              />
-                            )}
-                          </div>
-                          <ServiceModalForm
-                            models={models}
-                            services={services}
-                            setModel={setModel}
-                            jobOptions={jobOptions}
-                            setJobOptions={setJobOptions}
-                            setValidationErrors={setValidationErrors}
-                            disabled={isLaunching || launchError || launchSuccess}
-                            profile={profile}
-                            task={task}
-                          >
-                            { children }
-                          </ServiceModalForm>
-                        </div>
-                      </div>
-                    </form>
-                  </div>
+                  <form className="mt-2">
+                      <ServiceModalForm
+                        models={models}
+                        services={services}
+                        setModel={setModel}
+                        jobOptions={jobOptions}
+                        setJobOptions={setJobOptions}
+                        setValidationErrors={setValidationErrors}
+                        disabled={isLaunching || launchError || launchSuccess}
+                        profile={profile}
+                        task={task}
+                        resources={resources}
+                      >
+                        { children }
+                      </ServiceModalForm>
+                  </form>
                 </div>
 
-                {launchSuccess ? (
-                  <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:col-span-2 sm:mt-0"
-                      onClick={() => {
-                        setOpen(false);
-                      }}
-                      ref={cancelButtonRef}
-                    >
-                      Close
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                    <button
-                      type="button"
-                      className="inline-flex w-full justify-center rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:col-start-2 disabled:bg-blue-200"
-                      onClick={handleFormSubmit}
-                      disabled={!isDeepEmpty(validationErrors) || isLaunching}
-                    >
-                      Launch
-                    </button>
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
-                      // TODO: this should actually cancel the request. If the service is launching, then this
-                      // button would issue a stop request. Then, it should turn to a close button.
-                      onClick={() => setOpen(false)}
-                      ref={cancelButtonRef}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
+                {/* Footer with buttons */}
+                <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 sm:px-6 py-3 rounded-b-lg">
+                  {launchSuccess ? (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="w-24 inline-flex justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        onClick={() => setOpen(false)}
+                        ref={cancelButtonRef}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-2"
+                        onClick={() => setOpen(false)}
+                        ref={cancelButtonRef}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="w-24 inline-flex justify-center rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:bg-blue-200 dark:disabled:bg-blue-900"
+                        onClick={handleFormSubmit}
+                        disabled={!isDeepEmpty(validationErrors) || isLaunching}
+                      >
+                        Launch
+                      </button>
+                    </div>
+                  )}
+                </div>
               </DialogPanel>
             </TransitionChild>
           </div>

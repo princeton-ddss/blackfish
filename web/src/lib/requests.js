@@ -182,3 +182,39 @@ export async function deleteService(serviceId) {
     throw new Error("Failed to delete the service");
   }
 }
+
+/** Fetch cluster status for a Slurm profile. */
+export async function fetchClusterStatus(profileName) {
+  const res = await fetch(`${blackfishApiURL}/api/cluster/${profileName}/status`);
+  if (!res.ok) {
+    console.debug(`from fetchClusterStatus: failed to fetch cluster status (status=${res.status})`);
+    const error = new Error("Failed to fetch cluster status.");
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Fetch resource tiers and time constraints for a profile. */
+export async function fetchProfileResources(profileName) {
+  const res = await fetch(`${blackfishApiURL}/api/profiles/${profileName}/resources`);
+  if (!res.ok) {
+    console.debug(`from fetchProfileResources: failed to fetch resources (status=${res.status})`);
+    return null;
+  }
+  return res.json();
+}
+
+/** Fetch recommended tier for a model. */
+export async function fetchModelTier(modelId, profileName, partition = null) {
+  const params = new URLSearchParams({ profile: profileName });
+  if (partition) {
+    params.append("partition", partition);
+  }
+  const res = await fetch(`${blackfishApiURL}/api/models/${modelId}/tier?${params}`);
+  if (!res.ok) {
+    console.debug(`from fetchModelTier: failed to fetch tier (status=${res.status})`);
+    return null;
+  }
+  return res.json();
+}

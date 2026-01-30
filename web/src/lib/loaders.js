@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { fetchModels, fetchServices, fetchProfiles, fetchFiles } from "./requests";
+import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus } from "./requests";
 import { ServiceStatus } from "./util";
 import { useRemoteFileSystem } from "../hooks/useRemoteFileSystem";
 
@@ -100,3 +100,22 @@ export const useFileSystem = (path, profile = null) => {
     homeDir: localFs.data?.path ?? null,
   };
 }
+
+export const useClusterStatus = (profile) => {
+  // Only fetch for Slurm profiles
+  const key = profile?.schema === "slurm" ? `cluster/${profile.name}` : null;
+  const { data, error, isLoading, mutate } = useSWR(
+    key,
+    () => fetchClusterStatus(profile.name),
+    {
+      refreshInterval: 60_000, // refresh every minute
+      revalidateOnFocus: false,
+    }
+  );
+  return {
+    status: data,
+    error: error,
+    isLoading: isLoading,
+    refresh: mutate,
+  };
+};

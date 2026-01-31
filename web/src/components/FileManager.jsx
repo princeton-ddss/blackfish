@@ -83,6 +83,7 @@ function FileManager({
         setOperationSuccess(message);
         setDeleteDialogOpen(false);
         setSelectedFile(null);
+        if (onFileSelect) onFileSelect(null);
         await refresh();
         setTimeout(() => setOperationSuccess(null), 5000);
     };

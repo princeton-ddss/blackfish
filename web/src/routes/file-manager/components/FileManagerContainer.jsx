@@ -35,7 +35,7 @@ function FileManagerContainer() {
                 <div className="flex items-center justify-between mb-2 h-9">
                     <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Preview</label>
                 </div>
-                <div className="ring-1 ring-gray-300 dark:ring-gray-600 rounded-lg h-[26rem] overflow-y-auto">
+                <div className="ring-1 ring-gray-300 dark:ring-gray-600 rounded-lg h-[36rem] overflow-y-auto">
                     <FilePreview
                         file={selectedFile}
                         profile={profile}

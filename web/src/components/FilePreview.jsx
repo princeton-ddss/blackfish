@@ -79,9 +79,7 @@ function FilePreview({ file, profile = null }) {
                         <img
                             src={`${blackfishApiURL}/api/image?path=${encodeURIComponent(file.path)}${profileParam}`}
                             alt={file.name}
-                            width={400}
-                            height={400}
-                            className="w-full h-auto rounded-lg border border-gray-200"
+                            className="w-full h-full object-contain rounded-lg border border-gray-200 dark:border-gray-700"
                         />
                     </div>
                 )}

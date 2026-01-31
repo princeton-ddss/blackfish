@@ -46,6 +46,9 @@ def create_mock_connection_class(mock_sftp):
     # .sftp() returns the mock_sftp directly (no context manager)
     mock_connection_instance.sftp.return_value = mock_sftp
 
+    # normalize() is used by get_home_dir to resolve "."
+    mock_sftp.normalize.return_value = "/home/testuser"
+
     # mock_sftp also needs close()
     mock_sftp.close = mock.MagicMock()
 

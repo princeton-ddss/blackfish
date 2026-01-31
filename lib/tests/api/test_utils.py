@@ -43,24 +43,29 @@ class TestFilesAPI:
         assert response.status_code == 401
 
     async def test_files_missing_path_parameter(self, client: AsyncTestClient):
-        """Test /api/files without required path parameter."""
+        """Test /api/files without path parameter defaults to home directory."""
         response = await client.get("/api/files")
 
-        # Should return validation error for missing required parameter
-        assert response.status_code == 400
+        # path defaults to "~", so should return 200 with home directory listing
+        assert response.status_code == 200
+        result = response.json()
+        assert "path" in result
+        assert "files" in result
 
     async def test_files_valid_directory(self, client: AsyncTestClient):
         """Test /api/files with valid directory path."""
         # Use /tmp as a directory that should exist on most systems
         response = await client.get("/api/files", params={"path": "/tmp"})
 
-        # Should return list of files or 404/403 depending on permissions
+        # Should return directory listing
         assert response.status_code == 200
         result = response.json()
-        assert isinstance(result, list)
-        if result:  # If directory is not empty
+        assert "path" in result
+        assert "files" in result
+        assert isinstance(result["files"], list)
+        if result["files"]:  # If directory is not empty
             # Each item should be a file stat object
-            file_stat = result[0]
+            file_stat = result["files"][0]
             expected_keys = ["name", "path", "is_dir", "size"]
             for key in expected_keys:
                 assert key in file_stat

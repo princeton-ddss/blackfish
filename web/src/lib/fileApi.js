@@ -1,5 +1,27 @@
 import { blackfishApiURL } from "@/config";
 
+/** Maximum file size (in bytes) for preview. Files larger than this are skipped. */
+export const MAX_PREVIEW_SIZE = 5 * 1024 * 1024; // 5 MB
+
+/** Maximum number of lines to display for text file previews. */
+export const MAX_PREVIEW_LINES = 500;
+
+/**
+ * Truncate text to a maximum number of lines.
+ * Returns { text, truncated, totalLines }.
+ */
+export function truncateTextPreview(text, maxLines = MAX_PREVIEW_LINES) {
+    const lines = text.split("\n");
+    if (lines.length <= maxLines) {
+        return { text, truncated: false, totalLines: lines.length };
+    }
+    return {
+        text: lines.slice(0, maxLines).join("\n"),
+        truncated: true,
+        totalLines: lines.length,
+    };
+}
+
 export const FILE_TYPE_CONFIG = {
     image: {
         extensions: [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"],

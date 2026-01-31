@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { blackfishApiURL } from "@/config";
 import { DocumentIcon } from "@heroicons/react/24/outline";
 import { fileSize } from "@/lib/util";
+import { MAX_PREVIEW_SIZE, truncateTextPreview } from "@/lib/fileApi";
 import PropTypes from "prop-types";
 
 function FilePreview({ file, profile = null }) {
@@ -14,8 +15,10 @@ function FilePreview({ file, profile = null }) {
         ? `&profile=${encodeURIComponent(profile.name)}`
         : "";
 
+    const isFileTooLarge = file && file.size > MAX_PREVIEW_SIZE;
+
     useEffect(() => {
-        if (file && file.type === "text") {
+        if (file && file.type === "text" && !isFileTooLarge) {
             setTextLoading(true);
             setTextError(null);
 
@@ -26,7 +29,7 @@ function FilePreview({ file, profile = null }) {
                     return res.text();
                 })
                 .then(text => {
-                    setTextContent(text);
+                    setTextContent(truncateTextPreview(text));
                     setTextLoading(false);
                 })
                 .catch(err => {
@@ -34,7 +37,7 @@ function FilePreview({ file, profile = null }) {
                     setTextLoading(false);
                 });
         }
-    }, [file, profileParam]);
+    }, [file, profileParam, isFileTooLarge]);
 
     if (!file) {
         return (
@@ -74,7 +77,17 @@ function FilePreview({ file, profile = null }) {
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                {file.type === "image" && (
+                {isFileTooLarge ? (
+                    <div className="text-center py-8">
+                        <DocumentIcon className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
+                        <p className="mt-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                            File too large to preview
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {fileSize(file.size)} exceeds the 5 MB preview limit
+                        </p>
+                    </div>
+                ) : file.type === "image" ? (
                     <div className="relative">
                         <img
                             src={`${blackfishApiURL}/api/image?path=${encodeURIComponent(file.path)}${profileParam}`}
@@ -82,9 +95,7 @@ function FilePreview({ file, profile = null }) {
                             className="w-full h-full object-contain rounded-lg border border-gray-200 dark:border-gray-700"
                         />
                     </div>
-                )}
-
-                {file.type === "text" && (
+                ) : file.type === "text" ? (
                     <div>
                         {textLoading ? (
                             <div className="animate-pulse">
@@ -96,17 +107,22 @@ function FilePreview({ file, profile = null }) {
                             <div className="rounded-md bg-red-50 p-4">
                                 <p className="text-sm text-red-700">{textError}</p>
                             </div>
-                        ) : (
-                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto">
-                                <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
-                                    {textContent}
-                                </pre>
-                            </div>
-                        )}
+                        ) : textContent ? (
+                            <>
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto">
+                                    <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
+                                        {textContent.text}
+                                    </pre>
+                                </div>
+                                {textContent.truncated && (
+                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        Showing first 500 of {textContent.totalLines.toLocaleString()} lines
+                                    </p>
+                                )}
+                            </>
+                        ) : null}
                     </div>
-                )}
-
-                {file.type === "audio" && (
+                ) : file.type === "audio" ? (
                     <div>
                         <audio
                             src={`${blackfishApiURL}/api/audio?path=${encodeURIComponent(file.path)}${profileParam}`}
@@ -117,9 +133,7 @@ function FilePreview({ file, profile = null }) {
                             {file.path}
                         </div>
                     </div>
-                )}
-
-                {(!file.type || (file.type !== "image" && file.type !== "text" && file.type !== "audio")) && (
+                ) : (
                     <div className="text-center py-8">
                         <DocumentIcon className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
                         <p className="mt-4 text-sm font-medium text-gray-900 dark:text-gray-100">

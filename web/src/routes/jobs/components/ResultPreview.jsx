@@ -5,7 +5,7 @@ import {
     XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { blackfishApiURL } from "@/config";
-import { getFileType } from "@/lib/fileApi";
+import { getFileType, truncateTextPreview } from "@/lib/fileApi";
 import PropTypes from "prop-types";
 
 function formatDateTime(isoString) {
@@ -54,7 +54,7 @@ function OutputFilePreview({ file, profile = null }) {
                     return res.text();
                 })
                 .then(text => {
-                    setTextContent(text);
+                    setTextContent(truncateTextPreview(text));
                     setTextLoading(false);
                 })
                 .catch(err => {
@@ -97,11 +97,18 @@ function OutputFilePreview({ file, profile = null }) {
                             <p className="text-sm text-red-700 dark:text-red-400">{textError}</p>
                         </div>
                     ) : (
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-48 overflow-y-auto">
-                            <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
-                                {textContent}
-                            </pre>
-                        </div>
+                        <>
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-48 overflow-y-auto">
+                                <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
+                                    {textContent.text}
+                                </pre>
+                            </div>
+                            {textContent.truncated && (
+                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                    Showing first 500 of {textContent.totalLines.toLocaleString()} lines
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
             )}

@@ -22,6 +22,7 @@ import TextGenerationCompletionContainer from "./components/TextGenerationComple
 import TextGenerationChatContainer from "./components/TextGenerationChatContainer";
 import TextGenerationContainerOptionsForm from "./components/TextGenerationContainerOptionsForm";
 import TextGenerationParametersForm from "./components/TextGenerationParametersForm";
+import CodeSnippetModal from "./components/CodeSnippetModal";
 
 import PropTypes from "prop-types";
 
@@ -78,6 +79,8 @@ export default function TextGenerationPage() {
     value: "completion",
     icon: null,
   });
+
+  const [codeModalOpen, setCodeModalOpen] = useState(false);
 
   const [parameters, setParameters] = useState({
     // OpenAI API parameters
@@ -232,6 +235,7 @@ export default function TextGenerationPage() {
                   type="button"
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-md"
                   aria-label="Code"
+                  onClick={() => setCodeModalOpen(true)}
                 >
                   <CodeBracketIcon className="h-5 w-5" />
                 </button>
@@ -256,6 +260,7 @@ export default function TextGenerationPage() {
                   type="button"
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-md"
                   aria-label="Code"
+                  onClick={() => setCodeModalOpen(true)}
                 >
                   <CodeBracketIcon className="h-5 w-5" />
                 </button>
@@ -285,6 +290,22 @@ export default function TextGenerationPage() {
         }}
         systemMessage={mode.value === "chat" ? systemMessage : null}
         onSystemMessageChange={mode.value === "chat" ? handleSystemMessageChange : null}
+      />
+
+      <CodeSnippetModal
+        open={codeModalOpen}
+        onClose={() => setCodeModalOpen(false)}
+        mode={mode.value}
+        prompt={sessionStorage.getItem("tgci") || ""}
+        messages={(() => {
+          try {
+            return JSON.parse(sessionStorage.getItem("tgcc-ml") || "[]");
+          } catch {
+            return [];
+          }
+        })()}
+        systemMessage={systemMessage}
+        parameters={mode.value === "completion" ? parameters : chatParameters}
       />
     </Page>
   );

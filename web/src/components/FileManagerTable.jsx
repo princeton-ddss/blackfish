@@ -72,6 +72,10 @@ function FileManagerTable({
     onFileClick,
     onDeleteClick,
     operationInProgress,
+    heightClass: heightClassProp,
+    showBottomSpacer = true,
+    showPagination = true,
+    selectedFilePath = null,
 }) {
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -88,16 +92,18 @@ function FileManagerTable({
         return new Date(b.modified_at) - new Date(a.modified_at);
     }) : [];
 
-    const currentFiles = sortedContent.slice(indexOfFirstFile, indexOfLastFile);
+    const currentFiles = showPagination
+        ? sortedContent.slice(indexOfFirstFile, indexOfLastFile)
+        : sortedContent;
     const isDisabled = status.disabled || operationInProgress;
     const showPlaceholderState = status.disabled || error || isLoading || content?.length === 0 || root === "";
-    const heightClass = "h-[26rem]";
+    const heightClass = heightClassProp || "h-[26rem]";
 
     return (
         <div
             id="file-manager-table"
             name="file-manager-table"
-            className={`flex-none ${heightClass}`}
+            className="flex-none"
         >
             <div className="mt-3 flow-root">
                 <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -178,7 +184,7 @@ function FileManagerTable({
                                             <td colSpan={6} className="h-64">
                                                 <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                                                     <img
-                                                        className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                                                        className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                                                         height="56"
                                                         width="56"
                                                         src={assetPath("/img/dead-fish.png")}
@@ -203,7 +209,7 @@ function FileManagerTable({
                                             <td colSpan={6} className="h-64">
                                                 <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                                                     <img
-                                                        className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                                                        className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                                                         height="56"
                                                         width="56"
                                                         src={assetPath("/img/dead-fish.png")}
@@ -218,7 +224,7 @@ function FileManagerTable({
                                             <td colSpan={6} className="h-64">
                                                 <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                                                     <img
-                                                        className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                                                        className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                                                         height="56"
                                                         width="56"
                                                         src={assetPath("/img/question-mark.png")}
@@ -240,7 +246,7 @@ function FileManagerTable({
                                         currentFiles.map((item) => (
                                             <tr
                                                 key={item.path}
-                                                className={`bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 ${onFileClick && !item.is_dir ? 'cursor-pointer' : ''}`}
+                                                className={`${selectedFilePath === item.path ? 'bg-blue-50 dark:bg-blue-900/30' : 'bg-white dark:bg-gray-800'} hover:bg-gray-50 dark:hover:bg-gray-700 ${onFileClick && !item.is_dir ? 'cursor-pointer' : ''}`}
                                                 onClick={() => onFileClick && !item.is_dir && onFileClick(item)}
                                             >
                                                 <td className="relative whitespace-nowrap w-12 py-3 px-3 text-gray-700 dark:text-gray-300 text-left text-sm font-medium">
@@ -304,27 +310,31 @@ function FileManagerTable({
                                             </tr>
                                         ))
                                     )}
-                                    <tr className="bg-white dark:bg-gray-800">
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                    </tr>
+                                    {showBottomSpacer && (
+                                        <tr className="bg-white dark:bg-gray-800">
+                                            <td className="whitespace-nowrap h-16"></td>
+                                            <td className="whitespace-nowrap h-16"></td>
+                                            <td className="whitespace-nowrap h-16"></td>
+                                            <td className="whitespace-nowrap h-16"></td>
+                                            <td className="whitespace-nowrap h-16"></td>
+                                            <td className="whitespace-nowrap h-16"></td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-            <Pagination
-                filesPerPage={filesPerPage}
-                totalFiles={sortedContent.length}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                disabled={isDisabled}
-            />
+            {showPagination && (
+                <Pagination
+                    filesPerPage={filesPerPage}
+                    totalFiles={sortedContent.length}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    disabled={isDisabled}
+                />
+            )}
         </div>
     );
 }
@@ -343,6 +353,10 @@ FileManagerTable.propTypes = {
     onFileClick: PropTypes.func,
     onDeleteClick: PropTypes.func,
     operationInProgress: PropTypes.bool,
+    heightClass: PropTypes.string,
+    showBottomSpacer: PropTypes.bool,
+    showPagination: PropTypes.bool,
+    selectedFilePath: PropTypes.string,
 };
 
 export default FileManagerTable;

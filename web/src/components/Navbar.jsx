@@ -132,7 +132,18 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
         ) : (
           <div /> // Placeholder for layout
         )}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
+            aria-label="Toggle theme"
+          >
+            {isDark ? (
+              <SunIcon className="h-5 w-5" />
+            ) : (
+              <MoonIcon className="h-5 w-5" />
+            )}
+          </button>
           <ClusterStatusDropdown />
           <Link
             to="/settings"
@@ -141,6 +152,14 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
           >
             <Cog6ToothIcon className="h-5 w-5" />
           </Link>
+          <a
+            href="https://princeton-ddss.github.io/blackfish/latest"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-light text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-200"
+          >
+            Docs
+          </a>
           <ProfileSelect
             selectedProfile={profile}
             setSelectedProfile={setProfile}

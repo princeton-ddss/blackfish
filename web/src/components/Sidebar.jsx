@@ -57,7 +57,7 @@ function Sidebar() {
                                         to={item.href}
                                         className={classNames(
                                             isCurrent(item.href)
-                                                ? "text-gray-900 dark:text-white font-medium"
+                                                ? "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium"
                                                 : "text-gray-700 dark:text-gray-200 font-normal hover:text-gray-400 dark:hover:text-white",
                                             "group flex gap-x-3 rounded-md p-2 text-sm"
                                         )}
@@ -67,7 +67,7 @@ function Sidebar() {
                                             className={classNames(
                                                 isCurrent(item.href)
                                                     ? "text-gray-900 dark:text-white"
-                                                    : "text-gray-400 group-hover:text-gray-300 dark:text-gray-200 dark:group-hover:text-white",
+                                                    : "text-gray-700 group-hover:text-gray-400 dark:text-gray-200 dark:group-hover:text-white",
                                                 "h-6 w-6 shrink-0"
                                             )}
                                         />
@@ -86,7 +86,7 @@ function Sidebar() {
                                         to={item.href}
                                         className={classNames(
                                             isCurrent(item.href)
-                                                ? "text-gray-900 dark:text-white font-normal"
+                                                ? "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium"
                                                 : "text-gray-700 dark:text-gray-200 font-normal hover:text-gray-400 dark:hover:text-gray-100",
                                             "group flex gap-x-3 rounded-md p-2 text-sm"
                                         )}
@@ -94,7 +94,7 @@ function Sidebar() {
                                         <item.icon
                                             aria-hidden="true"
                                             className={classNames(
-                                                isCurrent(item.href) ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-200 group-hover:text-gray-100",
+                                                isCurrent(item.href) ? "text-gray-900 dark:text-white" : "text-gray-700 group-hover:text-gray-400 dark:text-gray-200 dark:group-hover:text-white",
                                                 "h-6 w-6 shrink-0"
                                             )}
                                         />

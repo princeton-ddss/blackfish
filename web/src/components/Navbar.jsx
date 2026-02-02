@@ -36,7 +36,7 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
         <div className="flex items-center gap-4">
           <button
             onClick={toggleTheme}
-            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Toggle theme"
           >
             {isDark ? (
@@ -48,7 +48,7 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
           <ClusterStatusDropdown />
           <Link
             to="/settings"
-            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Settings"
           >
             <Cog6ToothIcon className="h-5 w-5" />
@@ -86,7 +86,7 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
         <div className="flex items-center gap-4">
           <button
             onClick={toggleTheme}
-            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Toggle theme"
           >
             {isDark ? (
@@ -98,7 +98,7 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
           <ClusterStatusDropdown />
           <Link
             to="/settings"
-            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Settings"
           >
             <Cog6ToothIcon className="h-5 w-5" />
@@ -135,7 +135,7 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
         <div className="flex items-center gap-3">
           <button
             onClick={toggleTheme}
-            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Toggle theme"
           >
             {isDark ? (
@@ -147,7 +147,7 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
           <ClusterStatusDropdown />
           <Link
             to="/settings"
-            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Settings"
           >
             <Cog6ToothIcon className="h-5 w-5" />

@@ -125,7 +125,7 @@ function FileManager({
                                 <button
                                     onClick={reconnect}
                                     disabled={isConnecting}
-                                    className="ml-1 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+                                    className="ml-1 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50 focus:outline-none"
                                     aria-label="Reconnect"
                                 >
                                     <ArrowPathIcon className={`h-4 w-4 ${isConnecting ? "animate-spin" : ""}`} />
@@ -138,7 +138,7 @@ function FileManager({
                     <button
                         onClick={() => setUploadDialogOpen(true)}
                         disabled={status.disabled || operationInProgress}
-                        className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed"
+                        className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed focus:outline-none"
                         aria-label="Upload file"
                     >
                         <ArrowUpTrayIcon className="h-5 w-5" />
@@ -233,7 +233,7 @@ function FileManager({
                         </p>
                         <button
                             onClick={() => setOperationSuccess(null)}
-                            className="ml-auto"
+                            className="ml-auto focus:outline-none"
                         >
                             <XMarkIcon className="h-5 w-5 text-green-400" />
                         </button>
@@ -248,7 +248,7 @@ function FileManager({
                         <p className="ml-3 text-sm font-medium text-red-800">
                             {operationError}
                         </p>
-                        <button onClick={() => setOperationError(null)} className="ml-auto">
+                        <button onClick={() => setOperationError(null)} className="ml-auto focus:outline-none">
                             <XMarkIcon className="h-5 w-5 text-red-400" />
                         </button>
                     </div>

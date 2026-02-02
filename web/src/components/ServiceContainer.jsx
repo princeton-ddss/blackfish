@@ -168,7 +168,7 @@ function ServiceContainer({
             <Popover className="relative">
               <PopoverButton
                 disabled={!selectedService}
-                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:bg-transparent disabled:cursor-not-allowed focus:outline-none"
               >
                 <AdjustmentsHorizontalIcon className="h-5 w-5" />
               </PopoverButton>
@@ -182,7 +182,7 @@ function ServiceContainer({
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Parameters</span>
                       <button
                         onClick={close}
-                        className="p-1 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                        className="p-1 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none"
                       >
                         <XMarkIcon className="h-4 w-4" />
                       </button>
@@ -200,7 +200,7 @@ function ServiceContainer({
               type="button"
               onClick={handleStopService}
               disabled={isUpdating}
-              className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
+              className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 focus:outline-none"
               aria-label="Stop service"
             >
               <StopIcon className="h-5 w-5" />
@@ -211,7 +211,7 @@ function ServiceContainer({
               type="button"
               onClick={handleDeleteService}
               disabled={isUpdating}
-              className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
+              className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 focus:outline-none"
               aria-label="Delete service"
             >
               <TrashIcon className="h-5 w-5" />

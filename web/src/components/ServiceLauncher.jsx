@@ -75,7 +75,7 @@ ServiceLauncher.propTypes = {
   profile: PropTypes.object,
   task: PropTypes.string,
   defaultContainerOptions: PropTypes.object,
-  ContainerOptionsFormComponent: PropTypes.node,
+  ContainerOptionsFormComponent: PropTypes.elementType,
 };
 
 export default ServiceLauncher;

@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ProfileProvider } from "@/components/ProfileSelect";
+import { RemoteFileSystemProvider } from "@/providers/RemoteFileSystemProvider";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import { ThemeProvider } from "@/providers/ThemeProvider";
@@ -83,7 +84,9 @@ function RootLayout() {
   return (
     <ThemeProvider>
       <ProfileProvider>
-        <RootLayoutContent />
+        <RemoteFileSystemProvider>
+          <RootLayoutContent />
+        </RemoteFileSystemProvider>
       </ProfileProvider>
     </ThemeProvider>
   );

@@ -1,12 +1,13 @@
-
 import { useEffect, useState } from "react";
 import {
+    ArrowPathIcon,
     ArrowUpTrayIcon,
     CheckCircleIcon,
     XCircleIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useFileSystem } from "@/lib/loaders";
+import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 import FileManagerTable from "@/components/FileManagerTable";
 import DirectoryInput from "@/components/DirectoryInput";
 import FilterInput from "@/components/FilterInput";
@@ -26,6 +27,7 @@ function FileManager({
     profile = null,
 }) {
     const isRemote = profile && profile.schema !== "local";
+    const { reconnect, isConnecting, error: connectionError } = useRemoteFileSystem();
     const [path, setPath] = useState(null);
     const [query, setQuery] = useState("");
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -37,10 +39,10 @@ function FileManager({
 
     const { files, error, isLoading, refresh, isConnected, homeDir } = useFileSystem(path, profile);
 
-    // Set path to homeDir when it becomes available
+    // Update path when home directory changes
     useEffect(() => {
-        if (homeDir && path === null) setPath(homeDir);
-    }, [homeDir, path]);
+        setPath(homeDir);
+    }, [homeDir]);
 
     const displayRoot = homeDir ?? root;
 
@@ -53,7 +55,6 @@ function FileManager({
         setPath(newPath);
         if (onPathChange) onPathChange(newPath);
     };
-
 
     const handleFileClick = (file) => {
         if (onFileSelect && !file.is_dir) {
@@ -105,12 +106,31 @@ function FileManager({
                     {isRemote && profile && (
                         <div className="flex items-center gap-1.5">
                             <span
-                                className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${isConnected ? "bg-green-500" : "animate-pulse bg-yellow-500"
-                                    }`}
+                                className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${
+                                    isConnected
+                                        ? "bg-green-500"
+                                        : connectionError
+                                            ? "bg-red-500"
+                                            : "animate-pulse bg-yellow-500"
+                                }`}
                             />
                             <span className="text-sm text-gray-600 dark:text-gray-400">
-                                {isConnected ? `Connected to ${profile.host}` : "Connecting..."}
+                                {isConnected
+                                    ? `Connected to ${profile.user}@${profile.host}`
+                                    : connectionError
+                                        ? "Disconnected"
+                                        : "Connecting..."}
                             </span>
+                            {connectionError && (
+                                <button
+                                    onClick={reconnect}
+                                    disabled={isConnecting}
+                                    className="ml-1 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+                                    aria-label="Reconnect"
+                                >
+                                    <ArrowPathIcon className={`h-4 w-4 ${isConnecting ? "animate-spin" : ""}`} />
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

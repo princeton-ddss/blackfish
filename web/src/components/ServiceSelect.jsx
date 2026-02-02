@@ -65,20 +65,20 @@ function ServiceSelect({ profile, task }) {
 
   if (profile && services.length === 0) {
     return (
-      <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-800 ring-1 ring-yellow-300 dark:ring-yellow-700 p-4 mt-2 mb-4">
+      <div className="rounded-md bg-gray-100 dark:bg-gray-700 p-4 mt-2 mb-4">
         <div className="flex">
           <div className="flex-shrink-0">
             <ExclamationTriangleIcon
               aria-hidden="true"
-              className="h-5 w-5 text-yellow-400"
+              className="h-5 w-5 text-yellow-500"
             />
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-yellow-800">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
               No services available
             </h3>
-            <div className="mt-2 font-light text-sm text-yellow-800">
-              <p>Click on the button below to create a new service under the selected profile.</p>
+            <div className="mt-2 font-light text-sm text-gray-600 dark:text-gray-400">
+              <p>Click the launch button above to create a new service.</p>
             </div>
           </div>
         </div>

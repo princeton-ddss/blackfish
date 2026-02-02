@@ -451,7 +451,7 @@ function ServiceModalForm({
                       Accelerate
                     </label>
                     <p className="text-gray-500 dark:text-gray-400">
-                      Use GPUs to accelerate inference. Recommended for most models.
+                      Use available GPUs to speed up inference. Requires an Nvidia GPU.
                     </p>
                   </div>
                 </div>

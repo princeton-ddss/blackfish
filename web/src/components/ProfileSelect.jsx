@@ -59,15 +59,29 @@ function ProfileSelect({
   const { profiles, error, isLoading } = useProfiles();
 
   if (isLoading) {
-    return <div>Loading profiles...</div>;
+    return (
+      <div className="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-gray-400 dark:text-gray-500 dark:bg-gray-900">
+        <span className="animate-pulse">Profile</span>
+        <ChevronDownIcon className="h-4 w-4 text-gray-300 dark:text-gray-600" aria-hidden="true" />
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error!</div>;
+    return (
+      <div className="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-red-500 dark:bg-gray-900">
+        <ExclamationTriangleIcon className="h-4 w-4" aria-hidden="true" />
+        <span>Error</span>
+      </div>
+    );
   }
 
   if (profiles.length === 0) {
-    return <div>No profiles found.</div>;
+    return (
+      <div className="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-gray-500 dark:text-gray-400 dark:bg-gray-900">
+        <span>No profiles</span>
+      </div>
+    );
   }
 
   const isSelected = (profile) => selectedProfile?.name === profile.name;

@@ -107,7 +107,7 @@ StatusBadge.propTypes = {
 /**
  * Service Container component.
  * @param {object} options
- * @param {string} options.profile
+ * @param {object} options.profile
  * @param {string} options.task
  * @param {object} options.defaultContainerOptions
  * @param {JSX.Element} options.ContainerOptionsFormComponent
@@ -244,7 +244,7 @@ function ServiceContainer({
 }
 
 ServiceContainer.propTypes = {
-  profile: PropTypes.string,
+  profile: PropTypes.object,
   task: PropTypes.string,
   defaultContainerOptions: PropTypes.object,
   ContainerOptionsFormComponent: PropTypes.elementType,

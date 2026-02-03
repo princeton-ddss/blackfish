@@ -12,7 +12,7 @@ import ServiceLauncher from "./ServiceLauncher";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { useServices } from "@/lib/loaders";
 import { deleteService, stopService } from "@/lib/requests";
-import { ServiceStatus } from "@/lib/util";
+import { ServiceStatus, getStatusBadgeClasses } from "@/lib/util";
 import PropTypes from "prop-types";
 
 const terminalStates = ["stopped", "expired", "timeout", "failed"];
@@ -24,75 +24,11 @@ const terminalStates = ["stopped", "expired", "timeout", "failed"];
  * @return {JSX.Element}
  */
 function StatusBadge({ status }) {
-  const getStatusColor = () => {
-    if (!status) return "fill-gray-400";
-    switch (status) {
-      case ServiceStatus.HEALTHY:
-        return "fill-green-400";
-      case ServiceStatus.UNHEALTHY:
-        return "fill-yellow-400";
-      case ServiceStatus.STARTING:
-      case ServiceStatus.PENDING:
-      case ServiceStatus.SUBMITTED:
-        return "fill-yellow-400";
-      case ServiceStatus.TIMEOUT:
-      case ServiceStatus.FAILED:
-        return "fill-red-400";
-      case ServiceStatus.STOPPED:
-      case ServiceStatus.EXPIRED:
-        return "fill-gray-400";
-      default:
-        return "fill-gray-400";
-    }
-  };
-
-  const getBgColor = () => {
-    if (!status) return "bg-gray-100 dark:bg-gray-700";
-    switch (status) {
-      case ServiceStatus.HEALTHY:
-        return "bg-green-100 dark:bg-green-900/30";
-      case ServiceStatus.UNHEALTHY:
-        return "bg-yellow-100 dark:bg-yellow-900/30";
-      case ServiceStatus.STARTING:
-      case ServiceStatus.PENDING:
-      case ServiceStatus.SUBMITTED:
-        return "bg-yellow-100 dark:bg-yellow-900/30";
-      case ServiceStatus.TIMEOUT:
-      case ServiceStatus.FAILED:
-        return "bg-red-100 dark:bg-red-900/30";
-      case ServiceStatus.STOPPED:
-      case ServiceStatus.EXPIRED:
-        return "bg-gray-100 dark:bg-gray-700";
-      default:
-        return "bg-gray-100 dark:bg-gray-700";
-    }
-  };
-
-  const getTextColor = () => {
-    if (!status) return "text-gray-600 dark:text-gray-400";
-    switch (status) {
-      case ServiceStatus.HEALTHY:
-        return "text-green-700 dark:text-green-400";
-      case ServiceStatus.UNHEALTHY:
-        return "text-yellow-700 dark:text-yellow-400";
-      case ServiceStatus.STARTING:
-      case ServiceStatus.PENDING:
-      case ServiceStatus.SUBMITTED:
-        return "text-yellow-700 dark:text-yellow-400";
-      case ServiceStatus.TIMEOUT:
-      case ServiceStatus.FAILED:
-        return "text-red-700 dark:text-red-400";
-      case ServiceStatus.STOPPED:
-      case ServiceStatus.EXPIRED:
-        return "text-gray-600 dark:text-gray-400";
-      default:
-        return "text-gray-600 dark:text-gray-400";
-    }
-  };
+  const { fillColor, bgColor, textColor } = getStatusBadgeClasses(status);
 
   return (
-    <span className={`inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 text-xs font-medium ${getBgColor()} ${getTextColor()}`}>
-      <svg viewBox="0 0 6 6" aria-hidden="true" className={`size-1.5 ${getStatusColor()}`}>
+    <span className={`inline-flex items-center gap-x-1.5 rounded-md px-2 py-1 text-xs font-medium ${bgColor} ${textColor}`}>
+      <svg viewBox="0 0 6 6" aria-hidden="true" className={`size-1.5 ${fillColor}`}>
         <circle r={3} cx={3} cy={3} />
       </svg>
       {status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : "None"}

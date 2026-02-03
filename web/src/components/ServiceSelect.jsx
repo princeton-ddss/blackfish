@@ -13,12 +13,9 @@ import {
 } from "@heroicons/react/20/solid";
 import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
 import { useServices } from "@/lib/loaders";
-import { ServiceStatus, classNames } from "@/lib/util";
+import { ServiceStatus, classNames, getStatusDotClasses } from "@/lib/util";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import PropTypes from "prop-types";
-
-
-const terminalStates = ["stopped", "expired"];
 
 
 /**
@@ -104,19 +101,7 @@ function ServiceSelect({ profile, task }) {
                             : "Offline"
                         }
                         className={classNames(
-                          terminalStates.includes(selectedService.status)
-                            ? "bg-gray-200"
-                            : selectedService.status === ServiceStatus.HEALTHY
-                              ? "bg-green-500"
-                              : selectedService.status === ServiceStatus.TIMEOUT ||
-                                selectedService.status === ServiceStatus.FAILED
-                                ? "bg-red-500"
-                                : selectedService.status === ServiceStatus.SUBMITTED
-                                  ? "bg-yellow-500"
-                                  : selectedService.status === ServiceStatus.STARTING ||
-                                    selectedService.status === ServiceStatus.PENDING
-                                    ? "animate-pulse bg-green-500"
-                                    : "bg-transparent border border-gray-300",
+                          getStatusDotClasses(selectedService.status),
                           "inline-block h-2 w-2 flex-shrink-0 rounded-full"
                         )}
                       />
@@ -145,19 +130,7 @@ function ServiceSelect({ profile, task }) {
                                 : "Offline"
                             }
                             className={classNames(
-                              terminalStates.includes(selectedService.status)
-                                ? "bg-gray-200"
-                                : selectedService.status === ServiceStatus.HEALTHY
-                                  ? "bg-green-500"
-                                  : selectedService.status === ServiceStatus.TIMEOUT ||
-                                    selectedService.status === ServiceStatus.FAILED
-                                    ? "bg-red-500"
-                                    : selectedService.status === ServiceStatus.SUBMITTED
-                                      ? "bg-yellow-500"
-                                      : selectedService.status === ServiceStatus.STARTING ||
-                                        selectedService.status === ServiceStatus.PENDING
-                                        ? "animate-pulse bg-green-500"
-                                        : "bg-transparent border border-gray-300",
+                              getStatusDotClasses(selectedService.status),
                               "inline-block h-2 w-2 flex-shrink-0 rounded-full"
                             )}
                           />
@@ -221,19 +194,7 @@ function ServiceSelect({ profile, task }) {
                         <div className="flex items-center">
                           <span
                             className={classNames(
-                              terminalStates.includes(service.status)
-                                ? "bg-gray-200"
-                                : service.status === ServiceStatus.HEALTHY
-                                  ? "bg-green-500"
-                                  : service.status === ServiceStatus.TIMEOUT ||
-                                    service.status === ServiceStatus.FAILED
-                                    ? "bg-red-500"
-                                    : service.status === ServiceStatus.SUBMITTED
-                                      ? "bg-yellow-500"
-                                      : service.status === ServiceStatus.STARTING ||
-                                        service.status === ServiceStatus.PENDING
-                                        ? "animate-pulse bg-green-500"
-                                        : "bg-transparent border border-gray-300",
+                              getStatusDotClasses(service.status),
                               "inline-block h-2 w-2 flex-shrink-0 rounded-full"
                             )}
                             aria-hidden="true"

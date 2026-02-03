@@ -52,34 +52,32 @@ exports[`ServiceSelect > Error State 1`] = `
 <body>
   <div>
     <div
-      class="rounded-md bg-red-50 border-red-100 ring-1 ring-red-300 p-4 mt-2 mb-4"
+      class="rounded-md bg-red-50 dark:bg-red-500/15 dark:outline dark:outline-red-500/25 p-4 text-left mt-2 mb-4"
     >
       <div
-        class="flex"
+        class="flex items-start"
       >
         <div
-          class="flex-shrink-0"
+          class="shrink-0"
         >
           <svg
             aria-hidden="true"
-            class="size-5 text-red-500"
-            data-testid="exclamation-circle-icon"
+            class="size-5 text-red-400"
+            data-testid="x-circle-icon"
           />
         </div>
         <div
           class="ml-3"
         >
           <h3
-            class="text-sm font-medium text-red-800"
+            class="text-sm font-medium text-red-800 dark:text-red-200"
           >
             Failed to fetch services
           </h3>
           <div
-            class="mt-2 font-light text-sm text-red-800"
+            class="mt-2 text-sm text-red-700 dark:text-red-200/80"
           >
-            <p>
-              We ran into an issue while fetching the services available for this profile.
-            </p>
+            We ran into an issue while fetching the services available for this profile.
           </div>
         </div>
       </div>
@@ -188,17 +186,17 @@ exports[`ServiceSelect > No Services Available State 1`] = `
 <body>
   <div>
     <div
-      class="rounded-md bg-gray-100 dark:bg-gray-700 p-4 mt-2 mb-4"
+      class="rounded-md bg-yellow-50 dark:bg-yellow-500/10 dark:outline dark:outline-yellow-500/15 p-4 text-left mt-2 mb-4"
     >
       <div
-        class="flex"
+        class="flex items-start"
       >
         <div
-          class="flex-shrink-0"
+          class="shrink-0"
         >
           <svg
             aria-hidden="true"
-            class="h-5 w-5 text-yellow-500"
+            class="size-5 text-yellow-400 dark:text-yellow-300"
             data-testid="exclamation-triangle-icon"
           />
         </div>
@@ -206,16 +204,20 @@ exports[`ServiceSelect > No Services Available State 1`] = `
           class="ml-3"
         >
           <h3
-            class="text-sm font-medium text-gray-900 dark:text-gray-100"
+            class="text-sm font-medium text-yellow-800 dark:text-yellow-100"
           >
             No services available
           </h3>
           <div
-            class="mt-2 font-light text-sm text-gray-600 dark:text-gray-400"
+            class="mt-2 text-sm text-yellow-700 dark:text-yellow-100/80"
           >
-            <p>
-              Click the launch button above to create a new service.
-            </p>
+            <button
+              class="underline hover:no-underline"
+              type="button"
+            >
+              Launch a new service
+            </button>
+             to get started.
           </div>
         </div>
       </div>

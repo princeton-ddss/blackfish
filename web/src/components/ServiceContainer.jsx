@@ -62,6 +62,7 @@ function ServiceContainer({
   const { selectedService } = useContext(ServiceContext);
   const { mutate } = useServices(profile, task);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [launchOpen, setLaunchOpen] = useState(false);
 
   const handleStopService = async () => {
     if (selectedService == null) return;
@@ -160,6 +161,8 @@ function ServiceContainer({
             task={task}
             defaultContainerOptions={defaultContainerOptions}
             ContainerOptionsFormComponent={ContainerOptionsFormComponent}
+            open={launchOpen}
+            setOpen={setLaunchOpen}
           />
         </div>
       </div>
@@ -168,6 +171,7 @@ function ServiceContainer({
       <ServiceSelect
         profile={profile}
         task={task}
+        onLaunch={() => setLaunchOpen(true)}
       />
 
       {/* Service details */}

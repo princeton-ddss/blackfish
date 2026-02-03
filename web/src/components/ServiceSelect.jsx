@@ -25,7 +25,7 @@ import PropTypes from "prop-types";
  * @param {string} options.task
  * @return {JSX.Element}
  */
-function ServiceSelect({ profile, task }) {
+function ServiceSelect({ profile, task, onLaunch }) {
 
   const { services, error, isLoading } = useServices(profile, task);
   const { selectedService, setSelectedServiceId } = useContext(ServiceContext);
@@ -47,24 +47,11 @@ function ServiceSelect({ profile, task }) {
 
   if (profile && services.length === 0) {
     return (
-      <div className="rounded-md bg-gray-100 dark:bg-gray-700 p-4 mt-2 mb-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <ExclamationTriangleIcon
-              aria-hidden="true"
-              className="h-5 w-5 text-yellow-500"
-            />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              No services available
-            </h3>
-            <div className="mt-2 font-light text-sm text-gray-600 dark:text-gray-400">
-              <p>Click the launch button above to create a new service.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Alert variant="warning" title="No services available" className="mt-2 mb-4">
+        <button type="button" onClick={onLaunch} className="underline hover:no-underline">
+          Launch a new service
+        </button> to get started.
+      </Alert>
     );
   }
 
@@ -227,6 +214,7 @@ function ServiceSelect({ profile, task }) {
 ServiceSelect.propTypes = {
   profile: PropTypes.object,
   task: PropTypes.string,
+  onLaunch: PropTypes.func,
 };
 
 export default ServiceSelect;

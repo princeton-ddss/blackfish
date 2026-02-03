@@ -1,13 +1,22 @@
-import React, { useContext } from "react";
+import { useContext, useState } from "react";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
+import {
+  fileToBase64,
+  remoteImageToBase64,
+  buildMultimodalContent,
+} from "../lib/imageUtils";
+import { blackfishApiURL } from "@/config";
 import {
   ArrowPathIcon,
   ClipboardDocumentIcon,
   PaperAirplaneIcon,
-  PaperClipIcon,
-}
-from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/outline";
+import AttachmentMenu from "./AttachmentMenu";
+import ImageAttachmentList from "./ImageAttachmentList";
+import FileSelectModal from "@/components/FileSelectModal";
+import { IMAGE_EXTENSIONS } from "../lib/imageUtils";
 
 import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
@@ -21,6 +30,11 @@ import PropTypes from "prop-types";
  * @param {Function} options.handleSubmit
  * @param {object} options.selectedService
  * @param {boolean} options.isLoading
+ * @param {Array} options.attachedImages
+ * @param {Function} options.onRemoveImage
+ * @param {object} options.profile
+ * @param {Function} options.onBrowserUpload
+ * @param {Function} options.onRemoteSelect
  * @return {JSX.Element}
  */
 function TextGenerationPromptInput({
@@ -29,6 +43,11 @@ function TextGenerationPromptInput({
   handleSubmit,
   selectedService,
   toolbar,
+  attachedImages,
+  onRemoveImage,
+  profile,
+  onBrowserUpload,
+  onRemoteSelect,
 }) {
   /**
    * Set input value in React state and session storage.
@@ -54,6 +73,16 @@ function TextGenerationPromptInput({
         <div className="min-w-0 flex-1">
           <form action="#" onSubmit={handleSubmit} className="relative">
             <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md">
+              {/* Image attachments preview */}
+              {attachedImages.length > 0 && (
+                <div className="px-3 pt-2 border-b border-gray-200 dark:border-gray-600">
+                  <ImageAttachmentList
+                    images={attachedImages}
+                    onRemove={onRemoveImage}
+                  />
+                </div>
+              )}
+
               <label htmlFor="text-generation-text-input" className="sr-only">
                 Prompt anything
               </label>
@@ -88,13 +117,11 @@ function TextGenerationPromptInput({
             <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
               <div className="flex items-center space-x-5">
                 <div className="flex items-center">
-                  <button
-                    type="button"
-                    className="-m-2.5 flex size-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-                  >
-                    <PaperClipIcon aria-hidden="true" className="size-5" />
-                    <span className="sr-only">Attach a file</span>
-                  </button>
+                  <AttachmentMenu
+                    profile={profile}
+                    onBrowserUpload={onBrowserUpload}
+                    onRemoteSelect={onRemoteSelect}
+                  />
                 </div>
               </div>
               <div className="shrink-0">
@@ -108,16 +135,6 @@ function TextGenerationPromptInput({
                 >
                   <PaperAirplaneIcon className="size-5" />
                 </button>
-
-
-                {/* <button
-                    type="submit"
-                    disabled={!selectedService || selectedService.status !== ServiceStatus.HEALTHY}
-                    className="relative disabled:text-gray-400 -ml-px inline-flex items-center gap-x-1.5 rounded-md px-3 py-2 text-sm font-medium text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                  >
-                    <PaperAirplaneIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
-                    {selectedService ? `Submit to ${selectedService.name}` : "Submit"}
-                  </button> */}
               </div>
             </div>
           </form>
@@ -132,7 +149,13 @@ TextGenerationPromptInput.propTypes = {
   setPrompt: PropTypes.func,
   handleSubmit: PropTypes.func,
   selectedService: PropTypes.object,
-  isLoading: PropTypes.bool
+  isLoading: PropTypes.bool,
+  toolbar: PropTypes.node,
+  attachedImages: PropTypes.array,
+  onRemoveImage: PropTypes.func,
+  profile: PropTypes.object,
+  onBrowserUpload: PropTypes.func,
+  onRemoteSelect: PropTypes.func,
 };
 
 /**
@@ -204,26 +227,67 @@ TextGenerationResponseOutput.propTypes = {
  */
 function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
-  const [prompt, setPrompt] = React.useState(
+  const { profile } = useContext(ProfileContext);
+  const [prompt, setPrompt] = useState(
     sessionStorage.getItem("tgci") || ""
   );
-  const [response, setResponse] = React.useState(
+  const [response, setResponse] = useState(
     sessionStorage.getItem("tgco") || ""
   );
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [attachedImages, setAttachedImages] = useState([]);
+  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+
+  const handleBrowserUpload = (files) => {
+    const newImages = files.map((file) => ({
+      source: "browser",
+      file: file,
+    }));
+    setAttachedImages((prev) => [...prev, ...newImages]);
+  };
+
+  const handleRemoteSelect = (image) => {
+    setAttachedImages((prev) => [...prev, image]);
+  };
+
+  const handleRemoveImage = (index) => {
+    setAttachedImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const inputs = prompt === "" ? "Write me a haiku about orcas." : prompt;
+    const textInput = prompt === "" ? "Write me a haiku about orcas." : prompt;
 
     setIsLoading(true);
     setResponse("");
     sessionStorage.setItem("tgco", "");
 
+    // Convert images to base64 if any are attached
+    let requestPrompt = textInput;
+    if (attachedImages.length > 0) {
+      try {
+        const imageBase64Array = await Promise.all(
+          attachedImages.map(async (img) => {
+            if (img.source === "browser") {
+              return await fileToBase64(img.file);
+            } else {
+              return await remoteImageToBase64(img.path, img.profile, blackfishApiURL);
+            }
+          })
+        );
+        // Build multimodal content for the prompt
+        requestPrompt = buildMultimodalContent(textInput, imageBase64Array);
+      } catch (error) {
+        console.error("Failed to convert images:", error);
+        setIsLoading(false);
+        return;
+      }
+    }
+
     const stream = streamCompletionInference(
       selectedService,
-      inputs,
+      requestPrompt,
       {
         ...parameters,
         stream: true,
@@ -255,12 +319,27 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
         selectedService={selectedService}
         isLoading={isLoading}
         toolbar={toolbar}
+        attachedImages={attachedImages}
+        onRemoveImage={handleRemoveImage}
+        profile={profile}
+        onBrowserUpload={handleBrowserUpload}
+        onRemoteSelect={() => setFileBrowserOpen(true)}
       />
       <TextGenerationResponseOutput
         content={response || ""}
         handleSubmit={handleSubmit}
         selectedService={selectedService}
         isLoading={isLoading}
+      />
+
+      <FileSelectModal
+        open={fileBrowserOpen}
+        setOpen={setFileBrowserOpen}
+        profile={profile}
+        onSelect={(file) => handleRemoteSelect({ source: "remote", path: file.path, profile: file.profile })}
+        title="Select an image"
+        acceptedExtensions={IMAGE_EXTENSIONS}
+        extensionErrorMessage="Please select an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP)"
       />
     </div>
   );

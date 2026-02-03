@@ -1,15 +1,27 @@
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import {
   ArrowPathIcon,
   CheckIcon,
   ClipboardDocumentIcon,
   PaperAirplaneIcon,
-  PaperClipIcon,
   PencilIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ProfileContext } from "@/components/ProfileSelect";
 import { streamChatCompletionInference } from "../lib/requests";
+import {
+  fileToBase64,
+  remoteImageToBase64,
+  buildMultimodalContent,
+  extractTextFromContent,
+  extractImagesFromContent,
+} from "../lib/imageUtils";
+import { blackfishApiURL } from "@/config";
+import AttachmentMenu from "./AttachmentMenu";
+import ImageAttachmentList from "./ImageAttachmentList";
+import FileSelectModal from "@/components/FileSelectModal";
+import { IMAGE_EXTENSIONS } from "../lib/imageUtils";
 import PropTypes from "prop-types";
 
 const Role = {
@@ -24,14 +36,38 @@ const Role = {
  * @param {string} options.message
  * @param {Function} options.onChange
  * @param {Function} options.onSubmit
+ * @param {Array} options.attachedImages
+ * @param {Function} options.onRemoveImage
+ * @param {object} options.profile
+ * @param {Function} options.onBrowserUpload
+ * @param {Function} options.onRemoteSelect
  * @return {JSX.Element}
  */
-function UserMessageInput({ message, onChange, onSubmit }) {
+function UserMessageInput({
+  message,
+  onChange,
+  onSubmit,
+  attachedImages,
+  onRemoveImage,
+  profile,
+  onBrowserUpload,
+  onRemoteSelect,
+}) {
   return (
     <div className="flex items-start space-x-4 mt-auto pt-4">
       <div className="min-w-0 flex-1">
         <form action="#" onSubmit={onSubmit} className="relative">
           <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md">
+            {/* Image attachments preview */}
+            {attachedImages.length > 0 && (
+              <div className="px-3 pt-2 border-b border-gray-200 dark:border-gray-600">
+                <ImageAttachmentList
+                  images={attachedImages}
+                  onRemove={onRemoveImage}
+                />
+              </div>
+            )}
+
             <label htmlFor="comment" className="sr-only">
               Ask anything
             </label>
@@ -66,13 +102,11 @@ function UserMessageInput({ message, onChange, onSubmit }) {
           <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
             <div className="flex items-center space-x-5">
               <div className="flex items-center">
-                <button
-                  type="button"
-                  className="-m-2.5 flex size-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-                >
-                  <PaperClipIcon aria-hidden="true" className="size-5" />
-                  <span className="sr-only">Attach a file</span>
-                </button>
+                <AttachmentMenu
+                  profile={profile}
+                  onBrowserUpload={onBrowserUpload}
+                  onRemoteSelect={onRemoteSelect}
+                />
               </div>
             </div>
             <div className="shrink-0">
@@ -93,15 +127,42 @@ function UserMessageInput({ message, onChange, onSubmit }) {
 }
 
 UserMessageInput.propTypes = {
-  message: PropTypes.string,
+  message: PropTypes.object,
   onChange: PropTypes.func,
-  onSubmit: PropTypes.func
+  onSubmit: PropTypes.func,
+  attachedImages: PropTypes.array,
+  onRemoveImage: PropTypes.func,
+  profile: PropTypes.object,
+  onBrowserUpload: PropTypes.func,
+  onRemoteSelect: PropTypes.func,
+};
+
+/**
+ * Message Image component for displaying images in messages.
+ * @param {object} options
+ * @param {string} options.src - The base64 image source.
+ * @return {JSX.Element}
+ */
+function MessageImage({ src }) {
+  return (
+    <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-600 flex-shrink-0">
+      <img
+        src={src}
+        alt="Attached image"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
+}
+
+MessageImage.propTypes = {
+  src: PropTypes.string.isRequired,
 };
 
 /**
  * User Message component.
  * @param {object} options
- * @param {string} options.message
+ * @param {object} options.message
  * @param {Function} options.onDeleteMessage
  * @param {Function} options.onEditMessage
  * @return {JSX.Element}
@@ -109,7 +170,16 @@ UserMessageInput.propTypes = {
 function UserMessage({ message, onDeleteMessage, onEditMessage }) {
   const [hover, setHover] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [content, setContent] = useState(message.content);
+
+  // Extract text and images from content
+  const textContent = extractTextFromContent(message.content);
+  const images = extractImagesFromContent(message.content);
+  const [content, setContent] = useState(textContent);
+
+  // Update content when message changes
+  useEffect(() => {
+    setContent(extractTextFromContent(message.content));
+  }, [message.content]);
 
   if (isEditing) {
     return (
@@ -119,7 +189,12 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             action="#"
             onSubmit={(event) => {
               event.preventDefault();
-              onEditMessage(content);
+              // When editing, preserve images if any
+              if (images.length > 0) {
+                onEditMessage(buildMultimodalContent(content, images));
+              } else {
+                onEditMessage(content);
+              }
               setIsEditing(false);
             }}
             className="relative"
@@ -152,10 +227,11 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
               <div className="flex items-center space-x-5"></div>
               <div className="shrink-0">
                 <button
+                  type="button"
                   onClick={() => {
                     console.log("cancel button clicked");
                     setIsEditing(false);
-                    setContent(message.content);
+                    setContent(textContent);
                   }}
                   className="inline-flex items-center rounded-full bg-transparent mr-2 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-700 disabled:border-gray-200 disabled:shadow-none"
                 >
@@ -189,7 +265,15 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
       >
         <div className="flex flex-row-reverse">
           <div className="max-w-xl content-end bg-gray-100 dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 shadow-md">
-            {content}
+            {/* Display images if any */}
+            {images.length > 0 && (
+              <div className="flex gap-2 flex-wrap mb-2">
+                {images.map((src, idx) => (
+                  <MessageImage key={idx} src={src} />
+                ))}
+              </div>
+            )}
+            {textContent}
           </div>
         </div>
         <div className="flex flex-row-reverse h-8">
@@ -201,7 +285,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             }}
           >
             <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Delete message: "${message.content}"`}</span>
+            <span className="sr-only">{`Delete message: "${textContent}"`}</span>
           </button>
           <button
             hidden={!hover}
@@ -211,13 +295,13 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             }}
           >
             <PencilIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Edit message: "${message.content}"`}</span>
+            <span className="sr-only">{`Edit message: "${textContent}"`}</span>
           </button>
           <button
             hidden={!hover}
             onClick={() => {
               navigator.clipboard
-                .writeText(content)
+                .writeText(textContent)
                 .then(console.log("copied user message"))
                 .catch((err) => {
                   console.error("Failed to copy content: ", err);
@@ -225,7 +309,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             }}
           >
             <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Copy message to clipboard: ${message.content}`}</span>
+            <span className="sr-only">{`Copy message to clipboard: ${textContent}`}</span>
           </button>
         </div>
       </div>
@@ -234,7 +318,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
 }
 
 UserMessage.propTypes = {
-  message: PropTypes.string,
+  message: PropTypes.object,
   onDeleteMessage: PropTypes.func,
   onEditMessage: PropTypes.func,
 };
@@ -242,7 +326,7 @@ UserMessage.propTypes = {
 /**
  * Assistant Message component.
  * @param {object} options
- * @param {string} options.message
+ * @param {object} options.message
  * @param {Function} options.handleResubmit
  * @param {JSX.Element}
  */
@@ -278,14 +362,14 @@ function AssisantMessage({ message, handleResubmit }) {
 }
 
 AssisantMessage.propTypes = {
-  message: PropTypes.string,
+  message: PropTypes.object,
   handleResubmit: PropTypes.func,
 };
 
 /**
  * Message component.
  * @param {object} options
- * @param {string} options.message
+ * @param {object} options.message
  * @param {Function} options.onEditMessage
  * @param {Function} options.onDeleteMessage
  * @param {Function} options.handleResubmit
@@ -316,7 +400,7 @@ function Message({
 }
 
 Message.propTypes = {
-  message: PropTypes.string,
+  message: PropTypes.object,
   onEditMessage: PropTypes.func,
   onDeleteMessage: PropTypes.func,
   handleResubmit: PropTypes.func,
@@ -325,7 +409,7 @@ Message.propTypes = {
 /**
  * Message List component.
  * @param {object} options
- * @param {string} options.messages
+ * @param {Array} options.messages
  * @param {Function} options.setMessages
  * @param {Function} options.handleResubmit
  * @param {JSX.Element} options.elementRef
@@ -370,10 +454,10 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef }) {
 }
 
 MessageList.propTypes = {
-  messages: PropTypes.string,
+  messages: PropTypes.array,
   setMessages: PropTypes.func,
   handleResubmit: PropTypes.func,
-  elementRef: PropTypes.node,
+  elementRef: PropTypes.object,
 };
 
 /**
@@ -386,6 +470,7 @@ MessageList.propTypes = {
  */
 export default function TextGenerationChatContainer({ parameters, systemMessage, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
+  const { profile } = useContext(ProfileContext);
   const storedMessages = sessionStorage.getItem("tgcc-ml");
   const [messages, setMessages] = useState(
     storedMessages ? JSON.parse(storedMessages) : []
@@ -394,8 +479,10 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     role: Role.USER,
     content: sessionStorage.getItem("tgcc-um") || "",
   });
+  const [attachedImages, setAttachedImages] = useState([]);
+  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
 
-  const elementRef = React.useRef(null);
+  const elementRef = useRef(null);
 
   const scrollToElement = () => {
     elementRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -406,13 +493,54 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     scrollToElement();
   }, [messages]);
 
+  const handleBrowserUpload = (files) => {
+    const newImages = files.map((file) => ({
+      source: "browser",
+      file: file,
+    }));
+    setAttachedImages((prev) => [...prev, ...newImages]);
+  };
+
+  const handleRemoteSelect = (image) => {
+    setAttachedImages((prev) => [...prev, image]);
+  };
+
+  const handleRemoveImage = (index) => {
+    setAttachedImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("user message submitted");
 
+    // Build the message content (multimodal if images attached)
+    let messageContent = userMessage.content;
+    if (attachedImages.length > 0) {
+      try {
+        const imageBase64Array = await Promise.all(
+          attachedImages.map(async (img) => {
+            if (img.source === "browser") {
+              return await fileToBase64(img.file);
+            } else {
+              return await remoteImageToBase64(img.path, img.profile, blackfishApiURL);
+            }
+          })
+        );
+        messageContent = buildMultimodalContent(userMessage.content, imageBase64Array);
+      } catch (error) {
+        console.error("Failed to convert images:", error);
+        return;
+      }
+    }
+
+    const newUserMessage = {
+      role: Role.USER,
+      content: messageContent,
+    };
+
     const stream = streamChatCompletionInference(
       selectedService,
-      [systemMessage, ...messages, userMessage],
+      [systemMessage, ...messages, newUserMessage],
       {
         ...parameters,
         stream: true,
@@ -420,7 +548,10 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       true
     );
 
-    setMessages((messages) => [...messages, userMessage]);
+    setMessages((messages) => [...messages, newUserMessage]);
+
+    // Clear attached images after sending
+    setAttachedImages([]);
 
     const data = await stream.next();
     console.debug("data:", data);
@@ -530,6 +661,21 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         }}
         onChange={(event) => handleUserMessageChange(event.target.value)}
         onSubmit={handleSubmit}
+        attachedImages={attachedImages}
+        onRemoveImage={handleRemoveImage}
+        profile={profile}
+        onBrowserUpload={handleBrowserUpload}
+        onRemoteSelect={() => setFileBrowserOpen(true)}
+      />
+
+      <FileSelectModal
+        open={fileBrowserOpen}
+        setOpen={setFileBrowserOpen}
+        profile={profile}
+        onSelect={(file) => handleRemoteSelect({ source: "remote", path: file.path, profile: file.profile })}
+        title="Select an image"
+        acceptedExtensions={IMAGE_EXTENSIONS}
+        extensionErrorMessage="Please select an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP)"
       />
     </div>
   );

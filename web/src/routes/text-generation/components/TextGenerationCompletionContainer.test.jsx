@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import TextGenerationCompletionContainer from "./TextGenerationCompletionContainer";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
 import { ServiceStatus } from "@/lib/util";
 
@@ -25,6 +26,36 @@ vi.mock("@heroicons/react/24/outline", () => ({
   PaperClipIcon: ({ className, ...props }) => {
     return <div data-testid="paper-clip-icon" className={className} {...props} />;
   },
+  ComputerDesktopIcon: ({ className, ...props }) => {
+    return <div data-testid="computer-desktop-icon" className={className} {...props} />;
+  },
+  ServerIcon: ({ className, ...props }) => {
+    return <div data-testid="server-icon" className={className} {...props} />;
+  },
+  XMarkIcon: ({ className, ...props }) => {
+    return <div data-testid="x-mark-icon" className={className} {...props} />;
+  },
+  PhotoIcon: ({ className, ...props }) => {
+    return <div data-testid="photo-icon" className={className} {...props} />;
+  },
+}));
+
+// Mock the attachment components to simplify testing
+vi.mock("./AttachmentMenu", () => ({
+  default: ({ onBrowserUpload, onRemoteSelect }) => (
+    <div data-testid="attachment-menu">
+      <button data-testid="upload-button" onClick={() => onBrowserUpload([])}>Upload</button>
+      <button data-testid="remote-button" onClick={onRemoteSelect}>Remote</button>
+    </div>
+  ),
+}));
+
+vi.mock("./ImageAttachmentList", () => ({
+  default: () => <div data-testid="image-attachment-list" />,
+}));
+
+vi.mock("@/components/FileSelectModal", () => ({
+  default: () => <div data-testid="file-select-modal" />,
 }));
 
 const mockClipboard = {
@@ -42,10 +73,17 @@ const mockSelectedService = {
   id: "test-service-1",
 };
 
-const MockServiceProvider = ({ children, selectedService = mockSelectedService }) => (
-  <ServiceContext.Provider value={{ selectedService }}>
-    {children}
-  </ServiceContext.Provider>
+const mockProfile = {
+  name: "local",
+  schema: "local",
+};
+
+const MockProviders = ({ children, selectedService = mockSelectedService, profile = mockProfile }) => (
+  <ProfileContext.Provider value={{ profile }}>
+    <ServiceContext.Provider value={{ selectedService }}>
+      {children}
+    </ServiceContext.Provider>
+  </ProfileContext.Provider>
 );
 
 describe("TextGenerationCompletionContainer", () => {
@@ -59,9 +97,9 @@ describe("TextGenerationCompletionContainer", () => {
   describe("Component rendering", () => {
     it("renders the main container with prompt input and response output", () => {
       const {baseElement, getByText, getByPlaceholderText} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       expect(getByText("Prompt")).toBeInTheDocument();
       expect(getByPlaceholderText("Orcas are awesome because..."))
@@ -83,9 +121,9 @@ describe("TextGenerationCompletionContainer", () => {
       };
       streamCompletionInference.mockReturnValue(mockStream);
       const {getByPlaceholderText} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Orcas are awesome because...");
       await user.type(textarea, "Test prompt");
@@ -96,9 +134,9 @@ describe("TextGenerationCompletionContainer", () => {
     it("allows new line on Shift+Enter", async () => {
       const user = userEvent.setup();
       const {getByPlaceholderText} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Orcas are awesome because...");
       await user.type(textarea, "First line");
@@ -139,9 +177,9 @@ describe("TextGenerationCompletionContainer", () => {
       };
       streamCompletionInference.mockReturnValue(mockStream);
       const {getByTestId, getByText} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       const submitButton = getByTestId("paper-airplane-icon").parentElement;
       await user.click(submitButton);
@@ -162,9 +200,9 @@ describe("TextGenerationCompletionContainer", () => {
       };
       streamCompletionInference.mockReturnValue(mockStream);
       const {getByPlaceholderText, getByText, getByTestId} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Orcas are awesome because...");
       await user.type(textarea, "Test prompt");

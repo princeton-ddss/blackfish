@@ -4,17 +4,17 @@ exports[`ServiceLaunchErrorAlert > renders error text 1`] = `
 <body>
   <div>
     <div
-      class="rounded-md bg-red-50 dark:bg-red-900/20 p-4 mb-4"
+      class="rounded-md bg-red-50 dark:bg-red-500/15 dark:outline dark:outline-red-500/25 p-4 text-left mb-4"
     >
       <div
-        class="flex"
+        class="flex items-start"
       >
         <div
-          class="flex-shrink-0"
+          class="shrink-0"
         >
           <svg
             aria-hidden="true"
-            class="h-5 w-5 text-red-400 dark:text-red-500"
+            class="size-5 text-red-400"
             data-slot="icon"
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -28,7 +28,7 @@ exports[`ServiceLaunchErrorAlert > renders error text 1`] = `
           </svg>
         </div>
         <div
-          class="ml-3 flex-1"
+          class="ml-3"
         >
           <h3
             class="text-sm font-medium text-red-800 dark:text-red-200"
@@ -36,7 +36,7 @@ exports[`ServiceLaunchErrorAlert > renders error text 1`] = `
             Failed to launch service.
           </h3>
           <div
-            class="mt-2 text-sm text-red-700 dark:text-red-300"
+            class="mt-2 text-sm text-red-700 dark:text-red-200/80"
           >
             <ul
               class="list-disc space-y-1 pl-5"
@@ -50,32 +50,28 @@ exports[`ServiceLaunchErrorAlert > renders error text 1`] = `
         <div
           class="ml-auto pl-3"
         >
-          <div
-            class="-mx-1.5 -my-1.5"
+          <button
+            class="inline-flex rounded-md focus:outline-none text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 focus:ring-red-600"
+            type="button"
           >
-            <button
-              class="inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 focus:ring-red-600"
-              type="button"
+            <span
+              class="sr-only"
             >
-              <span
-                class="sr-only"
-              >
-                Dismiss
-              </span>
-              <svg
-                aria-hidden="true"
-                class="h-5 w-5"
-                data-slot="icon"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
-                />
-              </svg>
-            </button>
-          </div>
+              Dismiss
+            </span>
+            <svg
+              aria-hidden="true"
+              class="size-5"
+              data-slot="icon"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+              />
+            </svg>
+          </button>
         </div>
       </div>
     </div>

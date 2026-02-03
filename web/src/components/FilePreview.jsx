@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { blackfishApiURL } from "@/config";
 import { DocumentIcon } from "@heroicons/react/24/outline";
+import Alert from "@/components/Alert";
 import { fileSize } from "@/lib/util";
 import { MAX_PREVIEW_SIZE, truncateTextPreview } from "@/lib/fileApi";
 import PropTypes from "prop-types";
@@ -104,9 +105,7 @@ function FilePreview({ file, profile = null }) {
                                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
                             </div>
                         ) : textError ? (
-                            <div className="rounded-md bg-red-50 p-4">
-                                <p className="text-sm text-red-700">{textError}</p>
-                            </div>
+                            <Alert variant="error">{textError}</Alert>
                         ) : textContent ? (
                             <>
                                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto">

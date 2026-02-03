@@ -11,7 +11,7 @@ import {
   ChevronUpDownIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/20/solid";
-import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
+import Alert from "@/components/Alert";
 import { useServices } from "@/lib/loaders";
 import { ServiceStatus, classNames, getStatusDotClasses } from "@/lib/util";
 import { ServiceContext } from "@/providers/ServiceProvider";
@@ -32,24 +32,9 @@ function ServiceSelect({ profile, task }) {
 
   if (error) {
     return (
-      <div className="rounded-md bg-red-50 border-red-100 ring-1 ring-red-300 p-4 mt-2 mb-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <ExclamationCircleIcon
-              aria-hidden="true"
-              className="size-5 text-red-500"
-            />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">
-              Failed to fetch services
-            </h3>
-            <div className="mt-2 font-light text-sm text-red-800">
-              <p>We ran into an issue while fetching the services available for this profile.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Alert variant="error" title="Failed to fetch services" className="mt-2 mb-4">
+        We ran into an issue while fetching the services available for this profile.
+      </Alert>
     );
   }
 

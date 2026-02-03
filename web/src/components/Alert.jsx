@@ -19,39 +19,43 @@ import PropTypes from "prop-types";
 const variants = {
   error: {
     Icon: XCircleIcon,
-    container: "bg-red-50 dark:bg-red-900/20",
-    border: "border-red-400 dark:border-red-600",
-    iconColor: "text-red-400 dark:text-red-500",
+    container: "bg-red-50 dark:bg-red-500/15",
+    outline: "dark:outline dark:outline-red-500/25",
+    border: "border-red-400 dark:border-red-500/25",
+    iconColor: "text-red-400",
     title: "text-red-800 dark:text-red-200",
-    text: "text-red-700 dark:text-red-300",
-    dismiss: "text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 focus:ring-red-600",
+    text: "text-red-700 dark:text-red-200/80",
+    dismiss: "text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 focus:ring-red-600",
   },
   warning: {
     Icon: ExclamationTriangleIcon,
-    container: "bg-yellow-50 dark:bg-yellow-900/20",
-    border: "border-yellow-400 dark:border-yellow-600",
-    iconColor: "text-yellow-400 dark:text-yellow-500",
-    title: "text-yellow-800 dark:text-yellow-200",
-    text: "text-yellow-700 dark:text-yellow-300",
-    dismiss: "text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 focus:ring-yellow-600",
+    container: "bg-yellow-50 dark:bg-yellow-500/10",
+    outline: "dark:outline dark:outline-yellow-500/15",
+    border: "border-yellow-400 dark:border-yellow-500/15",
+    iconColor: "text-yellow-400 dark:text-yellow-300",
+    title: "text-yellow-800 dark:text-yellow-100",
+    text: "text-yellow-700 dark:text-yellow-100/80",
+    dismiss: "text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-500/20 focus:ring-yellow-600",
   },
   success: {
     Icon: CheckCircleIcon,
-    container: "bg-green-50 dark:bg-green-900/20",
-    border: "border-green-400 dark:border-green-600",
-    iconColor: "text-green-400 dark:text-green-500",
+    container: "bg-green-50 dark:bg-green-500/15",
+    outline: "dark:outline dark:outline-green-500/25",
+    border: "border-green-400 dark:border-green-500/25",
+    iconColor: "text-green-400",
     title: "text-green-800 dark:text-green-200",
-    text: "text-green-700 dark:text-green-300",
-    dismiss: "text-green-500 hover:bg-green-100 dark:hover:bg-green-900/40 focus:ring-green-600",
+    text: "text-green-700 dark:text-green-200/80",
+    dismiss: "text-green-500 hover:bg-green-100 dark:hover:bg-green-500/20 focus:ring-green-600",
   },
   info: {
     Icon: InformationCircleIcon,
-    container: "bg-blue-50 dark:bg-blue-900/20",
-    border: "border-blue-400 dark:border-blue-600",
-    iconColor: "text-blue-400 dark:text-blue-500",
+    container: "bg-blue-50 dark:bg-blue-500/15",
+    outline: "dark:outline dark:outline-blue-500/25",
+    border: "border-blue-400 dark:border-blue-500/25",
+    iconColor: "text-blue-400",
     title: "text-blue-800 dark:text-blue-200",
-    text: "text-blue-700 dark:text-blue-300",
-    dismiss: "text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/40 focus:ring-blue-600",
+    text: "text-blue-700 dark:text-blue-200/80",
+    dismiss: "text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-500/20 focus:ring-blue-600",
   },
 };
 
@@ -78,16 +82,16 @@ function Alert({
   const IconComponent = config.Icon;
 
   const containerClasses = accent
-    ? `border-l-4 ${config.border} ${config.container} p-4`
-    : `rounded-md ${config.container} p-4`;
+    ? `border-l-4 ${config.border} ${config.container} p-4 text-left`
+    : `rounded-md ${config.container} ${config.outline} p-4 text-left`;
 
   return (
     <div className={`${containerClasses} ${className}`}>
-      <div className="flex">
-        <div className="flex-shrink-0">
-          <IconComponent className={`h-5 w-5 ${config.iconColor}`} aria-hidden="true" />
+      <div className="flex items-start">
+        <div className="shrink-0">
+          <IconComponent className={`size-5 ${config.iconColor}`} aria-hidden="true" />
         </div>
-        <div className="ml-3 flex-1">
+        <div className="ml-3">
           {title && (
             <h3 className={`text-sm font-medium ${config.title}`}>{title}</h3>
           )}
@@ -97,16 +101,14 @@ function Alert({
         </div>
         {onDismiss && (
           <div className="ml-auto pl-3">
-            <div className="-mx-1.5 -my-1.5">
-              <button
-                type="button"
-                onClick={onDismiss}
-                className={`inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 ${config.dismiss}`}
-              >
-                <span className="sr-only">Dismiss</span>
-                <XMarkIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onDismiss}
+              className={`inline-flex rounded-md focus:outline-none ${config.dismiss}`}
+            >
+              <span className="sr-only">Dismiss</span>
+              <XMarkIcon className="size-5" aria-hidden="true" />
+            </button>
           </div>
         )}
       </div>

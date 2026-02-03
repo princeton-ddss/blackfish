@@ -9,10 +9,9 @@ import {
 } from "@headlessui/react";
 import {
     ArrowUpTrayIcon,
-    XMarkIcon,
-    ExclamationCircleIcon,
     ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import Alert from "@/components/Alert";
 import { uploadFile, validateFileForUpload, getFileType, FILE_TYPE_CONFIG } from "@/lib/fileApi";
 import { fileSize } from "@/lib/util";
 import { joinPath } from "@/lib/pathUtils";
@@ -149,25 +148,25 @@ function FileUploadDialog({
                             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                         >
-                            <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                            <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                                 <div>
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
                                         <ArrowUpTrayIcon
-                                            className="h-6 w-6 text-blue-600"
+                                            className="h-6 w-6 text-blue-600 dark:text-blue-400"
                                             aria-hidden="true"
                                         />
                                     </div>
                                     <div className="mt-3 text-center sm:mt-5">
                                         <DialogTitle
                                             as="h3"
-                                            className="text-base font-semibold leading-6 text-gray-900"
+                                            className="text-base font-semibold leading-6 text-gray-900 dark:text-white"
                                         >
                                             Upload File
                                         </DialogTitle>
                                         <div className="mt-4">
                                             <div className="space-y-4">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 text-left mb-2">
+                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 text-left mb-2">
                                                         Select File
                                                     </label>
                                                     <div
@@ -176,18 +175,18 @@ function FileUploadDialog({
                                                         onDragLeave={handleDragLeave}
                                                         onDrop={handleDrop}
                                                         className={`relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging
-                                                                ? "border-blue-500 bg-blue-50"
-                                                                : "border-gray-300 bg-gray-50 hover:border-gray-400"
+                                                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                                                                : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
                                                             } ${uploading ? "opacity-50 cursor-not-allowed" : ""}`}
                                                     >
-                                                        <ArrowUpTrayIcon className="mx-auto h-12 w-12 text-gray-400" />
-                                                        <p className="mt-2 text-sm text-gray-600">
-                                                            <span className="font-semibold text-blue-600">
+                                                        <ArrowUpTrayIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                                            <span className="font-semibold text-blue-600 dark:text-blue-400">
                                                                 Click to upload
                                                             </span>{" "}
                                                             or drag and drop
                                                         </p>
-                                                        <p className="mt-1 text-xs text-gray-500">
+                                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                                             PNG, JPG, TXT, MD, JSON, WAV, MP3 (max 100MB)
                                                         </p>
                                                         <input
@@ -202,29 +201,29 @@ function FileUploadDialog({
                                                 </div>
 
                                                 {selectedFile && (
-                                                    <div className="bg-gray-50 rounded-lg p-3 text-left">
+                                                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-left">
                                                         <div className="text-sm space-y-1">
                                                             <div className="flex justify-between">
-                                                                <span className="font-medium text-gray-700">
+                                                                <span className="font-medium text-gray-700 dark:text-gray-300">
                                                                     Name:
                                                                 </span>
-                                                                <span className="text-gray-900">
+                                                                <span className="text-gray-900 dark:text-gray-100">
                                                                     {selectedFile.name}
                                                                 </span>
                                                             </div>
                                                             <div className="flex justify-between">
-                                                                <span className="font-medium text-gray-700">
+                                                                <span className="font-medium text-gray-700 dark:text-gray-300">
                                                                     Size:
                                                                 </span>
-                                                                <span className="text-gray-900">
+                                                                <span className="text-gray-900 dark:text-gray-100">
                                                                     {fileSize(selectedFile.size)}
                                                                 </span>
                                                             </div>
                                                             <div className="flex justify-between">
-                                                                <span className="font-medium text-gray-700">
+                                                                <span className="font-medium text-gray-700 dark:text-gray-300">
                                                                     Type:
                                                                 </span>
-                                                                <span className="text-gray-900">
+                                                                <span className="text-gray-900 dark:text-gray-100">
                                                                     {fileType
                                                                         ? fileType.charAt(0).toUpperCase() +
                                                                         fileType.slice(1)
@@ -237,38 +236,23 @@ function FileUploadDialog({
 
                                                 {selectedFile && (
                                                     <div>
-                                                        <label className="block text-sm font-medium text-gray-700 text-left mb-2">
+                                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 text-left mb-2">
                                                             Destination Path
                                                         </label>
-                                                        <div className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-50 text-sm">
+                                                        <div className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 bg-gray-50 dark:bg-gray-700 text-sm">
                                                             {destinationPath}
                                                         </div>
                                                     </div>
                                                 )}
 
                                                 {error && (
-                                                    <div className="rounded-md bg-red-50 p-4">
-                                                        <div className="flex">
-                                                            <ExclamationCircleIcon
-                                                                className="h-5 w-5 text-red-400"
-                                                                aria-hidden="true"
-                                                            />
-                                                            <div className="ml-3">
-                                                                <h3 className="text-sm font-medium text-red-800">
-                                                                    Error
-                                                                </h3>
-                                                                <p className="mt-2 text-sm text-red-700">
-                                                                    {error}
-                                                                </p>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => setError(null)}
-                                                                className="ml-auto"
-                                                            >
-                                                                <XMarkIcon className="h-5 w-5 text-red-400" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                    <Alert
+                                                        variant="error"
+                                                        title="Error"
+                                                        onDismiss={() => setError(null)}
+                                                    >
+                                                        {error}
+                                                    </Alert>
                                                 )}
 
                                                 {uploading && (
@@ -292,7 +276,7 @@ function FileUploadDialog({
                                     </button>
                                     <button
                                         type="button"
-                                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed sm:col-start-1 sm:mt-0"
+                                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed sm:col-start-1 sm:mt-0"
                                         onClick={handleClose}
                                         disabled={uploading}
                                     >

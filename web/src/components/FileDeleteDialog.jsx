@@ -9,9 +9,9 @@ import {
 } from "@headlessui/react";
 import {
     ExclamationTriangleIcon,
-    XMarkIcon,
     ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import Alert from "@/components/Alert";
 import { deleteFile } from "@/lib/fileApi";
 import { fileSize } from "@/lib/util";
 import PropTypes from "prop-types";
@@ -84,7 +84,7 @@ function FileDeleteDialog({
                             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                         >
-                            <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                            <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                                 <div>
                                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                                         <ExclamationTriangleIcon
@@ -95,39 +95,39 @@ function FileDeleteDialog({
                                     <div className="mt-3 text-center sm:mt-5">
                                         <DialogTitle
                                             as="h3"
-                                            className="text-base font-semibold leading-6 text-gray-900"
+                                            className="text-base font-semibold leading-6 text-gray-900 dark:text-white"
                                         >
                                             Delete File
                                         </DialogTitle>
                                         <div className="mt-4">
-                                            <p className="text-sm text-gray-500">
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
                                                 Are you sure you want to delete this file? This action cannot be undone.
                                             </p>
 
                                             {fileToDelete && (
-                                                <div className="mt-4 bg-gray-50 rounded-lg p-3 text-left">
+                                                <div className="mt-4 bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-left">
                                                     <div className="text-sm space-y-1">
                                                         <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-700">
+                                                            <span className="font-medium text-gray-700 dark:text-gray-300">
                                                                 Name:
                                                             </span>
-                                                            <span className="text-gray-900">
+                                                            <span className="text-gray-900 dark:text-gray-100">
                                                                 {fileToDelete.name}
                                                             </span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-700">
+                                                            <span className="font-medium text-gray-700 dark:text-gray-300">
                                                                 Size:
                                                             </span>
-                                                            <span className="text-gray-900">
+                                                            <span className="text-gray-900 dark:text-gray-100">
                                                                 {fileSize(fileToDelete.size)}
                                                             </span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-700">
+                                                            <span className="font-medium text-gray-700 dark:text-gray-300">
                                                                 Path:
                                                             </span>
-                                                            <span className="text-gray-900 text-right break-all">
+                                                            <span className="text-gray-900 dark:text-gray-100 text-right break-all">
                                                                 {fileToDelete.path}
                                                             </span>
                                                         </div>
@@ -136,28 +136,14 @@ function FileDeleteDialog({
                                             )}
 
                                             {error && (
-                                                <div className="mt-4 rounded-md bg-red-50 p-4">
-                                                    <div className="flex">
-                                                        <ExclamationTriangleIcon
-                                                            className="h-5 w-5 text-red-400"
-                                                            aria-hidden="true"
-                                                        />
-                                                        <div className="ml-3">
-                                                            <h3 className="text-sm font-medium text-red-800">
-                                                                Error
-                                                            </h3>
-                                                            <p className="mt-2 text-sm text-red-700">
-                                                                {error}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => setError(null)}
-                                                            className="ml-auto"
-                                                        >
-                                                            <XMarkIcon className="h-5 w-5 text-red-400" />
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                                <Alert
+                                                    variant="error"
+                                                    title="Error"
+                                                    onDismiss={() => setError(null)}
+                                                    className="mt-4"
+                                                >
+                                                    {error}
+                                                </Alert>
                                             )}
 
                                             {deleting && (
@@ -180,7 +166,7 @@ function FileDeleteDialog({
                                     </button>
                                     <button
                                         type="button"
-                                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed sm:col-start-1 sm:mt-0"
+                                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed sm:col-start-1 sm:mt-0"
                                         onClick={handleClose}
                                         disabled={deleting}
                                     >

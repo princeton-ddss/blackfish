@@ -4,7 +4,7 @@ exports[`TaskContainer 1`] = `
 <body>
   <div>
     <div
-      class="bg-white"
+      class="bg-white pt-2 dark:bg-gray-800"
     >
       <h1>
         Hello, world!

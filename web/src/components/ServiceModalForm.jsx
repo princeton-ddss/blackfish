@@ -1,11 +1,12 @@
 import React from "react";
 import Info from "./Info";
+import Alert from "@/components/Alert";
 import ModelSelect from "@/components/ModelSelect"
 import RevisionSelect from "@/components/RevisionSelect"
 import PartitionSelect from "@/components/PartitionSelect";
 import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
-import { ExclamationTriangleIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
 import { fetchModelTier } from "@/lib/requests";
 import PropTypes from "prop-types";
 
@@ -231,24 +232,9 @@ function ServiceModalForm({
     const taskName = task.replaceAll('-', ' ');
     const taskURL = `https://huggingface.co/models?pipeline_tag=${huggingFaceTaskMap.get(task)}&sort=trending`;
     return (
-      <div className="rounded-md bg-yellow-50 border-yellow-100 ring-1 ring-yellow-300 p-4 mt-2 mb-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <ExclamationTriangleIcon
-              aria-hidden="true"
-              className="h-5 w-5 text-yellow-400"
-            />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-yellow-800">
-              No models are available
-            </h3>
-            <div className="mt-2 font-light text-sm text-yellow-800">
-              <p>Switch profiles or download a {taskName} model from <a className="underline" href={taskURL}>Hugging Face</a>.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Alert variant="warning" title="No models are available" className="mt-2 mb-4">
+        Switch profiles or download a {taskName} model from <a className="underline" href={taskURL}>Hugging Face</a>.
+      </Alert>
     );
   }
 

@@ -1,8 +1,9 @@
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { Popover, PopoverButton, PopoverPanel, Transition, Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { ServerStackIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useClusterStatus } from "@/lib/loaders";
+import Alert from "@/components/Alert";
 import PropTypes from "prop-types";
 
 /**
@@ -231,9 +232,9 @@ function ClusterStatusDropdown() {
             {isLoading && <LoadingSkeleton />}
 
             {error && (
-              <div className="text-sm text-red-600 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <Alert variant="error">
                 Failed to load cluster status
-              </div>
+              </Alert>
             )}
 
             {!isLoading && !error && !hasData && (

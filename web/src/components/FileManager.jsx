@@ -132,7 +132,7 @@ function FileManager({
                         </div>
                     )}
                 </div>
-                {enableUpload && (
+                {enableUpload && isRemote ? (
                     <button
                         onClick={() => setUploadDialogOpen(true)}
                         disabled={status.disabled || operationInProgress}
@@ -141,6 +141,10 @@ function FileManager({
                     >
                         <ArrowUpTrayIcon className="h-5 w-5" />
                     </button>
+                ) : (
+                    <div className="p-1.5">
+                        <div className="h-5 w-5" />
+                    </div>
                 )}
             </div>
 

@@ -4,7 +4,7 @@ exports[`Warning 1`] = `
 <body>
   <div>
     <div
-      class="border-l-4 border-yellow-400 bg-yellow-50 p-3"
+      class="border-l-4 border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 p-4 "
     >
       <div
         class="flex"
@@ -14,7 +14,7 @@ exports[`Warning 1`] = `
         >
           <svg
             aria-hidden="true"
-            class="h-5 w-5 text-yellow-400"
+            class="h-5 w-5 text-yellow-400 dark:text-yellow-500"
             data-slot="icon"
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -28,21 +28,17 @@ exports[`Warning 1`] = `
           </svg>
         </div>
         <div
-          class="ml-3"
+          class="ml-3 flex-1"
         >
-          <div>
-            <p
-              class="text-sm text-yellow-700"
-            >
-              Hello, world!
-            </p>
-          </div>
-          <div>
-            <p
-              class="font-light text-yellow-700 hover:text-yellow-600"
-            >
-              Phasellus eget risus pretium nec primis varius
-            </p>
+          <h3
+            class="text-sm font-medium text-yellow-800 dark:text-yellow-200"
+          >
+            Hello, world!
+          </h3>
+          <div
+            class="mt-2 text-sm text-yellow-700 dark:text-yellow-300"
+          >
+            Phasellus eget risus pretium nec primis varius
           </div>
         </div>
       </div>

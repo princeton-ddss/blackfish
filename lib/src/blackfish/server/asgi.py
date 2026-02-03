@@ -637,20 +637,16 @@ async def upload_image(
 
 
 @get("/api/image", guards=ENDPOINT_GUARDS)
-async def get_image(path: str, profile: Optional[str] = None) -> File | Response[bytes]:
+async def get_image(path: str, profile: Optional[str] = None) -> File | Stream:
     """Retrieve an image file from the specified path."""
 
     if profile is not None:
         validate_file_extension(Path(path), IMAGE_EXTENSIONS)
         remote_profile = _get_validated_slurm_profile(profile)
-        logger.debug(f"Downloading image from remote profile {profile}: {path}")
-        content = sftp.read_file(remote_profile, path)
+        logger.debug(f"Streaming image from remote profile {profile}: {path}")
 
-        try:
-            img = Image.open(BytesIO(content))
-            img.verify()
-        except Exception as e:
-            raise ValidationException(f"Invalid image file: {e}")
+        # Get file size and streaming generator
+        file_size, chunk_generator = sftp.stream_file(remote_profile, path)
 
         # Determine content type from extension
         ext = os.path.splitext(path)[1].lower()
@@ -664,11 +660,12 @@ async def get_image(path: str, profile: Optional[str] = None) -> File | Response
             ".webp": "image/webp",
         }.get(ext, "application/octet-stream")
 
-        return Response(
-            content=content,
+        return Stream(
+            chunk_generator,
             media_type=content_type,
             headers={
-                "Content-Disposition": f'attachment; filename="{os.path.basename(path)}"'
+                "Content-Length": str(file_size),
+                "Content-Disposition": f'attachment; filename="{os.path.basename(path)}"',
             },
         )
 
@@ -1959,6 +1956,7 @@ cors_config = CORSConfig(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Length", "Content-Disposition"],
 )
 
 openapi_config = OpenAPIConfig(

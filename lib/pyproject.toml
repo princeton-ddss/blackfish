@@ -41,6 +41,7 @@ dependencies = [
   "types-psutil>=6.1.0.20241221",
   "types-requests>=2.32.0.20241016",
   "uvicorn>=0.34",
+  "websockets>=14",
   "yaspin>=3.1",
 ]
 optional-dependencies.uv = [
@@ -61,6 +62,7 @@ dev = [
   "mkdocs-material>=9.6.2",
   "mkdocs-swagger-ui-tag>=0.6.11",
   "mkdocstrings[python]>=0.28",
+  "mypy>=1.19.1",
   "pre-commit>=4.2",
   "pytest>=8.3.4",
   "pytest-cov>=6.2.1",

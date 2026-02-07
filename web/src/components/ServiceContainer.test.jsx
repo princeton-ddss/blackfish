@@ -22,7 +22,7 @@ vi.mock("@/components/ServiceSummary", () => {
 test("ServiceContainer", () => {
   const {baseElement} = render(
     <ServiceContainer
-      profile="default"
+      profile={{ name: "default", schema: "local" }}
       task="text-generation"
     >
       <div>

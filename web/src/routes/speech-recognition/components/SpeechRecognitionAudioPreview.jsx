@@ -10,7 +10,7 @@ function SpeechRecognitionAudioPreview({ audioPath }) {
         className="w-full mb-3 rounded-md"
         controls
       ></audio>
-      <div className="w-full text-right font-extralight sm:text-xs mb-3">
+      <div className="w-full text-right font-extralight sm:text-xs mb-3 text-gray-600 dark:text-gray-400">
         {audioPath}
       </div>
     </div>
@@ -22,7 +22,7 @@ function SpeechRecognitionAudioPreview({ audioPath }) {
         className="w-full mb-3 rounded-md"
         controls
       ></audio>
-      <div className="w-full text-right font-extralight sm:text-xs mb-3">
+      <div className="w-full text-right font-extralight sm:text-xs mb-3 text-gray-600 dark:text-gray-400">
         No file selected
       </div>
     </div>

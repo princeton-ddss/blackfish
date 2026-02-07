@@ -13,19 +13,6 @@ vi.mock("@/providers/ServiceProvider");
 vi.mock("@/lib/loaders");
 vi.mock("@/lib/requests");
 vi.mock("@/lib/util");
-vi.mock("@/components/ServiceSummary", () => {
-  return {
-    default: function MockServiceSummary({ service }) {
-      return (
-        <div data-testid="service-summary">
-          Service: {service?.name || "Unknown"}
-          Status: {service?.status || "None"}
-          Model: {service?.model || "None"}
-        </div>
-      );
-    }
-  };
-});
 vi.mock("@/components/ServiceModalForm", () => {
   return {
     default: function MockServiceModalForm({
@@ -163,30 +150,13 @@ describe("ServiceModal", () => {
       expect(getByTestId("modal-children")).toBeInTheDocument();
     });
 
-    it("renders ServiceSummary component", () => {
-      const {getByTestId} = renderServiceModal();
-      expect(getByTestId("service-summary")).toBeInTheDocument();
-    });
-
     it("renders ServiceModalForm component", () => {
       const {getByTestId} = renderServiceModal();
       expect(getByTestId("service-modal-form")).toBeInTheDocument();
     });
   });
 
-  describe("Initial State", () => {
-    it("sets initial model when models are available", () => {
-      const {getByTestId} = renderServiceModal();
-      expect(getByTestId("service-summary")).toHaveTextContent("Model: model-1");
-    });
-
-    it("handles empty models array", () => {
-      useModels.mockReturnValue({ models: [] });
-      const {getByTestId} = renderServiceModal();
-      expect(getByTestId("service-summary")).toHaveTextContent("Model: None");
-    });
-  });
-
+  
   describe("Reset on Open", () => {
     it("resets state when modal opens", () => {
       const { rerender } = renderServiceModal({ open: false });
@@ -204,26 +174,19 @@ describe("ServiceModal", () => {
   });
 
   describe("Loading State", () => {
-    it("shows loading spinner when isLaunching is true", async () => {
-      const {getByLabelText} = renderServiceModal({ isLaunching: true });
-      await waitFor(async () => {
-        expect(getByLabelText("Services are loading")).toBeInTheDocument();
-      });
+    it("shows loading state on button when isLaunching is true", () => {
+      const {getByText} = renderServiceModal({ isLaunching: true });
+      expect(getByText("Launching")).toBeInTheDocument();
     });
 
-    it("hides loading spinner when isLaunching is false", () => {
-      const {container} = renderServiceModal({ isLaunching: false });
-      expect(container.querySelector('.loading')).not.toBeInTheDocument();
+    it("shows Launch text when isLaunching is false", () => {
+      const {getByText} = renderServiceModal({ isLaunching: false });
+      expect(getByText("Launch")).toBeInTheDocument();
     });
 
     it("disables Launch button when isLaunching is true", () => {
       const {getByText} = renderServiceModal({ isLaunching: true });
-      expect(getByText("Launch")).toBeDisabled();
-    });
-
-    it("hides ServiceSummary when isLaunching is true", () => {
-      const {queryByTestId} = renderServiceModal({ isLaunching: true });
-      expect(queryByTestId("service-summary")).not.toBeInTheDocument();
+      expect(getByText("Launching").closest("button")).toBeDisabled();
     });
   });
 
@@ -253,23 +216,8 @@ describe("ServiceModal", () => {
   });
 
   describe("Launch Success State", () => {
-    it("shows Close button when launchSuccess is true", () => {
-      const {getByText, queryByText} = renderServiceModal({ launchSuccess: true });
-      expect(getByText("Close")).toBeInTheDocument();
-      expect(queryByText("Launch")).not.toBeInTheDocument();
-      expect(queryByText("Cancel")).not.toBeInTheDocument();
-    });
-
-    it("shows selected service in summary when launch is successful", () => {
-      const {getByTestId} = renderServiceModal({ launchSuccess: true });
-      expect(getByTestId("service-summary")).toHaveTextContent("Service: test-service");
-      expect(getByTestId("service-summary")).toHaveTextContent("Status: running");
-    });
-
-    it("closes modal when Close button is clicked", async () => {
-      const user = userEvent.setup();
-      const {getByText} = renderServiceModal({ launchSuccess: true });
-      await user.click(getByText("Close"));
+    it("auto-closes modal when launchSuccess is true", () => {
+      renderServiceModal({ launchSuccess: true });
       expect(mockSetOpen).toHaveBeenCalledWith(false);
     });
 
@@ -376,21 +324,4 @@ describe("ServiceModal", () => {
     });
   });
 
-  describe("Profile Types", () => {
-    it("handles local profile type in service summary", () => {
-      const {getByTestId} = renderServiceModal({
-        profile: { type: "local" },
-        launchSuccess: false
-      });
-      expect(getByTestId("service-summary")).toHaveTextContent("Service: blackfish-12345");
-    });
-
-    it("handles remote profile type in service summary", () => {
-      const {getByTestId} = renderServiceModal({
-        profile: { type: "remote", host: "remote-host" },
-        launchSuccess: false
-      });
-      expect(getByTestId("service-summary")).toHaveTextContent("Service: blackfish-12345");
-    });
   });
-});

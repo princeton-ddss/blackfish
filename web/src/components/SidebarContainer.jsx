@@ -1,10 +1,44 @@
 import { useContext } from "react";
 import { ProfileContext } from "./ProfileSelect";
-
-import ProfileSelect from "@/components/ProfileSelect";
 import ServiceContainer from "@/components/ServiceContainer";
-import ServiceLauncher from "@/components/ServiceLauncher";
 import PropTypes from "prop-types";
+
+/**
+ * System Message Input component for sidebar.
+ * @param {object} options
+ * @param {object} options.message
+ * @param {Function} options.onChange
+ * @return {JSX.Element}
+ */
+function SystemMessageInput({ message, onChange }) {
+  return (
+    <div className="mt-6">
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+          System Message
+        </label>
+        <button
+          type="button"
+          className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"
+        >
+          Save
+        </button>
+      </div>
+      <textarea
+        placeholder="You are a helpful assistant."
+        rows={10}
+        value={message?.content || ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg bg-white dark:bg-gray-700 resize-none px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+      />
+    </div>
+  );
+}
+
+SystemMessageInput.propTypes = {
+  message: PropTypes.object,
+  onChange: PropTypes.func,
+};
 
 /**
  * Sidebar Container component.
@@ -14,39 +48,41 @@ import PropTypes from "prop-types";
  * @param {string} options.defaultContainerOptions.input_dir
  * @param {boolean} options.defaultContainerOptions.disable_custom_kernels
  * @param {JSX.Element} options.ContainerOptionsFormComponent
- * @param {JSX.Element} options.children
+ * @param {JSX.Element} options.ParametersFormComponent
+ * @param {object} options.parametersFormProps
+ * @param {object} options.systemMessage
+ * @param {Function} options.onSystemMessageChange
  * @return {JSX.Element}
  */
 function SidebarContainer({
   task,
   defaultContainerOptions,
   ContainerOptionsFormComponent,
+  ParametersFormComponent,
+  parametersFormProps,
+  systemMessage,
+  onSystemMessageChange,
   bgColor = 'white',
-  children
 }) {
-  const { profile, setProfile } = useContext(ProfileContext);
+  const { profile } = useContext(ProfileContext);
 
   return (
-    <div className={`bg-${bgColor} flex flex-col lg:w-96 lg:p-8 lg:pr-12`}>
-      <ProfileSelect
-        selectedProfile={profile}
-        setSelectedProfile={setProfile}
-      />
-
+    <div className={`bg-${bgColor} dark:bg-gray-800 flex flex-col lg:w-96 lg:pt-2 lg:pb-8 lg:pl-8 lg:pr-8`}>
       <ServiceContainer
         profile={profile}
         task={task}
-      >
-        <ServiceLauncher
-          profile={profile}
-          task={task}
-          defaultContainerOptions={defaultContainerOptions}
-          ContainerOptionsFormComponent={ContainerOptionsFormComponent}
+        defaultContainerOptions={defaultContainerOptions}
+        ContainerOptionsFormComponent={ContainerOptionsFormComponent}
+        ParametersFormComponent={ParametersFormComponent}
+        parametersFormProps={parametersFormProps}
+      />
+
+      {systemMessage && onSystemMessageChange && (
+        <SystemMessageInput
+          message={systemMessage}
+          onChange={onSystemMessageChange}
         />
-      </ServiceContainer>
-
-      {children}
-
+      )}
     </div>
   );
 }
@@ -58,7 +94,10 @@ SidebarContainer.propTypes = {
     disable_custom_kernels: PropTypes.bool,
   }),
   ContainerOptionsFormComponent: PropTypes.elementType,
-  children: PropTypes.node,
+  ParametersFormComponent: PropTypes.elementType,
+  parametersFormProps: PropTypes.object,
+  systemMessage: PropTypes.object,
+  onSystemMessageChange: PropTypes.func,
   bgColor: PropTypes.string,
 };
 

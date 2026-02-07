@@ -28,6 +28,7 @@ function TextGenerationPromptInput({
   setPrompt,
   handleSubmit,
   selectedService,
+  toolbar,
 }) {
   /**
    * Set input value in React state and session storage.
@@ -40,16 +41,19 @@ function TextGenerationPromptInput({
 
   return (
     <div>
-      <label className="block text-sm font-medium leading-6 text-gray-900">
-        Prompt
-      </label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+          Prompt
+        </label>
+        {toolbar}
+      </div>
 
       {/* TODO: disable while isLoading... */}
 
-      <div className="flex items-start space-x-4 mt-2">
+      <div className="flex items-start space-x-4">
         <div className="min-w-0 flex-1">
           <form action="#" onSubmit={handleSubmit} className="relative">
-            <div className="rounded-lg bg-white outline outline-1 -outline-offset-1 outline-gray-300 shadow-md">
+            <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md">
               <label htmlFor="text-generation-text-input" className="sr-only">
                 Prompt anything
               </label>
@@ -69,7 +73,7 @@ function TextGenerationPromptInput({
                     handleSubmit(event);
                   }
                 }}
-                className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6 overflow-visible"
+                className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6 overflow-visible"
               />
 
               {/* Spacer element to match the height of the toolbar */}
@@ -100,7 +104,7 @@ function TextGenerationPromptInput({
                   onClick={() => {
                     console.log("Submit button clicked:", prompt);
                   }}
-                  className="inline-flex items-center rounded-full bg-white p-2 text-sm font-semibold text-gray-900 border border-gray-300 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white disabled:border-gray-200 disabled:shadow-none"
+                  className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
                 >
                   <PaperAirplaneIcon className="size-5" />
                 </button>
@@ -155,7 +159,7 @@ function TextGenerationResponseOutput({
       <div>
         {/* TODO: display loading in case first token is slow... */}
         <div className="mt-8">
-          <div className="block w-full max-w-4xl overflow-y-auto bg-white text-sm/6 text-gray-900 rounded-lg ml-1">
+          <div className="block w-full max-w-4xl overflow-y-auto bg-white dark:bg-transparent text-sm/6 text-gray-900 dark:text-gray-100 rounded-lg ml-1">
             {content}
           </div>
         </div>
@@ -170,13 +174,13 @@ function TextGenerationResponseOutput({
                 });
             }}
           >
-            <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5" />
+            <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
           </button>
           <button
             disabled={!selectedService || selectedService.status !== ServiceStatus.HEALTHY}
             onClick={handleSubmit}
           >
-            <ArrowPathIcon className="w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5" />
+            <ArrowPathIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
           </button>
         </div>
       </div>
@@ -195,9 +199,10 @@ TextGenerationResponseOutput.propTypes = {
  * Text generation completion container component.
  * @param {object} options
  * @param {object} options.parameters
+ * @param {JSX.Element} options.toolbar
  * @return {JSX.Element}
  */
-function TextGenerationCompletionContainer({ parameters }) {
+function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
   const [prompt, setPrompt] = React.useState(
     sessionStorage.getItem("tgci") || ""
@@ -242,13 +247,14 @@ function TextGenerationCompletionContainer({ parameters }) {
   };
 
   return (
-    <div className="flex flex-col grow pt-2 bg-white">
+    <div className="flex flex-col grow pt-2 bg-white dark:bg-gray-800">
       <TextGenerationPromptInput
         prompt={prompt || ""}
         setPrompt={setPrompt}
         handleSubmit={handleSubmit}
         selectedService={selectedService}
         isLoading={isLoading}
+        toolbar={toolbar}
       />
       <TextGenerationResponseOutput
         content={response || ""}
@@ -262,6 +268,7 @@ function TextGenerationCompletionContainer({ parameters }) {
 
 TextGenerationCompletionContainer.propTypes = {
   parameters: PropTypes.object,
+  toolbar: PropTypes.node,
 };
 
 export default TextGenerationCompletionContainer;

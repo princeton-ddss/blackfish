@@ -10,7 +10,7 @@ exports[`ServiceModalCheckbox > renders in checked and disabled state 1`] = `
         class="flex h-6 items-center"
       >
         <input
-          class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700"
           disabled=""
           id="gpu-service-checkbox"
           name="gpu-service-checkbox"
@@ -21,13 +21,13 @@ exports[`ServiceModalCheckbox > renders in checked and disabled state 1`] = `
         class="text-sm leading-6"
       >
         <label
-          class="font-medium text-gray-900"
+          class="font-medium text-gray-900 dark:text-gray-100"
           for="gpu-service-checkbox"
         >
           Hello, world!
         </label>
         <p
-          class="text-gray-500"
+          class="text-gray-500 dark:text-gray-400"
         >
           Ultrices porttitor pellentesque ut quis amet volutpat
         </p>
@@ -47,7 +47,7 @@ exports[`ServiceModalCheckbox > renders in disabled state 1`] = `
         class="flex h-6 items-center"
       >
         <input
-          class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700"
           disabled=""
           id="gpu-service-checkbox"
           name="gpu-service-checkbox"
@@ -58,13 +58,13 @@ exports[`ServiceModalCheckbox > renders in disabled state 1`] = `
         class="text-sm leading-6"
       >
         <label
-          class="font-medium text-gray-900"
+          class="font-medium text-gray-900 dark:text-gray-100"
           for="gpu-service-checkbox"
         >
           Hello, world!
         </label>
         <p
-          class="text-gray-500"
+          class="text-gray-500 dark:text-gray-400"
         >
           Ultrices porttitor pellentesque ut quis amet volutpat
         </p>
@@ -84,7 +84,7 @@ exports[`ServiceModalCheckbox > renders properly when checked 1`] = `
         class="flex h-6 items-center"
       >
         <input
-          class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700"
           id="gpu-service-checkbox"
           name="gpu-service-checkbox"
           type="checkbox"
@@ -94,13 +94,13 @@ exports[`ServiceModalCheckbox > renders properly when checked 1`] = `
         class="text-sm leading-6"
       >
         <label
-          class="font-medium text-gray-900"
+          class="font-medium text-gray-900 dark:text-gray-100"
           for="gpu-service-checkbox"
         >
           Hello, world!
         </label>
         <p
-          class="text-gray-500"
+          class="text-gray-500 dark:text-gray-400"
         >
           Ultrices porttitor pellentesque ut quis amet volutpat
         </p>
@@ -120,7 +120,7 @@ exports[`ServiceModalCheckbox > renders properly with standard options 1`] = `
         class="flex h-6 items-center"
       >
         <input
-          class="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700"
           id="gpu-service-checkbox"
           name="gpu-service-checkbox"
           type="checkbox"
@@ -130,13 +130,13 @@ exports[`ServiceModalCheckbox > renders properly with standard options 1`] = `
         class="text-sm leading-6"
       >
         <label
-          class="font-medium text-gray-900"
+          class="font-medium text-gray-900 dark:text-gray-100"
           for="gpu-service-checkbox"
         >
           Hello, world!
         </label>
         <p
-          class="text-gray-500"
+          class="text-gray-500 dark:text-gray-400"
         >
           Ultrices porttitor pellentesque ut quis amet volutpat
         </p>

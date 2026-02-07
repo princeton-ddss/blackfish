@@ -1,4 +1,5 @@
 import React from "react";
+import { RocketLaunchIcon } from "@heroicons/react/24/outline";
 import ServiceModal from "@/components/ServiceModal";
 import { useModels } from "@/lib/loaders";
 import PropTypes from "prop-types";
@@ -16,10 +17,14 @@ function ServiceLauncher({
   profile,
   task,
   defaultContainerOptions,
-  ContainerOptionsFormComponent
+  ContainerOptionsFormComponent,
+  open: controlledOpen,
+  setOpen: controlledSetOpen,
 }) {
   const { models, isLoading } = useModels(profile, task)
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledSetOpen ?? setInternalOpen;
   const [launchSuccess, setLaunchSuccess] = React.useState(false);
   const [isLaunching, setIsLaunching] = React.useState(false);
   const [launchError, setLaunchError] = React.useState(null);
@@ -30,18 +35,17 @@ function ServiceLauncher({
 
   return (
     <>
-      <div className="pb-4 mb-4 border-b">
-        <button
-          type="button"
-          className="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
-          onClick={() => {
-            setOpen(true);
-          }}
-          disabled={!profile || (!models && isLoading)}
-        >
-          Open Launcher
-        </button>
-      </div>
+      <button
+        type="button"
+        className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:bg-transparent focus:outline-none"
+        onClick={() => {
+          setOpen(true);
+        }}
+        disabled={!profile || (!models && isLoading)}
+        aria-label="Launch service"
+      >
+        <RocketLaunchIcon className="h-5 w-5" />
+      </button>
 
       <ServiceModal
         task={task}
@@ -75,7 +79,9 @@ ServiceLauncher.propTypes = {
   profile: PropTypes.object,
   task: PropTypes.string,
   defaultContainerOptions: PropTypes.object,
-  ContainerOptionsFormComponent: PropTypes.node,
+  ContainerOptionsFormComponent: PropTypes.elementType,
+  open: PropTypes.bool,
+  setOpen: PropTypes.func,
 };
 
 export default ServiceLauncher;

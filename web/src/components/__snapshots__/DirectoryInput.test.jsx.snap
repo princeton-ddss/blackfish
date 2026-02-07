@@ -5,13 +5,13 @@ exports[`Disabled DirectoryInput 1`] = `
   <div>
     <div>
       <div
-        class="mt-2 flex rounded-md"
+        class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
       >
         <div
-          class="relative flex flex-grow items-stretch focus-within:z-10"
+          class="relative flex flex-grow items-stretch"
         >
           <input
-            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            class="block w-full rounded-l-md border-0 py-1.5 pl-3  bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6"
             disabled=""
             id="directory"
             name="directory"
@@ -20,7 +20,7 @@ exports[`Disabled DirectoryInput 1`] = `
           />
         </div>
         <button
-          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          class="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           disabled=""
           type="button"
         >
@@ -53,13 +53,13 @@ exports[`Disabled DirectoryInput 2`] = `
   <div>
     <div>
       <div
-        class="mt-2 flex rounded-md"
+        class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
       >
         <div
-          class="relative flex flex-grow items-stretch focus-within:z-10"
+          class="relative flex flex-grow items-stretch"
         >
           <input
-            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            class="block w-full rounded-l-md border-0 py-1.5 pl-3  bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6"
             disabled=""
             id="directory"
             name="directory"
@@ -68,7 +68,7 @@ exports[`Disabled DirectoryInput 2`] = `
           />
         </div>
         <button
-          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          class="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           disabled=""
           type="button"
         >
@@ -101,13 +101,13 @@ exports[`Disabled DirectoryInput 3`] = `
   <div>
     <div>
       <div
-        class="mt-2 flex rounded-md"
+        class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
       >
         <div
-          class="relative flex flex-grow items-stretch focus-within:z-10"
+          class="relative flex flex-grow items-stretch"
         >
           <input
-            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            class="block w-full rounded-l-md border-0 py-1.5 pl-3  bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6"
             disabled=""
             id="directory"
             name="directory"
@@ -116,7 +116,7 @@ exports[`Disabled DirectoryInput 3`] = `
           />
         </div>
         <button
-          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          class="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           disabled=""
           type="button"
         >
@@ -149,13 +149,13 @@ exports[`Disabled DirectoryInput 4`] = `
   <div>
     <div>
       <div
-        class="mt-2 flex rounded-md"
+        class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
       >
         <div
-          class="relative flex flex-grow items-stretch focus-within:z-10"
+          class="relative flex flex-grow items-stretch"
         >
           <input
-            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 bg-gray-100 text-gray-400 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            class="block w-full rounded-l-md border-0 py-1.5 pl-3  bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6"
             disabled=""
             id="directory"
             name="directory"
@@ -164,7 +164,7 @@ exports[`Disabled DirectoryInput 4`] = `
           />
         </div>
         <button
-          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          class="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           disabled=""
           type="button"
         >
@@ -197,13 +197,13 @@ exports[`Enabled DirectoryInput 1`] = `
   <div>
     <div>
       <div
-        class="mt-2 flex rounded-md"
+        class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
       >
         <div
-          class="relative flex flex-grow items-stretch focus-within:z-10"
+          class="relative flex flex-grow items-stretch"
         >
           <input
-            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            class="block w-full rounded-l-md border-0 py-1.5 pl-3  bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6"
             id="directory"
             name="directory"
             placeholder="/"
@@ -211,7 +211,7 @@ exports[`Enabled DirectoryInput 1`] = `
           />
         </div>
         <button
-          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          class="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           type="button"
         >
           <svg
@@ -243,13 +243,13 @@ exports[`Enabled DirectoryInput 2`] = `
   <div>
     <div>
       <div
-        class="mt-2 flex rounded-md"
+        class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
       >
         <div
-          class="relative flex flex-grow items-stretch focus-within:z-10"
+          class="relative flex flex-grow items-stretch"
         >
           <input
-            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            class="block w-full rounded-l-md border-0 py-1.5 pl-3  bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6"
             id="directory"
             name="directory"
             placeholder="/"
@@ -257,7 +257,7 @@ exports[`Enabled DirectoryInput 2`] = `
           />
         </div>
         <button
-          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          class="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           type="button"
         >
           <svg
@@ -289,13 +289,13 @@ exports[`Enabled DirectoryInput 3`] = `
   <div>
     <div>
       <div
-        class="mt-2 flex rounded-md"
+        class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
       >
         <div
-          class="relative flex flex-grow items-stretch focus-within:z-10"
+          class="relative flex flex-grow items-stretch"
         >
           <input
-            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            class="block w-full rounded-l-md border-0 py-1.5 pl-3  bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6"
             id="directory"
             name="directory"
             placeholder="/"
@@ -303,7 +303,7 @@ exports[`Enabled DirectoryInput 3`] = `
           />
         </div>
         <button
-          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          class="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           type="button"
         >
           <svg
@@ -335,13 +335,13 @@ exports[`Enabled DirectoryInput 4`] = `
   <div>
     <div>
       <div
-        class="mt-2 flex rounded-md"
+        class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
       >
         <div
-          class="relative flex flex-grow items-stretch focus-within:z-10"
+          class="relative flex flex-grow items-stretch"
         >
           <input
-            class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+            class="block w-full rounded-l-md border-0 py-1.5 pl-3  bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6"
             id="directory"
             name="directory"
             placeholder="/"
@@ -349,7 +349,7 @@ exports[`Enabled DirectoryInput 4`] = `
           />
         </div>
         <button
-          class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          class="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           type="button"
         >
           <svg

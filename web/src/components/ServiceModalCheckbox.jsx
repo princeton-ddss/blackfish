@@ -22,14 +22,14 @@ function ServiceModalCheckBox({ id, checked, onChange, disabled, label, help }) 
           disabled={disabled}
           checked={checked}
           onChange={onChange}
-          className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+          className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700"
         />
       </div>
       <div className="text-sm leading-6">
-        <label htmlFor={id} className="font-medium text-gray-900">
+        <label htmlFor={id} className="font-medium text-gray-900 dark:text-gray-100">
           {label}
         </label>
-        <p className="text-gray-500">
+        <p className="text-gray-500 dark:text-gray-400">
           {help}
         </p>
       </div>

@@ -91,8 +91,13 @@ from blackfish.server.models.profile import (
     BlackfishProfile as Profile,
 )
 from blackfish.server.models.model import Model
-from blackfish.server.models.metadata import get_cached_metadata, refresh_metadata
+from blackfish.server.models.metadata import (
+    ModelMetadata,
+    get_cached_metadata,
+    refresh_metadata,
+)
 from blackfish.server.models.tiers import (
+    TierSource,
     load_resource_specs,
     get_default_specs,
     get_default_partition,
@@ -569,10 +574,15 @@ async def get_files(
     resolved_path = os.path.expanduser(path)
     if os.path.isdir(resolved_path):
         try:
-            return {"path": resolved_path, "files": listdir(resolved_path, hidden=hidden)}
+            return {
+                "path": resolved_path,
+                "files": listdir(resolved_path, hidden=hidden),
+            }
         except PermissionError:
             logger.debug("Permission error raised")
-            raise NotAuthorizedException(f"User not authorized to access {resolved_path}")
+            raise NotAuthorizedException(
+                f"User not authorized to access {resolved_path}"
+            )
     else:
         logger.debug("Not found error")
         raise NotFoundException(detail=f"Path {resolved_path} does not exist.")
@@ -1926,7 +1936,7 @@ async def read_profile(name: str) -> Profile | None:
 
 
 @get("/api/profiles/{name: str}/resources", guards=ENDPOINT_GUARDS)
-async def get_profile_resources(name: str) -> dict:
+async def get_profile_resources(name: str) -> dict[str, Any]:
     """Get resource tiers and time constraints for a profile.
 
     Returns partitions with their available tiers, and time constraints.
@@ -1956,7 +1966,7 @@ async def get_model_tier(
     profile: Optional[str] = None,
     partition: Optional[str] = None,
     refresh: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     """Get recommended tier for a model based on its size.
 
     Args:
@@ -1990,6 +2000,7 @@ async def get_model_tier(
         raise NotFoundException(detail=f"Profile {profile_name} not found.")
 
     # Get model metadata
+    metadata: Optional[ModelMetadata] = None
     if refresh:
         token = getattr(profile_obj, "token", None)
         metadata = refresh_metadata(model.repo, profile_obj.cache_dir, token)
@@ -2001,7 +2012,7 @@ async def get_model_tier(
             "partition": partition or "default",
             "tier": None,
             "model_size_gb": None,
-            "source": "no_metadata",
+            "source": TierSource.NO_METADATA,
         }
 
     # Load resource specs
@@ -2020,7 +2031,7 @@ async def get_model_tier(
             "partition": partition or "default",
             "tier": None,
             "model_size_gb": metadata.model_size_gb,
-            "source": "no_partition",
+            "source": TierSource.NO_PARTITION,
         }
 
     # Select tier
@@ -2036,7 +2047,7 @@ async def get_model_tier(
             "partition": partition_obj.name,
             "tier": None,
             "model_size_gb": metadata.model_size_gb,
-            "source": "no_match",
+            "source": TierSource.NO_MATCH,
         }
 
     tier, source = result
@@ -2182,6 +2193,8 @@ app = Litestar(
         delete_models,
         read_profiles,
         read_profile,
+        get_profile_resources,
+        get_model_tier,
         assets_server,
         img_server,
     ],

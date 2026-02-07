@@ -6,10 +6,10 @@ import json
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from huggingface_hub import HfApi, get_safetensors_metadata
-from huggingface_hub.utils import EntryNotFoundError, RepositoryNotFoundError
+from huggingface_hub.errors import EntryNotFoundError, RepositoryNotFoundError
 
 
 # Mapping of torch dtype strings to bytes per parameter
@@ -33,12 +33,12 @@ class ModelMetadata:
     dtype: Optional[str] = None
     fetched_at: Optional[str] = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> "ModelMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> ModelMetadata:
         """Create from dictionary."""
         return cls(
             model_size_gb=data.get("model_size_gb", 0.0),
@@ -49,7 +49,9 @@ class ModelMetadata:
         )
 
 
-def _get_safetensors_size(repo_id: str, token: Optional[str] = None) -> Optional[tuple[float, Optional[int]]]:
+def _get_safetensors_size(
+    repo_id: str, token: Optional[str] = None
+) -> Optional[tuple[float, Optional[int]]]:
     """Try to get model size from safetensors metadata.
 
     Returns:
@@ -115,7 +117,9 @@ def _get_bin_files_size(repo_id: str, token: Optional[str] = None) -> Optional[f
         return None
 
 
-def _calculate_from_config(repo_id: str, token: Optional[str] = None) -> Optional[tuple[float, int, str]]:
+def _calculate_from_config(
+    repo_id: str, token: Optional[str] = None
+) -> Optional[tuple[float, int, str]]:
     """Estimate model size from config.json parameters.
 
     Returns:
@@ -148,10 +152,12 @@ def _calculate_from_config(repo_id: str, token: Optional[str] = None) -> Optiona
 
             if hidden_size and num_layers and vocab_size:
                 # Rough estimation: embeddings + transformer layers
-                embedding_params = vocab_size * hidden_size * 2  # input + output embeddings
+                embedding_params = (
+                    vocab_size * hidden_size * 2
+                )  # input + output embeddings
                 layer_params = num_layers * (
-                    4 * hidden_size * hidden_size +  # attention
-                    2 * hidden_size * intermediate_size  # FFN
+                    4 * hidden_size * hidden_size  # attention
+                    + 2 * hidden_size * intermediate_size  # FFN
                 )
                 num_params = embedding_params + layer_params
 

@@ -3,10 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-import yaml
+import yaml  # type: ignore[import-untyped]
+
+
+class TierSource(str, Enum):
+    """Source of tier selection."""
+
+    MODEL_OVERRIDE = "model_override"
+    SIZE_MATCH = "size_match"
+    NO_METADATA = "no_metadata"
+    NO_PARTITION = "no_partition"
+    NO_MATCH = "no_match"
 
 
 @dataclass
@@ -20,9 +31,9 @@ class Tier:
     gpu_type: Optional[str]
     cpu_cores: int
     memory_gb: int
-    slurm: dict = field(default_factory=dict)
+    slurm: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "name": self.name,
@@ -43,7 +54,7 @@ class Partition:
     default: bool
     tiers: list[Tier]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "name": self.name,
@@ -59,7 +70,7 @@ class TimeConstraints:
     default: int  # minutes
     max: int  # minutes
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, int]:
         """Convert to dictionary for JSON serialization."""
         return {"default": self.default, "max": self.max}
 
@@ -72,7 +83,7 @@ class ResourceSpecs:
     partitions: list[Partition]
     models: dict[str, str] = field(default_factory=dict)  # repo_id -> "partition.tier"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "time": self.time.to_dict(),
@@ -80,7 +91,7 @@ class ResourceSpecs:
         }
 
 
-def _parse_tier(data: dict) -> Tier:
+def _parse_tier(data: dict[str, Any]) -> Tier:
     """Parse a tier from YAML data."""
     return Tier(
         name=data.get("name", "Unknown"),
@@ -94,7 +105,7 @@ def _parse_tier(data: dict) -> Tier:
     )
 
 
-def _parse_partition(name: str, data: dict) -> Partition:
+def _parse_partition(name: str, data: dict[str, Any]) -> Partition:
     """Parse a partition from YAML data."""
     tiers = [_parse_tier(t) for t in data.get("tiers", [])]
     return Partition(
@@ -192,7 +203,7 @@ def select_tier_for_model(
     partition: Partition,
     repo_id: Optional[str] = None,
     specs: Optional[ResourceSpecs] = None,
-) -> Optional[tuple[Tier, str]]:
+) -> Optional[tuple[Tier, TierSource]]:
     """Select appropriate tier for a model based on size.
 
     Args:
@@ -202,8 +213,7 @@ def select_tier_for_model(
         specs: Optional specs to check for model overrides
 
     Returns:
-        Tuple of (Tier, source) where source is "model_override" or "size_match",
-        or None if no suitable tier found
+        Tuple of (Tier, TierSource) or None if no suitable tier found
     """
     # Check for model-specific override
     if repo_id and specs and repo_id in specs.models:
@@ -215,29 +225,29 @@ def select_tier_for_model(
             if part_name == partition.name:
                 for tier in partition.tiers:
                     if tier.name == tier_name:
-                        return (tier, "model_override")
+                        return (tier, TierSource.MODEL_OVERRIDE)
         else:
             # Just tier name, match in current partition
             for tier in partition.tiers:
                 if tier.name == override:
-                    return (tier, "model_override")
+                    return (tier, TierSource.MODEL_OVERRIDE)
 
     # Match by size
     for tier in partition.tiers:
         if tier.max_model_size_gb is None:
             # Catch-all tier (no size limit)
-            return (tier, "size_match")
+            return (tier, TierSource.SIZE_MATCH)
         if model_size_gb <= tier.max_model_size_gb:
-            return (tier, "size_match")
+            return (tier, TierSource.SIZE_MATCH)
 
     # If no tier matches, return the last tier (largest) or None
     if partition.tiers:
-        return (partition.tiers[-1], "size_match")
+        return (partition.tiers[-1], TierSource.SIZE_MATCH)
 
     return None
 
 
-def get_slurm_flags(tier: Tier, partition_name: str) -> dict:
+def get_slurm_flags(tier: Tier, partition_name: str) -> dict[str, Any]:
     """Generate SLURM job flags from tier configuration.
 
     Args:

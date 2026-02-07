@@ -9,7 +9,10 @@ from huggingface_hub import snapshot_download, model_info, scan_cache_dir, Model
 from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy.orm import Mapped
 from blackfish.server.models.profile import BlackfishProfile as Profile
-from blackfish.server.models.metadata import fetch_model_metadata, update_cached_metadata
+from blackfish.server.models.metadata import (
+    fetch_model_metadata,
+    update_cached_metadata,
+)
 
 
 PIPELINE_IMAGES = {

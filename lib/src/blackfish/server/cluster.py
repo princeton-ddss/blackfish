@@ -353,6 +353,28 @@ class SlurmClusterInfo:
                 features=p["features"],
             )
 
+        # "all" partition state should reflect if any partition is UP
+        if "all" in result:
+            any_up = any(p.state == "UP" for name, p in result.items() if name != "all")
+            if any_up:
+                all_partition = result["all"]
+                result["all"] = PartitionResources(
+                    name=all_partition.name,
+                    state="UP",
+                    nodes_total=all_partition.nodes_total,
+                    nodes_idle=all_partition.nodes_idle,
+                    nodes_allocated=all_partition.nodes_allocated,
+                    nodes_down=all_partition.nodes_down,
+                    cpus_total=all_partition.cpus_total,
+                    cpus_idle=all_partition.cpus_idle,
+                    cpus_allocated=all_partition.cpus_allocated,
+                    memory_total_mb=all_partition.memory_total_mb,
+                    memory_allocated_mb=all_partition.memory_allocated_mb,
+                    gpus=all_partition.gpus,
+                    max_time_minutes=all_partition.max_time_minutes,
+                    features=all_partition.features,
+                )
+
         return result
 
     @staticmethod

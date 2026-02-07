@@ -19,35 +19,6 @@ const Role = {
 };
 
 /**
- * System Message Input component.
- * @param {object} options
- * @param {object} options.message
- * @param {Function} options.onChange
- * @return {JSX.Element}
- */
-function SystemMessageInput({ message, onChange }) {
-  return (
-    <div className="mb-10">
-      <label className="block text-sm font-medium leading-6 text-gray-900">
-        System Message
-      </label>
-      <textarea
-        placeholder="You are a helpful assistant."
-        rows={5}
-        value={message.content || ""}
-        onChange={onChange}
-        className="w-full rounded-lg bg-white p-2 mt-2 resize-none shadow-md px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 border-0 focus:ring-1 focus:ring-gray-300 sm:text-sm/6 outline outline-1 outline-gray-300"
-      ></textarea>
-    </div>
-  );
-}
-
-SystemMessageInput.propTypes = {
-  message: PropTypes.object,
-  onChange: PropTypes.func,
-};
-
-/**
  * User Message Input component.
  * @param {object} options
  * @param {string} options.message
@@ -57,10 +28,10 @@ SystemMessageInput.propTypes = {
  */
 function UserMessageInput({ message, onChange, onSubmit }) {
   return (
-    <div className="flex items-start space-x-4 mt-10">
+    <div className="flex items-start space-x-4 mt-auto pt-4">
       <div className="min-w-0 flex-1">
         <form action="#" onSubmit={onSubmit} className="relative">
-          <div className="rounded-lg bg-white outline outline-1 -outline-offset-1 outline-gray-300 shadow-md">
+          <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md">
             <label htmlFor="comment" className="sr-only">
               Ask anything
             </label>
@@ -80,7 +51,7 @@ function UserMessageInput({ message, onChange, onSubmit }) {
                   onSubmit(event);
                 }
               }}
-              className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6"
+              className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6"
             />
 
             {/* Spacer element to match the height of the toolbar */}
@@ -108,7 +79,7 @@ function UserMessageInput({ message, onChange, onSubmit }) {
               <button
                 type="submit"
                 disabled={message && message.content && message.content.length === 0}
-                className="inline-flex items-center rounded-full bg-white p-2 text-sm font-semibold text-gray-900 border border-gray-300 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white disabled:border-gray-200 disabled:shadow-none"
+                className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
               >
                 <PaperAirplaneIcon className="size-5" />
                 <span className="sr-only">Submit</span>
@@ -153,7 +124,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             }}
             className="relative"
           >
-            <div className="rounded-lg bg-gray-100 shadow-md">
+            <div className="rounded-lg bg-gray-100 dark:bg-gray-700 shadow-md">
               <label htmlFor="comment" className="sr-only">
                 Edit message
               </label>
@@ -165,7 +136,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
                 onChange={(event) => {
                   setContent(event.target.value);
                 }}
-                className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm"
+                className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm"
               />
 
               {/* Spacer element to match the height of the toolbar */}
@@ -186,15 +157,15 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
                     setIsEditing(false);
                     setContent(message.content);
                   }}
-                  className="inline-flex items-center rounded-full bg-transparent mr-2 p-2 text-sm font-semibold text-gray-900 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white disabled:border-gray-200 disabled:shadow-none"
+                  className="inline-flex items-center rounded-full bg-transparent mr-2 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-700 disabled:border-gray-200 disabled:shadow-none"
                 >
-                  <XMarkIcon className="size-5 text-gray-900 hover:text-gray-400" />
+                  <XMarkIcon className="size-5 text-gray-900 dark:text-gray-100 hover:text-gray-400" />
                   <span className="sr-only">Cancel</span>
                 </button>
                 <button
                   type="submit"
                   disabled={content.length === 0}
-                  className="inline-flex items-center rounded-full bg-white p-2 text-sm font-semibold text-gray-900 border border-gray-300 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white disabled:border-gray-200 disabled:shadow-none"
+                  className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
                 >
                   <CheckIcon className="size-5" />
                   <span className="sr-only">Save</span>
@@ -217,7 +188,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
         className="mt-5"
       >
         <div className="flex flex-row-reverse">
-          <div className="max-w-xl content-end bg-gray-100 text-sm rounded-lg px-4 py-3 shadow-md">
+          <div className="max-w-xl content-end bg-gray-100 dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 shadow-md">
             {content}
           </div>
         </div>
@@ -229,7 +200,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
               onDeleteMessage();
             }}
           >
-            <XMarkIcon className="w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5 mt-2" />
+            <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
             <span className="sr-only">{`Delete message: "${message.content}"`}</span>
           </button>
           <button
@@ -239,7 +210,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
               setIsEditing(true);
             }}
           >
-            <PencilIcon className="w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5 mt-2" />
+            <PencilIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
             <span className="sr-only">{`Edit message: "${message.content}"`}</span>
           </button>
           <button
@@ -253,7 +224,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
                 });
             }}
           >
-            <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5 mt-2" />
+            <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
             <span className="sr-only">{`Copy message to clipboard: ${message.content}`}</span>
           </button>
         </div>
@@ -279,7 +250,7 @@ function AssisantMessage({ message, handleResubmit }) {
   return (
     <div className="mt-5 max-w-xl">
       <div className="flex flex-row">
-        <div className="w-fit content-end bg-white text-sm rounded-lg ml-2">
+        <div className="w-fit content-end bg-white dark:bg-transparent text-sm text-gray-900 dark:text-gray-100 rounded-lg ml-2">
           {message.content}
         </div>
       </div>
@@ -294,12 +265,12 @@ function AssisantMessage({ message, handleResubmit }) {
               });
           }}
         >
-          <ClipboardDocumentIcon className="ml-1.5 w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5" />
+          <ClipboardDocumentIcon className="ml-1.5 w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
         </button>
         <button
           onClick={handleResubmit}
         >
-          <ArrowPathIcon className="w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5" />
+          <ArrowPathIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
         </button>
       </div>
     </div>
@@ -367,7 +338,7 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef }) {
     console.error(error);
   };
   return (
-    <div className="block overflow-y-auto h-[calc(100vh-50vh)] px-8">
+    <div className="flex-1 min-h-0 overflow-y-auto px-8">
       {messages.map((message, index) => (
         <Message
           key={index}
@@ -409,18 +380,16 @@ MessageList.propTypes = {
  * Text Generation Chat Container component.
  * @param {object} options
  * @param {object} options.parameters
+ * @param {object} options.systemMessage
+ * @param {JSX.Element} options.toolbar
  * @return {JSX.Element}
  */
-export default function TextGenerationChatContainer({ parameters }) {
+export default function TextGenerationChatContainer({ parameters, systemMessage, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
   const storedMessages = sessionStorage.getItem("tgcc-ml");
   const [messages, setMessages] = useState(
     storedMessages ? JSON.parse(storedMessages) : []
   );
-  const [systemMessage, setSystemMessage] = useState({
-    role: Role.SYSTEM,
-    content: sessionStorage.getItem("tgcc-sm") || "",
-  });
   const [userMessage, setUserMessage] = useState({
     role: Role.USER,
     content: sessionStorage.getItem("tgcc-um") || "",
@@ -531,18 +500,6 @@ export default function TextGenerationChatContainer({ parameters }) {
    * Set input value in React state and session storage.
    * @param {string} value
    */
-  function handleSystemMessageChange(value) {
-    setSystemMessage({
-      ...systemMessage,
-      content: value
-    });
-    sessionStorage.setItem("tgcc-sm", value);
-  }
-
-  /**
-   * Set input value in React state and session storage.
-   * @param {string} value
-   */
   function handleUserMessageChange(value) {
     setUserMessage({
       ...userMessage,
@@ -552,15 +509,13 @@ export default function TextGenerationChatContainer({ parameters }) {
   }
 
   return (
-    <div className="flex flex-col grow pt-2 bg-white">
-      <SystemMessageInput
-        message={systemMessage.content ? systemMessage : {
-          ...systemMessage,
-          content: sessionStorage.getItem("tgcc-sm") || ""
-        }}
-        onChange={(event) => handleSystemMessageChange(event.target.value)}
-      />
-
+    <div className="flex flex-col grow pt-2 bg-white dark:bg-gray-800 lg:h-[calc(100vh-7rem)]">
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+          Chat
+        </label>
+        {toolbar}
+      </div>
       <MessageList
         messages={messages}
         setMessages={setMessages}
@@ -582,4 +537,6 @@ export default function TextGenerationChatContainer({ parameters }) {
 
 TextGenerationChatContainer.propTypes = {
   parameters: PropTypes.object,
+  systemMessage: PropTypes.object,
+  toolbar: PropTypes.node,
 };

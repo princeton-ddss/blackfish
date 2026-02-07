@@ -17,7 +17,7 @@ function TaskButton({ task, icon: Icon }) {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
-        className={"absolute top-14 -translate-x-1/2 w-full p-2 text-sm text-gray-800 font-light"}
+        className={"absolute top-14 -translate-x-1/2 w-full p-2 text-sm text-gray-800 dark:text-gray-300 font-light"}
       >
         {task.description}
       </motion.div>
@@ -30,7 +30,7 @@ function TaskButton({ task, icon: Icon }) {
       >
         <motion.div
           className={
-            "group relative flex items-center h-10 px-6 py-3 rounded-md border transition-all duration-100 text-gray-800 font-light space-x-2 hover:shadow-md hover:shadow-blue-100"
+            "group relative flex items-center h-10 px-6 py-3 rounded-md border border-gray-200 dark:border-gray-600 transition-all duration-100 text-gray-800 dark:text-gray-200 font-light space-x-2 hover:shadow-md hover:shadow-blue-100 dark:hover:shadow-blue-900/30"
           }
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

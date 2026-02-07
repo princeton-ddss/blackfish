@@ -73,6 +73,18 @@ vi.mock("@heroicons/react/20/solid", () => ({
   ExclamationTriangleIcon: function ExclamationTriangleIcon(props) {
     return <svg data-testid="exclamation-triangle-icon" {...props} />;
   },
+  XCircleIcon: function XCircleIcon(props) {
+    return <svg data-testid="x-circle-icon" {...props} />;
+  },
+  CheckCircleIcon: function CheckCircleIcon(props) {
+    return <svg data-testid="check-circle-icon" {...props} />;
+  },
+  InformationCircleIcon: function InformationCircleIcon(props) {
+    return <svg data-testid="information-circle-icon" {...props} />;
+  },
+  XMarkIcon: function XMarkIcon(props) {
+    return <svg data-testid="x-mark-icon" {...props} />;
+  },
 }));
 vi.mock("@heroicons/react/24/solid", () => ({
   ExclamationCircleIcon: function ExclamationCircleIcon(props) {

@@ -40,11 +40,10 @@ function ServiceModalValidatedInput({
     <div>
       <label
         htmlFor={id}
-        className="block text-sm font-medium leading-6 text-gray-900"
+        className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
       >
         {label}
       </label>
-      {help && <p className="mt-1 text-sm leading-6 text-gray-600">{help}</p>}
       <div className="relative mt-2 rounded-md shadow-sm">
         <input
           id={id}
@@ -53,8 +52,8 @@ function ServiceModalValidatedInput({
           className={classNames(
             !isValid
               ? "text-red-600 ring-red-300 placeholder:text-red-300 focus:ring-red-600"
-              : "ring-gray-300 focus:ring-blue-500",
-            "block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:ring-1 disabled:ring-gray-300 ring-1"
+              : "ring-gray-300 dark:ring-gray-600 focus:ring-blue-500",
+            "block w-full rounded-md border-0 py-1.5 pr-10 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:ring-1 disabled:ring-gray-300 dark:disabled:ring-gray-600 ring-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           )}
           placeholder={placeholder}
           value={value}
@@ -72,8 +71,8 @@ function ServiceModalValidatedInput({
           aria-invalid="true"
           aria-describedby="email-error"
         />
-        {isValid && (
-          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-light italic text-sm text-slate-500">
+        {isValid && units && (
+          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 font-light italic text-sm text-slate-500 dark:text-slate-400">
             {units}
           </span>
         )}
@@ -90,6 +89,9 @@ function ServiceModalValidatedInput({
         <p className="mt-2 text-sm text-red-600" id="email-error">
           {error}
         </p>
+      )}
+      {help && isValid && (
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{help}</p>
       )}
     </div>
   );

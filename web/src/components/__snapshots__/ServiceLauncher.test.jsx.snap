@@ -3,16 +3,28 @@
 exports[`ServiceLauncher > opens the modal 1`] = `
 <body>
   <div>
-    <div
-      class="pb-4 mb-4 border-b"
+    <button
+      aria-label="Launch service"
+      class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:bg-transparent focus:outline-none"
+      type="button"
     >
-      <button
-        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
-        type="button"
+      <svg
+        aria-hidden="true"
+        class="h-5 w-5"
+        data-slot="icon"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        Open Launcher
-      </button>
-    </div>
+        <path
+          d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <div
       data-testid="service-modal"
     >
@@ -35,17 +47,29 @@ exports[`ServiceLauncher > opens the modal 1`] = `
 exports[`ServiceLauncher > renders in disabled state when missing models and loading 1`] = `
 <body>
   <div>
-    <div
-      class="pb-4 mb-4 border-b"
+    <button
+      aria-label="Launch service"
+      class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:bg-transparent focus:outline-none"
+      disabled=""
+      type="button"
     >
-      <button
-        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
-        disabled=""
-        type="button"
+      <svg
+        aria-hidden="true"
+        class="h-5 w-5"
+        data-slot="icon"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        Open Launcher
-      </button>
-    </div>
+        <path
+          d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <div
       data-testid="service-modal"
     >
@@ -68,17 +92,29 @@ exports[`ServiceLauncher > renders in disabled state when missing models and loa
 exports[`ServiceLauncher > renders in disabled state when missing profile 1`] = `
 <body>
   <div>
-    <div
-      class="pb-4 mb-4 border-b"
+    <button
+      aria-label="Launch service"
+      class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:bg-transparent focus:outline-none"
+      disabled=""
+      type="button"
     >
-      <button
-        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
-        disabled=""
-        type="button"
+      <svg
+        aria-hidden="true"
+        class="h-5 w-5"
+        data-slot="icon"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        Open Launcher
-      </button>
-    </div>
+        <path
+          d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <div
       data-testid="service-modal"
     >
@@ -101,16 +137,28 @@ exports[`ServiceLauncher > renders in disabled state when missing profile 1`] = 
 exports[`ServiceLauncher > renders in enabled state when missing models and not loading 1`] = `
 <body>
   <div>
-    <div
-      class="pb-4 mb-4 border-b"
+    <button
+      aria-label="Launch service"
+      class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:bg-transparent focus:outline-none"
+      type="button"
     >
-      <button
-        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
-        type="button"
+      <svg
+        aria-hidden="true"
+        class="h-5 w-5"
+        data-slot="icon"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        Open Launcher
-      </button>
-    </div>
+        <path
+          d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <div
       data-testid="service-modal"
     >
@@ -133,16 +181,28 @@ exports[`ServiceLauncher > renders in enabled state when missing models and not 
 exports[`ServiceLauncher > renders properly with standard options 1`] = `
 <body>
   <div>
-    <div
-      class="pb-4 mb-4 border-b"
+    <button
+      aria-label="Launch service"
+      class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:hover:bg-transparent focus:outline-none"
+      type="button"
     >
-      <button
-        class="mt-1 w-full flex flex-row justify-center gap-x-2 rounded-md bg-tranparent px-3.5 py-1.5 text-sm font-regular shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 border bg-blue-500 text-white disabled:bg-gray-50 disabled:text-gray-400 disabled:animate-pulse"
-        type="button"
+      <svg
+        aria-hidden="true"
+        class="h-5 w-5"
+        data-slot="icon"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        Open Launcher
-      </button>
-    </div>
+        <path
+          d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <div
       data-testid="service-modal"
     >

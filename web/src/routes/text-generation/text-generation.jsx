@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Label,
   Listbox,
   ListboxButton,
   ListboxOption,
@@ -9,8 +8,11 @@ import {
 import {
   CheckIcon,
   ChevronUpDownIcon,
-  ExclamationTriangleIcon,
 } from "@heroicons/react/20/solid";
+import {
+  CodeBracketIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 
 import { Page } from "@/components/Page";
 import { TaskContainer } from "@/components/TaskContainer";
@@ -20,85 +22,43 @@ import TextGenerationCompletionContainer from "./components/TextGenerationComple
 import TextGenerationChatContainer from "./components/TextGenerationChatContainer";
 import TextGenerationContainerOptionsForm from "./components/TextGenerationContainerOptionsForm";
 import TextGenerationParametersForm from "./components/TextGenerationParametersForm";
+import CodeSnippetModal from "./components/CodeSnippetModal";
 
 import PropTypes from "prop-types";
 
-function ModeSelect({ selectedMode, setSelectedMode }) {
-  // eslint-disable-next-line no-unused-vars
-  const [modes, setModes] = useState([
-    {
-      label: "Completion",
-      value: "completion",
-      icon: null,
-    },
-    {
-      label: "Chat",
-      value: "chat",
-      icon: null,
-    },
-  ]);
+const modes = [
+  { label: "Completion", value: "completion" },
+  { label: "Chat", value: "chat" },
+];
 
+function ModeSelect({ selectedMode, setSelectedMode }) {
   return (
     <Listbox value={selectedMode} onChange={setSelectedMode}>
-      <Label className="block text-sm font-medium leading-6 text-gray-900">
-        Task
-      </Label>
-
-      <div className="relative mt-2 mb-2 w-64">
-        {selectedMode ? (
-          <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
-            <span className="flex items-center">
-              <span className="ml-3 block truncate">
-                {selectedMode.label ? selectedMode.label : ""}
-              </span>
-
-              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                <ChevronUpDownIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </span>
-            </span>
-          </ListboxButton>
-        ) : (
-          <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
-            <span className="flex items-center">
-              <span className="pointer-events-none flex-shrink-0 pl-3">
-                <ExclamationTriangleIcon
-                  className="h-5 w-5 text-yellow-400"
-                  aria-hidden="true"
-                />
-              </span>
-              <span className="ml-3 block truncate">
-                {"No profile selected"}
-              </span>
-              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                <ChevronUpDownIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </span>
-            </span>
-          </ListboxButton>
-        )}
+      <div className="relative">
+        <ListboxButton className="relative cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-8 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 text-sm min-w-[120px]">
+          <span className="block truncate">
+            {selectedMode?.label || "Select task"}
+          </span>
+          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+            <ChevronUpDownIcon className="h-4 w-4 text-gray-400" aria-hidden="true" />
+          </span>
+        </ListboxButton>
 
         <ListboxOptions
-          className="absolute z-10 mt-1 max-h-60 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm w-[var(--button-width)]"
-          anchor="bottom"
+          className="absolute z-10 mt-1 max-h-60 overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[120px]"
+          anchor="bottom end"
         >
           {modes.map((mode) => (
             <ListboxOption
               key={mode.value}
               value={mode}
-              className="group flex gap-2 bg-white data-[focus]:bg-blue-500 data-[focus]:text-white relative cursor-default select-none py-2 pl-1 pr-9 text-gray-900"
+              className="group flex gap-2 bg-white dark:bg-gray-700 data-[focus]:bg-blue-500 data-[focus]:text-white relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100"
             >
-              <div className="flex">
-                <span className="ml-3 block truncate font-normal data-[selected]:font-semibold">
-                  {mode.label}
-                </span>
-              </div>
-              <span className="invisible group-data-[selected]:visible absolute inset-y-0 right-0 flex items-center pr-4 group-data-[focus]:text-white text-blue-600">
-                <CheckIcon className="size-5" />
+              <span className="block truncate font-normal group-data-[selected]:font-semibold">
+                {mode.label}
+              </span>
+              <span className="invisible group-data-[selected]:visible absolute inset-y-0 right-0 flex items-center pr-3 group-data-[focus]:text-white text-blue-600">
+                <CheckIcon className="size-4" />
               </span>
             </ListboxOption>
           ))}
@@ -119,6 +79,8 @@ export default function TextGenerationPage() {
     value: "completion",
     icon: null,
   });
+
+  const [codeModalOpen, setCodeModalOpen] = useState(false);
 
   const [parameters, setParameters] = useState({
     // OpenAI API parameters
@@ -242,6 +204,17 @@ export default function TextGenerationPage() {
     };
   }, []);
 
+  // System message state (for Chat mode)
+  const [systemMessage, setSystemMessage] = useState({
+    role: "system",
+    content: sessionStorage.getItem("tgcc-sm") || "",
+  });
+
+  const handleSystemMessageChange = (value) => {
+    setSystemMessage((prev) => ({ ...prev, content: value }));
+    sessionStorage.setItem("tgcc-sm", value);
+  };
+
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -253,11 +226,55 @@ export default function TextGenerationPage() {
   return (
     <Page task="text-generation">
       <TaskContainer>
-        <ModeSelect selectedMode={mode} setSelectedMode={setMode} />
         {mode.value === "completion" ? (
-          <TextGenerationCompletionContainer parameters={parameters} />
+          <TextGenerationCompletionContainer
+            parameters={parameters}
+            toolbar={
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-md"
+                  aria-label="Code"
+                  onClick={() => setCodeModalOpen(true)}
+                >
+                  <CodeBracketIcon className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  className="p-2 mr-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-md"
+                  aria-label="History"
+                >
+                  <ClockIcon className="h-5 w-5" />
+                </button>
+                <ModeSelect selectedMode={mode} setSelectedMode={setMode} />
+              </div>
+            }
+          />
         ) : (
-          <TextGenerationChatContainer parameters={chatParameters} />
+          <TextGenerationChatContainer
+            parameters={chatParameters}
+            systemMessage={systemMessage}
+            toolbar={
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-md"
+                  aria-label="Code"
+                  onClick={() => setCodeModalOpen(true)}
+                >
+                  <CodeBracketIcon className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  className="p-2 mr-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-md"
+                  aria-label="History"
+                >
+                  <ClockIcon className="h-5 w-5" />
+                </button>
+                <ModeSelect selectedMode={mode} setSelectedMode={setMode} />
+              </div>
+            }
+          />
         )}
       </TaskContainer>
 
@@ -265,15 +282,31 @@ export default function TextGenerationPage() {
         task="text-generation"
         defaultContainerOptions={defaultContainerOptions}
         ContainerOptionsFormComponent={TextGenerationContainerOptionsForm}
-      >
-        <TextGenerationParametersForm
-          mode={mode}
-          parameters={mode.value === "completion" ? parameters : chatParameters}
-          setParameters={
-            mode.value === "completion" ? setParameters : setChatParameters
+        ParametersFormComponent={TextGenerationParametersForm}
+        parametersFormProps={{
+          mode,
+          parameters: mode.value === "completion" ? parameters : chatParameters,
+          setParameters: mode.value === "completion" ? setParameters : setChatParameters,
+        }}
+        systemMessage={mode.value === "chat" ? systemMessage : null}
+        onSystemMessageChange={mode.value === "chat" ? handleSystemMessageChange : null}
+      />
+
+      <CodeSnippetModal
+        open={codeModalOpen}
+        onClose={() => setCodeModalOpen(false)}
+        mode={mode.value}
+        prompt={sessionStorage.getItem("tgci") || ""}
+        messages={(() => {
+          try {
+            return JSON.parse(sessionStorage.getItem("tgcc-ml") || "[]");
+          } catch {
+            return [];
           }
-        />
-      </SidebarContainer>
+        })()}
+        systemMessage={systemMessage}
+        parameters={mode.value === "completion" ? parameters : chatParameters}
+      />
     </Page>
   );
 }

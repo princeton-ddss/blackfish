@@ -58,7 +58,7 @@ function RemoteFileBrowserTable({
         return item.name.toLowerCase().includes(query.toLowerCase());
       });
   const currentFiles =
-    filteredContent === undefined
+    !filteredContent
       ? []
       : filteredContent.slice(indexOfFirstFile, indexOfLastFile);
 
@@ -288,7 +288,7 @@ function RemoteFileBrowserTable({
       </div>
       <Pagination
         filesPerPage={filesPerPage}
-        totalFiles={filteredContent === undefined ? 0 : filteredContent.length}
+        totalFiles={!filteredContent ? 0 : filteredContent.length}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         disabled={status.disabled}

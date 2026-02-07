@@ -1,2088 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ServiceSummary > Action buttons > renders Cancel button for PENDING service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              pending
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Action buttons > renders Cancel button for STARTING service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status animate-pulse"
-            >
-              starting
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Action buttons > renders Cancel button for SUBMITTED service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              submitted
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Action buttons > renders Delete button for EXPIRED service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              expired
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-             focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Action buttons > renders Delete button for FAILED service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              failed
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-             focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Action buttons > renders Delete button for STOPPED service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              stopped
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-             focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Action buttons > renders Delete button for TIMEOUT service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              timeout
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-             focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Action buttons > renders Stop button for HEALTHY service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              healthy
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            <div>
-              2 hours ago
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            localhost:8080
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Action buttons > renders Stop button for UNHEALTHY service 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              unhealthy
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            <div>
-              2 hours ago
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            localhost:8080
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
 exports[`ServiceSummary > Action buttons > renders no button for unknown service status 1`] = `
 <body>
   <div>
@@ -2093,14 +10,14 @@ exports[`ServiceSummary > Action buttons > renders no button for unknown service
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2126,7 +43,7 @@ exports[`ServiceSummary > Action buttons > renders no button for unknown service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2156,7 +73,7 @@ exports[`ServiceSummary > Action buttons > renders no button for unknown service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2182,7 +99,7 @@ exports[`ServiceSummary > Action buttons > renders no button for unknown service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2208,7 +125,7 @@ exports[`ServiceSummary > Action buttons > renders no button for unknown service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2234,7 +151,7 @@ exports[`ServiceSummary > Action buttons > renders no button for unknown service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2260,7 +177,7 @@ exports[`ServiceSummary > Action buttons > renders no button for unknown service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2291,7 +208,7 @@ exports[`ServiceSummary > Action buttons > renders no button for unknown service
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -2315,14 +232,14 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2348,7 +265,7 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2378,7 +295,7 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2404,7 +321,7 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2430,7 +347,7 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2456,7 +373,7 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2482,7 +399,7 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -2513,7 +430,7 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -2521,701 +438,6 @@ exports[`ServiceSummary > Action buttons > renders no button when service has no
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Button interactions > calls deleteService when Delete button is clicked 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              stopped
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-             focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Button interactions > calls stopService when Cancel button is clicked 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status animate-pulse"
-            >
-              starting
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Button interactions > calls stopService when Stop button is clicked 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              healthy
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            <div>
-              2 hours ago
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            localhost:8080
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -3225,703 +447,6 @@ exports[`ServiceSummary > Button interactions > calls stopService when Stop butt
 exports[`ServiceSummary > Button interactions > does not call service actions when service is null 1`] = `
 <body>
   <div />
-</body>
-`;
-
-exports[`ServiceSummary > Button interactions > handles deleteService error gracefully 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              stopped
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-             focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Button interactions > handles stopService error gracefully 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              healthy
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            <div>
-              2 hours ago
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            localhost:8080
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Button interactions > shows loading state while updating 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status"
-            >
-              healthy
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            <div>
-              2 hours ago
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            localhost:8080
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
-      </div>
-    </div>
-  </div>
 </body>
 `;
 
@@ -3935,14 +460,14 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -3968,7 +493,7 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -3998,7 +523,7 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4026,7 +551,7 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4052,7 +577,7 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4078,7 +603,7 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4104,7 +629,7 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4135,7 +660,7 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -4143,246 +668,6 @@ exports[`ServiceSummary > Status display > does not show animate-pulse for non-S
             </div>
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
-      </div>
-    </div>
-  </div>
-</body>
-`;
-
-exports[`ServiceSummary > Status display > shows animate-pulse for STARTING status 1`] = `
-<body>
-  <div>
-    <div
-      class="flex flex-row justify-start"
-    >
-      <div
-        class="grow flex flex-col justify-center mt-3 mb-0"
-      >
-        <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
-        >
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Model 
-            </div>
-            model-name
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex justify-start items-center capitalize"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Status 
-            </div>
-            <div
-              class="service-summary__status animate-pulse"
-            >
-              starting
-            </div>
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Time 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Host 
-            </div>
-            -
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Cores 
-            </div>
-            4
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="m21 7.5-2.25-1.313M21 7.5v2.25m0-2.25-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3 2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75 2.25-1.313M12 21.75V19.5m0 2.25-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              Memory 
-            </div>
-            8GB
-          </div>
-          <div
-            class="mb-1 ml-0 inline-flex items-center"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
-              data-slot="icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div
-              class="grow font-medium text-sm mr-1"
-            >
-              GPU 
-            </div>
-            <span
-              class="gpus-indicator"
-            >
-              🔥🔥
-            </span>
-          </div>
-          <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
-          >
-            Last updated
-            <div>
-              2 hours ago
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Cancel
-        </button>
       </div>
     </div>
   </div>
@@ -4399,14 +684,14 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4432,7 +717,7 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4462,7 +747,7 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4490,7 +775,7 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4516,7 +801,7 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4542,7 +827,7 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4568,7 +853,7 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4599,7 +884,7 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -4607,15 +892,6 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
             </div>
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -4632,14 +908,14 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4665,7 +941,7 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4695,7 +971,7 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4723,7 +999,7 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4749,7 +1025,7 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4775,7 +1051,7 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4801,7 +1077,7 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4832,7 +1108,7 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -4840,15 +1116,6 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
             </div>
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -4865,14 +1132,14 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4898,7 +1165,7 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4928,7 +1195,7 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4954,7 +1221,7 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -4980,7 +1247,7 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5006,7 +1273,7 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5032,7 +1299,7 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5063,7 +1330,7 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -5071,15 +1338,6 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
             </div>
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-             focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Delete
-        </button>
       </div>
     </div>
   </div>
@@ -5096,14 +1354,14 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5129,7 +1387,7 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5159,7 +1417,7 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5187,7 +1445,7 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5213,7 +1471,7 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5239,7 +1497,7 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5265,7 +1523,7 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5301,15 +1559,6 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
             <div />
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -5326,14 +1575,14 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5359,7 +1608,7 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5389,7 +1638,7 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5417,7 +1666,7 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5443,7 +1692,7 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5469,7 +1718,7 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5495,7 +1744,7 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5526,7 +1775,7 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -5534,15 +1783,6 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
             </div>
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -5559,14 +1799,14 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5592,7 +1832,7 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5622,7 +1862,7 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5648,7 +1888,7 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5674,7 +1914,7 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5700,7 +1940,7 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5726,7 +1966,7 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5762,15 +2002,6 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
             <div />
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -5793,14 +2024,14 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5826,7 +2057,7 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5856,7 +2087,7 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5884,7 +2115,7 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5910,7 +2141,7 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5936,7 +2167,7 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5962,7 +2193,7 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -5993,7 +2224,7 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -6001,15 +2232,6 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
             </div>
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -6026,14 +2248,14 @@ exports[`ServiceSummary > renders service information when service and profile a
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6059,7 +2281,7 @@ exports[`ServiceSummary > renders service information when service and profile a
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6089,7 +2311,7 @@ exports[`ServiceSummary > renders service information when service and profile a
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6117,7 +2339,7 @@ exports[`ServiceSummary > renders service information when service and profile a
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6143,7 +2365,7 @@ exports[`ServiceSummary > renders service information when service and profile a
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6169,7 +2391,7 @@ exports[`ServiceSummary > renders service information when service and profile a
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6195,7 +2417,7 @@ exports[`ServiceSummary > renders service information when service and profile a
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6226,7 +2448,7 @@ exports[`ServiceSummary > renders service information when service and profile a
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -6234,15 +2456,6 @@ exports[`ServiceSummary > renders service information when service and profile a
             </div>
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -6259,14 +2472,14 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-900 dark:text-gray-100"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6292,7 +2505,7 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6322,7 +2535,7 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6350,7 +2563,7 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6376,7 +2589,7 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6402,7 +2615,7 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6428,7 +2641,7 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-600 mr-1"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6459,7 +2672,7 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
             </span>
           </div>
           <div
-            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4"
+            class="service-summary__updated-at grow text-center mt-2 font-light text-xs mb-4 text-gray-500 dark:text-gray-400"
           >
             Last updated
             <div>
@@ -6467,15 +2680,6 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
             </div>
           </div>
         </div>
-        <button
-          class="w-full flex flex-row justify-center gap-x-2 rounded-md
-            bg-transparent px-3.5 py-1.5 text-sm font-regular shadow-sm
-            hover:bg-slate-50 focus-visible:outline focus-visible:outline-2
-            focus-visible:outline-offset-2 border"
-          type="button"
-        >
-          Stop
-        </button>
       </div>
     </div>
   </div>
@@ -6492,14 +2696,14 @@ exports[`ServiceSummary > renders without a profile 1`] = `
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-400"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-400 dark:text-gray-500"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6529,7 +2733,7 @@ exports[`ServiceSummary > renders without a profile 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6559,7 +2763,7 @@ exports[`ServiceSummary > renders without a profile 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6589,7 +2793,7 @@ exports[`ServiceSummary > renders without a profile 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6619,7 +2823,7 @@ exports[`ServiceSummary > renders without a profile 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6649,7 +2853,7 @@ exports[`ServiceSummary > renders without a profile 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6679,7 +2883,7 @@ exports[`ServiceSummary > renders without a profile 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6711,7 +2915,7 @@ exports[`ServiceSummary > renders without a profile 1`] = `
           </div>
         </div>
         <div
-          class="grow text-center mt-2 font-light text-xs mb-4 text-gray-300"
+          class="grow text-center mt-2 font-light text-xs mb-4 text-gray-300 dark:text-gray-600"
         >
           Last updated
           <div>
@@ -6734,14 +2938,14 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
         class="grow flex flex-col justify-center mt-3 mb-0"
       >
         <div
-          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-400"
+          class="mt-2 ml-1 font-light text-sm sm:flex sm:flex-col text-gray-400 dark:text-gray-500"
         >
           <div
             class="mb-1 ml-0 inline-flex justify-start items-center"
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6771,7 +2975,7 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6801,7 +3005,7 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6831,7 +3035,7 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6861,7 +3065,7 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6891,7 +3095,7 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6921,7 +3125,7 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="h-6 w-6 text-gray-300 mr-1"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
               data-slot="icon"
               fill="none"
               stroke="currentColor"
@@ -6953,7 +3157,7 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
           </div>
         </div>
         <div
-          class="grow text-center mt-2 font-light text-xs mb-4 text-gray-300"
+          class="grow text-center mt-2 font-light text-xs mb-4 text-gray-300 dark:text-gray-600"
         >
           Last updated
           <div>

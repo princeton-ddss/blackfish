@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import RemoteFileBrowser from "@/components/RemoteFileBrowser";
+import AudioFileBrowser from "@/components/AudioFileBrowser";
 import SpeechRecognitionAudioPreview from "./SpeechRecognitionAudioPreview";
 import SpeechRecognitionOutput from "./SpeechRecognitionOutput";
 import SpeechRecognitionSubmit from "./SpeechRecognitionSubmit";
@@ -45,14 +45,14 @@ function SpeechRecognitionContainer({
   const fileBrowserStatus = getFileBrowserStatus();
 
   return (
-    <div className="pt-2 bg-white">
+    <div className="bg-white dark:bg-gray-800">
       <div className="relative w-full lg:w-5/6 max-w-6xl">
-        <RemoteFileBrowser
+        <AudioFileBrowser
           root={selectedService ? selectedService.mount : ""}
           setAudioPath={setAudioPath}
           status={fileBrowserStatus}
         />
-        <div className="absolute bottom-0 py-2 px-5 bg-gray-50 w-full max-w-6xl rounded-es-md rounded-ee-md">
+        <div className="absolute bottom-0 py-2 px-5 bg-gray-50 dark:bg-gray-800 w-full max-w-6xl rounded-es-md rounded-ee-md">
           <SpeechRecognitionSubmit
             selectedService={selectedService}
             audioPath={audioPath}

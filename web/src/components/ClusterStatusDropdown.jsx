@@ -220,6 +220,8 @@ PartitionRow.propTypes = {
     state: PropTypes.string.isRequired,
     nodes_total: PropTypes.number.isRequired,
     nodes_idle: PropTypes.number.isRequired,
+    cpus_total: PropTypes.number.isRequired,
+    cpus_idle: PropTypes.number.isRequired,
     gpus: PropTypes.array,
   }).isRequired,
 };

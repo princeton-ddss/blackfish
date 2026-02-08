@@ -232,7 +232,7 @@ PartitionRow.propTypes = {
  */
 function ClusterStatusDropdown() {
   const { profile } = useContext(ProfileContext);
-  const { status, error, isLoading, refresh } = useClusterStatus(profile);
+  const { status, error, isLoading, isRefreshing, refresh } = useClusterStatus(profile);
 
   // Only show for Slurm profiles
   if (!profile || profile.schema !== "slurm") {
@@ -340,10 +340,11 @@ function ClusterStatusDropdown() {
                     <button
                       type="button"
                       onClick={() => refresh()}
-                      className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      disabled={isRefreshing}
+                      className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                       aria-label="Refresh cluster status"
                     >
-                      <ArrowPathIcon className="h-3.5 w-3.5" />
+                      <ArrowPathIcon className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </button>
                   </div>
                 </div>

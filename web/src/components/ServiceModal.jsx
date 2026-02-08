@@ -284,7 +284,7 @@ function ServiceModal({
                     </button>
                     <button
                       type="button"
-                      className="w-28 inline-flex justify-center items-center gap-2 rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+                      className="w-28 inline-flex justify-center items-center gap-2 rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:bg-gray-300 dark:disabled:bg-gray-600"
                       onClick={handleFormSubmit}
                       disabled={!isDeepEmpty(validationErrors) || isLaunching}
                     >

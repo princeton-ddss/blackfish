@@ -24,6 +24,37 @@ function randomName() {
 }
 
 /**
+ * Get default job options based on profile type.
+ * @param {object} profile - The selected profile.
+ * @return {object} Default job options.
+ */
+function getDefaultJobOptions(profile) {
+  const baseOptions = {
+    name: randomName(),
+  };
+
+  if (profile?.schema === "slurm") {
+    // Slurm: time is user-configurable, resource fields are set by tier selection
+    return {
+      ...baseOptions,
+      time: "00:30:00",
+      ntasks_per_node: null,
+      mem: null,
+      gres: null,
+      partition: null,
+      constraint: null,
+      account: null,
+    };
+  } else {
+    // Local: only gres matters, default to disabled (most users don't have Nvidia GPUs)
+    return {
+      ...baseOptions,
+      gres: 0,
+    };
+  }
+}
+
+/**
  * Service Modal component.
  * @param {object} options
  * @param {string} options.task
@@ -63,17 +94,6 @@ function ServiceModal({
   children
 }) {
 
-  const defaultJobOptions = React.useMemo(() => {
-    return {
-      name: randomName(),
-      time: "00:30:00",
-      ntasks_per_node: 8,
-      mem: 16,
-      gres: 1,
-      partition: null,
-      constraint: null,
-    }
-  }, [])
 
   const maxAttempts = 3;
   const waitPeriod = 5_000;
@@ -89,7 +109,7 @@ function ServiceModal({
   const { setSelectedServiceId } = useContext(ServiceContext);
 
 
-  const [jobOptions, setJobOptions] = React.useState({ ...defaultJobOptions, name: randomName() });
+  const [jobOptions, setJobOptions] = React.useState(() => getDefaultJobOptions(profile));
   const [model, setModel] = useState(null);
   const [resources, setResources] = useState(null);
 
@@ -124,7 +144,7 @@ function ServiceModal({
   // reset on open
   useEffect(() => {
     if (open) {
-      setJobOptions({ ...defaultJobOptions, name: randomName() })
+      setJobOptions(getDefaultJobOptions(profile))
       setContainerOptions({ ...defaultContainerOptions })
       setLaunchSuccess(false)
       setIsLaunching(false)
@@ -133,8 +153,8 @@ function ServiceModal({
     }
   }, [
     open,
+    profile,
     setContainerOptions,
-    defaultJobOptions,
     defaultContainerOptions,
     setLaunchSuccess,
     setLaunchError,
@@ -264,7 +284,7 @@ function ServiceModal({
                     </button>
                     <button
                       type="button"
-                      className="w-28 inline-flex justify-center items-center gap-2 rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+                      className="w-28 inline-flex justify-center items-center gap-2 rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:bg-gray-300 dark:disabled:bg-gray-600"
                       onClick={handleFormSubmit}
                       disabled={!isDeepEmpty(validationErrors) || isLaunching}
                     >

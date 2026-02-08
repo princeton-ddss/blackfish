@@ -134,7 +134,7 @@ function RemoteFileBrowserTable({
                       <td colSpan={5} className="h-64">
                         <div className="font-light sm:text-sm text-center align-middle">
                           <img
-                            className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             width="56"
                             src={assetPath("/img/dead-fish.png")}
@@ -149,7 +149,7 @@ function RemoteFileBrowserTable({
                       <td colSpan={5} className="h-64">
                         <div className="font-light sm:text-sm text-center align-middle">
                           <img
-                            className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             width="56"
                             src={assetPath("/img/dead-fish.png")}
@@ -174,7 +174,7 @@ function RemoteFileBrowserTable({
                       <td colSpan={5} className="h-64">
                         <div className="font-light sm:text-sm text-center align-middle">
                           <img
-                            className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             width="56"
                             src={assetPath("/img/question-mark.png")}

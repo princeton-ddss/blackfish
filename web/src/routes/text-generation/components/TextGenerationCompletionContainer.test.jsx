@@ -22,9 +22,6 @@ vi.mock("@heroicons/react/24/outline", () => ({
   PaperAirplaneIcon: ({ className, ...props }) => {
     return <div data-testid="paper-airplane-icon" className={className} {...props} />;
   },
-  PaperClipIcon: ({ className, ...props }) => {
-    return <div data-testid="paper-clip-icon" className={className} {...props} />;
-  },
 }));
 
 const mockClipboard = {
@@ -42,7 +39,7 @@ const mockSelectedService = {
   id: "test-service-1",
 };
 
-const MockServiceProvider = ({ children, selectedService = mockSelectedService }) => (
+const MockProviders = ({ children, selectedService = mockSelectedService }) => (
   <ServiceContext.Provider value={{ selectedService }}>
     {children}
   </ServiceContext.Provider>
@@ -59,9 +56,9 @@ describe("TextGenerationCompletionContainer", () => {
   describe("Component rendering", () => {
     it("renders the main container with prompt input and response output", () => {
       const {baseElement, getByText, getByPlaceholderText} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       expect(getByText("Prompt")).toBeInTheDocument();
       expect(getByPlaceholderText("Orcas are awesome because..."))
@@ -83,9 +80,9 @@ describe("TextGenerationCompletionContainer", () => {
       };
       streamCompletionInference.mockReturnValue(mockStream);
       const {getByPlaceholderText} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Orcas are awesome because...");
       await user.type(textarea, "Test prompt");
@@ -96,9 +93,9 @@ describe("TextGenerationCompletionContainer", () => {
     it("allows new line on Shift+Enter", async () => {
       const user = userEvent.setup();
       const {getByPlaceholderText} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Orcas are awesome because...");
       await user.type(textarea, "First line");
@@ -139,9 +136,9 @@ describe("TextGenerationCompletionContainer", () => {
       };
       streamCompletionInference.mockReturnValue(mockStream);
       const {getByTestId, getByText} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       const submitButton = getByTestId("paper-airplane-icon").parentElement;
       await user.click(submitButton);
@@ -162,9 +159,9 @@ describe("TextGenerationCompletionContainer", () => {
       };
       streamCompletionInference.mockReturnValue(mockStream);
       const {getByPlaceholderText, getByText, getByTestId} = render(
-        <MockServiceProvider>
+        <MockProviders>
           <TextGenerationCompletionContainer parameters={{}} />
-        </MockServiceProvider>
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Orcas are awesome because...");
       await user.type(textarea, "Test prompt");

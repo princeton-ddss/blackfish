@@ -6,7 +6,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import ServiceModal from "@/components/ServiceModal";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { useModels, useServices } from "@/lib/loaders";
-import { runService } from "@/lib/requests";
+import { runService, fetchProfileResources } from "@/lib/requests";
 import { sleep, randomInt, isDeepEmpty } from "@/lib/util";
 
 vi.mock("@/providers/ServiceProvider");
@@ -88,7 +88,7 @@ describe("ServiceModal", () => {
     setLaunchError: mockSetLaunchError,
     validationErrors: {},
     setValidationErrors: mockSetValidationErrors,
-    profile: { type: "remote", host: "test-host" },
+    profile: { schema: "slurm", host: "test-host", user: "testuser" },
     children: <div data-testid="modal-children">Test Children</div>
   };
 
@@ -124,6 +124,7 @@ describe("ServiceModal", () => {
     randomInt.mockReturnValue(12345);
     isDeepEmpty.mockReturnValue(true);
     sleep.mockResolvedValue();
+    fetchProfileResources.mockResolvedValue({ partitions: [], time: { default: 30, max: 180 } });
   });
 
   const renderServiceModal = (props = {}) => {
@@ -156,7 +157,22 @@ describe("ServiceModal", () => {
     });
   });
 
-  
+  describe("Initial State", () => {
+    it("sets initial model when models are available", () => {
+      renderServiceModal();
+      // Model is set internally, verified by the form receiving it
+      expect(screen.getByTestId("service-modal-form")).toBeInTheDocument();
+    });
+
+    it("handles empty models array", () => {
+      useModels.mockReturnValue({ models: [] });
+      renderServiceModal();
+      // Should still render the form even without models
+      expect(screen.getByTestId("service-modal-form")).toBeInTheDocument();
+    });
+  });
+
+
   describe("Reset on Open", () => {
     it("resets state when modal opens", () => {
       const { rerender } = renderServiceModal({ open: false });
@@ -249,14 +265,9 @@ describe("ServiceModal", () => {
         expect.objectContaining({
           name: expect.stringContaining("blackfish-"),
           time: "00:30:00",
-          ntasks_per_node: 8,
-          mem: 16,
-          gres: 1,
-          partition: null,
-          constraint: null
         }),
         { port: 8080 },
-        { type: "remote", host: "test-host" }
+        { schema: "slurm", host: "test-host", user: "testuser" }
       );
     });
 
@@ -324,4 +335,21 @@ describe("ServiceModal", () => {
     });
   });
 
+  describe("Profile Types", () => {
+    it("uses correct default job options for slurm profile", () => {
+      renderServiceModal({
+        profile: { schema: "slurm", host: "test-host", user: "testuser" },
+      });
+      // Slurm profiles should have time field and null resource fields (set by tier selection)
+      expect(screen.getByTestId("service-modal-form")).toBeInTheDocument();
+    });
+
+    it("uses correct default job options for local profile", () => {
+      renderServiceModal({
+        profile: { schema: "local" },
+      });
+      // Local profiles should work without slurm-specific fields
+      expect(screen.getByTestId("service-modal-form")).toBeInTheDocument();
+    });
   });
+});

@@ -172,6 +172,7 @@ describe("ServiceModal", () => {
     });
   });
 
+
   describe("Reset on Open", () => {
     it("resets state when modal opens", () => {
       const { rerender } = renderServiceModal({ open: false });
@@ -189,9 +190,19 @@ describe("ServiceModal", () => {
   });
 
   describe("Loading State", () => {
+    it("shows loading state on button when isLaunching is true", () => {
+      const {getByText} = renderServiceModal({ isLaunching: true });
+      expect(getByText("Launching")).toBeInTheDocument();
+    });
+
+    it("shows Launch text when isLaunching is false", () => {
+      const {getByText} = renderServiceModal({ isLaunching: false });
+      expect(getByText("Launch")).toBeInTheDocument();
+    });
+
     it("disables Launch button when isLaunching is true", () => {
       const {getByText} = renderServiceModal({ isLaunching: true });
-      expect(getByText("Launch")).toBeDisabled();
+      expect(getByText("Launching").closest("button")).toBeDisabled();
     });
   });
 
@@ -221,17 +232,8 @@ describe("ServiceModal", () => {
   });
 
   describe("Launch Success State", () => {
-    it("shows Close button when launchSuccess is true", () => {
-      const {getByText, queryByText} = renderServiceModal({ launchSuccess: true });
-      expect(getByText("Close")).toBeInTheDocument();
-      expect(queryByText("Launch")).not.toBeInTheDocument();
-      expect(queryByText("Cancel")).not.toBeInTheDocument();
-    });
-
-    it("closes modal when Close button is clicked", async () => {
-      const user = userEvent.setup();
-      const {getByText} = renderServiceModal({ launchSuccess: true });
-      await user.click(getByText("Close"));
+    it("auto-closes modal when launchSuccess is true", () => {
+      renderServiceModal({ launchSuccess: true });
       expect(mockSetOpen).toHaveBeenCalledWith(false);
     });
 

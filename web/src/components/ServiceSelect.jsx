@@ -11,14 +11,11 @@ import {
   ChevronUpDownIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/20/solid";
-import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
+import Alert from "@/components/Alert";
 import { useServices } from "@/lib/loaders";
-import { ServiceStatus, classNames } from "@/lib/util";
+import { ServiceStatus, classNames, getStatusDotClasses } from "@/lib/util";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import PropTypes from "prop-types";
-
-
-const terminalStates = ["stopped", "expired"];
 
 
 /**
@@ -28,31 +25,16 @@ const terminalStates = ["stopped", "expired"];
  * @param {string} options.task
  * @return {JSX.Element}
  */
-function ServiceSelect({ profile, task }) {
+function ServiceSelect({ profile, task, onLaunch }) {
 
   const { services, error, isLoading } = useServices(profile, task);
   const { selectedService, setSelectedServiceId } = useContext(ServiceContext);
 
   if (error) {
     return (
-      <div className="rounded-md bg-red-50 border-red-100 ring-1 ring-red-300 p-4 mt-2 mb-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <ExclamationCircleIcon
-              aria-hidden="true"
-              className="size-5 text-red-500"
-            />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">
-              Failed to fetch services
-            </h3>
-            <div className="mt-2 font-light text-sm text-red-800">
-              <p>We ran into an issue while fetching the services available for this profile.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Alert variant="error" title="Failed to fetch services" className="mt-2 mb-4">
+        We ran into an issue while fetching the services available for this profile.
+      </Alert>
     );
   }
 
@@ -65,24 +47,11 @@ function ServiceSelect({ profile, task }) {
 
   if (profile && services.length === 0) {
     return (
-      <div className="rounded-md bg-gray-100 dark:bg-gray-700 p-4 mt-2 mb-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <ExclamationTriangleIcon
-              aria-hidden="true"
-              className="h-5 w-5 text-yellow-500"
-            />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              No services available
-            </h3>
-            <div className="mt-2 font-light text-sm text-gray-600 dark:text-gray-400">
-              <p>Click the launch button above to create a new service.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Alert variant="warning" title="No services available" className="mt-2 mb-4">
+        <button type="button" onClick={onLaunch} className="underline hover:no-underline">
+          Launch a new service
+        </button> to get started.
+      </Alert>
     );
   }
 
@@ -104,19 +73,7 @@ function ServiceSelect({ profile, task }) {
                             : "Offline"
                         }
                         className={classNames(
-                          terminalStates.includes(selectedService.status)
-                            ? "bg-gray-200"
-                            : selectedService.status === ServiceStatus.HEALTHY
-                              ? "bg-green-500"
-                              : selectedService.status === ServiceStatus.TIMEOUT ||
-                                selectedService.status === ServiceStatus.FAILED
-                                ? "bg-red-500"
-                                : selectedService.status === ServiceStatus.SUBMITTED
-                                  ? "bg-yellow-500"
-                                  : selectedService.status === ServiceStatus.STARTING ||
-                                    selectedService.status === ServiceStatus.PENDING
-                                    ? "animate-pulse bg-green-500"
-                                    : "bg-transparent border border-gray-300",
+                          getStatusDotClasses(selectedService.status),
                           "inline-block h-2 w-2 flex-shrink-0 rounded-full"
                         )}
                       />
@@ -145,19 +102,7 @@ function ServiceSelect({ profile, task }) {
                                 : "Offline"
                             }
                             className={classNames(
-                              terminalStates.includes(selectedService.status)
-                                ? "bg-gray-200"
-                                : selectedService.status === ServiceStatus.HEALTHY
-                                  ? "bg-green-500"
-                                  : selectedService.status === ServiceStatus.TIMEOUT ||
-                                    selectedService.status === ServiceStatus.FAILED
-                                    ? "bg-red-500"
-                                    : selectedService.status === ServiceStatus.SUBMITTED
-                                      ? "bg-yellow-500"
-                                      : selectedService.status === ServiceStatus.STARTING ||
-                                        selectedService.status === ServiceStatus.PENDING
-                                        ? "animate-pulse bg-green-500"
-                                        : "bg-transparent border border-gray-300",
+                              getStatusDotClasses(selectedService.status),
                               "inline-block h-2 w-2 flex-shrink-0 rounded-full"
                             )}
                           />
@@ -221,19 +166,7 @@ function ServiceSelect({ profile, task }) {
                         <div className="flex items-center">
                           <span
                             className={classNames(
-                              terminalStates.includes(service.status)
-                                ? "bg-gray-200"
-                                : service.status === ServiceStatus.HEALTHY
-                                  ? "bg-green-500"
-                                  : service.status === ServiceStatus.TIMEOUT ||
-                                    service.status === ServiceStatus.FAILED
-                                    ? "bg-red-500"
-                                    : service.status === ServiceStatus.SUBMITTED
-                                      ? "bg-yellow-500"
-                                      : service.status === ServiceStatus.STARTING ||
-                                        service.status === ServiceStatus.PENDING
-                                        ? "animate-pulse bg-green-500"
-                                        : "bg-transparent border border-gray-300",
+                              getStatusDotClasses(service.status),
                               "inline-block h-2 w-2 flex-shrink-0 rounded-full"
                             )}
                             aria-hidden="true"
@@ -281,6 +214,7 @@ function ServiceSelect({ profile, task }) {
 ServiceSelect.propTypes = {
   profile: PropTypes.object,
   task: PropTypes.string,
+  onLaunch: PropTypes.func,
 };
 
 export default ServiceSelect;

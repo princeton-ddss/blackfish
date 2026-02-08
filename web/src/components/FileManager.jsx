@@ -2,12 +2,10 @@ import { useEffect, useState } from "react";
 import {
     ArrowPathIcon,
     ArrowUpTrayIcon,
-    CheckCircleIcon,
-    XCircleIcon,
-    XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useFileSystem } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
+import Notification from "@/components/Notification";
 import FileManagerTable from "@/components/FileManagerTable";
 import DirectoryInput from "@/components/DirectoryInput";
 import FilterInput from "@/components/FilterInput";
@@ -136,7 +134,7 @@ function FileManager({
                             </div>
                         )}
                     </div>
-                    {enableUpload && (
+                    {enableUpload && isRemote ? (
                         <button
                             onClick={() => setUploadDialogOpen(true)}
                             disabled={status.disabled || operationInProgress}
@@ -145,6 +143,10 @@ function FileManager({
                         >
                             <ArrowUpTrayIcon className="h-5 w-5" />
                         </button>
+                    ) : (
+                        <div className="p-1.5">
+                            <div className="h-5 w-5" />
+                        </div>
                     )}
                 </div>
             )}
@@ -154,35 +156,14 @@ function FileManager({
                 path={path}
                 setPath={handlePathChange}
                 disabled={status.disabled || operationInProgress}
+                error={
+                    error?.status === 403 || error?.code === "permission_denied"
+                        ? { message: "Access denied" }
+                        : error?.status === 404 || error?.code === "not_found"
+                            ? { message: "Path not found" }
+                            : null
+                }
             />
-
-            {error?.status === 403 && (
-                <div className="rounded-md bg-red-50 p-4 mt-2">
-                    <div className="flex">
-                        <XCircleIcon className="h-5 w-5 text-red-400" />
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-red-800">Access Denied</p>
-                            <p className="text-sm text-red-700 mt-1">
-                                You don&apos;t have permission to access: {path}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {error?.status === 404 && (
-                <div className="rounded-md bg-yellow-50 p-4 mt-2">
-                    <div className="flex">
-                        <XCircleIcon className="h-5 w-5 text-yellow-400" />
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-yellow-800">Path Not Found</p>
-                            <p className="text-sm text-yellow-700 mt-1">
-                                The path does not exist: {path}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <FilterInput
                 className="sm:flex-auto"
@@ -199,7 +180,7 @@ function FileManager({
                 query={query}
                 setPath={handlePathChange}
                 isLoading={isLoading}
-                error={error}
+                error={error?.status === 403 || error?.status === 404 || error?.code === "permission_denied" || error?.code === "not_found" ? null : error}
                 refresh={refresh}
                 status={status}
                 onFileClick={handleFileClick}
@@ -227,36 +208,19 @@ function FileManager({
                 setOperationInProgress={setOperationInProgress}
             />
 
-            {operationSuccess && (
-                <div className="fixed top-4 right-4 z-50 rounded-md bg-green-50 p-4 shadow-lg">
-                    <div className="flex">
-                        <CheckCircleIcon className="h-5 w-5 text-green-400" />
-                        <p className="ml-3 text-sm font-medium text-green-800">
-                            {operationSuccess}
-                        </p>
-                        <button
-                            onClick={() => setOperationSuccess(null)}
-                            className="ml-auto focus:outline-none"
-                        >
-                            <XMarkIcon className="h-5 w-5 text-green-400" />
-                        </button>
-                    </div>
-                </div>
-            )}
+            <Notification
+                show={!!operationSuccess}
+                variant="success"
+                message={operationSuccess || ""}
+                onDismiss={() => setOperationSuccess(null)}
+            />
 
-            {operationError && (
-                <div className="fixed top-4 right-4 z-50 rounded-md bg-red-50 p-4 shadow-lg">
-                    <div className="flex">
-                        <XCircleIcon className="h-5 w-5 text-red-400" />
-                        <p className="ml-3 text-sm font-medium text-red-800">
-                            {operationError}
-                        </p>
-                        <button onClick={() => setOperationError(null)} className="ml-auto focus:outline-none">
-                            <XMarkIcon className="h-5 w-5 text-red-400" />
-                        </button>
-                    </div>
-                </div>
-            )}
+            <Notification
+                show={!!operationError}
+                variant="error"
+                message={operationError || ""}
+                onDismiss={() => setOperationError(null)}
+            />
         </div>
     );
 }

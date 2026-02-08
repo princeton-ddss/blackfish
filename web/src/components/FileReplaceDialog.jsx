@@ -9,10 +9,9 @@ import {
 } from "@headlessui/react";
 import {
     PencilSquareIcon,
-    XMarkIcon,
-    ExclamationCircleIcon,
     ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import Alert from "@/components/Alert";
 import { replaceFile, getFileType } from "@/lib/fileApi";
 import { fileSize, lastModified } from "@/lib/util";
 import PropTypes from "prop-types";
@@ -124,57 +123,57 @@ function FileReplaceDialog({
                             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                         >
-                            <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                            <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                                 <div>
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
                                         <PencilSquareIcon
-                                            className="h-6 w-6 text-blue-600"
+                                            className="h-6 w-6 text-blue-600 dark:text-blue-400"
                                             aria-hidden="true"
                                         />
                                     </div>
                                     <div className="mt-3 text-center sm:mt-5">
                                         <DialogTitle
                                             as="h3"
-                                            className="text-base font-semibold leading-6 text-gray-900"
+                                            className="text-base font-semibold leading-6 text-gray-900 dark:text-white"
                                         >
                                             Replace File
                                         </DialogTitle>
                                         <div className="mt-4">
                                             <div className="space-y-4">
-                                                <div className="bg-gray-50 rounded-lg p-3 text-left">
-                                                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-left">
+                                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                         Current File
                                                     </h4>
                                                     <div className="text-sm space-y-1">
                                                         <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-600">
+                                                            <span className="font-medium text-gray-600 dark:text-gray-400">
                                                                 Name:
                                                             </span>
-                                                            <span className="text-gray-900">
+                                                            <span className="text-gray-900 dark:text-gray-100">
                                                                 {fileToReplace.name}
                                                             </span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-600">
+                                                            <span className="font-medium text-gray-600 dark:text-gray-400">
                                                                 Size:
                                                             </span>
-                                                            <span className="text-gray-900">
+                                                            <span className="text-gray-900 dark:text-gray-100">
                                                                 {fileSize(fileToReplace.size)}
                                                             </span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-600">
+                                                            <span className="font-medium text-gray-600 dark:text-gray-400">
                                                                 Last Modified:
                                                             </span>
-                                                            <span className="text-gray-900">
+                                                            <span className="text-gray-900 dark:text-gray-100">
                                                                 {lastModified(fileToReplace.modified_at)}
                                                             </span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span className="font-medium text-gray-600">
+                                                            <span className="font-medium text-gray-600 dark:text-gray-400">
                                                                 Type:
                                                             </span>
-                                                            <span className="text-gray-900">
+                                                            <span className="text-gray-900 dark:text-gray-100">
                                                                 {fileType
                                                                     ? fileType.charAt(0).toUpperCase() +
                                                                     fileType.slice(1)
@@ -185,7 +184,7 @@ function FileReplaceDialog({
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 text-left mb-2">
+                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 text-left mb-2">
                                                         Select Replacement File (must be {fileExt})
                                                     </label>
                                                     <input
@@ -194,33 +193,33 @@ function FileReplaceDialog({
                                                         accept={acceptPattern}
                                                         onChange={handleFileChange}
                                                         disabled={replacing}
-                                                        className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                        className="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
                                                     />
                                                 </div>
 
                                                 {selectedFile && (
-                                                    <div className="bg-blue-50 rounded-lg p-3 text-left">
-                                                        <h4 className="text-sm font-medium text-blue-700 mb-2">
+                                                    <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-left">
+                                                        <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-2">
                                                             New File
                                                         </h4>
                                                         <div className="text-sm space-y-1">
                                                             <div className="flex justify-between">
-                                                                <span className="font-medium text-blue-600">
+                                                                <span className="font-medium text-blue-600 dark:text-blue-400">
                                                                     Name:
                                                                 </span>
-                                                                <span className="text-gray-900">
+                                                                <span className="text-gray-900 dark:text-gray-100">
                                                                     {selectedFile.name}
                                                                 </span>
                                                             </div>
                                                             <div className="flex justify-between">
-                                                                <span className="font-medium text-blue-600">
+                                                                <span className="font-medium text-blue-600 dark:text-blue-400">
                                                                     Size:
                                                                 </span>
-                                                                <span className="text-gray-900">
+                                                                <span className="text-gray-900 dark:text-gray-100">
                                                                     {fileSize(selectedFile.size)}
                                                                     {sizeDiff !== 0 && (
                                                                         <span
-                                                                            className={`ml-2 text-xs ${sizeDiff > 0 ? "text-orange-600" : "text-green-600"}`}
+                                                                            className={`ml-2 text-xs ${sizeDiff > 0 ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"}`}
                                                                         >
                                                                             ({sizeDiff > 0 ? "+" : ""}
                                                                             {fileSize(Math.abs(sizeDiff))})
@@ -233,28 +232,13 @@ function FileReplaceDialog({
                                                 )}
 
                                                 {error && (
-                                                    <div className="rounded-md bg-red-50 p-4">
-                                                        <div className="flex">
-                                                            <ExclamationCircleIcon
-                                                                className="h-5 w-5 text-red-400"
-                                                                aria-hidden="true"
-                                                            />
-                                                            <div className="ml-3">
-                                                                <h3 className="text-sm font-medium text-red-800">
-                                                                    Error
-                                                                </h3>
-                                                                <p className="mt-2 text-sm text-red-700">
-                                                                    {error}
-                                                                </p>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => setError(null)}
-                                                                className="ml-auto"
-                                                            >
-                                                                <XMarkIcon className="h-5 w-5 text-red-400" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                    <Alert
+                                                        variant="error"
+                                                        title="Error"
+                                                        onDismiss={() => setError(null)}
+                                                    >
+                                                        {error}
+                                                    </Alert>
                                                 )}
 
                                                 {replacing && (
@@ -278,7 +262,7 @@ function FileReplaceDialog({
                                     </button>
                                     <button
                                         type="button"
-                                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed sm:col-start-1 sm:mt-0"
+                                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed sm:col-start-1 sm:mt-0"
                                         onClick={handleClose}
                                         disabled={replacing}
                                     >

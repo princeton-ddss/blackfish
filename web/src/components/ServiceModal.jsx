@@ -134,6 +134,13 @@ function ServiceModal({
     }
   }, [models])
 
+  // auto-close modal on successful launch
+  useEffect(() => {
+    if (launchSuccess) {
+      setOpen(false);
+    }
+  }, [launchSuccess, setOpen])
+
   // reset on open
   useEffect(() => {
     if (open) {
@@ -254,7 +261,7 @@ function ServiceModal({
                         jobOptions={jobOptions}
                         setJobOptions={setJobOptions}
                         setValidationErrors={setValidationErrors}
-                        disabled={isLaunching || launchError || launchSuccess}
+                        disabled={isLaunching || launchSuccess}
                         profile={profile}
                         task={task}
                         resources={resources}
@@ -266,37 +273,34 @@ function ServiceModal({
 
                 {/* Footer with buttons */}
                 <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 sm:px-6 py-3 rounded-b-lg">
-                  {launchSuccess ? (
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        className="w-24 inline-flex justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
-                        onClick={() => setOpen(false)}
-                        ref={cancelButtonRef}
-                      >
-                        Close
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex justify-end gap-3">
-                      <button
-                        type="button"
-                        className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-2"
-                        onClick={() => setOpen(false)}
-                        ref={cancelButtonRef}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        className="w-24 inline-flex justify-center rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:bg-blue-200 dark:disabled:bg-blue-900"
-                        onClick={handleFormSubmit}
-                        disabled={!isDeepEmpty(validationErrors) || isLaunching}
-                      >
-                        Launch
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-2"
+                      onClick={() => setOpen(false)}
+                      ref={cancelButtonRef}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="w-28 inline-flex justify-center items-center gap-2 rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+                      onClick={handleFormSubmit}
+                      disabled={!isDeepEmpty(validationErrors) || isLaunching}
+                    >
+                      {isLaunching ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Launching
+                        </>
+                      ) : (
+                        "Launch"
+                      )}
+                    </button>
+                  </div>
                 </div>
               </DialogPanel>
             </TransitionChild>

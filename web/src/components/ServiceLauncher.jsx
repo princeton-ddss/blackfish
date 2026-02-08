@@ -17,10 +17,14 @@ function ServiceLauncher({
   profile,
   task,
   defaultContainerOptions,
-  ContainerOptionsFormComponent
+  ContainerOptionsFormComponent,
+  open: controlledOpen,
+  setOpen: controlledSetOpen,
 }) {
   const { models, isLoading } = useModels(profile, task)
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledSetOpen ?? setInternalOpen;
   const [launchSuccess, setLaunchSuccess] = React.useState(false);
   const [isLaunching, setIsLaunching] = React.useState(false);
   const [launchError, setLaunchError] = React.useState(null);
@@ -76,6 +80,8 @@ ServiceLauncher.propTypes = {
   task: PropTypes.string,
   defaultContainerOptions: PropTypes.object,
   ContainerOptionsFormComponent: PropTypes.elementType,
+  open: PropTypes.bool,
+  setOpen: PropTypes.func,
 };
 
 export default ServiceLauncher;

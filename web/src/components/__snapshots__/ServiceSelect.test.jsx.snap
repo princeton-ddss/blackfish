@@ -6,16 +6,11 @@ exports[`ServiceSelect > Disabled State when No Profile Selected 1`] = `
     <div
       data-testid="listbox"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="relative mt-2"
+        class="relative"
       >
         <button
-          class="relative w-full cursor-default rounded-md bg-gray-50 py-1.5 pl-1 pr-10 text-left text-gray-400 font-light shadow-sm ring-1 ring-inset ring-gray-200 focus:outline-none sm:text-sm sm:leading-6"
+          class="relative w-full cursor-default rounded-md bg-gray-50 dark:bg-gray-800 py-1.5 pl-1 pr-10 text-left text-gray-400 dark:text-gray-500 font-light shadow-sm ring-1 ring-inset ring-gray-200 dark:ring-gray-700 focus:outline-none sm:text-sm sm:leading-6"
           data-testid="listbox-button"
           disabled=""
         >
@@ -57,34 +52,32 @@ exports[`ServiceSelect > Error State 1`] = `
 <body>
   <div>
     <div
-      class="rounded-md bg-red-50 border-red-100 ring-1 ring-red-300 p-4 mt-2 mb-4"
+      class="rounded-md bg-red-50 dark:bg-red-500/15 dark:outline dark:outline-red-500/25 p-4 text-left mt-2 mb-4"
     >
       <div
-        class="flex"
+        class="flex items-start"
       >
         <div
-          class="flex-shrink-0"
+          class="shrink-0"
         >
           <svg
             aria-hidden="true"
-            class="size-5 text-red-500"
-            data-testid="exclamation-circle-icon"
+            class="size-5 text-red-400"
+            data-testid="x-circle-icon"
           />
         </div>
         <div
           class="ml-3"
         >
           <h3
-            class="text-sm font-medium text-red-800"
+            class="text-sm font-medium text-red-800 dark:text-red-200"
           >
             Failed to fetch services
           </h3>
           <div
-            class="mt-2 font-light text-sm text-red-800"
+            class="mt-2 text-sm text-red-700 dark:text-red-200/80"
           >
-            <p>
-              We ran into an issue while fetching the services available for this profile.
-            </p>
+            We ran into an issue while fetching the services available for this profile.
           </div>
         </div>
       </div>
@@ -100,16 +93,11 @@ exports[`ServiceSelect > Failed service selected 1`] = `
       data-testid="listbox"
       data-value="service-failed"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="relative mt-2"
+        class="relative"
       >
         <button
-          class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+          class="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
           data-testid="listbox-button"
         >
           <span
@@ -148,16 +136,11 @@ exports[`ServiceSelect > Healthy service selected 1`] = `
       data-testid="listbox"
       data-value="service-healthy"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="relative mt-2"
+        class="relative"
       >
         <button
-          class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+          class="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
           data-testid="listbox-button"
         >
           <span
@@ -203,43 +186,38 @@ exports[`ServiceSelect > No Services Available State 1`] = `
 <body>
   <div>
     <div
-      data-testid="field"
+      class="rounded-md bg-yellow-50 dark:bg-yellow-500/10 dark:outline dark:outline-yellow-500/15 p-4 text-left mt-2 mb-4"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="rounded-md bg-yellow-50 border-yellow-100 ring-1 ring-yellow-300 p-4 mt-2 mb-4"
+        class="flex items-start"
       >
         <div
-          class="flex"
+          class="shrink-0"
         >
-          <div
-            class="flex-shrink-0"
+          <svg
+            aria-hidden="true"
+            class="size-5 text-yellow-400 dark:text-yellow-300"
+            data-testid="exclamation-triangle-icon"
+          />
+        </div>
+        <div
+          class="ml-3"
+        >
+          <h3
+            class="text-sm font-medium text-yellow-800 dark:text-yellow-100"
           >
-            <svg
-              aria-hidden="true"
-              class="h-5 w-5 text-yellow-400"
-              data-testid="exclamation-triangle-icon"
-            />
-          </div>
+            No services available
+          </h3>
           <div
-            class="ml-3"
+            class="mt-2 text-sm text-yellow-700 dark:text-yellow-100/80"
           >
-            <h3
-              class="text-sm font-medium text-yellow-800"
+            <button
+              class="underline hover:no-underline"
+              type="button"
             >
-              No services available
-            </h3>
-            <div
-              class="mt-2 font-light text-sm text-yellow-800"
-            >
-              <p>
-                Click on the button below to create a new service under the selected profile.
-              </p>
-            </div>
+              Launch a new service
+            </button>
+             to get started.
           </div>
         </div>
       </div>
@@ -255,16 +233,11 @@ exports[`ServiceSelect > Pending service selected 1`] = `
       data-testid="listbox"
       data-value="service-pending"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="relative mt-2"
+        class="relative"
       >
         <button
-          class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+          class="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
           data-testid="listbox-button"
         >
           <span
@@ -272,7 +245,7 @@ exports[`ServiceSelect > Pending service selected 1`] = `
           >
             <span
               aria-label="Offline"
-              class="animate-pulse bg-green-500 inline-block h-2 w-2 flex-shrink-0 rounded-full"
+              class="animate-pulse bg-yellow-500 inline-block h-2 w-2 flex-shrink-0 rounded-full"
             />
             <span
               class="ml-3 block truncate"
@@ -302,16 +275,11 @@ exports[`ServiceSelect > Service Selection without Selected Service but with Pro
     <div
       data-testid="listbox"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="relative mt-2"
+        class="relative"
       >
         <button
-          class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+          class="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
           data-testid="listbox-button"
         >
           <span
@@ -346,16 +314,11 @@ exports[`ServiceSelect > Starting service selected 1`] = `
       data-testid="listbox"
       data-value="service-starting"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="relative mt-2"
+        class="relative"
       >
         <button
-          class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+          class="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
           data-testid="listbox-button"
         >
           <span
@@ -363,7 +326,7 @@ exports[`ServiceSelect > Starting service selected 1`] = `
           >
             <span
               aria-label="Offline"
-              class="animate-pulse bg-green-500 inline-block h-2 w-2 flex-shrink-0 rounded-full"
+              class="animate-pulse bg-yellow-500 inline-block h-2 w-2 flex-shrink-0 rounded-full"
             />
             <span
               class="ml-3 block truncate"
@@ -394,16 +357,11 @@ exports[`ServiceSelect > Submitted service selected 1`] = `
       data-testid="listbox"
       data-value="service-submitted"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="relative mt-2"
+        class="relative"
       >
         <button
-          class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+          class="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
           data-testid="listbox-button"
         >
           <span
@@ -411,7 +369,7 @@ exports[`ServiceSelect > Submitted service selected 1`] = `
           >
             <span
               aria-label="Offline"
-              class="bg-yellow-500 inline-block h-2 w-2 flex-shrink-0 rounded-full"
+              class="animate-pulse bg-yellow-500 inline-block h-2 w-2 flex-shrink-0 rounded-full"
             />
             <span
               class="ml-3 block truncate"
@@ -442,16 +400,11 @@ exports[`ServiceSelect > Timed-out service selected 1`] = `
       data-testid="listbox"
       data-value="service-timeout"
     >
-      <label
-        class="pt-2 block text-sm font-medium leading-6 text-gray-900"
-      >
-        Services
-      </label>
       <div
-        class="relative mt-2"
+        class="relative"
       >
         <button
-          class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
+          class="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
           data-testid="listbox-button"
         >
           <span

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import PropTypes from "prop-types";
 
 /**
@@ -9,9 +10,10 @@ import PropTypes from "prop-types";
  * @param {string} options.path - Current directory path.
  * @param {Function} options.setPath - React hook to update `path`.
  * @param {boolean} options.disabled - If the inputs are disabled.
+ * @param {object} options.error - Error object with message to display.
  * @return {JSX.Element}
  */
-function DirectoryInput({ root, path, setPath, disabled }) {
+function DirectoryInput({ root, path, setPath, disabled, error }) {
   const [input, setInput] = useState(root || "");
 
   useEffect(() => {
@@ -23,10 +25,13 @@ function DirectoryInput({ root, path, setPath, disabled }) {
     setPath(input);
   };
 
+  const hasError = !!error;
+  const borderColor = hasError ? "border-red-500" : "border-gray-300 dark:border-gray-600";
+
   return (
     <div>
-      <div className="mt-2 flex rounded-md">
-        <div className="relative flex flex-grow items-stretch focus-within:z-10">
+      <div className={`mt-2 flex rounded-md border ${borderColor}`}>
+        <div className="relative flex flex-grow items-stretch">
           <input
             disabled={disabled}
             id="directory"
@@ -43,8 +48,13 @@ function DirectoryInput({ root, path, setPath, disabled }) {
                 setInput(event.target.value);
               }
             }}
-            className={`block w-full rounded-none rounded-l-md border-0 py-1.5 pl-3 ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"} ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6`}
+            className={`block w-full rounded-l-md border-0 py-1.5 pl-3 ${hasError ? "pr-10" : ""} ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"} placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0 sm:text-sm sm:leading-6`}
           />
+          {hasError && (
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              <ExclamationCircleIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
+            </div>
+          )}
         </div>
         <button
           type="button"
@@ -52,7 +62,7 @@ function DirectoryInput({ root, path, setPath, disabled }) {
             if (!disabled) handleButtonClick();
           }}
           disabled={disabled}
-          className="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+          className="inline-flex items-center gap-x-1.5 rounded-r-md border-l border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
         >
           <MagnifyingGlassIcon
             aria-hidden="true"
@@ -61,6 +71,9 @@ function DirectoryInput({ root, path, setPath, disabled }) {
           Search
         </button>
       </div>
+      {hasError && error.message && (
+        <p className="mt-1 ml-3 text-xs font-light text-red-600 dark:text-red-400">{error.message}</p>
+      )}
     </div>
   );
 }
@@ -70,6 +83,9 @@ DirectoryInput.propTypes = {
   path: PropTypes.string,
   setPath: PropTypes.func,
   disabled: PropTypes.bool,
+  error: PropTypes.shape({
+    message: PropTypes.string,
+  }),
 };
 
 export default DirectoryInput;

@@ -18,7 +18,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import PropTypes from "prop-types";
-import { Highlight, themes, Prism } from "prism-react-renderer";
+import { Highlight, themes } from "prism-react-renderer";
+import Prism from "prismjs";
 
 // Add languages not bundled by default
 (typeof global !== "undefined" ? global : window).Prism = Prism;

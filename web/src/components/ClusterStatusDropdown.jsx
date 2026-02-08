@@ -1,6 +1,6 @@
 import { useContext, useState, useEffect } from "react";
 import { Popover, PopoverButton, PopoverPanel, Transition } from "@headlessui/react";
-import { ServerStackIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ServerStackIcon, ChevronRightIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useClusterStatus } from "@/lib/loaders";
 import { formattedTimeInterval } from "@/lib/util";
@@ -333,8 +333,18 @@ function ClusterStatusDropdown() {
               {/* Footer */}
               {status?.timestamp && (
                 <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                    Last updated <Timer refTime={new Date(status.timestamp)} />
+                  <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span>
+                      Last updated <Timer refTime={new Date(status.timestamp)} />
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => refresh()}
+                      className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      aria-label="Refresh cluster status"
+                    >
+                      <ArrowPathIcon className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               )}

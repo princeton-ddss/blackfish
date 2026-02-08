@@ -7,7 +7,7 @@ at the partition level.
 import re
 import json
 import subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any
 
@@ -223,12 +223,14 @@ class SlurmClusterInfo:
         """Check if this is a local connection."""
         return self.host == "localhost"
 
-    def _run_command(self, cmd: list[str]) -> bytes:
+    def _run_command(self, cmd: list[str], timeout: int = 10) -> bytes:
         """Run command locally or via SSH (sync/blocking)."""
         if self.is_local():
-            return subprocess.check_output(cmd)
+            return subprocess.check_output(cmd, timeout=timeout)
         else:
-            return subprocess.check_output(["ssh", f"{self.user}@{self.host}"] + cmd)
+            return subprocess.check_output(
+                ["ssh", f"{self.user}@{self.host}"] + cmd, timeout=timeout
+            )
 
     def get_status(self) -> ClusterStatus:
         """Query sinfo and squeue, return aggregated partition-level status."""
@@ -357,23 +359,7 @@ class SlurmClusterInfo:
         if "all" in result:
             any_up = any(p.state == "UP" for name, p in result.items() if name != "all")
             if any_up:
-                all_partition = result["all"]
-                result["all"] = PartitionResources(
-                    name=all_partition.name,
-                    state="UP",
-                    nodes_total=all_partition.nodes_total,
-                    nodes_idle=all_partition.nodes_idle,
-                    nodes_allocated=all_partition.nodes_allocated,
-                    nodes_down=all_partition.nodes_down,
-                    cpus_total=all_partition.cpus_total,
-                    cpus_idle=all_partition.cpus_idle,
-                    cpus_allocated=all_partition.cpus_allocated,
-                    memory_total_mb=all_partition.memory_total_mb,
-                    memory_allocated_mb=all_partition.memory_allocated_mb,
-                    gpus=all_partition.gpus,
-                    max_time_minutes=all_partition.max_time_minutes,
-                    features=all_partition.features,
-                )
+                result["all"] = replace(result["all"], state="UP")
 
         return result
 

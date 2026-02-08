@@ -325,6 +325,98 @@ class TestAggregateNodeGroups:
         assert result["gpu"].max_time_minutes == 21600
         assert result["cpu"].max_time_minutes == 43200
 
+    def test_all_partition_state_reflects_cluster(self):
+        """Test that 'all' partition shows UP if any other partition is UP."""
+        node_groups = [
+            # "all" partition is DOWN (as Slurm often reports it)
+            SinfoNodeGroup(
+                partition_name="all",
+                partition_state="DOWN",
+                max_time_minutes=None,
+                nodes_total=10,
+                nodes_idle=5,
+                nodes_allocated=5,
+                nodes_other=0,
+                cpus_total=1000,
+                cpus_idle=500,
+                cpus_allocated=500,
+                memory_max_per_node_mb=256000,
+                memory_allocated_mb=128000,
+                gpus_total={},
+                gpus_used={},
+                features=set(),
+            ),
+            # "gpu" partition is UP
+            SinfoNodeGroup(
+                partition_name="gpu",
+                partition_state="UP",
+                max_time_minutes=21600,
+                nodes_total=10,
+                nodes_idle=5,
+                nodes_allocated=5,
+                nodes_other=0,
+                cpus_total=1000,
+                cpus_idle=500,
+                cpus_allocated=500,
+                memory_max_per_node_mb=256000,
+                memory_allocated_mb=128000,
+                gpus_total={"a100": 4},
+                gpus_used={"a100": 2},
+                features={"a100"},
+            ),
+        ]
+
+        result = SlurmClusterInfo._aggregate_node_groups(node_groups)
+
+        # "all" should be UP because "gpu" is UP
+        assert result["all"].state == "UP"
+        assert result["gpu"].state == "UP"
+
+    def test_all_partition_stays_down_if_all_down(self):
+        """Test that 'all' partition stays DOWN if all partitions are DOWN."""
+        node_groups = [
+            SinfoNodeGroup(
+                partition_name="all",
+                partition_state="DOWN",
+                max_time_minutes=None,
+                nodes_total=10,
+                nodes_idle=0,
+                nodes_allocated=0,
+                nodes_other=10,
+                cpus_total=1000,
+                cpus_idle=0,
+                cpus_allocated=0,
+                memory_max_per_node_mb=256000,
+                memory_allocated_mb=0,
+                gpus_total={},
+                gpus_used={},
+                features=set(),
+            ),
+            SinfoNodeGroup(
+                partition_name="gpu",
+                partition_state="DOWN",
+                max_time_minutes=21600,
+                nodes_total=10,
+                nodes_idle=0,
+                nodes_allocated=0,
+                nodes_other=10,
+                cpus_total=1000,
+                cpus_idle=0,
+                cpus_allocated=0,
+                memory_max_per_node_mb=256000,
+                memory_allocated_mb=0,
+                gpus_total={},
+                gpus_used={},
+                features=set(),
+            ),
+        ]
+
+        result = SlurmClusterInfo._aggregate_node_groups(node_groups)
+
+        # "all" should stay DOWN because no partition is UP
+        assert result["all"].state == "DOWN"
+        assert result["gpu"].state == "DOWN"
+
 
 class TestAggregateJobs:
     """Tests for job aggregation logic."""
@@ -394,7 +486,7 @@ class TestSlurmClusterInfo:
 
         result = info._run_command(["sinfo", "--json"])
 
-        mock_check_output.assert_called_once_with(["sinfo", "--json"])
+        mock_check_output.assert_called_once_with(["sinfo", "--json"], timeout=10)
         assert result == b"test output"
 
     @mock.patch("subprocess.check_output")
@@ -406,7 +498,7 @@ class TestSlurmClusterInfo:
         result = info._run_command(["sinfo", "--json"])
 
         mock_check_output.assert_called_once_with(
-            ["ssh", "testuser@cluster.example.com", "sinfo", "--json"]
+            ["ssh", "testuser@cluster.example.com", "sinfo", "--json"], timeout=10
         )
         assert result == b"test output"
 

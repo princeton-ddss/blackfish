@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from os import urandom
 import json
+import subprocess
 import aiohttp
 from aiohttp.typedefs import StrOrURL
 import requests
@@ -1979,9 +1980,17 @@ async def get_cluster_status(profile_name: str) -> ClusterStatusResponse:
     try:
         cluster_info = SlurmClusterInfo(user=profile.user, host=profile.host)
         status = cluster_info.get_status()
+    except subprocess.TimeoutExpired:
+        raise InternalServerException(detail="Cluster query timed out")
+    except subprocess.CalledProcessError:
+        logger.error(f"Slurm command failed for profile {profile_name}")
+        raise InternalServerException(detail="Failed to query cluster")
+    except json.JSONDecodeError:
+        logger.error(f"Invalid JSON from Slurm for profile {profile_name}")
+        raise InternalServerException(detail="Invalid cluster response")
     except Exception as e:
-        logger.error(f"Failed to get cluster status: {e}")
-        raise InternalServerException(detail=f"Failed to query cluster: {e}")
+        logger.error(f"Unexpected error querying cluster: {e}")
+        raise InternalServerException(detail="Failed to query cluster")
 
     # Convert to response format (sets -> lists for JSON)
     partitions = {

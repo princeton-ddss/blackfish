@@ -1,18 +1,11 @@
-import { useContext, useState, useCallback } from "react";
+import { useContext, useState } from "react";
 import { ServiceContext } from "@/providers/ServiceProvider";
-import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
-import { fileToBase64, buildMultimodalContent } from "../lib/imageUtils";
 import {
   ArrowPathIcon,
   ClipboardDocumentIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/outline";
-import AttachmentMenu from "./AttachmentMenu";
-import ImageAttachmentList from "./ImageAttachmentList";
-import FileSelectModal from "@/components/FileSelectModal";
-import Notification from "@/components/Notification";
-import { IMAGE_EXTENSIONS } from "../lib/imageUtils";
 
 import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
@@ -25,13 +18,7 @@ import PropTypes from "prop-types";
  * @param {Function} options.setPrompt
  * @param {Function} options.handleSubmit
  * @param {object} options.selectedService
- * @param {boolean} options.isLoading
- * @param {Array} options.attachedImages
- * @param {Function} options.onRemoveImage
- * @param {Function} options.onImageError
- * @param {object} options.profile
- * @param {Function} options.onBrowserUpload
- * @param {Function} options.onRemoteSelect
+ * @param {JSX.Element} options.toolbar
  * @return {JSX.Element}
  */
 function TextGenerationPromptInput({
@@ -40,12 +27,6 @@ function TextGenerationPromptInput({
   handleSubmit,
   selectedService,
   toolbar,
-  attachedImages,
-  onRemoveImage,
-  onImageError,
-  profile,
-  onBrowserUpload,
-  onRemoteSelect,
 }) {
   /**
    * Set input value in React state and session storage.
@@ -65,23 +46,10 @@ function TextGenerationPromptInput({
         {toolbar}
       </div>
 
-      {/* TODO: disable while isLoading... */}
-
       <div className="flex items-start space-x-4">
         <div className="min-w-0 flex-1">
           <form action="#" onSubmit={handleSubmit} className="relative">
             <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md">
-              {/* Image attachments preview */}
-              {attachedImages.length > 0 && (
-                <div className="px-3 pt-2 border-b border-gray-200 dark:border-gray-600">
-                  <ImageAttachmentList
-                    images={attachedImages}
-                    onRemove={onRemoveImage}
-                    onImageError={onImageError}
-                  />
-                </div>
-              )}
-
               <label htmlFor="text-generation-text-input" className="sr-only">
                 Prompt anything
               </label>
@@ -113,17 +81,7 @@ function TextGenerationPromptInput({
               </div>
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
-              <div className="flex items-center space-x-5">
-                <div className="flex items-center">
-                  <AttachmentMenu
-                    profile={profile}
-                    onBrowserUpload={onBrowserUpload}
-                    onRemoteSelect={onRemoteSelect}
-                    onError={onImageError}
-                  />
-                </div>
-              </div>
+            <div className="absolute inset-x-0 bottom-0 flex justify-end py-2 pl-3 pr-2">
               <div className="shrink-0">
                 <button
                   type="submit"
@@ -149,14 +107,7 @@ TextGenerationPromptInput.propTypes = {
   setPrompt: PropTypes.func,
   handleSubmit: PropTypes.func,
   selectedService: PropTypes.object,
-  isLoading: PropTypes.bool,
   toolbar: PropTypes.node,
-  attachedImages: PropTypes.array,
-  onRemoveImage: PropTypes.func,
-  onImageError: PropTypes.func,
-  profile: PropTypes.object,
-  onBrowserUpload: PropTypes.func,
-  onRemoteSelect: PropTypes.func,
 };
 
 /**
@@ -165,7 +116,6 @@ TextGenerationPromptInput.propTypes = {
  * @param {string} options.content
  * @param {Function} options.handleSubmit
  * @param {object} options.selectedService
- * @param {boolean} options.isLoading
  * @return {JSX.Element}
  */
 function TextGenerationResponseOutput({
@@ -216,7 +166,6 @@ TextGenerationResponseOutput.propTypes = {
   content: PropTypes.string,
   handleSubmit: PropTypes.func,
   selectedService: PropTypes.object,
-  isLoading: PropTypes.bool
 };
 
 /**
@@ -228,7 +177,6 @@ TextGenerationResponseOutput.propTypes = {
  */
 function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
-  const { profile } = useContext(ProfileContext);
   const [prompt, setPrompt] = useState(
     sessionStorage.getItem("tgci") || ""
   );
@@ -236,31 +184,6 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
     sessionStorage.getItem("tgco") || ""
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [attachedImages, setAttachedImages] = useState([]);
-  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
-  const [imageError, setImageError] = useState(null);
-
-  const handleBrowserUpload = (files) => {
-    const newImages = files.map((file) => ({
-      source: "browser",
-      file: file,
-    }));
-    setAttachedImages((prev) => [...prev, ...newImages]);
-  };
-
-  const handleRemoteSelect = (image) => {
-    setAttachedImages((prev) => [...prev, image]);
-  };
-
-  const handleRemoveImage = (index) => {
-    setAttachedImages((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImageError = useCallback((fileName, errorMessage) => {
-    setImageError({ fileName, message: errorMessage });
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => setImageError(null), 5000);
-  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -271,39 +194,15 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
     setResponse("");
     sessionStorage.setItem("tgco", "");
 
-    // Build multimodal content if images are attached
-    let requestPrompt = textInput;
-    if (attachedImages.length > 0) {
-      try {
-        const imageUrls = await Promise.all(
-          attachedImages.map(async (img) => {
-            if (img.source === "browser") {
-              // Browser files must be converted to base64
-              return await fileToBase64(img.file);
-            } else {
-              // Remote files: pass file path directly (vLLM can read from filesystem)
-              return `file://${img.path}`;
-            }
-          })
-        );
-        requestPrompt = buildMultimodalContent(textInput, imageUrls);
-      } catch (error) {
-        console.error("Failed to convert images:", error);
-        setIsLoading(false);
-        return;
-      }
-    }
-
     const stream = streamCompletionInference(
       selectedService,
-      requestPrompt,
+      textInput,
       {
         ...parameters,
         stream: true,
       },
       true
     );
-
 
     const data = await stream.next();
     setIsLoading(false);
@@ -328,36 +227,12 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
         selectedService={selectedService}
         isLoading={isLoading}
         toolbar={toolbar}
-        attachedImages={attachedImages}
-        onRemoveImage={handleRemoveImage}
-        onImageError={handleImageError}
-        profile={profile}
-        onBrowserUpload={handleBrowserUpload}
-        onRemoteSelect={() => setFileBrowserOpen(true)}
       />
       <TextGenerationResponseOutput
         content={response || ""}
         handleSubmit={handleSubmit}
         selectedService={selectedService}
         isLoading={isLoading}
-      />
-
-      <FileSelectModal
-        open={fileBrowserOpen}
-        setOpen={setFileBrowserOpen}
-        profile={profile}
-        onSelect={(file) => handleRemoteSelect({ source: "remote", path: file.path, profile: file.profile })}
-        title="Select an image"
-        acceptedExtensions={IMAGE_EXTENSIONS}
-        extensionErrorMessage="Please select an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP)"
-      />
-
-      <Notification
-        show={!!imageError}
-        variant="error"
-        message="Failed to attach image"
-        detail={imageError ? `${imageError.fileName}: ${imageError.message}` : ""}
-        onDismiss={() => setImageError(null)}
       />
     </div>
   );

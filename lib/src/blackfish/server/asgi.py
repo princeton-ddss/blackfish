@@ -648,26 +648,30 @@ async def get_image(path: str, profile: Optional[str] = None) -> File | Stream:
         # Get file size and streaming generator
         file_size, chunk_generator = sftp.stream_file(remote_profile, path)
 
-        # Determine content type from extension
-        ext = os.path.splitext(path)[1].lower()
-        content_type = {
-            ".png": "image/png",
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-            ".gif": "image/gif",
-            ".bmp": "image/bmp",
-            ".tiff": "image/tiff",
-            ".webp": "image/webp",
-        }.get(ext, "application/octet-stream")
+        try:
+            # Determine content type from extension
+            ext = os.path.splitext(path)[1].lower()
+            content_type = {
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".gif": "image/gif",
+                ".bmp": "image/bmp",
+                ".tiff": "image/tiff",
+                ".webp": "image/webp",
+            }.get(ext, "application/octet-stream")
 
-        return Stream(
-            chunk_generator,
-            media_type=content_type,
-            headers={
-                "Content-Length": str(file_size),
-                "Content-Disposition": f'attachment; filename="{os.path.basename(path)}"',
-            },
-        )
+            return Stream(
+                chunk_generator,
+                media_type=content_type,
+                headers={
+                    "Content-Length": str(file_size),
+                    "Content-Disposition": f'attachment; filename="{os.path.basename(path)}"',
+                },
+            )
+        except Exception:
+            chunk_generator.close()
+            raise
 
     file_path = Path(path)
 

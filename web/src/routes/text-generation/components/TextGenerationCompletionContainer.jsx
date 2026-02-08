@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useCallback } from "react";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
@@ -16,6 +16,7 @@ import {
 import AttachmentMenu from "./AttachmentMenu";
 import ImageAttachmentList from "./ImageAttachmentList";
 import FileSelectModal from "@/components/FileSelectModal";
+import Notification from "@/components/Notification";
 import { IMAGE_EXTENSIONS } from "../lib/imageUtils";
 
 import { ServiceStatus } from "@/lib/util";
@@ -32,6 +33,7 @@ import PropTypes from "prop-types";
  * @param {boolean} options.isLoading
  * @param {Array} options.attachedImages
  * @param {Function} options.onRemoveImage
+ * @param {Function} options.onImageError
  * @param {object} options.profile
  * @param {Function} options.onBrowserUpload
  * @param {Function} options.onRemoteSelect
@@ -45,6 +47,7 @@ function TextGenerationPromptInput({
   toolbar,
   attachedImages,
   onRemoveImage,
+  onImageError,
   profile,
   onBrowserUpload,
   onRemoteSelect,
@@ -79,6 +82,7 @@ function TextGenerationPromptInput({
                   <ImageAttachmentList
                     images={attachedImages}
                     onRemove={onRemoveImage}
+                    onImageError={onImageError}
                   />
                 </div>
               )}
@@ -121,6 +125,7 @@ function TextGenerationPromptInput({
                     profile={profile}
                     onBrowserUpload={onBrowserUpload}
                     onRemoteSelect={onRemoteSelect}
+                    onError={onImageError}
                   />
                 </div>
               </div>
@@ -153,6 +158,7 @@ TextGenerationPromptInput.propTypes = {
   toolbar: PropTypes.node,
   attachedImages: PropTypes.array,
   onRemoveImage: PropTypes.func,
+  onImageError: PropTypes.func,
   profile: PropTypes.object,
   onBrowserUpload: PropTypes.func,
   onRemoteSelect: PropTypes.func,
@@ -237,6 +243,7 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const [isLoading, setIsLoading] = useState(false);
   const [attachedImages, setAttachedImages] = useState([]);
   const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+  const [imageError, setImageError] = useState(null);
 
   const handleBrowserUpload = (files) => {
     const newImages = files.map((file) => ({
@@ -253,6 +260,12 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const handleRemoveImage = (index) => {
     setAttachedImages((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const handleImageError = useCallback((fileName, errorMessage) => {
+    setImageError({ fileName, message: errorMessage });
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => setImageError(null), 5000);
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -321,6 +334,7 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
         toolbar={toolbar}
         attachedImages={attachedImages}
         onRemoveImage={handleRemoveImage}
+        onImageError={handleImageError}
         profile={profile}
         onBrowserUpload={handleBrowserUpload}
         onRemoteSelect={() => setFileBrowserOpen(true)}
@@ -340,6 +354,14 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
         title="Select an image"
         acceptedExtensions={IMAGE_EXTENSIONS}
         extensionErrorMessage="Please select an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP)"
+      />
+
+      <Notification
+        show={!!imageError}
+        variant="error"
+        message="Failed to attach image"
+        detail={imageError ? `${imageError.fileName}: ${imageError.message}` : ""}
+        onDismiss={() => setImageError(null)}
       />
     </div>
   );

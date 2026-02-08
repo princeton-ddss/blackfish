@@ -7,21 +7,36 @@ import {
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 /**
  * Dropdown menu for attaching files (browser upload or remote selection).
  * @param {object} props
  * @param {object|null} props.profile - Current profile to determine remote availability.
  * @param {Function} props.onBrowserUpload - Callback when browser files are selected.
  * @param {Function} props.onRemoteSelect - Callback to open remote file browser.
+ * @param {Function} props.onError - Callback when file validation fails.
  */
-function AttachmentMenu({ profile, onBrowserUpload, onRemoteSelect }) {
+function AttachmentMenu({ profile, onBrowserUpload, onRemoteSelect, onError }) {
   const fileInputRef = useRef(null);
   const isRemote = profile && profile.schema !== "local";
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files || []);
-    if (files.length > 0) {
-      onBrowserUpload(files);
+    const validFiles = [];
+
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        if (onError) {
+          onError(file.name, "File exceeds 5MB limit");
+        }
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    if (validFiles.length > 0) {
+      onBrowserUpload(validFiles);
     }
     // Reset input so the same file can be selected again
     event.target.value = "";
@@ -105,6 +120,7 @@ AttachmentMenu.propTypes = {
   profile: PropTypes.object,
   onBrowserUpload: PropTypes.func.isRequired,
   onRemoteSelect: PropTypes.func.isRequired,
+  onError: PropTypes.func,
 };
 
 export default AttachmentMenu;

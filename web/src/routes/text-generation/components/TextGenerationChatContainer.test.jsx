@@ -13,12 +13,21 @@ vi.mock("../lib/requests", () => ({
   streamChatCompletionInference: vi.fn(),
 }));
 
+vi.mock("@heroicons/react/20/solid", () => ({
+  XMarkIcon: ({ className, ...props }) => {
+    return <div data-testid="x-mark-icon-solid" className={className} {...props} />;
+  },
+}));
+
 vi.mock("@heroicons/react/24/outline", () => ({
   ArrowPathIcon: ({ className, ...props }) => {
     return <div data-testid="arrow-path-icon" className={className} {...props} />;
   },
   CheckIcon: ({ className, ...props }) => {
     return <div data-testid="check-icon" className={className} {...props} />;
+  },
+  CheckCircleIcon: ({ className, ...props }) => {
+    return <div data-testid="check-circle-icon" className={className} {...props} />;
   },
   ClipboardDocumentIcon: ({ className, ...props }) => {
     return <div data-testid="clipboard-icon" className={className} {...props} />;
@@ -31,6 +40,9 @@ vi.mock("@heroicons/react/24/outline", () => ({
   },
   PencilIcon: ({ className, ...props }) => {
     return <div data-testid="pencil-icon" className={className} {...props} />;
+  },
+  XCircleIcon: ({ className, ...props }) => {
+    return <div data-testid="x-circle-icon" className={className} {...props} />;
   },
   XMarkIcon: ({ className, ...props }) => {
     return <div data-testid="x-mark-icon" className={className} {...props} />;

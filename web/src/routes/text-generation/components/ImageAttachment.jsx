@@ -8,12 +8,13 @@ import PropTypes from "prop-types";
  * @param {object} props
  * @param {object} props.image - The image object with source and file/path info.
  * @param {Function} props.onRemove - Callback to remove this image.
+ * @param {Function} props.onError - Callback when image loading fails.
  * @param {number} props.index - Index of this image in the list.
  */
-function ImageAttachment({ image, onRemove, index }) {
+function ImageAttachment({ image, onRemove, onError, index }) {
   const [imageUrl, setImageUrl] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // TEMP: disabled loading
+  const [error, setError] = useState("Not found (404)"); // TEMP: force error
   const [progress, setProgress] = useState(0);
   const [hasContentLength, setHasContentLength] = useState(false);
 
@@ -41,7 +42,12 @@ function ImageAttachment({ image, onRemove, index }) {
 
           const response = await fetch(url);
           if (!response.ok) {
-            throw new Error("Failed to load image");
+            const statusMessages = {
+              404: "Not found",
+              403: "Access denied",
+              500: "Server error",
+            };
+            throw new Error(statusMessages[response.status] || `Error (${response.status})`);
           }
 
           const contentLength = response.headers.get("Content-Length");
@@ -76,6 +82,10 @@ function ImageAttachment({ image, onRemove, index }) {
       } catch (err) {
         console.error("Failed to load image:", err);
         setError(err.message);
+        if (onError) {
+          const name = image.source === "browser" ? image.file.name : image.path.split("/").pop();
+          onError(name, err.message);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -89,7 +99,7 @@ function ImageAttachment({ image, onRemove, index }) {
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [image]);
+  }, [image, onError]);
 
   const displayName =
     image.source === "browser"
@@ -139,15 +149,17 @@ function ImageAttachment({ image, onRemove, index }) {
         </div>
       </div>
 
-      {/* Remove button - outside overflow-hidden container */}
-      <button
-        type="button"
-        onClick={() => onRemove(index)}
-        className="absolute -top-2.5 -right-2.5 z-50 w-5 h-5 bg-gray-800 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-900"
-        aria-label={`Remove ${displayName}`}
-      >
-        <XMarkIcon className="w-3 h-3 text-white" />
-      </button>
+      {/* Remove button - hidden during loading to prevent race condition */}
+      {!isLoading && (
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="absolute -top-2.5 -right-2.5 z-50 w-5 h-5 bg-gray-800 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-900"
+          aria-label={`Remove ${displayName}`}
+        >
+          <XMarkIcon className="w-3 h-3 text-white" />
+        </button>
+      )}
     </div>
   );
 }
@@ -160,6 +172,7 @@ ImageAttachment.propTypes = {
     profile: PropTypes.object,
   }).isRequired,
   onRemove: PropTypes.func.isRequired,
+  onError: PropTypes.func,
   index: PropTypes.number.isRequired,
 };
 

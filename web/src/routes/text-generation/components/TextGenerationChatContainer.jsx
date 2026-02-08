@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, useRef } from "react";
+import { useContext, useEffect, useState, useRef, useCallback } from "react";
 import {
   ArrowPathIcon,
   CheckIcon,
@@ -21,6 +21,7 @@ import { blackfishApiURL } from "@/config";
 import AttachmentMenu from "./AttachmentMenu";
 import ImageAttachmentList from "./ImageAttachmentList";
 import FileSelectModal from "@/components/FileSelectModal";
+import Notification from "@/components/Notification";
 import { IMAGE_EXTENSIONS } from "../lib/imageUtils";
 import PropTypes from "prop-types";
 
@@ -38,6 +39,7 @@ const Role = {
  * @param {Function} options.onSubmit
  * @param {Array} options.attachedImages
  * @param {Function} options.onRemoveImage
+ * @param {Function} options.onImageError
  * @param {object} options.profile
  * @param {Function} options.onBrowserUpload
  * @param {Function} options.onRemoteSelect
@@ -49,6 +51,7 @@ function UserMessageInput({
   onSubmit,
   attachedImages,
   onRemoveImage,
+  onImageError,
   profile,
   onBrowserUpload,
   onRemoteSelect,
@@ -64,6 +67,7 @@ function UserMessageInput({
                 <ImageAttachmentList
                   images={attachedImages}
                   onRemove={onRemoveImage}
+                  onImageError={onImageError}
                 />
               </div>
             )}
@@ -106,6 +110,7 @@ function UserMessageInput({
                   profile={profile}
                   onBrowserUpload={onBrowserUpload}
                   onRemoteSelect={onRemoteSelect}
+                  onError={onImageError}
                 />
               </div>
             </div>
@@ -132,6 +137,7 @@ UserMessageInput.propTypes = {
   onSubmit: PropTypes.func,
   attachedImages: PropTypes.array,
   onRemoveImage: PropTypes.func,
+  onImageError: PropTypes.func,
   profile: PropTypes.object,
   onBrowserUpload: PropTypes.func,
   onRemoteSelect: PropTypes.func,
@@ -481,6 +487,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   });
   const [attachedImages, setAttachedImages] = useState([]);
   const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+  const [imageError, setImageError] = useState(null);
 
   const elementRef = useRef(null);
 
@@ -508,6 +515,12 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   const handleRemoveImage = (index) => {
     setAttachedImages((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const handleImageError = useCallback((fileName, errorMessage) => {
+    setImageError({ fileName, message: errorMessage });
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => setImageError(null), 5000);
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -663,6 +676,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         onSubmit={handleSubmit}
         attachedImages={attachedImages}
         onRemoveImage={handleRemoveImage}
+        onImageError={handleImageError}
         profile={profile}
         onBrowserUpload={handleBrowserUpload}
         onRemoteSelect={() => setFileBrowserOpen(true)}
@@ -676,6 +690,14 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         title="Select an image"
         acceptedExtensions={IMAGE_EXTENSIONS}
         extensionErrorMessage="Please select an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP)"
+      />
+
+      <Notification
+        show={!!imageError}
+        variant="error"
+        message="Failed to attach image"
+        detail={imageError ? `${imageError.fileName}: ${imageError.message}` : ""}
+        onDismiss={() => setImageError(null)}
       />
     </div>
   );

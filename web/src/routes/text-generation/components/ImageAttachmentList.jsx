@@ -6,8 +6,9 @@ import PropTypes from "prop-types";
  * @param {object} props
  * @param {Array} props.images - Array of image objects.
  * @param {Function} props.onRemove - Callback to remove an image by index.
+ * @param {Function} props.onImageError - Callback when an image fails to load.
  */
-function ImageAttachmentList({ images, onRemove }) {
+function ImageAttachmentList({ images, onRemove, onImageError }) {
   if (!images || images.length === 0) {
     return null;
   }
@@ -19,6 +20,7 @@ function ImageAttachmentList({ images, onRemove }) {
           key={`${image.source}-${image.source === "browser" ? image.file.name : image.path}-${index}`}
           image={image}
           onRemove={onRemove}
+          onError={onImageError}
           index={index}
         />
       ))}
@@ -36,6 +38,7 @@ ImageAttachmentList.propTypes = {
     })
   ).isRequired,
   onRemove: PropTypes.func.isRequired,
+  onImageError: PropTypes.func,
 };
 
 export default ImageAttachmentList;

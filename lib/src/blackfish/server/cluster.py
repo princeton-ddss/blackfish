@@ -256,7 +256,7 @@ class SlurmClusterInfo:
         """Check if this is a local connection."""
         return self.host == "localhost"
 
-    def _run_command(self, cmd: list[str], timeout: int = 10) -> bytes:
+    def _run_command(self, cmd: list[str], timeout: int = 30) -> bytes:
         """Run command locally or via SSH (sync/blocking)."""
         if self.is_local():
             return subprocess.check_output(cmd, timeout=timeout)
@@ -284,13 +284,12 @@ class SlurmClusterInfo:
         """Query sinfo and squeue asynchronously.
 
         Uses asyncio.to_thread() to run blocking subprocess calls without
-        blocking the event loop.
+        blocking the event loop. Commands run sequentially to avoid SSH
+        connection contention.
         """
-        # Run both commands concurrently in thread pool
-        sinfo_raw, squeue_raw = await asyncio.gather(
-            asyncio.to_thread(self._run_command, ["sinfo", "--json"]),
-            asyncio.to_thread(self._run_command, ["squeue", "--json"]),
-        )
+        sinfo_raw = await asyncio.to_thread(self._run_command, ["sinfo", "--json"])
+        squeue_raw = await asyncio.to_thread(self._run_command, ["squeue", "--json"])
+
         sinfo_data = json.loads(sinfo_raw)
         squeue_data = json.loads(squeue_raw)
 

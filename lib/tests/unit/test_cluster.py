@@ -490,7 +490,7 @@ class TestSlurmClusterInfo:
 
         result = info._run_command(["sinfo", "--json"])
 
-        mock_check_output.assert_called_once_with(["sinfo", "--json"], timeout=10)
+        mock_check_output.assert_called_once_with(["sinfo", "--json"], timeout=30)
         assert result == b"test output"
 
     @mock.patch("subprocess.check_output")
@@ -502,7 +502,7 @@ class TestSlurmClusterInfo:
         result = info._run_command(["sinfo", "--json"])
 
         mock_check_output.assert_called_once_with(
-            ["ssh", "testuser@cluster.example.com", "sinfo", "--json"], timeout=10
+            ["ssh", "testuser@cluster.example.com", "sinfo", "--json"], timeout=30
         )
         assert result == b"test output"
 

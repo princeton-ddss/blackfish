@@ -92,6 +92,7 @@ from blackfish.server.models.profile import (
 )
 from blackfish.server.models.model import Model
 from blackfish.server.job import JobConfig, JobScheduler, SlurmJobConfig
+from blackfish.server.cluster import ClusterQueryError, SlurmClusterInfo
 from blackfish.server.browser import RemoteFileBrowserSession
 
 import importlib.metadata
@@ -561,10 +562,15 @@ async def get_files(
     resolved_path = os.path.expanduser(path)
     if os.path.isdir(resolved_path):
         try:
-            return {"path": resolved_path, "files": listdir(resolved_path, hidden=hidden)}
+            return {
+                "path": resolved_path,
+                "files": listdir(resolved_path, hidden=hidden),
+            }
         except PermissionError:
             logger.debug("Permission error raised")
-            raise NotAuthorizedException(f"User not authorized to access {resolved_path}")
+            raise NotAuthorizedException(
+                f"User not authorized to access {resolved_path}"
+            )
     else:
         logger.debug("Not found error")
         raise NotFoundException(detail=f"Path {resolved_path} does not exist.")
@@ -573,6 +579,19 @@ async def get_files(
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
 TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
 AUDIO_EXTENSIONS = [".wav", ".mp3"]
+
+# Mapping of task/image types to compatible pipeline tags
+# e.g., text-generation services can also run image-text-to-text models (VLMs)
+# See: https://docs.vllm.ai/en/latest/models/supported_models.html
+COMPATIBLE_PIPELINES: dict[str, list[str]] = {
+    "text-generation": [
+        "text-generation",
+        "image-text-to-text",
+        "audio-text-to-text",
+        "video-text-to-text",
+        "image-to-text",
+    ],
+}
 
 
 def has_image_extension(path: str) -> str:
@@ -1696,8 +1715,10 @@ async def get_models(
         except Exception as e:
             logger.error(f"Failed to execute transaction: {e}")
         if image is not None:
+            # Use compatible pipelines if defined, otherwise exact match
+            compatible = COMPATIBLE_PIPELINES.get(image, [image])
             return sorted(
-                list(filter(lambda x: x.image == image, models)),
+                list(filter(lambda x: x.image in compatible, models)),
                 key=lambda x: x.repo.lower(),
             )
         else:
@@ -1705,17 +1726,16 @@ async def get_models(
     else:
         logger.info("Querying model table...")
 
-        query_filter = {}
+        # Build query with optional filters
+        query = sa.select(Model)
         if profile is not None:
-            query_filter["profile"] = profile
+            query = query.where(Model.profile == profile)
         if image is not None:
-            query_filter["image"] = image
+            # Use compatible pipelines if defined, otherwise exact match
+            compatible = COMPATIBLE_PIPELINES.get(image, [image])
+            query = query.where(Model.image.in_(compatible))
 
-        select_query = (
-            sa.select(Model)
-            .filter_by(**query_filter)
-            .order_by(sa.func.lower(Model.repo))
-        )
+        select_query = query.order_by(sa.func.lower(Model.repo))
         try:
             res = await session.execute(select_query)
             return list(res.scalars().all())
@@ -1918,6 +1938,116 @@ async def read_profile(name: str) -> Profile | None:
         raise NotFoundException(detail="Profile not found.")
 
 
+# --- Cluster Status ---
+@dataclass
+class GpuAvailabilityResponse:
+    gpu_type: str
+    total: int
+    used: int
+    idle: int
+
+
+@dataclass
+class PartitionResourcesResponse:
+    name: str
+    state: str
+    nodes_total: int
+    nodes_idle: int
+    nodes_allocated: int
+    nodes_down: int
+    cpus_total: int
+    cpus_idle: int
+    cpus_allocated: int
+    memory_total_mb: int
+    memory_allocated_mb: int
+    gpus: list[GpuAvailabilityResponse]
+    max_time_minutes: int | None
+    features: list[str]  # Convert set to list for JSON serialization
+
+
+@dataclass
+class QueueStatsResponse:
+    running: int
+    pending: int
+    pending_reasons: dict[str, int]
+
+
+@dataclass
+class ClusterStatusResponse:
+    partitions: dict[str, PartitionResourcesResponse]
+    queue: dict[str, QueueStatsResponse]
+    timestamp: str  # ISO format string
+
+
+@get("/api/cluster/{profile_name:str}/status", guards=ENDPOINT_GUARDS)
+async def get_cluster_status(profile_name: str) -> ClusterStatusResponse:
+    """Get current cluster resource availability for a Slurm profile."""
+    try:
+        profile = deserialize_profile(blackfish_config.HOME_DIR, profile_name)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profile config not found.")
+
+    if profile is None:
+        raise NotFoundException(detail=f"Profile '{profile_name}' not found.")
+
+    if not isinstance(profile, SlurmProfile):
+        raise ValidationException(
+            detail=f"Profile '{profile_name}' is not a Slurm profile. "
+            "Cluster status is only available for Slurm profiles."
+        )
+
+    try:
+        cluster_info = SlurmClusterInfo(user=profile.user, host=profile.host)
+        status = await cluster_info.get_status_async()
+    except ClusterQueryError as e:
+        logger.warning(f"Cluster query failed for {profile_name}: {e.error_type}")
+        raise InternalServerException(detail=e.user_message())
+    except Exception as e:
+        logger.error(f"Unexpected error querying cluster {profile_name}: {e}")
+        raise InternalServerException(detail="Failed to query cluster status.")
+
+    # Convert to response format (sets -> lists for JSON)
+    partitions = {
+        name: PartitionResourcesResponse(
+            name=p.name,
+            state=p.state,
+            nodes_total=p.nodes_total,
+            nodes_idle=p.nodes_idle,
+            nodes_allocated=p.nodes_allocated,
+            nodes_down=p.nodes_down,
+            cpus_total=p.cpus_total,
+            cpus_idle=p.cpus_idle,
+            cpus_allocated=p.cpus_allocated,
+            memory_total_mb=p.memory_total_mb,
+            memory_allocated_mb=p.memory_allocated_mb,
+            gpus=[
+                GpuAvailabilityResponse(
+                    gpu_type=g.gpu_type, total=g.total, used=g.used, idle=g.idle
+                )
+                for g in p.gpus
+            ],
+            max_time_minutes=p.max_time_minutes,
+            features=sorted(p.features),
+        )
+        for name, p in status.partitions.items()
+    }
+
+    queue = {
+        name: QueueStatsResponse(
+            running=q.running,
+            pending=q.pending,
+            pending_reasons=q.pending_reasons,
+        )
+        for name, q in status.queue.items()
+    }
+
+    return ClusterStatusResponse(
+        partitions=partitions,
+        queue=queue,
+        timestamp=status.timestamp.isoformat(),
+    )
+
+
 # --- Config ---
 BASE_DIR = module_to_os_path("blackfish.server")
 
@@ -2007,6 +2137,23 @@ def not_found_exception_handler(
     return Template(template_name="index.html", status_code=HTTP_404_NOT_FOUND)
 
 
+def internal_server_exception_handler(
+    request: Request[Any, Any, Any], exc: InternalServerException
+) -> Response[Any]:
+    """Handle 500 errors - return JSON with detail for API routes."""
+    if request.url.path.startswith("/api/"):
+        return Response(
+            content={"detail": exc.detail or "Internal server error"},
+            status_code=500,
+            media_type="application/json",
+        )
+    return Response(
+        content={"detail": "Internal server error"},
+        status_code=500,
+        media_type="application/json",
+    )
+
+
 app = Litestar(
     path=blackfish_config.BASE_PATH,
     route_handlers=[
@@ -2053,6 +2200,7 @@ app = Litestar(
         delete_models,
         read_profiles,
         read_profile,
+        get_cluster_status,
         assets_server,
         img_server,
     ],
@@ -2064,5 +2212,8 @@ app = Litestar(
     openapi_config=openapi_config,
     template_config=template_config,
     middleware=[session_config.middleware],
-    exception_handlers={NotFoundException: not_found_exception_handler},
+    exception_handlers={
+        NotFoundException: not_found_exception_handler,
+        InternalServerException: internal_server_exception_handler,
+    },
 )

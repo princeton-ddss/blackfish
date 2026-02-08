@@ -51,6 +51,41 @@ class TestFetchModelsAPI:
         for model in result:
             assert model.get("image") == "text_generation"
 
+    async def test_fetch_models_by_image_includes_compatible_pipelines(
+        self, client: AsyncTestClient
+    ):
+        """Test that fetching models by image includes compatible pipeline types.
+
+        For example, text-generation should also return image-text-to-text models
+        (VLMs like LLaVA) since vLLM can serve them via the chat completions API.
+        """
+        # Create a VLM model with image-text-to-text pipeline
+        vlm_model = {
+            "id": f"{uuid4()}",
+            "repo": "llava-hf/llava-1.5-7b-hf",
+            "profile": "default",
+            "revision": "main",
+            "image": "image-text-to-text",
+            "model_dir": "/home/test/.blackfish/models/models--llava-hf/llava-1.5-7b-hf",
+        }
+        create_response = await client.post("/api/models", json=vlm_model)
+        assert create_response.status_code == 201
+
+        # Query for text-generation models
+        response = await client.get("/api/models", params={"image": "text-generation"})
+
+        assert response.status_code == 200
+        result = response.json()
+        assert isinstance(result, list)
+
+        # Should include both text-generation and image-text-to-text models
+        images = {model.get("image") for model in result}
+        assert "image-text-to-text" in images
+
+        # Verify the VLM model is in the results
+        vlm_ids = [m["id"] for m in result if m["image"] == "image-text-to-text"]
+        assert vlm_model["id"] in vlm_ids
+
     async def test_fetch_models_with_refresh(self, client: AsyncTestClient):
         """Test fetching models with refresh parameter."""
 

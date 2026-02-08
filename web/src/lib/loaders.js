@@ -173,7 +173,7 @@ export const useClusterStatus = (profile) => {
     key,
     () => fetchClusterStatus(profile.name),
     {
-      refreshInterval: 60_000, // refresh every minute
+      refreshInterval: 300_000, // refresh every 5 minutes
       revalidateOnFocus: false,
     }
   );

@@ -202,6 +202,7 @@ def write_file(
         raise NotAuthorizedException(f"Permission denied: {path}")
     except IOError as e:
         import errno as errno_module
+
         err_num = getattr(e, "errno", None)
         logger.error(f"Remote file write IOError: {e} (errno={err_num})")
 

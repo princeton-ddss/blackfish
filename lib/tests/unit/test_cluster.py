@@ -6,6 +6,8 @@ from unittest import mock
 import pytest
 
 from blackfish.server.cluster import (
+    JobState,
+    PartitionState,
     SinfoNodeGroup,
     SlurmClusterInfo,
     SqueueJob,
@@ -93,7 +95,7 @@ class TestParseSinfoEntry:
 
         assert isinstance(result, SinfoNodeGroup)
         assert result.partition_name == "gpu"
-        assert result.partition_state == "UP"
+        assert result.partition_state == PartitionState.UP
         assert result.max_time_minutes == 21600
         assert result.nodes_total == 8
         assert result.nodes_idle == 2
@@ -137,7 +139,7 @@ class TestParseSinfoEntry:
         result = parse_sinfo_entry(entry)
 
         assert result.partition_name == "test"
-        assert result.partition_state == "UNKNOWN"
+        assert result.partition_state == PartitionState.UNKNOWN
         assert result.nodes_total == 0
         assert result.features == set()
 
@@ -157,7 +159,7 @@ class TestParseSqueueJob:
 
         assert isinstance(result, SqueueJob)
         assert result.partition == "gpu"
-        assert result.state == "RUNNING"
+        assert result.state == JobState.RUNNING
         assert result.state_reason == "None"
 
     def test_parse_pending_job(self):
@@ -171,7 +173,7 @@ class TestParseSqueueJob:
         result = parse_squeue_job(job)
 
         assert result.partition == "cpu"
-        assert result.state == "PENDING"
+        assert result.state == JobState.PENDING
         assert result.state_reason == "Priority"
 
     def test_parse_job_empty_state(self):
@@ -184,7 +186,7 @@ class TestParseSqueueJob:
 
         result = parse_squeue_job(job)
 
-        assert result.state == "UNKNOWN"
+        assert result.state == JobState.UNKNOWN
         assert result.state_reason == "None"
 
 
@@ -198,7 +200,7 @@ class TestAggregateNodeGroups:
             # First group in 'gpu' partition - 8 nodes with A100s
             SinfoNodeGroup(
                 partition_name="gpu",
-                partition_state="UP",
+                partition_state=PartitionState.UP,
                 max_time_minutes=21600,
                 nodes_total=8,
                 nodes_idle=2,
@@ -216,7 +218,7 @@ class TestAggregateNodeGroups:
             # Second group in 'gpu' partition - 4 nodes with H100s
             SinfoNodeGroup(
                 partition_name="gpu",
-                partition_state="UP",
+                partition_state=PartitionState.UP,
                 max_time_minutes=21600,
                 nodes_total=4,
                 nodes_idle=0,
@@ -234,7 +236,7 @@ class TestAggregateNodeGroups:
             # 'cpu' partition
             SinfoNodeGroup(
                 partition_name="cpu",
-                partition_state="UP",
+                partition_state=PartitionState.UP,
                 max_time_minutes=43200,
                 nodes_total=100,
                 nodes_idle=10,
@@ -331,7 +333,7 @@ class TestAggregateNodeGroups:
             # "all" partition is DOWN (as Slurm often reports it)
             SinfoNodeGroup(
                 partition_name="all",
-                partition_state="DOWN",
+                partition_state=PartitionState.DOWN,
                 max_time_minutes=None,
                 nodes_total=10,
                 nodes_idle=5,
@@ -349,7 +351,7 @@ class TestAggregateNodeGroups:
             # "gpu" partition is UP
             SinfoNodeGroup(
                 partition_name="gpu",
-                partition_state="UP",
+                partition_state=PartitionState.UP,
                 max_time_minutes=21600,
                 nodes_total=10,
                 nodes_idle=5,
@@ -369,15 +371,15 @@ class TestAggregateNodeGroups:
         result = SlurmClusterInfo._aggregate_node_groups(node_groups)
 
         # "all" should be UP because "gpu" is UP
-        assert result["all"].state == "UP"
-        assert result["gpu"].state == "UP"
+        assert result["all"].state == PartitionState.UP
+        assert result["gpu"].state == PartitionState.UP
 
     def test_all_partition_stays_down_if_all_down(self):
         """Test that 'all' partition stays DOWN if all partitions are DOWN."""
         node_groups = [
             SinfoNodeGroup(
                 partition_name="all",
-                partition_state="DOWN",
+                partition_state=PartitionState.DOWN,
                 max_time_minutes=None,
                 nodes_total=10,
                 nodes_idle=0,
@@ -394,7 +396,7 @@ class TestAggregateNodeGroups:
             ),
             SinfoNodeGroup(
                 partition_name="gpu",
-                partition_state="DOWN",
+                partition_state=PartitionState.DOWN,
                 max_time_minutes=21600,
                 nodes_total=10,
                 nodes_idle=0,
@@ -414,8 +416,8 @@ class TestAggregateNodeGroups:
         result = SlurmClusterInfo._aggregate_node_groups(node_groups)
 
         # "all" should stay DOWN because no partition is UP
-        assert result["all"].state == "DOWN"
-        assert result["gpu"].state == "DOWN"
+        assert result["all"].state == PartitionState.DOWN
+        assert result["gpu"].state == PartitionState.DOWN
 
 
 class TestAggregateJobs:
@@ -425,13 +427,15 @@ class TestAggregateJobs:
     def sample_jobs(self) -> list[SqueueJob]:
         """Sample parsed jobs for testing."""
         return [
-            SqueueJob(partition="gpu", state="RUNNING", state_reason="None"),
-            SqueueJob(partition="gpu", state="RUNNING", state_reason="None"),
-            SqueueJob(partition="gpu", state="PENDING", state_reason="Priority"),
-            SqueueJob(partition="gpu", state="PENDING", state_reason="Priority"),
-            SqueueJob(partition="gpu", state="PENDING", state_reason="Resources"),
-            SqueueJob(partition="cpu", state="RUNNING", state_reason="None"),
-            SqueueJob(partition="cpu", state="PENDING", state_reason="Priority"),
+            SqueueJob(partition="gpu", state=JobState.RUNNING, state_reason="None"),
+            SqueueJob(partition="gpu", state=JobState.RUNNING, state_reason="None"),
+            SqueueJob(partition="gpu", state=JobState.PENDING, state_reason="Priority"),
+            SqueueJob(partition="gpu", state=JobState.PENDING, state_reason="Priority"),
+            SqueueJob(
+                partition="gpu", state=JobState.PENDING, state_reason="Resources"
+            ),
+            SqueueJob(partition="cpu", state=JobState.RUNNING, state_reason="None"),
+            SqueueJob(partition="cpu", state=JobState.PENDING, state_reason="Priority"),
         ]
 
     def test_aggregate_jobs(self, sample_jobs):

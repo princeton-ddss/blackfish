@@ -9,7 +9,24 @@ import json
 import subprocess
 from dataclasses import dataclass, field, replace
 from datetime import datetime
+from enum import StrEnum
 from typing import Any
+
+
+class PartitionState(StrEnum):
+    """Slurm partition states."""
+
+    UP = "UP"
+    DOWN = "DOWN"
+    UNKNOWN = "UNKNOWN"
+
+
+class JobState(StrEnum):
+    """Slurm job states."""
+
+    RUNNING = "RUNNING"
+    PENDING = "PENDING"
+    UNKNOWN = "UNKNOWN"
 
 
 @dataclass
@@ -21,7 +38,7 @@ class SinfoNodeGroup:
 
     # Partition info
     partition_name: str
-    partition_state: str  # "UP" or "DOWN"
+    partition_state: PartitionState
     max_time_minutes: int | None
 
     # Node counts for this group
@@ -52,7 +69,7 @@ class SqueueJob:
     """Parsed job from squeue --json."""
 
     partition: str
-    state: str  # "RUNNING", "PENDING", etc.
+    state: JobState
     state_reason: str  # "Priority", "Resources", "None", etc.
 
 
@@ -71,7 +88,7 @@ class PartitionResources:
     """Current resource availability for a partition."""
 
     name: str
-    state: str  # "UP" or "DOWN"
+    state: PartitionState
 
     # Node counts
     nodes_total: int
@@ -171,9 +188,17 @@ def parse_sinfo_entry(entry: dict[str, Any]) -> SinfoNodeGroup:
     gres = entry.get("gres", {})
     features_str = entry.get("features", {}).get("total", "")
 
+    # Convert state string to enum, defaulting to UNKNOWN
+    try:
+        partition_state = (
+            PartitionState(state_list[0]) if state_list else PartitionState.UNKNOWN
+        )
+    except ValueError:
+        partition_state = PartitionState.UNKNOWN
+
     return SinfoNodeGroup(
         partition_name=partition_info.get("name", "unknown"),
-        partition_state=state_list[0] if state_list else "UNKNOWN",
+        partition_state=partition_state,
         max_time_minutes=_get_number(
             partition_info.get("maximums", {}).get("time", {})
         ),
@@ -195,9 +220,16 @@ def parse_sinfo_entry(entry: dict[str, Any]) -> SinfoNodeGroup:
 def parse_squeue_job(job: dict[str, Any]) -> SqueueJob:
     """Parse a single squeue JSON job entry into a typed SqueueJob."""
     states = job.get("job_state", [])
+
+    # Convert state string to enum, defaulting to UNKNOWN
+    try:
+        job_state = JobState(states[0]) if states else JobState.UNKNOWN
+    except ValueError:
+        job_state = JobState.UNKNOWN
+
     return SqueueJob(
         partition=job.get("partition", "unknown"),
-        state=states[0] if states else "UNKNOWN",
+        state=job_state,
         state_reason=job.get("state_reason", "None") or "None",
     )
 
@@ -357,9 +389,13 @@ class SlurmClusterInfo:
 
         # "all" partition state should reflect if any partition is UP
         if "all" in result:
-            any_up = any(p.state == "UP" for name, p in result.items() if name != "all")
+            any_up = any(
+                p.state == PartitionState.UP
+                for name, p in result.items()
+                if name != "all"
+            )
             if any_up:
-                result["all"] = replace(result["all"], state="UP")
+                result["all"] = replace(result["all"], state=PartitionState.UP)
 
         return result
 
@@ -378,9 +414,9 @@ class SlurmClusterInfo:
 
             p = partitions[job.partition]
 
-            if job.state == "RUNNING":
+            if job.state == JobState.RUNNING:
                 p["running"] += 1
-            elif job.state == "PENDING":
+            elif job.state == JobState.PENDING:
                 p["pending"] += 1
                 p["pending_reasons"][job.state_reason] = (
                     p["pending_reasons"].get(job.state_reason, 0) + 1

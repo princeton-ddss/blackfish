@@ -1,187 +1,228 @@
-import { useContext } from "react";
-import { Popover, PopoverButton, PopoverPanel, Transition, Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import { useContext, useState, useEffect } from "react";
+import { Popover, PopoverButton, PopoverPanel, Transition } from "@headlessui/react";
 import { ServerStackIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useClusterStatus } from "@/lib/loaders";
+import { formattedTimeInterval } from "@/lib/util";
 import Alert from "@/components/Alert";
 import PropTypes from "prop-types";
 
 /**
- * Progress bar component for resource utilization.
+ * Timer component that shows time elapsed since refTime.
  */
-function ResourceBar({ used, total, label, colorClass = "bg-blue-500" }) {
-  const percentage = total > 0 ? (used / total) * 100 : 0;
-  const idle = total - used;
+function Timer({ refTime }) {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 30_000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return <span>{formattedTimeInterval(refTime, currentTime)} ago</span>;
+}
+
+Timer.propTypes = {
+  refTime: PropTypes.instanceOf(Date).isRequired,
+};
+
+/**
+ * Status badge component.
+ */
+function StatusBadge({ state }) {
+  const colors = state === "UP"
+    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+    : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
 
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-        <span>{label}</span>
-        <span>{idle.toLocaleString()} / {total.toLocaleString()} idle</span>
-      </div>
-      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+    <span className={`text-xs px-1.5 py-0.5 rounded ${colors}`}>
+      {state}
+    </span>
+  );
+}
+
+StatusBadge.propTypes = {
+  state: PropTypes.string.isRequired,
+};
+
+/**
+ * GPU availability badge.
+ * Green = plenty available, Yellow = limited, Red = none
+ */
+function GpuAvailabilityBadge({ gpus }) {
+  if (!gpus || gpus.length === 0) {
+    return <span className="text-xs text-gray-400">-</span>;
+  }
+
+  const totalIdle = gpus.reduce((sum, g) => sum + g.idle, 0);
+
+  if (totalIdle === 0) {
+    return (
+      <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+        busy
+      </span>
+    );
+  }
+
+  if (totalIdle < 8) {
+    return (
+      <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">
+        limited
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+      available
+    </span>
+  );
+}
+
+GpuAvailabilityBadge.propTypes = {
+  gpus: PropTypes.array,
+};
+
+/**
+ * Progress bar for resource utilization.
+ * Bar shows usage, numbers show idle/total.
+ */
+function ResourceBar({ idle, total, colorClass = "bg-green-500" }) {
+  const used = total - idle;
+  const percentage = total > 0 ? (used / total) * 100 : 0;
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
         <div
           className={`h-full ${colorClass} transition-all duration-300`}
           style={{ width: `${percentage}%` }}
         />
       </div>
+      <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400 text-right whitespace-nowrap">
+        {idle}/{total} idle
+      </span>
     </div>
   );
 }
 
 ResourceBar.propTypes = {
-  used: PropTypes.number.isRequired,
+  idle: PropTypes.number.isRequired,
   total: PropTypes.number.isRequired,
-  label: PropTypes.string.isRequired,
   colorClass: PropTypes.string,
 };
 
 /**
- * GPU availability display.
+ * Loading skeleton for table.
  */
-function GpuList({ gpus }) {
-  if (!gpus || gpus.length === 0) return null;
-
+function TableSkeleton() {
   return (
-    <div className="space-y-1">
-      <div className="text-xs text-gray-600 dark:text-gray-400">GPUs</div>
-      <div className="grid grid-cols-2 gap-1">
-        {gpus.map((gpu) => (
-          <div
-            key={gpu.gpu_type}
-            className="flex items-center justify-between text-xs bg-gray-100 dark:bg-gray-700 rounded px-2 py-1"
-          >
-            <span className="font-mono text-gray-700 dark:text-gray-300">
-              {gpu.gpu_type}
-            </span>
-            <span className={gpu.idle > 0 ? "text-green-600 dark:text-green-400 font-medium" : "text-gray-500"}>
-              {gpu.idle}/{gpu.total}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-GpuList.propTypes = {
-  gpus: PropTypes.arrayOf(
-    PropTypes.shape({
-      gpu_type: PropTypes.string.isRequired,
-      total: PropTypes.number.isRequired,
-      used: PropTypes.number.isRequired,
-      idle: PropTypes.number.isRequired,
-    })
-  ),
-};
-
-/**
- * Queue stats display.
- */
-function QueueStats({ queue }) {
-  if (!queue) return null;
-
-  return (
-    <div className="flex items-center gap-3 text-xs">
-      <span className="text-gray-500 dark:text-gray-400">Queue:</span>
-      <span className="text-green-600 dark:text-green-400">{queue.running} running</span>
-      <span className="text-yellow-600 dark:text-yellow-400">{queue.pending} pending</span>
-    </div>
-  );
-}
-
-QueueStats.propTypes = {
-  queue: PropTypes.shape({
-    running: PropTypes.number,
-    pending: PropTypes.number,
-    pending_reasons: PropTypes.object,
-  }),
-};
-
-/**
- * Collapsible partition card.
- */
-function PartitionCard({ partition, queue }) {
-  const stateColor = partition.state === "UP"
-    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-    : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
-
-  return (
-    <Disclosure>
-      {({ open }) => (
-        <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
-          <DisclosureButton className="w-full flex items-center justify-between py-2 px-3 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-            <div className="flex items-center gap-2">
-              <ChevronRightIcon
-                className={`h-3 w-3 text-gray-500 dark:text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}
-              />
-              <span className="font-medium text-sm text-gray-900 dark:text-white">
-                {partition.name}
-              </span>
-            </div>
-            <span className={`text-xs px-1.5 py-0.5 rounded ${stateColor}`}>
-              {partition.state}
-            </span>
-          </DisclosureButton>
-          <DisclosurePanel className="px-3 pt-3 pb-3 space-y-2">
-            <ResourceBar
-              used={partition.cpus_allocated}
-              total={partition.cpus_total}
-              label="CPUs"
-              colorClass="bg-blue-500"
-            />
-
-            <ResourceBar
-              used={partition.nodes_allocated}
-              total={partition.nodes_total}
-              label="Nodes"
-              colorClass="bg-purple-500"
-            />
-
-            <GpuList gpus={partition.gpus} />
-
-            <QueueStats queue={queue} />
-          </DisclosurePanel>
-        </div>
-      )}
-    </Disclosure>
-  );
-}
-
-PartitionCard.propTypes = {
-  partition: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    state: PropTypes.string.isRequired,
-    cpus_total: PropTypes.number.isRequired,
-    cpus_idle: PropTypes.number.isRequired,
-    cpus_allocated: PropTypes.number.isRequired,
-    nodes_total: PropTypes.number.isRequired,
-    nodes_idle: PropTypes.number.isRequired,
-    nodes_allocated: PropTypes.number.isRequired,
-    gpus: PropTypes.array,
-  }).isRequired,
-  queue: PropTypes.object,
-};
-
-/**
- * Loading skeleton for partition cards.
- */
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-1.5 animate-pulse">
-      {[1, 2].map((i) => (
-        <div key={i} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-2">
-          <div className="flex justify-between">
-            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-20" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-8" />
-          </div>
-          <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded" />
-          <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded" />
+    <div className="animate-pulse">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="flex gap-4 py-2 border-b border-gray-100 dark:border-gray-600 last:border-0">
+          <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-20" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-12 ml-auto" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-16" />
         </div>
       ))}
     </div>
   );
 }
+
+/**
+ * Expandable partition row.
+ */
+function PartitionRow({ partition }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasGpus = partition.gpus && partition.gpus.length > 0;
+
+  return (
+    <>
+      {/* Summary row */}
+      <tr
+        className="border-b border-gray-100 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <td className="py-1.5 pl-3">
+          <div className="flex items-center gap-1.5">
+            <ChevronRightIcon
+              className={`h-3 w-3 text-gray-400 transition-transform flex-shrink-0 ${expanded ? 'rotate-90' : ''}`}
+            />
+            <span className="font-medium text-gray-900 dark:text-white">
+              {partition.name}
+            </span>
+            {partition.state !== "UP" && <StatusBadge state={partition.state} />}
+          </div>
+        </td>
+        <td className="py-1.5 pr-3 text-right">
+          <GpuAvailabilityBadge gpus={partition.gpus} />
+        </td>
+      </tr>
+
+      {/* Expanded details */}
+      {expanded && (
+        <tr className="border-b border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-gray-600/50">
+          <td colSpan={2} className="py-2 pl-7 pr-3">
+            <div className="space-y-2 text-xs">
+              {/* GPUs by type - at the top */}
+              {hasGpus && (
+                <div className="space-y-1">
+                  <div className="text-gray-600 dark:text-gray-400">GPUs</div>
+                  {partition.gpus.map((gpu) => (
+                    <div key={gpu.gpu_type} className="flex items-center gap-2">
+                      <span className="font-mono text-gray-700 dark:text-gray-300 w-16 truncate">
+                        {gpu.gpu_type}
+                      </span>
+                      <div className="flex-1">
+                        <ResourceBar
+                          idle={gpu.idle}
+                          total={gpu.total}
+                          colorClass="bg-green-500"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Nodes */}
+              <div className="space-y-1">
+                <div className="text-gray-600 dark:text-gray-400">Nodes</div>
+                <ResourceBar
+                  idle={partition.nodes_idle}
+                  total={partition.nodes_total}
+                  colorClass="bg-purple-500"
+                />
+              </div>
+
+              {/* CPUs */}
+              <div className="space-y-1">
+                <div className="text-gray-600 dark:text-gray-400">CPUs</div>
+                <ResourceBar
+                  idle={partition.cpus_idle}
+                  total={partition.cpus_total}
+                  colorClass="bg-blue-500"
+                />
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+PartitionRow.propTypes = {
+  partition: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    state: PropTypes.string.isRequired,
+    nodes_total: PropTypes.number.isRequired,
+    nodes_idle: PropTypes.number.isRequired,
+    gpus: PropTypes.array,
+  }).isRequired,
+};
 
 /**
  * Cluster status dropdown for navbar.
@@ -216,25 +257,29 @@ function ClusterStatusDropdown() {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <PopoverPanel className="absolute right-0 z-50 mt-1 w-80 origin-top-right rounded-lg bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
+        <PopoverPanel className="absolute right-0 z-50 mt-1 w-[28rem] origin-top-right rounded-lg bg-white dark:bg-gray-700 shadow-lg ring-1 ring-gray-300 dark:ring-gray-600 focus:outline-none">
+          {/* Header */}
+          <div className="pl-3 pr-3 py-2 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
+            <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                 Cluster Status
               </h3>
-              {status?.timestamp && (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {new Date(status.timestamp).toLocaleTimeString()}
-                </span>
-              )}
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                {profile.host}
+              </span>
             </div>
+          </div>
 
-            {isLoading && <LoadingSkeleton />}
+          {/* Body */}
+          <div className="max-h-96 overflow-y-auto">
+            {isLoading && <div className="px-3 py-2"><TableSkeleton /></div>}
 
             {error && (
-              <Alert variant="error">
-                Failed to load cluster status
-              </Alert>
+              <div className="px-3 py-2">
+                <Alert variant="error">
+                  Failed to load cluster status
+                </Alert>
+              </div>
             )}
 
             {!isLoading && !error && !hasData && (
@@ -244,17 +289,33 @@ function ClusterStatusDropdown() {
             )}
 
             {!isLoading && !error && hasData && (
-              <div className="space-y-1.5 max-h-96 overflow-y-auto">
-                {partitions.map((partition) => (
-                  <PartitionCard
-                    key={partition.name}
-                    partition={partition}
-                    queue={status.queue?.[partition.name]}
-                  />
-                ))}
-              </div>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
+                    <th className="py-1.5 pl-3 font-medium">Partition</th>
+                    <th className="py-1.5 pr-3 font-medium text-right">GPUs</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700 dark:text-gray-300">
+                  {partitions.map((partition) => (
+                    <PartitionRow
+                      key={partition.name}
+                      partition={partition}
+                    />
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
+
+          {/* Footer */}
+          {status?.timestamp && (
+            <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
+              <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                Last updated <Timer refTime={new Date(status.timestamp)} />
+              </div>
+            </div>
+          )}
         </PopoverPanel>
       </Transition>
     </Popover>

@@ -2,12 +2,7 @@ import { useContext, useState, useCallback } from "react";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
-import {
-  fileToBase64,
-  remoteImageToBase64,
-  buildMultimodalContent,
-} from "../lib/imageUtils";
-import { blackfishApiURL } from "@/config";
+import { fileToBase64, buildMultimodalContent } from "../lib/imageUtils";
 import {
   ArrowPathIcon,
   ClipboardDocumentIcon,
@@ -276,21 +271,22 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
     setResponse("");
     sessionStorage.setItem("tgco", "");
 
-    // Convert images to base64 if any are attached
+    // Build multimodal content if images are attached
     let requestPrompt = textInput;
     if (attachedImages.length > 0) {
       try {
-        const imageBase64Array = await Promise.all(
+        const imageUrls = await Promise.all(
           attachedImages.map(async (img) => {
             if (img.source === "browser") {
+              // Browser files must be converted to base64
               return await fileToBase64(img.file);
             } else {
-              return await remoteImageToBase64(img.path, img.profile, blackfishApiURL);
+              // Remote files: pass file path directly (vLLM can read from filesystem)
+              return `file://${img.path}`;
             }
           })
         );
-        // Build multimodal content for the prompt
-        requestPrompt = buildMultimodalContent(textInput, imageBase64Array);
+        requestPrompt = buildMultimodalContent(textInput, imageUrls);
       } catch (error) {
         console.error("Failed to convert images:", error);
         setIsLoading(false);

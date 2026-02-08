@@ -12,12 +12,10 @@ import { ProfileContext } from "@/components/ProfileSelect";
 import { streamChatCompletionInference } from "../lib/requests";
 import {
   fileToBase64,
-  remoteImageToBase64,
   buildMultimodalContent,
   extractTextFromContent,
   extractImagesFromContent,
 } from "../lib/imageUtils";
-import { blackfishApiURL } from "@/config";
 import AttachmentMenu from "./AttachmentMenu";
 import ImageAttachmentList from "./ImageAttachmentList";
 import FileSelectModal from "@/components/FileSelectModal";
@@ -530,16 +528,18 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     let messageContent = userMessage.content;
     if (attachedImages.length > 0) {
       try {
-        const imageBase64Array = await Promise.all(
+        const imageUrls = await Promise.all(
           attachedImages.map(async (img) => {
             if (img.source === "browser") {
+              // Browser files must be converted to base64
               return await fileToBase64(img.file);
             } else {
-              return await remoteImageToBase64(img.path, img.profile, blackfishApiURL);
+              // Remote files: pass file path directly (vLLM can read from filesystem)
+              return `file://${img.path}`;
             }
           })
         );
-        messageContent = buildMultimodalContent(userMessage.content, imageBase64Array);
+        messageContent = buildMultimodalContent(userMessage.content, imageUrls);
       } catch (error) {
         console.error("Failed to convert images:", error);
         return;

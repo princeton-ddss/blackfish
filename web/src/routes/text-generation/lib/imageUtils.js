@@ -17,47 +17,19 @@ export function fileToBase64(file) {
 }
 
 /**
- * Fetch a remote image and convert to base64 data URL.
- * @param {string} path - The remote file path.
- * @param {object|null} profile - The profile for remote access.
- * @param {string} blackfishApiURL - The API base URL.
- * @returns {Promise<string>} Base64 data URL.
- */
-export async function remoteImageToBase64(path, profile, blackfishApiURL) {
-  const profileParam =
-    profile && profile.schema !== "local"
-      ? `&profile=${encodeURIComponent(profile.name)}`
-      : "";
-  const url = `${blackfishApiURL}/api/image?path=${encodeURIComponent(path)}${profileParam}`;
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch remote image: ${response.statusText}`);
-  }
-
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-/**
  * Build OpenAI-compatible multimodal content array.
  * @param {string} text - The text content.
- * @param {string[]} imageBase64Array - Array of base64 image data URLs.
+ * @param {string[]} imageUrls - Array of image URLs (base64 data URLs or file:// paths).
  * @returns {Array} Content array with text and image_url objects.
  */
-export function buildMultimodalContent(text, imageBase64Array) {
+export function buildMultimodalContent(text, imageUrls) {
   const content = [];
 
   // Add images first (common pattern for VLMs)
-  for (const base64 of imageBase64Array) {
+  for (const url of imageUrls) {
     content.push({
       type: "image_url",
-      image_url: { url: base64 },
+      image_url: { url },
     });
   }
 

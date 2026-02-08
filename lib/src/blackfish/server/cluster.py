@@ -4,8 +4,9 @@ This module provides classes for querying Slurm cluster resource availability
 at the partition level.
 """
 
-import re
+import asyncio
 import json
+import re
 import subprocess
 from dataclasses import dataclass, field, replace
 from datetime import datetime
@@ -265,7 +266,10 @@ class SlurmClusterInfo:
             )
 
     def get_status(self) -> ClusterStatus:
-        """Query sinfo and squeue, return aggregated partition-level status."""
+        """Query sinfo and squeue, return aggregated partition-level status.
+
+        Note: This is a blocking call. For async contexts, use get_status_async().
+        """
         # Query sinfo for node/partition info
         sinfo_raw = self._run_command(["sinfo", "--json"])
         sinfo_data = json.loads(sinfo_raw)
@@ -273,6 +277,29 @@ class SlurmClusterInfo:
         # Query squeue for queue info
         squeue_raw = self._run_command(["squeue", "--json"])
         squeue_data = json.loads(squeue_raw)
+
+        return self._build_status(sinfo_data, squeue_data)
+
+    async def get_status_async(self) -> ClusterStatus:
+        """Query sinfo and squeue asynchronously.
+
+        Uses asyncio.to_thread() to run blocking subprocess calls without
+        blocking the event loop.
+        """
+        # Run both commands concurrently in thread pool
+        sinfo_raw, squeue_raw = await asyncio.gather(
+            asyncio.to_thread(self._run_command, ["sinfo", "--json"]),
+            asyncio.to_thread(self._run_command, ["squeue", "--json"]),
+        )
+        sinfo_data = json.loads(sinfo_raw)
+        squeue_data = json.loads(squeue_raw)
+
+        return self._build_status(sinfo_data, squeue_data)
+
+    def _build_status(
+        self, sinfo_data: dict[str, Any], squeue_data: dict[str, Any]
+    ) -> ClusterStatus:
+        """Build ClusterStatus from parsed sinfo and squeue JSON data."""
 
         # Parse into typed structures
         node_groups = [

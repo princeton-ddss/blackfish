@@ -563,10 +563,15 @@ async def get_files(
     resolved_path = os.path.expanduser(path)
     if os.path.isdir(resolved_path):
         try:
-            return {"path": resolved_path, "files": listdir(resolved_path, hidden=hidden)}
+            return {
+                "path": resolved_path,
+                "files": listdir(resolved_path, hidden=hidden),
+            }
         except PermissionError:
             logger.debug("Permission error raised")
-            raise NotAuthorizedException(f"User not authorized to access {resolved_path}")
+            raise NotAuthorizedException(
+                f"User not authorized to access {resolved_path}"
+            )
     else:
         logger.debug("Not found error")
         raise NotFoundException(detail=f"Path {resolved_path} does not exist.")
@@ -1979,7 +1984,7 @@ async def get_cluster_status(profile_name: str) -> ClusterStatusResponse:
 
     try:
         cluster_info = SlurmClusterInfo(user=profile.user, host=profile.host)
-        status = cluster_info.get_status()
+        status = await cluster_info.get_status_async()
     except subprocess.TimeoutExpired:
         raise InternalServerException(detail="Cluster query timed out")
     except subprocess.CalledProcessError:

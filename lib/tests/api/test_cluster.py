@@ -1,7 +1,7 @@
 """Tests for the cluster status API endpoint."""
 
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
 from litestar.testing import AsyncTestClient
@@ -96,7 +96,7 @@ class TestClusterStatusAPI:
 
         with patch("blackfish.server.asgi.SlurmClusterInfo") as MockSlurmClusterInfo:
             mock_instance = MagicMock()
-            mock_instance.get_status.return_value = mock_status
+            mock_instance.get_status_async = AsyncMock(return_value=mock_status)
             MockSlurmClusterInfo.return_value = mock_instance
 
             # "hpc" profile in tests/profiles.cfg is a Slurm profile
@@ -152,7 +152,9 @@ class TestClusterStatusAPI:
         """Test that cluster query failure returns 500."""
         with patch("blackfish.server.asgi.SlurmClusterInfo") as MockSlurmClusterInfo:
             mock_instance = MagicMock()
-            mock_instance.get_status.side_effect = Exception("SSH connection failed")
+            mock_instance.get_status_async = AsyncMock(
+                side_effect=Exception("SSH connection failed")
+            )
             MockSlurmClusterInfo.return_value = mock_instance
 
             response = await client.get("/api/cluster/hpc/status")
@@ -170,7 +172,7 @@ class TestClusterStatusAPI:
 
         with patch("blackfish.server.asgi.SlurmClusterInfo") as MockSlurmClusterInfo:
             mock_instance = MagicMock()
-            mock_instance.get_status.return_value = mock_status
+            mock_instance.get_status_async = AsyncMock(return_value=mock_status)
             MockSlurmClusterInfo.return_value = mock_instance
 
             response = await client.get("/api/cluster/hpc/status")

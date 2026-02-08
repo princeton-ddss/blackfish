@@ -580,6 +580,19 @@ IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
 TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
 AUDIO_EXTENSIONS = [".wav", ".mp3"]
 
+# Mapping of task/image types to compatible pipeline tags
+# e.g., text-generation services can also run image-text-to-text models (VLMs)
+# See: https://docs.vllm.ai/en/latest/models/supported_models.html
+COMPATIBLE_PIPELINES: dict[str, list[str]] = {
+    "text-generation": [
+        "text-generation",
+        "image-text-to-text",
+        "audio-text-to-text",
+        "video-text-to-text",
+        "image-to-text",
+    ],
+}
+
 
 def has_image_extension(path: str) -> str:
     validate_file_extension(Path(path), IMAGE_EXTENSIONS)
@@ -1701,8 +1714,10 @@ async def get_models(
         except Exception as e:
             logger.error(f"Failed to execute transaction: {e}")
         if image is not None:
+            # Use compatible pipelines if defined, otherwise exact match
+            compatible = COMPATIBLE_PIPELINES.get(image, [image])
             return sorted(
-                list(filter(lambda x: x.image == image, models)),
+                list(filter(lambda x: x.image in compatible, models)),
                 key=lambda x: x.repo.lower(),
             )
         else:
@@ -1710,17 +1725,16 @@ async def get_models(
     else:
         logger.info("Querying model table...")
 
-        query_filter = {}
+        # Build query with optional filters
+        query = sa.select(Model)
         if profile is not None:
-            query_filter["profile"] = profile
+            query = query.where(Model.profile == profile)
         if image is not None:
-            query_filter["image"] = image
+            # Use compatible pipelines if defined, otherwise exact match
+            compatible = COMPATIBLE_PIPELINES.get(image, [image])
+            query = query.where(Model.image.in_(compatible))
 
-        select_query = (
-            sa.select(Model)
-            .filter_by(**query_filter)
-            .order_by(sa.func.lower(Model.repo))
-        )
+        select_query = query.order_by(sa.func.lower(Model.repo))
         try:
             res = await session.execute(select_query)
             return list(res.scalars().all())

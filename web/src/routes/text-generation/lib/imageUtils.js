@@ -17,6 +17,20 @@ export function fileToBase64(file) {
 }
 
 /**
+ * Convert a Blob to base64 data URL.
+ * @param {Blob} blob - The blob to convert.
+ * @returns {Promise<string>} Base64 data URL.
+ */
+export function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
  * Build OpenAI-compatible multimodal content array.
  * @param {string} text - The text content.
  * @param {string[]} imageUrls - Array of image URLs (base64 data URLs or file:// paths).

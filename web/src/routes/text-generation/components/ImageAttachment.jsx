@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { blackfishApiURL } from "@/config";
+import { blobToBase64 } from "../lib/imageUtils";
 import PropTypes from "prop-types";
 
 /**
@@ -9,16 +10,24 @@ import PropTypes from "prop-types";
  * @param {object} props.image - The image object with source and file/path info.
  * @param {Function} props.onRemove - Callback to remove this image.
  * @param {Function} props.onError - Callback when image loading fails.
+ * @param {Function} props.onLoad - Callback when image loads successfully, receives (index, base64).
  * @param {number} props.index - Index of this image in the list.
  */
-function ImageAttachment({ image, onRemove, onError, index }) {
+function ImageAttachment({ image, onRemove, onError, onLoad, index }) {
   const [imageUrl, setImageUrl] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // TEMP: disabled loading
-  const [error, setError] = useState("Not found (404)"); // TEMP: force error
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
   const [hasContentLength, setHasContentLength] = useState(false);
 
   useEffect(() => {
+    // Skip if remote image already has cached base64 (prevents re-fetch loop)
+    if (image.source === "remote" && image.base64) {
+      setImageUrl(image.base64);
+      setIsLoading(false);
+      return;
+    }
+
     let objectUrl = null;
 
     const loadImage = async () => {
@@ -29,9 +38,10 @@ function ImageAttachment({ image, onRemove, onError, index }) {
 
       try {
         if (image.source === "browser") {
-          // Browser file - create object URL
+          // Browser file - create object URL for preview
           objectUrl = URL.createObjectURL(image.file);
           setImageUrl(objectUrl);
+          // No need to cache base64 for browser files - we can convert on submit
         } else if (image.source === "remote") {
           // Remote file - fetch via API with progress tracking
           const profileParam =
@@ -51,6 +61,7 @@ function ImageAttachment({ image, onRemove, onError, index }) {
           }
 
           const contentLength = response.headers.get("Content-Length");
+          let blob;
           if (contentLength && response.body) {
             // Stream with progress tracking
             const total = parseInt(contentLength, 10);
@@ -70,14 +81,19 @@ function ImageAttachment({ image, onRemove, onError, index }) {
             }
 
             // Combine chunks into blob
-            const blob = new Blob(chunks);
-            objectUrl = URL.createObjectURL(blob);
+            blob = new Blob(chunks);
           } else {
             // Fallback if Content-Length not available - use indeterminate progress
-            const blob = await response.blob();
-            objectUrl = URL.createObjectURL(blob);
+            blob = await response.blob();
           }
+          objectUrl = URL.createObjectURL(blob);
           setImageUrl(objectUrl);
+
+          // Convert to base64 and cache for later use in requests
+          const base64 = await blobToBase64(blob);
+          if (onLoad) {
+            onLoad(index, base64);
+          }
         }
       } catch (err) {
         console.error("Failed to load image:", err);
@@ -173,6 +189,7 @@ ImageAttachment.propTypes = {
   }).isRequired,
   onRemove: PropTypes.func.isRequired,
   onError: PropTypes.func,
+  onLoad: PropTypes.func,
   index: PropTypes.number.isRequired,
 };
 

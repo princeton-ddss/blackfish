@@ -38,6 +38,7 @@ const Role = {
  * @param {Array} options.attachedImages
  * @param {Function} options.onRemoveImage
  * @param {Function} options.onImageError
+ * @param {Function} options.onImageLoad
  * @param {object} options.profile
  * @param {Function} options.onBrowserUpload
  * @param {Function} options.onRemoteSelect
@@ -50,6 +51,7 @@ function UserMessageInput({
   attachedImages,
   onRemoveImage,
   onImageError,
+  onImageLoad,
   profile,
   onBrowserUpload,
   onRemoteSelect,
@@ -66,6 +68,7 @@ function UserMessageInput({
                   images={attachedImages}
                   onRemove={onRemoveImage}
                   onImageError={onImageError}
+                  onImageLoad={onImageLoad}
                 />
               </div>
             )}
@@ -136,6 +139,7 @@ UserMessageInput.propTypes = {
   attachedImages: PropTypes.array,
   onRemoveImage: PropTypes.func,
   onImageError: PropTypes.func,
+  onImageLoad: PropTypes.func,
   profile: PropTypes.object,
   onBrowserUpload: PropTypes.func,
   onRemoteSelect: PropTypes.func,
@@ -204,6 +208,14 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             className="relative"
           >
             <div className="rounded-lg bg-gray-100 dark:bg-gray-700 shadow-md">
+              {/* Display attached images (read-only) */}
+              {images.length > 0 && (
+                <div className="flex gap-2 flex-wrap px-4 pt-3 border-b border-gray-200 dark:border-gray-600 pb-2">
+                  {images.map((src, idx) => (
+                    <MessageImage key={idx} src={src} />
+                  ))}
+                </div>
+              )}
               <label htmlFor="comment" className="sr-only">
                 Edit message
               </label>
@@ -417,9 +429,10 @@ Message.propTypes = {
  * @param {Function} options.setMessages
  * @param {Function} options.handleResubmit
  * @param {JSX.Element} options.elementRef
+ * @param {boolean} options.isWaitingForResponse
  * @return {JSX.Element}
  */
-function MessageList({ messages, setMessages, handleResubmit, elementRef }) {
+function MessageList({ messages, setMessages, handleResubmit, elementRef, isWaitingForResponse }) {
   try {
     sessionStorage.setItem("tgcc-ml", JSON.stringify(messages));
   } catch(error) {
@@ -449,9 +462,20 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef }) {
               messages.filter((_, i) => i !== index && i !== index + 1)
             );
           }}
-          handleResubmit={handleResubmit}
+          handleResubmit={(event) => handleResubmit(event, index)}
         />
       ))}
+      {isWaitingForResponse && (
+        <div className="py-6">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+            </div>
+          </div>
+        </div>
+      )}
       <div ref={elementRef}></div>
     </div>
   );
@@ -462,6 +486,7 @@ MessageList.propTypes = {
   setMessages: PropTypes.func,
   handleResubmit: PropTypes.func,
   elementRef: PropTypes.object,
+  isWaitingForResponse: PropTypes.bool,
 };
 
 /**
@@ -486,6 +511,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   const [attachedImages, setAttachedImages] = useState([]);
   const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
   const [imageError, setImageError] = useState(null);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
 
   const elementRef = useRef(null);
 
@@ -520,6 +546,13 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     setTimeout(() => setImageError(null), 5000);
   }, []);
 
+  const handleImageLoad = useCallback((index, base64) => {
+    // Cache the base64 data on the image object for use when submitting
+    setAttachedImages((prev) =>
+      prev.map((img, i) => (i === index ? { ...img, base64 } : img))
+    );
+  }, []);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("user message submitted");
@@ -534,8 +567,11 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
               // Browser files must be converted to base64
               return await fileToBase64(img.file);
             } else {
-              // Remote files: pass file path directly (vLLM can read from filesystem)
-              return `file://${img.path}`;
+              // Remote files: use cached base64 from preview fetch
+              if (!img.base64) {
+                throw new Error(`Image ${img.path} not yet loaded`);
+              }
+              return img.base64;
             }
           })
         );
@@ -566,7 +602,11 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     // Clear attached images after sending
     setAttachedImages([]);
 
+    // Show loading state while waiting for first response chunk
+    setIsWaitingForResponse(true);
+
     const data = await stream.next();
+    setIsWaitingForResponse(false);
     console.debug("data:", data);
     let response = data.value
       .map((x) => x.choices[0].delta.content)
@@ -595,13 +635,16 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     }
   };
 
-  const handleResubmit = async (event) => {
+  const handleResubmit = async (event, index) => {
     event.preventDefault();
-    console.log("user message resubmitted");
+    console.log(`regenerating message at index ${index}`);
+
+    // Get messages up to (but not including) the message being regenerated
+    const conversationUpToIndex = messages.slice(0, index);
 
     const stream = streamChatCompletionInference(
       selectedService,
-      [systemMessage, ...messages.slice(0, messages.length - 1)],
+      [systemMessage, ...conversationUpToIndex],
       {
         ...parameters,
         stream: true,
@@ -609,9 +652,14 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       true
     );
 
-    setMessages((messages) => messages.slice(0, messages.length - 1));
+    // Clear messages from the regenerated index onwards
+    setMessages(conversationUpToIndex);
+
+    // Show loading state while waiting for first response chunk
+    setIsWaitingForResponse(true);
 
     const data = await stream.next();
+    setIsWaitingForResponse(false);
     console.debug("data:", data);
     let response = data.value
       .map((x) => x.choices[0].delta.content)
@@ -665,6 +713,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         setMessages={setMessages}
         handleResubmit={handleResubmit}
         elementRef={elementRef}
+        isWaitingForResponse={isWaitingForResponse}
       />
 
       <UserMessageInput
@@ -677,6 +726,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         attachedImages={attachedImages}
         onRemoveImage={handleRemoveImage}
         onImageError={handleImageError}
+        onImageLoad={handleImageLoad}
         profile={profile}
         onBrowserUpload={handleBrowserUpload}
         onRemoteSelect={() => setFileBrowserOpen(true)}

@@ -232,7 +232,7 @@ PartitionRow.propTypes = {
  */
 function ClusterStatusDropdown() {
   const { profile } = useContext(ProfileContext);
-  const { status, error, isLoading } = useClusterStatus(profile);
+  const { status, error, isLoading, refresh } = useClusterStatus(profile);
 
   // Only show for Slurm profiles
   if (!profile || profile.schema !== "slurm") {
@@ -260,63 +260,85 @@ function ClusterStatusDropdown() {
         leaveTo="transform opacity-0 scale-95"
       >
         <PopoverPanel className="absolute right-0 z-50 mt-1 w-[28rem] origin-top-right rounded-lg bg-white dark:bg-gray-700 shadow-lg ring-1 ring-gray-300 dark:ring-gray-600 focus:outline-none">
-          {/* Header */}
-          <div className="pl-3 pr-3 py-2 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                Cluster Status
-              </h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                {profile.host}
-              </span>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="max-h-96 overflow-y-auto">
-            {isLoading && <div className="px-3 py-2"><TableSkeleton /></div>}
-
-            {error && (
-              <div className="px-3 py-2">
-                <Alert variant="error">
-                  Failed to load cluster status
-                </Alert>
+          {({ close }) => (
+            <>
+              {/* Header */}
+              <div className="pl-3 pr-3 py-2 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Cluster Status
+                  </h3>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                    {profile.host}
+                  </span>
+                </div>
               </div>
-            )}
 
-            {!isLoading && !error && !hasData && (
-              <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                No partition data available
+              {/* Body */}
+              <div className="max-h-96 overflow-y-auto">
+                {isLoading && <div className="px-3 py-2"><TableSkeleton /></div>}
+
+                {!isLoading && error && (
+                  <div className="px-3 py-3">
+                    <Alert variant="error" title="Unable to load cluster status">
+                      <p>{error.message || "An unexpected error occurred."}</p>
+                      <div className="mt-4">
+                        <div className="-mx-2 -my-1.5 flex">
+                          <button
+                            type="button"
+                            onClick={() => refresh()}
+                            className="rounded-md bg-red-50 px-2 py-1.5 text-sm font-medium text-red-800 hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:bg-red-500/20 dark:text-red-200 dark:hover:bg-red-500/30"
+                          >
+                            Retry
+                          </button>
+                          <button
+                            type="button"
+                            onClick={close}
+                            className="ml-3 rounded-md bg-red-50 px-2 py-1.5 text-sm font-medium text-red-800 hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:bg-red-500/20 dark:text-red-200 dark:hover:bg-red-500/30"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    </Alert>
+                  </div>
+                )}
+
+                {!isLoading && !error && !hasData && (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                    No partition data available
+                  </div>
+                )}
+
+                {!isLoading && !error && hasData && (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
+                        <th className="py-1.5 pl-3 font-medium">Partition</th>
+                        <th className="py-1.5 pr-3 font-medium text-right">GPUs</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-gray-700 dark:text-gray-300">
+                      {partitions.map((partition) => (
+                        <PartitionRow
+                          key={partition.name}
+                          partition={partition}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
-            )}
 
-            {!isLoading && !error && hasData && (
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
-                    <th className="py-1.5 pl-3 font-medium">Partition</th>
-                    <th className="py-1.5 pr-3 font-medium text-right">GPUs</th>
-                  </tr>
-                </thead>
-                <tbody className="text-gray-700 dark:text-gray-300">
-                  {partitions.map((partition) => (
-                    <PartitionRow
-                      key={partition.name}
-                      partition={partition}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Footer */}
-          {status?.timestamp && (
-            <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                Last updated <Timer refTime={new Date(status.timestamp)} />
-              </div>
-            </div>
+              {/* Footer */}
+              {status?.timestamp && (
+                <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                    Last updated <Timer refTime={new Date(status.timestamp)} />
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </PopoverPanel>
       </Transition>

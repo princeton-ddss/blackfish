@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 
 from blackfish.server.cluster import (
+    ClusterQueryError,
     JobState,
     PartitionState,
     SinfoNodeGroup,
@@ -16,6 +17,36 @@ from blackfish.server.cluster import (
     parse_sinfo_entry,
     parse_squeue_job,
 )
+
+
+class TestClusterQueryError:
+    """Tests for ClusterQueryError exception."""
+
+    def test_timeout_message(self):
+        error = ClusterQueryError("timeout", "cluster.example.com")
+        assert "timed out" in error.user_message()
+        assert error.error_type == "timeout"
+        assert error.host == "cluster.example.com"
+
+    def test_connection_message(self):
+        error = ClusterQueryError("connection", "cluster.example.com")
+        assert "Could not connect" in error.user_message()
+
+    def test_command_message(self):
+        error = ClusterQueryError("command", "cluster.example.com")
+        assert "returned an error" in error.user_message()
+
+    def test_parse_message(self):
+        error = ClusterQueryError("parse", "cluster.example.com")
+        assert "unexpected response" in error.user_message()
+
+    def test_unknown_type_message(self):
+        error = ClusterQueryError("unknown", "cluster.example.com")
+        assert "Failed to query" in error.user_message()
+
+    def test_exception_message_is_user_message(self):
+        error = ClusterQueryError("timeout", "cluster.example.com")
+        assert str(error) == error.user_message()
 
 
 class TestParseGres:
@@ -490,7 +521,9 @@ class TestSlurmClusterInfo:
 
         result = info._run_command(["sinfo", "--json"])
 
-        mock_check_output.assert_called_once_with(["sinfo", "--json"], timeout=30)
+        mock_check_output.assert_called_once_with(
+            ["sinfo", "--json"], timeout=30, stderr=mock.ANY
+        )
         assert result == b"test output"
 
     @mock.patch("subprocess.check_output")
@@ -502,9 +535,74 @@ class TestSlurmClusterInfo:
         result = info._run_command(["sinfo", "--json"])
 
         mock_check_output.assert_called_once_with(
-            ["ssh", "testuser@cluster.example.com", "sinfo", "--json"], timeout=30
+            ["ssh", "testuser@cluster.example.com", "sinfo", "--json"],
+            timeout=30,
+            stderr=mock.ANY,
         )
         assert result == b"test output"
+
+    @mock.patch("subprocess.check_output")
+    def test_run_command_timeout_raises_cluster_query_error(self, mock_check_output):
+        """Test that timeout raises ClusterQueryError."""
+        import subprocess
+
+        mock_check_output.side_effect = subprocess.TimeoutExpired(
+            cmd="sinfo", timeout=30
+        )
+        info = SlurmClusterInfo(user="test", host="cluster.example.com")
+
+        with pytest.raises(ClusterQueryError) as exc_info:
+            info._run_command(["sinfo", "--json"])
+
+        assert exc_info.value.error_type == "timeout"
+        assert exc_info.value.host == "cluster.example.com"
+
+    @mock.patch("subprocess.check_output")
+    def test_run_command_ssh_failure_raises_cluster_query_error(
+        self, mock_check_output
+    ):
+        """Test that SSH connection failure (exit code 255) raises ClusterQueryError."""
+        import subprocess
+
+        mock_check_output.side_effect = subprocess.CalledProcessError(
+            returncode=255, cmd="ssh"
+        )
+        info = SlurmClusterInfo(user="test", host="cluster.example.com")
+
+        with pytest.raises(ClusterQueryError) as exc_info:
+            info._run_command(["sinfo", "--json"])
+
+        assert exc_info.value.error_type == "connection"
+
+    @mock.patch("subprocess.check_output")
+    def test_run_command_slurm_failure_raises_cluster_query_error(
+        self, mock_check_output
+    ):
+        """Test that Slurm command failure raises ClusterQueryError."""
+        import subprocess
+
+        mock_check_output.side_effect = subprocess.CalledProcessError(
+            returncode=1, cmd="sinfo"
+        )
+        info = SlurmClusterInfo(user="test", host="cluster.example.com")
+
+        with pytest.raises(ClusterQueryError) as exc_info:
+            info._run_command(["sinfo", "--json"])
+
+        assert exc_info.value.error_type == "command"
+
+    @mock.patch("subprocess.check_output")
+    def test_get_status_json_parse_error_raises_cluster_query_error(
+        self, mock_check_output
+    ):
+        """Test that invalid JSON raises ClusterQueryError."""
+        mock_check_output.return_value = b"not valid json"
+        info = SlurmClusterInfo(user="test", host="cluster.example.com")
+
+        with pytest.raises(ClusterQueryError) as exc_info:
+            info.get_status()
+
+        assert exc_info.value.error_type == "parse"
 
     @mock.patch("subprocess.check_output")
     def test_get_status(self, mock_check_output):

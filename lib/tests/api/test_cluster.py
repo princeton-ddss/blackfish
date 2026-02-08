@@ -7,6 +7,7 @@ import pytest
 from litestar.testing import AsyncTestClient
 
 from blackfish.server.cluster import (
+    ClusterQueryError,
     ClusterStatus,
     GpuAvailability,
     PartitionResources,
@@ -161,6 +162,38 @@ class TestClusterStatusAPI:
 
             # Should return 500 Internal Server Error
             assert response.status_code == 500
+            # Should have a generic error message
+            assert "Failed to query cluster status" in response.json().get("detail", "")
+
+    async def test_cluster_status_timeout_error(self, client: AsyncTestClient):
+        """Test that timeout error returns user-friendly message."""
+        with patch("blackfish.server.asgi.SlurmClusterInfo") as MockSlurmClusterInfo:
+            mock_instance = MagicMock()
+            mock_instance.get_status_async = AsyncMock(
+                side_effect=ClusterQueryError("timeout", "hpc.example.com")
+            )
+            MockSlurmClusterInfo.return_value = mock_instance
+
+            response = await client.get("/api/cluster/hpc/status")
+
+            assert response.status_code == 500
+            detail = response.json().get("detail", "")
+            assert "timed out" in detail
+
+    async def test_cluster_status_connection_error(self, client: AsyncTestClient):
+        """Test that connection error returns user-friendly message."""
+        with patch("blackfish.server.asgi.SlurmClusterInfo") as MockSlurmClusterInfo:
+            mock_instance = MagicMock()
+            mock_instance.get_status_async = AsyncMock(
+                side_effect=ClusterQueryError("connection", "hpc.example.com")
+            )
+            MockSlurmClusterInfo.return_value = mock_instance
+
+            response = await client.get("/api/cluster/hpc/status")
+
+            assert response.status_code == 500
+            detail = response.json().get("detail", "")
+            assert "Could not connect" in detail
 
     async def test_cluster_status_empty_partitions(self, client: AsyncTestClient):
         """Test handling of cluster with no partitions."""

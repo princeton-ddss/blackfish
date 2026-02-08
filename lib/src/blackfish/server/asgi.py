@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from os import urandom
 import json
-import subprocess
 import aiohttp
 from aiohttp.typedefs import StrOrURL
 import requests
@@ -93,7 +92,7 @@ from blackfish.server.models.profile import (
 )
 from blackfish.server.models.model import Model
 from blackfish.server.job import JobConfig, JobScheduler, SlurmJobConfig
-from blackfish.server.cluster import SlurmClusterInfo
+from blackfish.server.cluster import ClusterQueryError, SlurmClusterInfo
 from blackfish.server.browser import RemoteFileBrowserSession
 
 import importlib.metadata
@@ -1985,17 +1984,12 @@ async def get_cluster_status(profile_name: str) -> ClusterStatusResponse:
     try:
         cluster_info = SlurmClusterInfo(user=profile.user, host=profile.host)
         status = await cluster_info.get_status_async()
-    except subprocess.TimeoutExpired:
-        raise InternalServerException(detail="Cluster query timed out")
-    except subprocess.CalledProcessError:
-        logger.error(f"Slurm command failed for profile {profile_name}")
-        raise InternalServerException(detail="Failed to query cluster")
-    except json.JSONDecodeError:
-        logger.error(f"Invalid JSON from Slurm for profile {profile_name}")
-        raise InternalServerException(detail="Invalid cluster response")
+    except ClusterQueryError as e:
+        logger.warning(f"Cluster query failed for {profile_name}: {e.error_type}")
+        raise InternalServerException(detail=e.user_message())
     except Exception as e:
-        logger.error(f"Unexpected error querying cluster: {e}")
-        raise InternalServerException(detail="Failed to query cluster")
+        logger.error(f"Unexpected error querying cluster {profile_name}: {e}")
+        raise InternalServerException(detail="Failed to query cluster status.")
 
     # Convert to response format (sets -> lists for JSON)
     partitions = {
@@ -2127,6 +2121,23 @@ def not_found_exception_handler(
     return Template(template_name="index.html", status_code=HTTP_404_NOT_FOUND)
 
 
+def internal_server_exception_handler(
+    request: Request[Any, Any, Any], exc: InternalServerException
+) -> Response[Any]:
+    """Handle 500 errors - return JSON with detail for API routes."""
+    if request.url.path.startswith("/api/"):
+        return Response(
+            content={"detail": exc.detail or "Internal server error"},
+            status_code=500,
+            media_type="application/json",
+        )
+    return Response(
+        content={"detail": "Internal server error"},
+        status_code=500,
+        media_type="application/json",
+    )
+
+
 app = Litestar(
     path=blackfish_config.BASE_PATH,
     route_handlers=[
@@ -2185,5 +2196,8 @@ app = Litestar(
     openapi_config=openapi_config,
     template_config=template_config,
     middleware=[session_config.middleware],
-    exception_handlers={NotFoundException: not_found_exception_handler},
+    exception_handlers={
+        NotFoundException: not_found_exception_handler,
+        InternalServerException: internal_server_exception_handler,
+    },
 )

@@ -14,6 +14,25 @@ from enum import StrEnum
 from typing import Any
 
 
+class ClusterQueryError(Exception):
+    """Error querying cluster status with user-friendly messages."""
+
+    def __init__(self, error_type: str, host: str):
+        self.error_type = error_type
+        self.host = host
+        super().__init__(self.user_message())
+
+    def user_message(self) -> str:
+        """Return a user-friendly error message."""
+        messages = {
+            "timeout": "Connection timed out. The cluster may be busy or unreachable.",
+            "connection": "Could not connect to the cluster. Check your network connection.",
+            "command": "The cluster returned an error. Please try again later.",
+            "parse": "Received an unexpected response from the cluster.",
+        }
+        return messages.get(self.error_type, "Failed to query cluster status.")
+
+
 class PartitionState(StrEnum):
     """Slurm partition states."""
 
@@ -257,26 +276,51 @@ class SlurmClusterInfo:
         return self.host == "localhost"
 
     def _run_command(self, cmd: list[str], timeout: int = 30) -> bytes:
-        """Run command locally or via SSH (sync/blocking)."""
-        if self.is_local():
-            return subprocess.check_output(cmd, timeout=timeout)
-        else:
-            return subprocess.check_output(
-                ["ssh", f"{self.user}@{self.host}"] + cmd, timeout=timeout
-            )
+        """Run command locally or via SSH (sync/blocking).
+
+        Raises:
+            ClusterQueryError: With appropriate error_type for different failures.
+        """
+        try:
+            if self.is_local():
+                return subprocess.check_output(
+                    cmd, timeout=timeout, stderr=subprocess.PIPE
+                )
+            else:
+                return subprocess.check_output(
+                    ["ssh", f"{self.user}@{self.host}"] + cmd,
+                    timeout=timeout,
+                    stderr=subprocess.PIPE,
+                )
+        except subprocess.TimeoutExpired:
+            raise ClusterQueryError("timeout", self.host)
+        except subprocess.CalledProcessError as e:
+            # SSH connection failures typically have exit code 255
+            if e.returncode == 255:
+                raise ClusterQueryError("connection", self.host)
+            raise ClusterQueryError("command", self.host)
 
     def get_status(self) -> ClusterStatus:
         """Query sinfo and squeue, return aggregated partition-level status.
 
         Note: This is a blocking call. For async contexts, use get_status_async().
+
+        Raises:
+            ClusterQueryError: With appropriate error_type for different failures.
         """
         # Query sinfo for node/partition info
         sinfo_raw = self._run_command(["sinfo", "--json"])
-        sinfo_data = json.loads(sinfo_raw)
+        try:
+            sinfo_data = json.loads(sinfo_raw)
+        except json.JSONDecodeError:
+            raise ClusterQueryError("parse", self.host)
 
         # Query squeue for queue info
         squeue_raw = self._run_command(["squeue", "--json"])
-        squeue_data = json.loads(squeue_raw)
+        try:
+            squeue_data = json.loads(squeue_raw)
+        except json.JSONDecodeError:
+            raise ClusterQueryError("parse", self.host)
 
         return self._build_status(sinfo_data, squeue_data)
 
@@ -286,12 +330,18 @@ class SlurmClusterInfo:
         Uses asyncio.to_thread() to run blocking subprocess calls without
         blocking the event loop. Commands run sequentially to avoid SSH
         connection contention.
+
+        Raises:
+            ClusterQueryError: With appropriate error_type for different failures.
         """
         sinfo_raw = await asyncio.to_thread(self._run_command, ["sinfo", "--json"])
         squeue_raw = await asyncio.to_thread(self._run_command, ["squeue", "--json"])
 
-        sinfo_data = json.loads(sinfo_raw)
-        squeue_data = json.loads(squeue_raw)
+        try:
+            sinfo_data = json.loads(sinfo_raw)
+            squeue_data = json.loads(squeue_raw)
+        except json.JSONDecodeError:
+            raise ClusterQueryError("parse", self.host)
 
         return self._build_status(sinfo_data, squeue_data)
 

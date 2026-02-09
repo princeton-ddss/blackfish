@@ -76,7 +76,7 @@ from blackfish.server.files import (
     validate_file_size,
 )
 from blackfish.server import sftp
-from blackfish.server.services.base import Service, ServiceStatus
+from blackfish.server.services.base import Service, ServiceLaunchError, ServiceStatus
 from blackfish.server.services.speech_recognition import SpeechRecognitionConfig
 from blackfish.server.services.text_generation import TextGenerationConfig
 from blackfish.server.jobs.base import BatchJob, BatchJobStatus
@@ -1139,9 +1139,12 @@ async def run_service(
             container_options=data.container_config,
             job_options=data.job_config,
         )
+    except ServiceLaunchError as e:
+        logger.warning(f"Service launch failed: {e.error_type}")
+        raise InternalServerException(detail=e.user_message())
     except Exception as e:
-        logger.error(f"Failed to start service: {e}")
-        raise InternalServerException(detail=f"Failed to start service: {e}")
+        logger.error(f"Unexpected error starting service: {e}")
+        raise InternalServerException(detail="Failed to launch service.")
 
     return service
 

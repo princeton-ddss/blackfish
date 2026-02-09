@@ -34,7 +34,21 @@ from blackfish.server.models.profile import BlackfishProfile, LocalProfile, Slur
 
 
 class ServiceLaunchError(Exception):
-    """Error launching a service with user-friendly messages."""
+    """Error raised when a service fails to launch, with user-friendly messages.
+
+    Error types:
+        script: Launch script generation failed
+        profile: Profile configuration is missing or invalid
+        ssh: SSH connection to remote host failed
+        copy: File copy to remote host failed
+        submit: Job submission to scheduler failed
+        container: Local container startup failed
+
+    Args:
+        error_type: One of the error types listed above
+        host: The target host where the error occurred
+        details: Optional additional context to append to the message
+    """
 
     def __init__(self, error_type: str, host: str, details: str | None = None):
         self.error_type = error_type
@@ -52,7 +66,10 @@ class ServiceLaunchError(Exception):
             "submit": f"Job submission failed on {self.host}. The scheduler may be unavailable.",
             "container": "Failed to start the container. Check that Docker is running and, if using GPU, that nvidia-container-toolkit is installed.",
         }
-        return messages.get(self.error_type, "Failed to launch service.")
+        message = messages.get(self.error_type, "Failed to launch service.")
+        if self.details:
+            message = f"{message} ({self.details})"
+        return message
 
 
 @dataclass

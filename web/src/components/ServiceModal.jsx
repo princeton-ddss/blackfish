@@ -176,8 +176,13 @@ function ServiceModal({
         if (body.detail) {
           message = body.detail;
         }
-      } catch {
+      } catch (parseError) {
         // Response wasn't JSON, use default message
+        console.debug("from handleFormSubmit: failed to parse error response as JSON", {
+          status: res.status,
+          statusText: res.statusText,
+          parseError,
+        });
       }
       const error = new Error(message);
       console.error(error);

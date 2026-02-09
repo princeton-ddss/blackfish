@@ -170,13 +170,25 @@ function ServiceModal({
     setLaunchError(null)
     const res = await runService(task, model, jobOptions, containerOptions, profile);
     if (!res.ok) {
-      const text = await res.text()
-      const error = new Error("A service request failed with message:", text);
+      let message = "Failed to launch service.";
+      try {
+        const body = await res.json();
+        if (body.detail) {
+          message = body.detail;
+        }
+      } catch (parseError) {
+        // Response wasn't JSON, use default message
+        console.debug("from handleFormSubmit: failed to parse error response as JSON", {
+          status: res.status,
+          statusText: res.statusText,
+          parseError,
+        });
+      }
+      const error = new Error(message);
       console.error(error);
       setIsLaunching(false);
       setLaunchError(error);
-      return // TODO: or throw the error? What handling is more user-friendly and
-      // looks nice?
+      return;
     }
     const data = await res.json();
     console.debug("from handleFormSubmit: received response", data.id);

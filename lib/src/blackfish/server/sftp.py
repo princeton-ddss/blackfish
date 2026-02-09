@@ -56,7 +56,9 @@ def get_file_size(profile: SlurmProfile, path: str) -> int:
                 stat = sftp.stat(path)
                 size: int | None = stat.st_size
                 if size is None:
-                    raise InternalServerException(f"Could not determine file size: {path}")
+                    raise InternalServerException(
+                        f"Could not determine file size: {path}"
+                    )
                 return size
     except FileNotFoundError:
         raise NotFoundException(f"Remote file not found: {path}")

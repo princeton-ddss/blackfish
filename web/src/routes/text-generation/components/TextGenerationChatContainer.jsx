@@ -3,9 +3,11 @@ import {
   ArrowPathIcon,
   CheckIcon,
   ClipboardDocumentIcon,
+  DocumentTextIcon,
   PaperAirplaneIcon,
   PencilIcon,
   XMarkIcon,
+  PhotoIcon,
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
@@ -16,8 +18,17 @@ import {
   extractTextFromContent,
   extractImagesFromContent,
 } from "../lib/imageUtils";
+import {
+  readFileAsText,
+  fetchRemoteText,
+  prependFileContext,
+  getTextFileAcceptString,
+  MAX_TEXT_FILE_SIZE,
+  TEXT_FILE_EXTENSIONS,
+} from "../lib/fileUtils";
 import AttachmentMenu from "./AttachmentMenu";
 import ImageAttachmentList from "./ImageAttachmentList";
+import FileAttachmentList from "./FileAttachmentList";
 import FileSelectModal from "@/components/FileSelectModal";
 import Notification from "@/components/Notification";
 import { IMAGE_EXTENSIONS } from "../lib/imageUtils";
@@ -39,9 +50,14 @@ const Role = {
  * @param {Function} options.onRemoveImage
  * @param {Function} options.onImageError
  * @param {Function} options.onImageLoad
+ * @param {Array} options.attachedFiles
+ * @param {Function} options.onRemoveFile
+ * @param {Function} options.onFileError
  * @param {object} options.profile
- * @param {Function} options.onBrowserUpload
- * @param {Function} options.onRemoteSelect
+ * @param {Function} options.onImageBrowserUpload
+ * @param {Function} options.onImageRemoteSelect
+ * @param {Function} options.onFileBrowserUpload
+ * @param {Function} options.onFileRemoteSelect
  * @return {JSX.Element}
  */
 function UserMessageInput({
@@ -52,23 +68,38 @@ function UserMessageInput({
   onRemoveImage,
   onImageError,
   onImageLoad,
+  attachedFiles,
+  onRemoveFile,
+  onFileError,
   profile,
-  onBrowserUpload,
-  onRemoteSelect,
+  onImageBrowserUpload,
+  onImageRemoteSelect,
+  onFileBrowserUpload,
+  onFileRemoteSelect,
 }) {
   return (
     <div className="flex items-start space-x-4 mt-auto pt-4">
       <div className="min-w-0 flex-1">
         <form action="#" onSubmit={onSubmit} className="relative">
-          <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md">
+          <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md overflow-visible">
             {/* Image attachments preview */}
             {attachedImages.length > 0 && (
-              <div className="px-3 pt-2 border-b border-gray-200 dark:border-gray-600">
+              <div className="px-4 pt-2 border-b border-gray-200 dark:border-gray-600">
                 <ImageAttachmentList
                   images={attachedImages}
                   onRemove={onRemoveImage}
                   onImageError={onImageError}
                   onImageLoad={onImageLoad}
+                />
+              </div>
+            )}
+
+            {/* File attachments preview */}
+            {attachedFiles.length > 0 && (
+              <div className="px-4 pt-2 border-b border-gray-200 dark:border-gray-600">
+                <FileAttachmentList
+                  files={attachedFiles}
+                  onRemove={onRemoveFile}
                 />
               </div>
             )}
@@ -106,11 +137,27 @@ function UserMessageInput({
 
           <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
             <div className="flex items-center space-x-5">
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
+                {/* File attachment menu */}
                 <AttachmentMenu
+                  accept={getTextFileAcceptString()}
+                  maxFileSize={MAX_TEXT_FILE_SIZE}
+                  icon={DocumentTextIcon}
+                  label="Attach file"
                   profile={profile}
-                  onBrowserUpload={onBrowserUpload}
-                  onRemoteSelect={onRemoteSelect}
+                  onBrowserUpload={onFileBrowserUpload}
+                  onRemoteSelect={onFileRemoteSelect}
+                  onError={onFileError}
+                />
+                {/* Image attachment menu */}
+                <AttachmentMenu
+                  accept="image/*"
+                  maxFileSize={5 * 1024 * 1024}
+                  icon={PhotoIcon}
+                  label="Attach image"
+                  profile={profile}
+                  onBrowserUpload={onImageBrowserUpload}
+                  onRemoteSelect={onImageRemoteSelect}
                   onError={onImageError}
                 />
               </div>
@@ -140,9 +187,14 @@ UserMessageInput.propTypes = {
   onRemoveImage: PropTypes.func,
   onImageError: PropTypes.func,
   onImageLoad: PropTypes.func,
+  attachedFiles: PropTypes.array,
+  onRemoveFile: PropTypes.func,
+  onFileError: PropTypes.func,
   profile: PropTypes.object,
-  onBrowserUpload: PropTypes.func,
-  onRemoteSelect: PropTypes.func,
+  onImageBrowserUpload: PropTypes.func,
+  onImageRemoteSelect: PropTypes.func,
+  onFileBrowserUpload: PropTypes.func,
+  onFileRemoteSelect: PropTypes.func,
 };
 
 /**
@@ -180,14 +232,20 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
   const [isEditing, setIsEditing] = useState(false);
 
   // Extract text and images from content
-  const textContent = extractTextFromContent(message.content);
+  // Use _displayText if available (when files were attached), otherwise extract from content
+  const textContent = message._displayText !== undefined
+    ? message._displayText
+    : extractTextFromContent(message.content);
   const images = extractImagesFromContent(message.content);
+  const attachedFiles = message._attachedFiles || [];
   const [content, setContent] = useState(textContent);
 
   // Update content when message changes
   useEffect(() => {
-    setContent(extractTextFromContent(message.content));
-  }, [message.content]);
+    setContent(message._displayText !== undefined
+      ? message._displayText
+      : extractTextFromContent(message.content));
+  }, [message.content, message._displayText]);
 
   if (isEditing) {
     return (
@@ -210,10 +268,21 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             <div className="rounded-lg bg-gray-100 dark:bg-gray-700 shadow-md">
               {/* Display attached images (read-only) */}
               {images.length > 0 && (
-                <div className="flex gap-2 flex-wrap px-4 pt-3 border-b border-gray-200 dark:border-gray-600 pb-2">
-                  {images.map((src, idx) => (
-                    <MessageImage key={idx} src={src} />
-                  ))}
+                <div className="px-4 pt-2 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex gap-2 flex-wrap py-2">
+                    {images.map((src, idx) => (
+                      <MessageImage key={idx} src={src} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Display attached files as chips (read-only) */}
+              {attachedFiles.length > 0 && (
+                <div className="px-4 pt-2 border-b border-gray-200 dark:border-gray-600">
+                  <FileAttachmentList
+                    files={attachedFiles.map(f => ({ source: "browser", name: f.name, content: f.content }))}
+                    readOnly
+                  />
                 </div>
               )}
               <label htmlFor="comment" className="sr-only">
@@ -287,6 +356,15 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
                 {images.map((src, idx) => (
                   <MessageImage key={idx} src={src} />
                 ))}
+              </div>
+            )}
+            {/* Display attached files as chips */}
+            {attachedFiles.length > 0 && (
+              <div className="mb-2">
+                <FileAttachmentList
+                  files={attachedFiles.map(f => ({ source: "browser", name: f.name, content: f.content }))}
+                  readOnly
+                />
               </div>
             )}
             {textContent}
@@ -444,12 +522,35 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef, isWait
         <Message
           key={index}
           message={message}
-          onEditMessage={(content) => {
+          onEditMessage={(newContent) => {
             console.log("editing message:", message);
             setMessages((messages) =>
               messages.map((m, i) => {
                 if (i === index) {
-                  return { ...m, content: content };
+                  // Extract text for display if content is multimodal (has images)
+                  const displayText = typeof newContent === 'string'
+                    ? newContent
+                    : extractTextFromContent(newContent);
+
+                  // Re-add file context if files were attached
+                  let finalContent = newContent;
+                  if (m._attachedFiles && m._attachedFiles.length > 0) {
+                    const textWithFileContext = prependFileContext(displayText, m._attachedFiles);
+                    // If there are images, rebuild multimodal content with file context
+                    if (typeof newContent !== 'string') {
+                      const images = extractImagesFromContent(newContent);
+                      finalContent = buildMultimodalContent(textWithFileContext, images);
+                    } else {
+                      finalContent = textWithFileContext;
+                    }
+                  }
+
+                  return {
+                    ...m,
+                    content: finalContent,
+                    _displayText: displayText,
+                    // Preserve _attachedFiles
+                  };
                 }
                 return m;
               })
@@ -509,8 +610,11 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     content: sessionStorage.getItem("tgcc-um") || "",
   });
   const [attachedImages, setAttachedImages] = useState([]);
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [imageBrowserOpen, setImageBrowserOpen] = useState(false);
   const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
   const [imageError, setImageError] = useState(null);
+  const [fileError, setFileError] = useState(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
 
   const elementRef = useRef(null);
@@ -524,7 +628,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     scrollToElement();
   }, [messages]);
 
-  const handleBrowserUpload = (files) => {
+  // Image attachment handlers
+  const handleImageBrowserUpload = (files) => {
     const newImages = files.map((file) => ({
       source: "browser",
       file: file,
@@ -532,7 +637,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     setAttachedImages((prev) => [...prev, ...newImages]);
   };
 
-  const handleRemoteSelect = (image) => {
+  const handleImageRemoteSelect = (image) => {
     setAttachedImages((prev) => [...prev, image]);
   };
 
@@ -553,12 +658,68 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     );
   }, []);
 
+  // File attachment handlers
+  const handleFileBrowserUpload = useCallback(async (files) => {
+    for (const file of files) {
+      try {
+        const content = await readFileAsText(file);
+        setAttachedFiles((prev) => [
+          ...prev,
+          {
+            source: "browser",
+            file: file,
+            name: file.name,
+            content: content,
+          },
+        ]);
+      } catch (error) {
+        console.error("Failed to read file:", error);
+        setFileError({ fileName: file.name, message: "Failed to read file" });
+        setTimeout(() => setFileError(null), 5000);
+      }
+    }
+  }, []);
+
+  const handleFileRemoteSelect = useCallback(async (fileInfo) => {
+    try {
+      const content = await fetchRemoteText(fileInfo.path, fileInfo.profile);
+      const fileName = fileInfo.path.split("/").pop();
+      setAttachedFiles((prev) => [
+        ...prev,
+        {
+          source: "remote",
+          path: fileInfo.path,
+          profile: fileInfo.profile,
+          name: fileName,
+          content: content,
+        },
+      ]);
+    } catch (error) {
+      console.error("Failed to fetch remote file:", error);
+      const fileName = fileInfo.path.split("/").pop();
+      setFileError({ fileName, message: error.message });
+      setTimeout(() => setFileError(null), 5000);
+    }
+  }, []);
+
+  const handleRemoveFile = (index) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFileError = useCallback((fileName, errorMessage) => {
+    setFileError({ fileName, message: errorMessage });
+    setTimeout(() => setFileError(null), 5000);
+  }, []);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("user message submitted");
 
+    // Prepend file context to the message text (for LLM)
+    const textWithFileContext = prependFileContext(userMessage.content, attachedFiles);
+
     // Build the message content (multimodal if images attached)
-    let messageContent = userMessage.content;
+    let messageContent = textWithFileContext;
     if (attachedImages.length > 0) {
       try {
         const imageUrls = await Promise.all(
@@ -575,16 +736,24 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
             }
           })
         );
-        messageContent = buildMultimodalContent(userMessage.content, imageUrls);
+        messageContent = buildMultimodalContent(textWithFileContext, imageUrls);
       } catch (error) {
         console.error("Failed to convert images:", error);
         return;
       }
     }
 
+    // Store file metadata for UI display (chips), content goes to LLM
+    const fileMetadata = attachedFiles.length > 0
+      ? attachedFiles.map(f => ({ name: f.name, content: f.content }))
+      : undefined;
+
     const newUserMessage = {
       role: Role.USER,
       content: messageContent,
+      // UI-only fields (ignored by LLM API):
+      _displayText: userMessage.content,
+      _attachedFiles: fileMetadata,
     };
 
     const stream = streamChatCompletionInference(
@@ -599,8 +768,9 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     setMessages((messages) => [...messages, newUserMessage]);
 
-    // Clear attached images after sending
+    // Clear attachments after sending
     setAttachedImages([]);
+    setAttachedFiles([]);
 
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
@@ -727,19 +897,36 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         onRemoveImage={handleRemoveImage}
         onImageError={handleImageError}
         onImageLoad={handleImageLoad}
+        attachedFiles={attachedFiles}
+        onRemoveFile={handleRemoveFile}
+        onFileError={handleFileError}
         profile={profile}
-        onBrowserUpload={handleBrowserUpload}
-        onRemoteSelect={() => setFileBrowserOpen(true)}
+        onImageBrowserUpload={handleImageBrowserUpload}
+        onImageRemoteSelect={() => setImageBrowserOpen(true)}
+        onFileBrowserUpload={handleFileBrowserUpload}
+        onFileRemoteSelect={() => setFileBrowserOpen(true)}
       />
 
+      {/* Image file browser modal */}
+      <FileSelectModal
+        open={imageBrowserOpen}
+        setOpen={setImageBrowserOpen}
+        profile={profile}
+        onSelect={(file) => handleImageRemoteSelect({ source: "remote", path: file.path, profile: file.profile })}
+        title="Select an image"
+        acceptedExtensions={IMAGE_EXTENSIONS}
+        extensionErrorMessage="Please select an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP)"
+      />
+
+      {/* Text file browser modal */}
       <FileSelectModal
         open={fileBrowserOpen}
         setOpen={setFileBrowserOpen}
         profile={profile}
-        onSelect={(file) => handleRemoteSelect({ source: "remote", path: file.path, profile: file.profile })}
-        title="Select an image"
-        acceptedExtensions={IMAGE_EXTENSIONS}
-        extensionErrorMessage="Please select an image file (PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP)"
+        onSelect={(file) => handleFileRemoteSelect({ path: file.path, profile: file.profile })}
+        title="Select a file"
+        acceptedExtensions={TEXT_FILE_EXTENSIONS}
+        extensionErrorMessage="Please select a text file (txt, md, json, py, js, etc.)"
       />
 
       <Notification
@@ -748,6 +935,14 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         message="Failed to attach image"
         detail={imageError ? `${imageError.fileName}: ${imageError.message}` : ""}
         onDismiss={() => setImageError(null)}
+      />
+
+      <Notification
+        show={!!fileError}
+        variant="error"
+        message="Failed to attach file"
+        detail={fileError ? `${fileError.fileName}: ${fileError.message}` : ""}
+        onDismiss={() => setFileError(null)}
       />
     </div>
   );

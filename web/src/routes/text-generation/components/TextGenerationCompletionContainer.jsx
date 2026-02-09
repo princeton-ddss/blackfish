@@ -1,12 +1,25 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useCallback } from "react";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
 import {
   ArrowPathIcon,
   ClipboardDocumentIcon,
+  DocumentTextIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/outline";
-
+import {
+  readFileAsText,
+  fetchRemoteText,
+  prependFileContext,
+  getTextFileAcceptString,
+  MAX_TEXT_FILE_SIZE,
+  TEXT_FILE_EXTENSIONS,
+} from "../lib/fileUtils";
+import AttachmentMenu from "./AttachmentMenu";
+import FileAttachmentList from "./FileAttachmentList";
+import FileSelectModal from "@/components/FileSelectModal";
+import Notification from "@/components/Notification";
 import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -19,6 +32,12 @@ import PropTypes from "prop-types";
  * @param {Function} options.handleSubmit
  * @param {object} options.selectedService
  * @param {JSX.Element} options.toolbar
+ * @param {Array} options.attachedFiles
+ * @param {Function} options.onRemoveFile
+ * @param {Function} options.onFileError
+ * @param {object} options.profile
+ * @param {Function} options.onFileBrowserUpload
+ * @param {Function} options.onFileRemoteSelect
  * @return {JSX.Element}
  */
 function TextGenerationPromptInput({
@@ -27,6 +46,12 @@ function TextGenerationPromptInput({
   handleSubmit,
   selectedService,
   toolbar,
+  attachedFiles,
+  onRemoveFile,
+  onFileError,
+  profile,
+  onFileBrowserUpload,
+  onFileRemoteSelect,
 }) {
   /**
    * Set input value in React state and session storage.
@@ -50,6 +75,16 @@ function TextGenerationPromptInput({
         <div className="min-w-0 flex-1">
           <form action="#" onSubmit={handleSubmit} className="relative">
             <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md">
+              {/* File attachments preview */}
+              {attachedFiles.length > 0 && (
+                <div className="px-4 pt-2 border-b border-gray-200 dark:border-gray-600">
+                  <FileAttachmentList
+                    files={attachedFiles}
+                    onRemove={onRemoveFile}
+                  />
+                </div>
+              )}
+
               <label htmlFor="text-generation-text-input" className="sr-only">
                 Prompt anything
               </label>
@@ -81,7 +116,20 @@ function TextGenerationPromptInput({
               </div>
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 flex justify-end py-2 pl-3 pr-2">
+            <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
+              <div className="flex items-center">
+                {/* File attachment menu */}
+                <AttachmentMenu
+                  accept={getTextFileAcceptString()}
+                  maxFileSize={MAX_TEXT_FILE_SIZE}
+                  icon={DocumentTextIcon}
+                  label="Attach file"
+                  profile={profile}
+                  onBrowserUpload={onFileBrowserUpload}
+                  onRemoteSelect={onFileRemoteSelect}
+                  onError={onFileError}
+                />
+              </div>
               <div className="shrink-0">
                 <button
                   type="submit"
@@ -108,6 +156,12 @@ TextGenerationPromptInput.propTypes = {
   handleSubmit: PropTypes.func,
   selectedService: PropTypes.object,
   toolbar: PropTypes.node,
+  attachedFiles: PropTypes.array,
+  onRemoveFile: PropTypes.func,
+  onFileError: PropTypes.func,
+  profile: PropTypes.object,
+  onFileBrowserUpload: PropTypes.func,
+  onFileRemoteSelect: PropTypes.func,
 };
 
 /**
@@ -177,6 +231,7 @@ TextGenerationResponseOutput.propTypes = {
  */
 function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
+  const { profile } = useContext(ProfileContext);
   const [prompt, setPrompt] = useState(
     sessionStorage.getItem("tgci") || ""
   );
@@ -184,11 +239,69 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
     sessionStorage.getItem("tgco") || ""
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+  const [fileError, setFileError] = useState(null);
+
+  // File attachment handlers
+  const handleFileBrowserUpload = useCallback(async (files) => {
+    for (const file of files) {
+      try {
+        const content = await readFileAsText(file);
+        setAttachedFiles((prev) => [
+          ...prev,
+          {
+            source: "browser",
+            file: file,
+            name: file.name,
+            content: content,
+          },
+        ]);
+      } catch (error) {
+        console.error("Failed to read file:", error);
+        setFileError({ fileName: file.name, message: "Failed to read file" });
+        setTimeout(() => setFileError(null), 5000);
+      }
+    }
+  }, []);
+
+  const handleFileRemoteSelect = useCallback(async (fileInfo) => {
+    try {
+      const content = await fetchRemoteText(fileInfo.path, fileInfo.profile);
+      const fileName = fileInfo.path.split("/").pop();
+      setAttachedFiles((prev) => [
+        ...prev,
+        {
+          source: "remote",
+          path: fileInfo.path,
+          profile: fileInfo.profile,
+          name: fileName,
+          content: content,
+        },
+      ]);
+    } catch (error) {
+      console.error("Failed to fetch remote file:", error);
+      const fileName = fileInfo.path.split("/").pop();
+      setFileError({ fileName, message: error.message });
+      setTimeout(() => setFileError(null), 5000);
+    }
+  }, []);
+
+  const handleRemoveFile = (index) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFileError = useCallback((fileName, errorMessage) => {
+    setFileError({ fileName, message: errorMessage });
+    setTimeout(() => setFileError(null), 5000);
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const textInput = prompt === "" ? "Write me a haiku about orcas." : prompt;
+    // Prepend file context to the prompt
+    const promptWithFileContext = prependFileContext(prompt, attachedFiles);
+    const textInput = promptWithFileContext === "" ? "Write me a haiku about orcas." : promptWithFileContext;
 
     setIsLoading(true);
     setResponse("");
@@ -227,12 +340,37 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
         selectedService={selectedService}
         isLoading={isLoading}
         toolbar={toolbar}
+        attachedFiles={attachedFiles}
+        onRemoveFile={handleRemoveFile}
+        onFileError={handleFileError}
+        profile={profile}
+        onFileBrowserUpload={handleFileBrowserUpload}
+        onFileRemoteSelect={() => setFileBrowserOpen(true)}
       />
       <TextGenerationResponseOutput
         content={response || ""}
         handleSubmit={handleSubmit}
         selectedService={selectedService}
         isLoading={isLoading}
+      />
+
+      {/* Text file browser modal */}
+      <FileSelectModal
+        open={fileBrowserOpen}
+        setOpen={setFileBrowserOpen}
+        profile={profile}
+        onSelect={(file) => handleFileRemoteSelect({ path: file.path, profile: file.profile })}
+        title="Select a file"
+        acceptedExtensions={TEXT_FILE_EXTENSIONS}
+        extensionErrorMessage="Please select a text file (txt, md, json, py, js, etc.)"
+      />
+
+      <Notification
+        show={!!fileError}
+        variant="error"
+        message="Failed to attach file"
+        detail={fileError ? `${fileError.fileName}: ${fileError.message}` : ""}
+        onDismiss={() => setFileError(null)}
       />
     </div>
   );

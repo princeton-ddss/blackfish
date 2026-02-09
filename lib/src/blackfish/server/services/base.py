@@ -50,7 +50,7 @@ class ServiceLaunchError(Exception):
             "ssh": f"Could not connect to {self.host}. Check your SSH configuration.",
             "copy": f"Failed to copy files to {self.host}. Check permissions and disk space.",
             "submit": f"Job submission failed on {self.host}. The scheduler may be unavailable.",
-            "container": "Failed to start the container. Check that Docker or Apptainer is running.",
+            "container": "Failed to start the container. Check that Docker is running and, if using GPU, that nvidia-container-toolkit is installed.",
         }
         return messages.get(self.error_type, "Failed to launch service.")
 

@@ -1,10 +1,13 @@
 import { useState } from "react";
+import { Menu, MenuButton, MenuItem, MenuItems, Portal } from "@headlessui/react";
 import {
     ChevronRightIcon,
     ArrowPathIcon,
+    ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { lastModified } from "@/lib/util";
 import Pagination from "@/components/Pagination";
+import { TASKS } from "./NewJobModal";
 import PropTypes from "prop-types";
 
 function StatusBadge({ status }) {
@@ -76,7 +79,8 @@ ProgressDisplay.propTypes = {
     failed: PropTypes.number.isRequired,
 };
 
-function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false }) {
+function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false, onNewClick, profile }) {
+    const isSlurm = profile?.schema === "slurm";
     const [currentPage, setCurrentPage] = useState(1);
     const jobsPerPage = 20;
 
@@ -96,11 +100,41 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                 <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">
                     Jobs
                 </label>
+                {isSlurm && (
+                    <Menu as="div" className="relative">
+                        <MenuButton className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-gray-700 px-2.5 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 shadow ring-1 ring-inset ring-gray-300 dark:ring-gray-500 dark:shadow-gray-900/50 hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-shadow focus:outline-none">
+                            New Job
+                            <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        </MenuButton>
+                        <Portal>
+                            <MenuItems
+                                anchor="bottom end"
+                                className="z-50 w-56 rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none"
+                            >
+                                <div className="py-1">
+                                    {TASKS.map((task) => (
+                                        <MenuItem key={task.id}>
+                                            <button
+                                                onClick={() => onNewClick(task)}
+                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-blue-500 data-[focus]:text-white"
+                                            >
+                                                <div className="font-medium">{task.name}</div>
+                                                <div className="text-xs opacity-75">
+                                                    {task.description}
+                                                </div>
+                                            </button>
+                                        </MenuItem>
+                                    ))}
+                                </div>
+                            </MenuItems>
+                        </Portal>
+                    </Menu>
+                )}
             </div>
             <div className="flow-root">
                 <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                     <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                        <div className={`ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg ${heightClass} overflow-y-auto`}>
+                        <div className={`ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg ${heightClass} overflow-y-auto relative z-0`}>
                             <table className="divide-y divide-gray-300 dark:divide-gray-600 table-fixed w-full">
                                 <thead>
                                     <tr>
@@ -136,15 +170,16 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                         </th>
                                         <th
                                             scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 w-12 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                            className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 w-20 backdrop-blur bg-gray-50 dark:bg-gray-800"
                                         >
                                             <div className="flex gap-2 justify-end">
                                                 <button
                                                     onClick={() => {}}
                                                     title="Refresh"
+                                                    className="text-gray-900 dark:text-gray-100 hover:text-gray-400"
                                                 >
                                                     <ArrowPathIcon
-                                                        className={`h-5 w-5 text-gray-900 dark:text-gray-100 hover:text-gray-400 ${isLoading ? "animate-spin" : ""}`}
+                                                        className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`}
                                                     />
                                                 </button>
                                             </div>
@@ -247,6 +282,8 @@ JobsTable.propTypes = {
     onJobDrillIn: PropTypes.func.isRequired,
     selectedJob: PropTypes.object,
     isLoading: PropTypes.bool,
+    onNewClick: PropTypes.func,
+    profile: PropTypes.object,
 };
 
 export default JobsTable;

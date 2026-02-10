@@ -4,6 +4,7 @@ import JobsTable from "./JobsTable";
 import JobResultsTable from "./JobResultsTable";
 import JobDetailsPanel from "./JobDetailsPanel";
 import ResultPreview from "./ResultPreview";
+import NewJobModal from "./NewJobModal";
 
 // Mock data for development
 const mockJobs = [
@@ -146,6 +147,9 @@ function JobsContainer() {
     const [selectedJob, setSelectedJob] = useState(null);
     const [selectedResult, setSelectedResult] = useState(null);
     const [viewingResults, setViewingResults] = useState(false);
+    const [isNewPipelineModalOpen, setIsNewPipelineModalOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [jobs, setJobs] = useState(mockJobs);
 
     // Click on job row to show details (without drilling in)
     const handleJobClick = (job) => {
@@ -169,11 +173,35 @@ function JobsContainer() {
         setSelectedResult(result);
     };
 
+    const handleNewPipelineClick = (task) => {
+        setSelectedTask(task);
+        setIsNewPipelineModalOpen(true);
+    };
+
+    const handleJobCreated = (newJob) => {
+        // Add the new job to the list (in a real app, this would refetch from API)
+        setJobs((prevJobs) => [
+            {
+                ...newJob,
+                completed: 0,
+                remaining: 100,
+                failed: 0,
+                slurm: {
+                    memory: "32GB",
+                    cpus: 4,
+                    gpus: 1,
+                    partition: "gpu",
+                    time_limit: "4:00:00",
+                },
+            },
+            ...prevJobs,
+        ]);
+    };
+
     const jobResults = selectedJob ? mockResults[selectedJob.id] || [] : [];
 
     // Determine what to show in right column
     const showResultPreview = selectedResult !== null;
-    const showJobDetails = selectedJob !== null && !showResultPreview;
 
     return (
         <div className="flex flex-col lg:flex-row lg:items-start gap-8">
@@ -188,10 +216,12 @@ function JobsContainer() {
                     />
                 ) : (
                     <JobsTable
-                        jobs={mockJobs}
+                        jobs={jobs}
                         onJobClick={handleJobClick}
                         onJobDrillIn={handleJobDrillIn}
                         selectedJob={selectedJob}
+                        onNewClick={handleNewPipelineClick}
+                        profile={profile}
                     />
                 )}
             </div>
@@ -213,6 +243,14 @@ function JobsContainer() {
                     )}
                 </div>
             </div>
+
+            <NewJobModal
+                open={isNewPipelineModalOpen}
+                setOpen={setIsNewPipelineModalOpen}
+                profile={profile}
+                task={selectedTask}
+                onJobCreated={handleJobCreated}
+            />
         </div>
     );
 }

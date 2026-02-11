@@ -1,12 +1,145 @@
 from __future__ import annotations
 
+import configparser
 import os
 import subprocess
+from typing import TYPE_CHECKING
+
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
 import blackfish.server as server
 from blackfish.server.logger import logger
+
+if TYPE_CHECKING:
+    from blackfish.server.jobs.client import CommandRunner
+
+
+class ProfileSetupError(Exception):
+    """Error raised when profile setup fails."""
+
+    def __init__(self, message: str, details: str | None = None):
+        self.message = message
+        self.details = details
+        super().__init__(self.user_message())
+
+    def user_message(self) -> str:
+        if self.details:
+            return f"{self.message} ({self.details})"
+        return self.message
+
+
+class ProfileManager:
+    """Manages profile setup and configuration.
+
+    Handles directory creation, cache validation, and config file operations.
+    Uses a CommandRunner to execute commands either locally or via SSH.
+    """
+
+    def __init__(
+        self,
+        runner: "CommandRunner",
+        home_dir: str,
+        cache_dir: str,
+        config_path: str | None = None,
+    ):
+        """Initialize ProfileManager.
+
+        Args:
+            runner: CommandRunner for executing commands (SSHRunner or LocalRunner)
+            home_dir: Home directory for the profile
+            cache_dir: Cache directory for the profile
+            config_path: Path to profiles.cfg (defaults to ~/.blackfish/profiles.cfg)
+        """
+        self.runner = runner
+        self.home_dir = home_dir
+        self.cache_dir = cache_dir
+        self.config_path = config_path
+
+    @property
+    def host(self) -> str:
+        return self.runner.host
+
+    async def create_directories(self) -> None:
+        """Create home directory structure (home_dir/models, home_dir/images).
+
+        Raises:
+            ProfileSetupError: If directory creation fails
+        """
+        logger.info(f"Creating directories on {self.host}")
+
+        try:
+            returncode, _, stderr = await self.runner.run(f"mkdir -p {self.home_dir}")
+            if returncode != 0:
+                raise ProfileSetupError(
+                    "Failed to create home directory",
+                    stderr.decode("utf-8").strip() if stderr else None,
+                )
+
+            returncode, _, stderr = await self.runner.run(
+                f"mkdir -p {self.home_dir}/models {self.home_dir}/images"
+            )
+            if returncode != 0:
+                raise ProfileSetupError(
+                    "Failed to create subdirectories",
+                    stderr.decode("utf-8").strip() if stderr else None,
+                )
+
+            logger.info(f"Created directories on {self.host}")
+        except ProfileSetupError:
+            raise
+        except Exception as e:
+            raise ProfileSetupError("Failed to create directories", str(e))
+
+    async def check_cache(self) -> None:
+        """Verify cache directory exists.
+
+        Raises:
+            ProfileSetupError: If cache directory does not exist
+        """
+        logger.debug(f"Checking cache directory {self.cache_dir} on {self.host}")
+
+        try:
+            returncode, stdout, _ = await self.runner.run(
+                f'test -d {self.cache_dir} && echo "exists"'
+            )
+            if returncode != 0 or b"exists" not in stdout:
+                raise ProfileSetupError(
+                    f"Cache directory does not exist: {self.cache_dir}"
+                )
+            logger.debug(f"Cache directory exists on {self.host}")
+        except ProfileSetupError:
+            raise
+        except Exception as e:
+            raise ProfileSetupError("Failed to check cache directory", str(e))
+
+    @staticmethod
+    def get_profiles_config(config_path: str) -> configparser.ConfigParser:
+        """Load the profiles configuration file.
+
+        Args:
+            config_path: Path to profiles.cfg
+
+        Returns:
+            ConfigParser with loaded profiles
+        """
+        config = configparser.ConfigParser()
+        if os.path.isfile(config_path):
+            config.read(config_path)
+        return config
+
+    @staticmethod
+    def save_profiles_config(
+        config: configparser.ConfigParser, config_path: str
+    ) -> None:
+        """Save the profiles configuration file.
+
+        Args:
+            config: ConfigParser to save
+            config_path: Path to profiles.cfg
+        """
+        with open(config_path, "w") as f:
+            config.write(f)
 
 
 def create_local_home_dir(home_dir: str | os.PathLike[str]) -> None:

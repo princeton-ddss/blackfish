@@ -13,10 +13,6 @@ from dataclasses import asdict
 from blackfish.cli.services.text_generation import run_text_generation
 from blackfish.cli.services.speech_recognition import run_speech_recognition
 
-from blackfish.cli.jobs.speech_recognition import (
-    run_speech_recognition as run_batch_speech_recognition,
-)
-
 from blackfish.cli.profile import (
     create_profile,
     show_profile,
@@ -643,93 +639,13 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
 
 # blackfish batch [OPTIONS] COMMAND
 @main.group()
-@click.option(
-    "--time",
-    type=str,
-    default="00:30:00",
-    help="The duration to run the service for, e.g., 1:00 (one hour).",
-)
-@click.option(
-    "--ntasks-per-node",
-    type=int,
-    default=8,
-    help="The number of tasks per compute node.",
-)
-@click.option(
-    "--mem",
-    type=int,
-    default=16,
-    help="The memory required per compute node in GB, e.g., 16 (G).",
-)
-@click.option(
-    "--gres",
-    type=int,
-    default=0,
-    help="The number of GPU devices required per compute node, e.g., 1.",
-)
-@click.option(
-    "--partition",
-    type=str,
-    default=None,
-    help="The HPC partition to run the service on.",
-)
-@click.option(
-    "--constraint",
-    type=str,
-    default=None,
-    help="Required compute node features, e.g., 'gpu80'.",
-)
-@click.option(
-    "--account",
-    type=str,
-    default=None,
-    help="The Slurm account to charge resources to.",
-)
-@click.option(
-    "--profile", "-p", type=str, default="default", help="The Blackfish profile to use."
-)
-@click.option(
-    "--mount", "-m", type=str, default=None, help="An optional directory to mount."
-)
-@click.pass_context
-def batch(
-    ctx: Context,
-    time: str,
-    ntasks_per_node: int,
-    mem: int,
-    gres: int,
-    partition: Optional[str],
-    constraint: Optional[str],
-    account: Optional[str],
-    profile: str,
-    mount: Optional[str],
-) -> None:  # pragma: no cover
-    """Run a batch inference job.
+def batch() -> None:  # pragma: no cover
+    """Manage batch inference jobs.
 
-    The format of options approximately follows that of Slurm's `sbatch` command.
+    Batch jobs run ML tasks on HPC clusters using TigerFlow.
+    TigerFlow handles Slurm job submission and resource management internally.
     """
-
-    from blackfish.server.models.profile import deserialize_profile
-
-    ctx.obj = {
-        "config": config,
-        "profile": deserialize_profile(config.HOME_DIR, profile),
-        "resources": {
-            "time": time,
-            "ntasks_per_node": ntasks_per_node,
-            "mem": mem,
-            "gres": gres,
-            "partition": partition,
-            "constraint": constraint,
-            "account": account,
-        },
-        "options": ServiceOptions(
-            mount=mount,
-        ),
-    }
-
-
-batch.add_command(run_batch_speech_recognition, "speech-recognition")
+    pass
 
 
 # blackfish batch ls [OPTIONS]
@@ -739,7 +655,7 @@ batch.add_command(run_batch_speech_recognition, "speech-recognition")
     type=str,
     help=(
         "A list of comma-separated filtering criteria, e.g.,"
-        " image=text_generation,status=SUBMITTED"
+        " task=transcribe,status=RUNNING"
     ),
 )
 @click.option(
@@ -747,12 +663,12 @@ batch.add_command(run_batch_speech_recognition, "speech-recognition")
     "-a",
     is_flag=True,
     default=False,
-    help="Include all services, i.e., including inactive ones.",
+    help="Include all jobs, including completed ones.",
 )
 def list_batch_jobs(
     filters: Optional[str], all: bool = False
 ) -> None:  # pragma: no cover
-    """List batches"""
+    """List batch jobs"""
 
     from typing import Any
     from prettytable import PrettyTable, TableStyle
@@ -762,8 +678,8 @@ def list_batch_jobs(
 
     tab = PrettyTable(
         field_names=[
-            "BATCH ID",
-            "PIPELINE",
+            "JOB ID",
+            "TASK",
             "MODEL",
             "CREATED",
             "UPDATED",
@@ -790,14 +706,14 @@ def list_batch_jobs(
     with yaspin(text="Fetching batch jobs...") as spinner:
         res = requests.get(
             f"http://{config.HOST}:{config.PORT}/api/jobs", params=params
-        )  # fresh data 🥬
+        )
         if not res.ok:
-            spinner.text = f"Failed to fetch services. Status code: {res.status_code}."
+            spinner.text = f"Failed to fetch jobs. Status code: {res.status_code}."
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
 
-    def is_active(service: Any) -> bool:
-        return service["status"] in [
+    def is_active(job: Any) -> bool:
+        return job["status"] in [
             BatchJobStatus.SUBMITTED,
             BatchJobStatus.PENDING,
             BatchJobStatus.RUNNING,
@@ -806,16 +722,16 @@ def list_batch_jobs(
     jobs = res.json()
     for job in jobs:
         if is_active(job) or all:
-            if job["ntotal"] is None:
+            if job["staged"] is None:
                 progress = "N/A"
             else:
                 progress = (
-                    f"{job['nsuccess']}/{job['ntotal']}" if job["ntotal"] else "0/0"
+                    f"{job['finished']}/{job['staged']}" if job["staged"] else "0/0"
                 )
             tab.add_row(
                 [
                     job["id"][:DISPLAY_ID_LENGTH],
-                    job["pipeline"],
+                    job["task"],
                     job["repo_id"],
                     format_datetime(datetime.fromisoformat(job["created_at"])),
                     format_datetime(datetime.fromisoformat(job["updated_at"])),
@@ -859,7 +775,7 @@ def stop_batch_job(job_id: str) -> None:  # pragma: no cover
     type=str,
     help=(
         "A list of comma-separated filtering criteria, e.g.,"
-        " pipeline=text_generation,status=STOPPED"
+        " task=transcribe,status=STOPPED"
     ),
 )
 def remove_batch_job(filters: Optional[str]) -> None:

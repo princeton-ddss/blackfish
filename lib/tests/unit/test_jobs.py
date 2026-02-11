@@ -4,7 +4,12 @@ import pytest
 from unittest.mock import AsyncMock, Mock, patch
 from uuid import UUID
 
-from blackfish.server.jobs.base import BatchJob, BatchJobStatus, create_tigerflow_client
+from blackfish.server.jobs.base import (
+    BatchJob,
+    BatchJobStatus,
+    create_tigerflow_client,
+    create_tigerflow_client_for_profile,
+)
 from blackfish.server.jobs.client import (
     TigerFlowClient,
     TigerFlowStatus,
@@ -268,11 +273,102 @@ class TestCreateTigerflowClient:
 
         assert client.python_path == "/opt/python3.11/bin/python3"
 
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_creates_ssh_runner_for_remote_job(self, mock_deserialize: Mock) -> None:
+        """create_tigerflow_client should create SSHRunner for remote job."""
+        from blackfish.server.jobs.client import SSHRunner
+
+        mock_deserialize.return_value = None
+        job = create_test_batch_job(
+            host="remote.cluster.edu", user="testuser", home_dir="/home/testuser"
+        )
+
+        client = create_tigerflow_client(job, MockAppConfig())
+
+        assert isinstance(client.runner, SSHRunner)
+        assert client.runner.user == "testuser"
+        assert client.runner.host == "remote.cluster.edu"
+
+
+class TestCreateTigerflowClientForProfile:
+    """Tests for create_tigerflow_client_for_profile factory function."""
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_raises_file_not_found_when_profile_missing(
+        self, mock_deserialize: Mock
+    ) -> None:
+        """Should raise FileNotFoundError when profile doesn't exist."""
+        mock_deserialize.return_value = None
+
+        with pytest.raises(FileNotFoundError, match="Profile 'nonexistent' not found"):
+            create_tigerflow_client_for_profile("nonexistent", MockAppConfig())
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_creates_ssh_runner_for_slurm_profile(
+        self, mock_deserialize: Mock
+    ) -> None:
+        """Should create SSHRunner for SlurmProfile."""
+        from blackfish.server.models.profile import SlurmProfile
+        from blackfish.server.jobs.client import SSHRunner
+
+        mock_profile = SlurmProfile(
+            name="test-slurm",
+            user="testuser",
+            host="cluster.edu",
+            home_dir="/home/testuser/.blackfish",
+            cache_dir="/scratch/cache",
+            python_path="/opt/python/bin/python3",
+        )
+        mock_deserialize.return_value = mock_profile
+
+        client = create_tigerflow_client_for_profile("test-slurm", MockAppConfig())
+
+        assert isinstance(client.runner, SSHRunner)
+        assert client.runner.user == "testuser"
+        assert client.runner.host == "cluster.edu"
+        assert client.python_path == "/opt/python/bin/python3"
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_creates_local_runner_for_local_profile(
+        self, mock_deserialize: Mock
+    ) -> None:
+        """Should create LocalRunner for LocalProfile."""
+        from blackfish.server.models.profile import LocalProfile
+        from blackfish.server.jobs.client import LocalRunner
+
+        mock_profile = LocalProfile(
+            name="test-local",
+            home_dir="/home/user/.blackfish",
+            cache_dir="/tmp/cache",
+        )
+        mock_deserialize.return_value = mock_profile
+
+        client = create_tigerflow_client_for_profile("test-local", MockAppConfig())
+
+        assert isinstance(client.runner, LocalRunner)
+        assert client.python_path == "python3"  # Default for local
+
 
 class MockAppConfig:
     """Mock app config for testing."""
 
     HOME_DIR = "/home/test/.blackfish"
+
+
+class TestBatchJobRepr:
+    """Tests for BatchJob.__repr__()."""
+
+    def test_repr_includes_name_task_status(self) -> None:
+        """__repr__ should include name, task, and status."""
+        job = create_test_batch_job(
+            name="my-job", task="transcribe", status=BatchJobStatus.RUNNING
+        )
+
+        result = repr(job)
+
+        assert "my-job" in result
+        assert "transcribe" in result
+        assert "running" in result
 
 
 class TestTasks:

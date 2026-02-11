@@ -20,15 +20,16 @@ import subprocess
 import pytest
 from packaging.version import Version
 
+from blackfish.server.jobs.client import (
+    MIN_TIGERFLOW_VERSION,
+    MIN_TIGERFLOW_ML_VERSION,
+)
+
 # Skip all tests in this module unless explicitly enabled
 pytestmark = pytest.mark.skipif(
     os.environ.get("TIGERFLOW_CONTRACT_TESTS") != "1",
     reason="Contract tests disabled. Set TIGERFLOW_CONTRACT_TESTS=1 to run.",
 )
-
-# Minimum versions expected
-MIN_TIGERFLOW_VERSION = "0.1.0"
-MIN_TIGERFLOW_ML_VERSION = "0.1.0"
 
 # Tasks we expect to be available in tigerflow-ml
 EXPECTED_TASKS = [

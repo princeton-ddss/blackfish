@@ -183,6 +183,9 @@ class BatchJob(UUIDAuditBase):
         self.tigerflow_version = versions.tigerflow
         self.tigerflow_ml_version = versions.tigerflow_ml
 
+        # Verify required features are available
+        await client.check_capabilities()
+
         # Build params - model/revision merged with user params
         params: dict[str, Any] = {"model": self.repo_id}
         if self.revision:

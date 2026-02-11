@@ -54,6 +54,7 @@ class TestTigerFlowError:
             ("run", "start TigerFlow job"),
             ("status", "get TigerFlow job status"),
             ("stop", "stop TigerFlow job"),
+            ("unsupported", "features not available"),
         ],
     )
     def test_user_message_describes_error_type(
@@ -605,6 +606,62 @@ class TestTigerFlowClientCheckHealth:
 
         assert exc_info.value.error_type == "version"
         assert "tigerflow-ml" in str(exc_info.value.details).lower()
+
+
+class TestTigerFlowClientCheckCapabilities:
+    """Tests for TigerFlowClient.check_capabilities()."""
+
+    async def test_check_capabilities_passes_when_all_features_available(self) -> None:
+        """check_capabilities should pass when tasks and status commands work."""
+        runner = MockRunner()
+        runner.set_responses([
+            (0, b'[{"name": "transcribe"}]', b""),  # tasks list
+            (0, b"Usage: tigerflow status", b""),  # status --help
+        ])
+        client = TigerFlowClient(runner, "/home/user")
+
+        # Should not raise
+        await client.check_capabilities()
+
+    async def test_check_capabilities_raises_when_tasks_command_unknown(self) -> None:
+        """check_capabilities should raise when tasks command not available."""
+        runner = MockRunner()
+        runner.set_responses([
+            (1, b"", b"Error: unknown command 'tasks'"),  # tasks list fails
+        ])
+        client = TigerFlowClient(runner, "/home/user")
+
+        with pytest.raises(TigerFlowError) as exc_info:
+            await client.check_capabilities()
+
+        assert exc_info.value.error_type == "unsupported"
+        assert "tasks" in str(exc_info.value.details).lower()
+
+    async def test_check_capabilities_raises_when_status_command_unknown(self) -> None:
+        """check_capabilities should raise when status command not available."""
+        runner = MockRunner()
+        runner.set_responses([
+            (0, b'[{"name": "transcribe"}]', b""),  # tasks list succeeds
+            (1, b"", b"Error: no such command 'status'"),  # status --help fails
+        ])
+        client = TigerFlowClient(runner, "/home/user")
+
+        with pytest.raises(TigerFlowError) as exc_info:
+            await client.check_capabilities()
+
+        assert exc_info.value.error_type == "unsupported"
+        assert "status" in str(exc_info.value.details).lower()
+
+    async def test_check_capabilities_ignores_other_errors(self) -> None:
+        """check_capabilities should not raise for non-'unknown command' errors."""
+        runner = MockRunner()
+        runner.set_responses([
+            (1, b"", b"Error: connection refused"),  # tasks list fails for other reason
+        ])
+        client = TigerFlowClient(runner, "/home/user")
+
+        # Should not raise - error is not "unknown command"
+        await client.check_capabilities()
 
 
 class TestTigerFlowClientRun:

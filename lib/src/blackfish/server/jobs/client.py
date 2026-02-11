@@ -14,9 +14,9 @@ from pydantic import BaseModel, ValidationError
 from blackfish.server.logger import logger
 
 
-# Minimum required package versions
-MIN_TIGERFLOW_VERSION = "0.1.0"
-MIN_TIGERFLOW_ML_VERSION = "0.1.0"
+# Minimum required package versions (alpha versions accepted during development)
+MIN_TIGERFLOW_VERSION = "0.1.0a1"
+MIN_TIGERFLOW_ML_VERSION = "0.1.0a1"
 
 # Venv location on remote cluster (relative to home_dir)
 VENV_PATH = ".blackfish/.venv"
@@ -77,6 +77,7 @@ class TigerFlowError(Exception):
             "run": f"Failed to start TigerFlow job on {self.host}.",
             "status": f"Failed to get TigerFlow job status on {self.host}.",
             "stop": f"Failed to stop TigerFlow job on {self.host}.",
+            "unsupported": f"Required tigerflow features not available on {self.host}. Upgrade tigerflow.",
         }
         message = messages.get(self.error_type, "TigerFlow operation failed.")
         if self.details:
@@ -298,9 +299,9 @@ class TigerFlowClient:
             logger.debug("TigerFlow not installed or --version failed")
             return (False, None)
 
-        # Parse version from output (e.g., "tigerflow 0.1.0")
+        # Parse version from output (e.g., "tigerflow 0.1.0" or "tigerflow 0.1.0a1")
         output = stdout.decode("utf-8").strip()
-        match = re.search(r"(\d+\.\d+\.\d+)", output)
+        match = re.search(r"(\d+\.\d+\.\d+(?:[ab]|rc)?\d*)", output)
         if not match:
             raise TigerFlowError(
                 "version",
@@ -420,6 +421,42 @@ class TigerFlowClient:
             )
 
         return TigerFlowVersions(tigerflow=tf_version, tigerflow_ml=tfml_version)
+
+    async def check_capabilities(self) -> None:
+        """Verify that required tigerflow features are available.
+
+        Checks for:
+        - Tasks commands (tigerflow tasks list)
+        - Pipeline commands (tigerflow status)
+
+        Raises:
+            TigerFlowError: If required features are not available
+        """
+        # Check tasks support by trying 'tigerflow tasks list --json'
+        returncode, _, stderr = await self.runner.run(
+            f"{self._tigerflow_bin} tasks list --json"
+        )
+        if returncode != 0:
+            stderr_str = stderr.decode("utf-8", errors="replace").lower()
+            if "unknown command" in stderr_str or "no such command" in stderr_str:
+                raise TigerFlowError(
+                    "unsupported",
+                    self.host,
+                    "tigerflow tasks command not available",
+                )
+
+        # Check pipeline support by trying 'tigerflow status --help'
+        returncode, _, stderr = await self.runner.run(
+            f"{self._tigerflow_bin} status --help"
+        )
+        if returncode != 0:
+            stderr_str = stderr.decode("utf-8", errors="replace").lower()
+            if "unknown command" in stderr_str or "no such command" in stderr_str:
+                raise TigerFlowError(
+                    "unsupported",
+                    self.host,
+                    "tigerflow status command not available",
+                )
 
     # -------------------------------------------------------------------------
     # Job Operations

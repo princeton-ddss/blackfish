@@ -5,6 +5,7 @@ import RootLayout from "./layouts/RootLayout";
 import DashboardPage from "./routes/dashboard/dashboard";
 import LoginPage from "./routes/login/login";
 import JobsPage from "./routes/jobs/jobs";
+import ModelsPage from "./routes/models/models";
 import TextGenerationPage from "./routes/text-generation/text-generation";
 import SpeechRecognitionPage from "./routes/speech-recognition/speech-recognition";
 import FileManagerPage from "./routes/file-manager/file-manager";
@@ -20,6 +21,7 @@ export const router = createBrowserRouter(
         { path: "dashboard", element: <DashboardPage /> },
         { path: "login", element: <LoginPage /> },
         { path: "jobs", element: <JobsPage /> },
+        { path: "models", element: <ModelsPage /> },
         { path: "text-generation", element: <TextGenerationPage /> },
         { path: "speech-recognition", element: <SpeechRecognitionPage /> },
         { path: "file-manager", element: <FileManagerPage /> },

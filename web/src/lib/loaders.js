@@ -5,12 +5,16 @@ import { ServiceStatus } from "./util";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 
 
-export const useModels = (profile, image) => {
-  const { data, error, isLoading } = useSWR(`models?profile=${profile ? profile.name : "default"}&image=${image}`, fetchModels);
+export const useModels = (profile, image = null) => {
+  const key = profile
+    ? `models?profile=${profile.name}${image ? `&image=${image}` : ""}&refresh=true`
+    : null;
+  const { data, error, isLoading, mutate } = useSWR(key, fetchModels);
   return {
     models: data,
     error: error,
     isLoading: isLoading,
+    mutate: mutate,
   };
 };
 

@@ -14,7 +14,7 @@ export async function fetchFiles(path) {
 
 /** Return a list of available models. */
 export async function fetchModels(path) {
-  const res = await fetch(`${blackfishApiURL}/api/${path}&refresh=true`);
+  const res = await fetch(`${blackfishApiURL}/api/${path}`);
   if (!res.ok) {
     console.debug(`from fetchModels: failed to fetch models (status=${res.status})`);
     const error = new Error("Failed to fetch models.");
@@ -22,15 +22,17 @@ export async function fetchModels(path) {
     throw error;
   }
   const data = await res.json();
-  return data.map(model => {
+  return data.map((model) => {
     return {
+      id: model.id,
       repo_id: model.repo,
       revision: model.revision,
       profile: model.profile,
       image: model.image,
       model_dir: model.model_dir,
-    }
-  })
+      created_at: model.created_at,
+    };
+  });
 }
 
 /** Return a list of blackfish services. */
@@ -215,6 +217,26 @@ export async function fetchModelTier(modelId, profileName, partition = null) {
   if (!res.ok) {
     console.debug(`from fetchModelTier: failed to fetch tier (status=${res.status})`);
     return null;
+  }
+  return res.json();
+}
+
+/** Delete models by query parameters. */
+export async function deleteModels({ repo_id, profile, revision }) {
+  const params = new URLSearchParams();
+  if (repo_id) params.append("repo_id", repo_id);
+  if (profile) params.append("profile", profile);
+  if (revision) params.append("revision", revision);
+
+  const res = await fetch(`${blackfishApiURL}/api/models?${params}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    const error = new Error("Failed to delete models");
+    error.status = res.status;
+    throw error;
   }
   return res.json();
 }

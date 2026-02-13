@@ -318,20 +318,26 @@ async def find_models(profile: Profile) -> list[Model]:
                             f"No image info found for model {repo} in {cache_dir}!"
                         )
                         image = "missing"
-                    for revision in sftp.listdir(
-                        os.path.join(cache_dir, model_dir, "snapshots")
-                    ):
+                    snapshots_dir = os.path.join(cache_dir, model_dir, "snapshots")
+                    for revision in sftp.listdir(snapshots_dir):
                         if revision not in revisions:
                             logger.debug(f"Found revision {revision}")
-                            models.append(
-                                Model(
-                                    repo=repo,
-                                    profile=profile.name,
-                                    revision=revision,
-                                    image=image,
-                                    model_dir=os.path.join(cache_dir, model_dir),
-                                )
+                            snapshot_path = os.path.join(snapshots_dir, revision)
+                            try:
+                                stat_info = sftp.stat(snapshot_path)
+                                mtime = datetime.fromtimestamp(stat_info.st_mtime)
+                            except Exception:
+                                mtime = None
+                            model = Model(
+                                repo=repo,
+                                profile=profile.name,
+                                revision=revision,
+                                image=image,
+                                model_dir=os.path.join(cache_dir, model_dir),
                             )
+                            if mtime:
+                                model.created_at = mtime
+                            models.append(model)
                             revisions.append(revision)
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
@@ -350,20 +356,27 @@ async def find_models(profile: Profile) -> list[Model]:
                             f"No image info found for model {repo} in {home_dir}!"
                         )
                         image = "missing"
-                    for revision in sftp.listdir(
-                        os.path.join(home_dir, model_dir, "snapshots")
-                    ):
+                    snapshots_dir = os.path.join(home_dir, model_dir, "snapshots")
+                    for revision in sftp.listdir(snapshots_dir):
                         if revision not in revisions:
                             logger.debug(f"Found revision {revision}")
-                            models.append(
-                                Model(
-                                    repo=repo,
-                                    profile=profile.name,
-                                    revision=revision,
-                                    image=image,
-                                    model_dir=os.path.join(home_dir, model_dir),
-                                )
+                            # Get mtime from the snapshot directory
+                            snapshot_path = os.path.join(snapshots_dir, revision)
+                            try:
+                                stat_info = sftp.stat(snapshot_path)
+                                mtime = datetime.fromtimestamp(stat_info.st_mtime)
+                            except Exception:
+                                mtime = None
+                            model = Model(
+                                repo=repo,
+                                profile=profile.name,
+                                revision=revision,
+                                image=image,
+                                model_dir=os.path.join(home_dir, model_dir),
                             )
+                            if mtime:
+                                model.created_at = mtime
+                            models.append(model)
                             revisions.append(revision)
             except FileNotFoundError as e:
                 logger.error(f"Failed to list directory: {e}")
@@ -384,20 +397,26 @@ async def find_models(profile: Profile) -> list[Model]:
                         f"No image info found for model {repo} in {cache_dir}!"
                     )
                     image = "missing"
-                for revision in os.listdir(
-                    os.path.join(cache_dir, model_dir, "snapshots")
-                ):
+                snapshots_dir = os.path.join(cache_dir, model_dir, "snapshots")
+                for revision in os.listdir(snapshots_dir):
                     if revision not in revisions:
                         logger.debug(f"Found revision {revision}")
-                        models.append(
-                            Model(
-                                repo=repo,
-                                profile=profile.name,
-                                revision=revision,
-                                image=image,
-                                model_dir=os.path.join(cache_dir, model_dir),
-                            )
+                        # Get mtime from the snapshot directory
+                        snapshot_path = os.path.join(snapshots_dir, revision)
+                        try:
+                            mtime = datetime.fromtimestamp(os.path.getmtime(snapshot_path))
+                        except Exception:
+                            mtime = None
+                        model = Model(
+                            repo=repo,
+                            profile=profile.name,
+                            revision=revision,
+                            image=image,
+                            model_dir=os.path.join(cache_dir, model_dir),
                         )
+                        if mtime:
+                            model.created_at = mtime
+                        models.append(model)
                         revisions.append(revision)
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
@@ -416,20 +435,26 @@ async def find_models(profile: Profile) -> list[Model]:
                         f"No image info found for model {repo} in {home_dir}!"
                     )
                     image = "missing"
-                for revision in os.listdir(
-                    os.path.join(home_dir, model_dir, "snapshots")
-                ):
+                snapshots_dir = os.path.join(home_dir, model_dir, "snapshots")
+                for revision in os.listdir(snapshots_dir):
                     if revision not in revisions:
                         logger.debug(f"Found revision {revision}")
-                        models.append(
-                            Model(
-                                repo=repo,
-                                profile=profile.name,
-                                revision=revision,
-                                image=image,
-                                model_dir=os.path.join(home_dir, model_dir),
-                            )
+                        # Get mtime from the snapshot directory
+                        snapshot_path = os.path.join(snapshots_dir, revision)
+                        try:
+                            mtime = datetime.fromtimestamp(os.path.getmtime(snapshot_path))
+                        except Exception:
+                            mtime = None
+                        model = Model(
+                            repo=repo,
+                            profile=profile.name,
+                            revision=revision,
+                            image=image,
+                            model_dir=os.path.join(home_dir, model_dir),
                         )
+                        if mtime:
+                            model.created_at = mtime
+                        models.append(model)
                         revisions.append(revision)
         except FileNotFoundError as e:
             logger.error(f"Failed to list directory: {e}")
@@ -561,10 +586,15 @@ async def get_files(
     resolved_path = os.path.expanduser(path)
     if os.path.isdir(resolved_path):
         try:
-            return {"path": resolved_path, "files": listdir(resolved_path, hidden=hidden)}
+            return {
+                "path": resolved_path,
+                "files": listdir(resolved_path, hidden=hidden),
+            }
         except PermissionError:
             logger.debug("Permission error raised")
-            raise NotAuthorizedException(f"User not authorized to access {resolved_path}")
+            raise NotAuthorizedException(
+                f"User not authorized to access {resolved_path}"
+            )
     else:
         logger.debug("Not found error")
         raise NotFoundException(detail=f"Path {resolved_path} does not exist.")
@@ -1890,6 +1920,128 @@ async def delete_models(
     return res
 
 
+@dataclass
+class ModelUpdateResponse:
+    model_id: str
+    status: str  # "updated", "up_to_date", "update_available", "error"
+    old_revision: str | None = None
+    new_revision: str | None = None
+    message: str | None = None
+
+
+@put("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
+async def update_model(
+    model_id: str,
+    session: AsyncSession,
+    check_only: bool = False,
+) -> ModelUpdateResponse:
+    """Check for and optionally download the latest revision of a model.
+
+    Args:
+        model_id: UUID of the model to update
+        check_only: If True, only check for updates without downloading
+
+    Returns:
+        ModelUpdateResponse with status and revision info
+    """
+    from huggingface_hub import model_info as hf_model_info
+    from blackfish.server.models.model import add_model
+
+    # 1. Get model from database
+    query = sa.select(Model).where(Model.id == model_id)
+    try:
+        res = await session.execute(query)
+    except StatementError:
+        logger.error(f"{model_id} is not a valid UUID.")
+        raise ValidationException(detail=f"{model_id} is not a valid UUID.")
+    try:
+        model = res.scalar_one()
+    except NoResultFound:
+        raise NotFoundException(detail=f"Model {model_id} not found")
+
+    # 2. Get profile
+    profiles = deserialize_profiles(blackfish_config.HOME_DIR)
+    profile = next((p for p in profiles if p.name == model.profile), None)
+    if profile is None:
+        raise NotFoundException(detail=f"Profile {model.profile} not found")
+
+    # 3. Only support local profiles for now
+    if not isinstance(profile, LocalProfile):
+        return ModelUpdateResponse(
+            model_id=str(model.id),
+            status="error",
+            message="Update only supported for local profiles",
+        )
+
+    # 4. Get latest revision from Hugging Face
+    try:
+        token = getattr(profile, "token", None)
+        info = hf_model_info(repo_id=model.repo, token=token)
+        latest_revision = info.sha
+        if latest_revision is None:
+            return ModelUpdateResponse(
+                model_id=str(model.id),
+                status="error",
+                message="Model info does not contain a revision SHA",
+            )
+    except Exception as e:
+        logger.error(f"Failed to fetch model info for {model.repo}: {e}")
+        return ModelUpdateResponse(
+            model_id=str(model.id),
+            status="error",
+            message=f"Failed to fetch model info: {e}",
+        )
+
+    # 5. Compare revisions
+    if model.revision == latest_revision:
+        return ModelUpdateResponse(
+            model_id=str(model.id),
+            status="up_to_date",
+            old_revision=model.revision,
+            new_revision=latest_revision,
+        )
+
+    # 6. If check_only, return update available status
+    if check_only:
+        return ModelUpdateResponse(
+            model_id=str(model.id),
+            status="update_available",
+            old_revision=model.revision,
+            new_revision=latest_revision,
+        )
+
+    # 7. Download new revision using existing add_model function
+    try:
+        result = add_model(
+            repo_id=model.repo,
+            profile=profile,
+            revision=latest_revision,
+        )
+        if result is None:
+            raise Exception("Download failed - add_model returned None")
+        new_model, path = result
+
+        # 8. Update database record with new revision and path
+        old_revision = model.revision
+        model.revision = latest_revision
+        model.model_dir = path
+        session.add(model)
+
+        return ModelUpdateResponse(
+            model_id=str(model.id),
+            status="updated",
+            old_revision=old_revision,
+            new_revision=latest_revision,
+        )
+    except Exception as e:
+        logger.error(f"Failed to download update for {model.repo}: {e}")
+        return ModelUpdateResponse(
+            model_id=str(model.id),
+            status="error",
+            message=f"Failed to download update: {e}",
+        )
+
+
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
 async def read_profiles() -> list[Profile]:
     try:
@@ -2047,6 +2199,7 @@ app = Litestar(
         create_model,
         get_model,
         get_models,
+        update_model,
         delete_model,
         delete_models,
         read_profiles,

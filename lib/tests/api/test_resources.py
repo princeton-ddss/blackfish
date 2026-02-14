@@ -187,9 +187,7 @@ class TestGetModelTierAPI:
             with patch(
                 "blackfish.server.asgi.get_partition_by_name", return_value=None
             ) as mock_get_partition:
-                response = await client.get(
-                    f"/api/models/{model_id}/tier?partition=custom-gpu"
-                )
+                await client.get(f"/api/models/{model_id}/tier?partition=custom-gpu")
 
         # Should have tried to get the specified partition
         mock_get_partition.assert_called()

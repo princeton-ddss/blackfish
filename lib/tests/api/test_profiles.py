@@ -279,6 +279,104 @@ class TestCreateProfileAPI:
 
             assert response.status_code == 400
 
+    async def test_create_slurm_profile_setup_error(self, client: AsyncTestClient):
+        """Test that ProfileSetupError during Slurm profile creation returns 500."""
+        from blackfish.server.setup import ProfileSetupError
+
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
+        ):
+            mock_get_config.return_value = MagicMock()
+            mock_get_config.return_value.__contains__ = MagicMock(return_value=False)
+
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr.create_directories.side_effect = ProfileSetupError(
+                "Failed to create directories", "Permission denied"
+            )
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
+
+            response = await client.post(
+                "/api/profiles",
+                json={
+                    "name": "failing-slurm",
+                    "schema_type": "slurm",
+                    "host": "cluster.edu",
+                    "user": "testuser",
+                    "home_dir": "/home/testuser/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                },
+            )
+
+            assert response.status_code == 500
+            assert "Permission denied" in response.json()["detail"]
+
+    async def test_create_slurm_profile_tigerflow_error(self, client: AsyncTestClient):
+        """Test that TigerFlowError during Slurm profile creation returns 500."""
+        from blackfish.server.jobs.client import TigerFlowError
+
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
+        ):
+            mock_get_config.return_value = MagicMock()
+            mock_get_config.return_value.__contains__ = MagicMock(return_value=False)
+
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client.setup.side_effect = TigerFlowError(
+                "install", "cluster.edu", "pip install failed"
+            )
+            mock_tf_client_cls.return_value = mock_tf_client
+
+            response = await client.post(
+                "/api/profiles",
+                json={
+                    "name": "failing-slurm",
+                    "schema_type": "slurm",
+                    "host": "cluster.edu",
+                    "user": "testuser",
+                    "home_dir": "/home/testuser/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                },
+            )
+
+            assert response.status_code == 500
+            assert "pip install failed" in response.json()["detail"]
+
+    async def test_create_local_profile_setup_error(self, client: AsyncTestClient):
+        """Test that ProfileSetupError during local profile creation returns 500."""
+        from blackfish.server.setup import ProfileSetupError
+
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
+        ):
+            mock_get_config.return_value = MagicMock()
+            mock_get_config.return_value.__contains__ = MagicMock(return_value=False)
+
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr.create_directories.side_effect = ProfileSetupError(
+                "Failed to create directories", "Disk full"
+            )
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
+
+            response = await client.post(
+                "/api/profiles",
+                json={
+                    "name": "failing-local",
+                    "schema_type": "local",
+                    "home_dir": "/home/user/.blackfish",
+                    "cache_dir": "/tmp/cache",
+                },
+            )
+
+            assert response.status_code == 500
+            assert "Disk full" in response.json()["detail"]
+
 
 class TestUpdateProfileAPI:
     """Test cases for the PUT /api/profiles/{name} endpoint."""
@@ -560,3 +658,35 @@ class TestRepairProfileAPI:
             response = await client.put("/api/profiles/broken-profile/repair")
 
             assert response.status_code == 400
+
+    async def test_repair_profile_tigerflow_error(self, client: AsyncTestClient):
+        """Test that TigerFlowError during repair returns 500."""
+        from blackfish.server.jobs.client import TigerFlowError
+
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
+        ):
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_config.__getitem__ = MagicMock(
+                return_value={
+                    "schema": "slurm",
+                    "host": "cluster.edu",
+                    "user": "testuser",
+                    "home_dir": "/home/testuser/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                }
+            )
+            mock_get_config.return_value = mock_config
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client.cleanup.side_effect = TigerFlowError(
+                "cleanup", "cluster.edu", "Failed to remove venv"
+            )
+            mock_tf_client_cls.return_value = mock_tf_client
+
+            response = await client.put("/api/profiles/my-slurm/repair")
+
+            assert response.status_code == 500
+            assert "Failed to remove venv" in response.json()["detail"]

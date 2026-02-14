@@ -1,4 +1,4 @@
-import { Fragment, useContext, useState, useEffect, useRef } from "react";
+import { Fragment, useContext, useState } from "react";
 import {
   Dialog,
   DialogPanel,
@@ -18,11 +18,13 @@ import {
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import PropTypes from "prop-types";
+import { Highlight, themes } from "prism-react-renderer";
 import Prism from "prismjs";
-import "prismjs/components/prism-python";
-import "prismjs/components/prism-r";
+
+// Add languages not bundled by default
+(typeof global !== "undefined" ? global : window).Prism = Prism;
 import "prismjs/components/prism-bash";
-import "prismjs/themes/prism-tomorrow.css";
+import "prismjs/components/prism-r";
 
 /**
  * Generate Python code for calling the service.
@@ -194,18 +196,10 @@ function CodeSnippetModal({
   const selectedService = serviceContext?.selectedService;
   const [copied, setCopied] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const codeRef = useRef(null);
 
   const code = languages[selectedIndex].generate(mode, prompt, messages, systemMessage, parameters, selectedService);
 
-  useEffect(() => {
-    if (open && codeRef.current) {
-      Prism.highlightElement(codeRef.current);
-    }
-  }, [open, selectedIndex, code]);
-
   const handleCopy = () => {
-    const code = languages[selectedIndex].generate(mode, prompt, messages, systemMessage, parameters, selectedService);
     navigator.clipboard
       .writeText(code)
       .then(() => {
@@ -282,17 +276,29 @@ function CodeSnippetModal({
                       ))}
                     </TabList>
                     <TabPanels className="mt-3">
-                      {languages.map((lang, index) => (
+                      {languages.map((lang) => (
                         <TabPanel key={lang.name}>
                           <div className="relative">
-                            <pre className="bg-gray-900 rounded-lg p-4 max-h-96 overflow-auto text-xs font-mono">
-                              <code
-                                ref={index === selectedIndex ? codeRef : null}
-                                className={`language-${lang.prismLang}`}
-                              >
-                                {lang.generate(mode, prompt, messages, systemMessage, parameters, selectedService)}
-                              </code>
-                            </pre>
+                            <Highlight
+                              theme={themes.vsDark}
+                              code={lang.generate(mode, prompt, messages, systemMessage, parameters, selectedService)}
+                              language={lang.prismLang}
+                            >
+                              {({ style, tokens, getLineProps, getTokenProps }) => (
+                                <pre
+                                  style={style}
+                                  className="rounded-lg p-4 max-h-96 overflow-auto text-xs font-mono"
+                                >
+                                  {tokens.map((line, i) => (
+                                    <div key={i} {...getLineProps({ line })}>
+                                      {line.map((token, key) => (
+                                        <span key={key} {...getTokenProps({ token })} />
+                                      ))}
+                                    </div>
+                                  ))}
+                                </pre>
+                              )}
+                            </Highlight>
                           </div>
                         </TabPanel>
                       ))}

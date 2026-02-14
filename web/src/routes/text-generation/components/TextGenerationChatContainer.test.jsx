@@ -5,11 +5,18 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import TextGenerationChatContainer from "./TextGenerationChatContainer";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ProfileContext } from "@/components/ProfileSelect";
 import { streamChatCompletionInference } from "../lib/requests";
 import { ServiceStatus } from "@/lib/util";
 
 vi.mock("../lib/requests", () => ({
   streamChatCompletionInference: vi.fn(),
+}));
+
+vi.mock("@heroicons/react/20/solid", () => ({
+  XMarkIcon: ({ className, ...props }) => {
+    return <div data-testid="x-mark-icon-solid" className={className} {...props} />;
+  },
 }));
 
 vi.mock("@heroicons/react/24/outline", () => ({
@@ -18,6 +25,9 @@ vi.mock("@heroicons/react/24/outline", () => ({
   },
   CheckIcon: ({ className, ...props }) => {
     return <div data-testid="check-icon" className={className} {...props} />;
+  },
+  CheckCircleIcon: ({ className, ...props }) => {
+    return <div data-testid="check-circle-icon" className={className} {...props} />;
   },
   ClipboardDocumentIcon: ({ className, ...props }) => {
     return <div data-testid="clipboard-icon" className={className} {...props} />;
@@ -31,9 +41,39 @@ vi.mock("@heroicons/react/24/outline", () => ({
   PencilIcon: ({ className, ...props }) => {
     return <div data-testid="pencil-icon" className={className} {...props} />;
   },
+  XCircleIcon: ({ className, ...props }) => {
+    return <div data-testid="x-circle-icon" className={className} {...props} />;
+  },
   XMarkIcon: ({ className, ...props }) => {
     return <div data-testid="x-mark-icon" className={className} {...props} />;
   },
+  ComputerDesktopIcon: ({ className, ...props }) => {
+    return <div data-testid="computer-desktop-icon" className={className} {...props} />;
+  },
+  ServerIcon: ({ className, ...props }) => {
+    return <div data-testid="server-icon" className={className} {...props} />;
+  },
+  PhotoIcon: ({ className, ...props }) => {
+    return <div data-testid="photo-icon" className={className} {...props} />;
+  },
+}));
+
+// Mock the attachment components to simplify testing
+vi.mock("./AttachmentMenu", () => ({
+  default: ({ onBrowserUpload, onRemoteSelect }) => (
+    <div data-testid="attachment-menu">
+      <button data-testid="upload-button" onClick={() => onBrowserUpload([])}>Upload</button>
+      <button data-testid="remote-button" onClick={onRemoteSelect}>Remote</button>
+    </div>
+  ),
+}));
+
+vi.mock("./ImageAttachmentList", () => ({
+  default: () => <div data-testid="image-attachment-list" />,
+}));
+
+vi.mock("@/components/FileSelectModal", () => ({
+  default: () => <div data-testid="file-select-modal" />,
 }));
 
 const mockClipboard = {
@@ -57,10 +97,17 @@ const mockSelectedService = {
   id: "test-service-1",
 };
 
-const MockServiceProvider = ({ children, selectedService = mockSelectedService }) => (
-  <ServiceContext.Provider value={{ selectedService }}>
-    {children}
-  </ServiceContext.Provider>
+const mockProfile = {
+  name: "local",
+  schema: "local",
+};
+
+const MockProviders = ({ children, selectedService = mockSelectedService, profile = mockProfile }) => (
+  <ProfileContext.Provider value={{ profile }}>
+    <ServiceContext.Provider value={{ selectedService }}>
+      {children}
+    </ServiceContext.Provider>
+  </ProfileContext.Provider>
 );
 
 describe("TextGenerationChatContainer", () => {
@@ -73,15 +120,13 @@ describe("TextGenerationChatContainer", () => {
   });
 
   describe("Component rendering", () => {
-    it("renders the main container with system message input and user message input", () => {
+    it("renders the main container with chat label and user message input", () => {
       const {baseElement, getByText, getByPlaceholderText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
-      expect(getByText("System Message")).toBeInTheDocument();
-      expect(getByPlaceholderText("You are a helpful assistant."))
-        .toBeInTheDocument();
+      expect(getByText("Chat")).toBeInTheDocument();
       expect(getByPlaceholderText("Why are orcas so awesome?"))
         .toBeInTheDocument();
       expect(baseElement).toMatchSnapshot();
@@ -89,39 +134,11 @@ describe("TextGenerationChatContainer", () => {
 
     it("renders empty message list initially", () => {
       const {queryByText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       expect(queryByText("No messages")).not.toBeInTheDocument();
-    });
-  });
-
-  describe("SystemMessageInput", () => {
-    it("allows typing in system message textarea", async () => {
-      const user = userEvent.setup();
-      const {getByPlaceholderText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
-      );
-      const textarea = getByPlaceholderText("You are a helpful assistant.");
-      await user.type(textarea, "Custom system message");
-      expect(textarea.value).toBe("Custom system message");
-      await user.clear(textarea);
-    });
-
-    it("updates system message state on change", async () => {
-      const user = userEvent.setup();
-      const {getByPlaceholderText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
-      );
-      const textarea = getByPlaceholderText("You are a helpful assistant.");
-      await user.type(textarea, "Test system message");
-      expect(textarea.value).toBe("Test system message");
-      await user.clear(textarea);
     });
   });
 
@@ -129,9 +146,9 @@ describe("TextGenerationChatContainer", () => {
     it("allows typing in user message textarea", async () => {
       const user = userEvent.setup();
       const {getByPlaceholderText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "Test user message");
@@ -150,9 +167,9 @@ describe("TextGenerationChatContainer", () => {
       };
       streamChatCompletionInference.mockReturnValue(mockStream);
       const {getByPlaceholderText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "Test prompt");
@@ -163,9 +180,9 @@ describe("TextGenerationChatContainer", () => {
     it("allows new line on Shift+Enter", async () => {
       const user = userEvent.setup();
       const {getByPlaceholderText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "First line");
@@ -178,9 +195,9 @@ describe("TextGenerationChatContainer", () => {
     it("enables submit button when message has content", async () => {
       const user = userEvent.setup();
       const {getByPlaceholderText, getByRole} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "Test message");
@@ -203,9 +220,9 @@ describe("TextGenerationChatContainer", () => {
       };
       streamChatCompletionInference.mockReturnValue(mockStream);
       const {getByRole, getByPlaceholderText, getByText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "Original message");
@@ -246,9 +263,9 @@ describe("TextGenerationChatContainer", () => {
       };
       streamChatCompletionInference.mockReturnValue(mockStream);
       const {getByRole, getByPlaceholderText, getByText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "Original message");
@@ -289,9 +306,9 @@ describe("TextGenerationChatContainer", () => {
       };
       streamChatCompletionInference.mockReturnValue(mockStream);
       const {getByRole, getByPlaceholderText, getByText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "Original message");
@@ -331,9 +348,9 @@ describe("TextGenerationChatContainer", () => {
       };
       streamChatCompletionInference.mockReturnValue(mockStream);
       const {getByPlaceholderText, getByRole, getByText, queryByText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "Test message");
@@ -365,9 +382,9 @@ describe("TextGenerationChatContainer", () => {
       };
       streamChatCompletionInference.mockReturnValue(mockStream);
       const {getByRole, getByPlaceholderText, getByText} = render(
-        <MockServiceProvider>
-          <TextGenerationChatContainer parameters={{}} />
-        </MockServiceProvider>
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
       );
       const textarea = getByPlaceholderText("Why are orcas so awesome?");
       await user.type(textarea, "Test message");

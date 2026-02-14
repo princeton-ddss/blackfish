@@ -33,6 +33,45 @@ from blackfish.server.config import ContainerProvider
 from blackfish.server.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
 
+class ServiceLaunchError(Exception):
+    """Error raised when a service fails to launch, with user-friendly messages.
+
+    Error types:
+        script: Launch script generation failed
+        profile: Profile configuration is missing or invalid
+        ssh: SSH connection to remote host failed
+        copy: File copy to remote host failed
+        submit: Job submission to scheduler failed
+        container: Local container startup failed
+
+    Args:
+        error_type: One of the error types listed above
+        host: The target host where the error occurred
+        details: Optional additional context to append to the message
+    """
+
+    def __init__(self, error_type: str, host: str, details: str | None = None):
+        self.error_type = error_type
+        self.host = host
+        self.details = details
+        super().__init__(self.user_message())
+
+    def user_message(self) -> str:
+        """Return a user-friendly error message."""
+        messages = {
+            "script": "Failed to generate the launch script. Check model and configuration settings.",
+            "profile": "Profile configuration is missing or invalid.",
+            "ssh": f"Could not connect to {self.host}. Check your SSH configuration.",
+            "copy": f"Failed to copy files to {self.host}. Check permissions and disk space.",
+            "submit": f"Job submission failed on {self.host}. The scheduler may be unavailable.",
+            "container": "Failed to start the container. Check that Docker is running and, if using GPU, that nvidia-container-toolkit is installed.",
+        }
+        message = messages.get(self.error_type, "Failed to launch service.")
+        if self.details:
+            message = f"{message} ({self.details})"
+        return message
+
+
 @dataclass
 class BaseConfig:
     port: Optional[int]
@@ -134,7 +173,7 @@ class Service(UUIDAuditBase):
                     f.write(script)
                 except Exception as e:
                     logger.error(f"Unable to render launch script: {e}")
-                    return
+                    raise ServiceLaunchError("script", self.host)
 
             logger.info("Starting service")
 
@@ -155,7 +194,7 @@ class Service(UUIDAuditBase):
                 profile = self.get_profile()
                 if profile is None:
                     logger.error("Failed to start service: profile is missing.")
-                    return
+                    raise ServiceLaunchError("profile", self.host)
 
                 logger.debug(f"Copying job script to {self.host}:{profile.home_dir}.")
                 remote_script_dir = os.path.join(profile.home_dir, "jobs", self.id.hex)
@@ -171,8 +210,8 @@ class Service(UUIDAuditBase):
                         ]
                     )
                 except Exception as e:
-                    logger.error(f"Failed to copy job script to remote host: {e}.")
-                    raise
+                    logger.error(f"Failed to connect to remote host: {e}")
+                    raise ServiceLaunchError("ssh", self.host)
 
                 try:
                     _ = subprocess.check_output(
@@ -184,7 +223,7 @@ class Service(UUIDAuditBase):
                     )
                 except Exception as e:
                     logger.error(f"Failed to copy job script to remote host: {e}")
-                    raise
+                    raise ServiceLaunchError("copy", self.host)
 
                 logger.debug(f"Submitting batch job to {self.host}.")
                 try:
@@ -203,7 +242,7 @@ class Service(UUIDAuditBase):
                     self.job_id = job_id
                 except Exception as e:
                     logger.error(f"Failed to submit Slurm job: {e}")
-                    raise
+                    raise ServiceLaunchError("submit", self.host)
         else:
             script_path = Path(
                 os.path.join(app_config.HOME_DIR, "jobs", self.id.hex, "start.sh")
@@ -231,13 +270,14 @@ class Service(UUIDAuditBase):
                             )
                     f.write(script)
                 except Exception as e:
-                    logger.error(e)
-                    return
+                    logger.error(f"Unable to render launch script: {e}")
+                    raise ServiceLaunchError("script", "localhost")
             logger.info("Attempting to start service locally...")
             try:
                 res = subprocess.check_output(["bash", script_path.as_posix()])
             except Exception as e:
-                logger.error(f"Failed to start service: {e}")
+                logger.error(f"Failed to start container: {e}")
+                raise ServiceLaunchError("container", "localhost")
             if self.provider == ContainerProvider.Docker:
                 job_id = res.decode("utf-8").strip().split()[-1][:12]
             self.status = ServiceStatus.SUBMITTED
@@ -583,13 +623,19 @@ class Service(UUIDAuditBase):
             return
 
         logger.info(f"Closing tunnel for service {self.id} on port {self.port}.")
-        ps = [p for p in psutil.process_iter() if p.name() == "ssh"]
+        ps = []
+        for p in psutil.process_iter(["name"]):
+            try:
+                if p.info.get("name") == "ssh":
+                    ps.append(p)
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
         for p in ps:
             pid = p.pid
             try:
                 cs = p.net_connections()
             except psutil.AccessDenied:
-                logger.warning(f"Access denied to process {p}.")
+                logger.warning(f"Access denied to process {pid}.")
                 continue
             for c in cs:
                 if c.laddr.port == self.port:

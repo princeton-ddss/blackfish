@@ -173,11 +173,11 @@ export const useFileSystem = (path, profile = null) => {
 export const useClusterStatus = (profile) => {
   // Only fetch for Slurm profiles
   const key = profile?.schema === "slurm" ? `cluster/${profile.name}` : null;
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
     key,
     () => fetchClusterStatus(profile.name),
     {
-      refreshInterval: 60_000, // refresh every minute
+      refreshInterval: 300_000, // refresh every 5 minutes
       revalidateOnFocus: false,
     }
   );
@@ -185,6 +185,7 @@ export const useClusterStatus = (profile) => {
     status: data,
     error: error,
     isLoading: isLoading,
+    isRefreshing: isValidating,
     refresh: mutate,
   };
 };

@@ -21,6 +21,7 @@ function FileManager({
     onPathChange = null,
     enableUpload = true,
     enableDelete = true,
+    showHeader = true,
     status,
     profile = null,
 }) {
@@ -98,55 +99,57 @@ function FileManager({
             name="file-manager"
             className="mb-2 w-full"
         >
-            <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-4">
-                    <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Manager</label>
-                    {isRemote && profile && (
-                        <div className="flex items-center gap-1.5">
-                            <span
-                                className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${
-                                    isConnected
-                                        ? "bg-green-500"
+            {showHeader && (
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-4">
+                        <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Manager</label>
+                        {isRemote && profile && (
+                            <div className="flex items-center gap-1.5">
+                                <span
+                                    className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${
+                                        isConnected
+                                            ? "bg-green-500"
+                                            : connectionError
+                                                ? "bg-red-500"
+                                                : "animate-pulse bg-yellow-500"
+                                    }`}
+                                />
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    {isConnected
+                                        ? `Connected to ${profile.user}@${profile.host}`
                                         : connectionError
-                                            ? "bg-red-500"
-                                            : "animate-pulse bg-yellow-500"
-                                }`}
-                            />
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                                {isConnected
-                                    ? `Connected to ${profile.user}@${profile.host}`
-                                    : connectionError
-                                        ? "Disconnected"
-                                        : "Connecting..."}
-                            </span>
-                            {connectionError && (
-                                <button
-                                    onClick={reconnect}
-                                    disabled={isConnecting}
-                                    className="ml-1 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50 focus:outline-none"
-                                    aria-label="Reconnect"
-                                >
-                                    <ArrowPathIcon className={`h-4 w-4 ${isConnecting ? "animate-spin" : ""}`} />
-                                </button>
-                            )}
+                                            ? "Disconnected"
+                                            : "Connecting..."}
+                                </span>
+                                {connectionError && (
+                                    <button
+                                        onClick={reconnect}
+                                        disabled={isConnecting}
+                                        className="ml-1 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50 focus:outline-none"
+                                        aria-label="Reconnect"
+                                    >
+                                        <ArrowPathIcon className={`h-4 w-4 ${isConnecting ? "animate-spin" : ""}`} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    {enableUpload && isRemote ? (
+                        <button
+                            onClick={() => setUploadDialogOpen(true)}
+                            disabled={status.disabled || operationInProgress}
+                            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed focus:outline-none"
+                            aria-label="Upload file"
+                        >
+                            <ArrowUpTrayIcon className="h-5 w-5" />
+                        </button>
+                    ) : (
+                        <div className="p-1.5">
+                            <div className="h-5 w-5" />
                         </div>
                     )}
                 </div>
-                {enableUpload && isRemote ? (
-                    <button
-                        onClick={() => setUploadDialogOpen(true)}
-                        disabled={status.disabled || operationInProgress}
-                        className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed focus:outline-none"
-                        aria-label="Upload file"
-                    >
-                        <ArrowUpTrayIcon className="h-5 w-5" />
-                    </button>
-                ) : (
-                    <div className="p-1.5">
-                        <div className="h-5 w-5" />
-                    </div>
-                )}
-            </div>
+            )}
 
             <DirectoryInput
                 root={displayRoot}
@@ -228,6 +231,7 @@ FileManager.propTypes = {
     onPathChange: PropTypes.func,
     enableUpload: PropTypes.bool,
     enableDelete: PropTypes.bool,
+    showHeader: PropTypes.bool,
     status: PropTypes.object,
     profile: PropTypes.object,
 };

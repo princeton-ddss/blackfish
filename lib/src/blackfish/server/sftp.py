@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generator
 
 from fabric.connection import Connection
 from pydantic import BaseModel
@@ -33,6 +33,90 @@ class WriteFileResponse(BaseModel):
     size: int
     created_at: datetime
     path: str
+
+
+def get_file_size(profile: SlurmProfile, path: str) -> int:
+    """Get file size from remote server.
+
+    Args:
+        profile: Remote SlurmProfile
+        path: Absolute path to file
+
+    Returns:
+        File size in bytes
+
+    Raises:
+        NotFoundException: If file doesn't exist
+        NotAuthorizedException: If permission denied
+        InternalServerException: If connection fails
+    """
+    try:
+        with Connection(host=profile.host, user=profile.user) as conn:
+            with conn.sftp() as sftp:
+                stat = sftp.stat(path)
+                size: int | None = stat.st_size
+                if size is None:
+                    raise InternalServerException(
+                        f"Could not determine file size: {path}"
+                    )
+                return size
+    except FileNotFoundError:
+        raise NotFoundException(f"Remote file not found: {path}")
+    except PermissionError:
+        raise NotAuthorizedException(f"Permission denied: {path}")
+    except Exception as e:
+        logger.error(f"Remote file stat failed: {e}")
+        raise InternalServerException(f"SFTP stat failed: {e}")
+
+
+def stream_file(
+    profile: SlurmProfile, path: str, chunk_size: int = 65536
+) -> tuple[int, Generator[bytes, None, None]]:
+    """Stream file content from remote server.
+
+    Args:
+        profile: Remote SlurmProfile
+        path: Absolute path to file
+        chunk_size: Size of chunks to yield (default 64KB)
+
+    Returns:
+        Tuple of (file_size, generator that yields chunks)
+
+    Raises:
+        NotFoundException: If file doesn't exist
+        NotAuthorizedException: If permission denied
+        InternalServerException: If connection fails
+    """
+    try:
+        conn = Connection(host=profile.host, user=profile.user)
+        conn.open()
+        sftp = conn.sftp()
+        stat = sftp.stat(path)
+        file_size: int | None = stat.st_size
+        if file_size is None:
+            raise InternalServerException(f"Could not determine file size: {path}")
+        file_handle = sftp.open(path, "rb")
+
+        def generator() -> Generator[bytes, None, None]:
+            try:
+                while True:
+                    chunk = file_handle.read(chunk_size)
+                    if not chunk:
+                        break
+                    yield chunk
+            finally:
+                file_handle.close()
+                sftp.close()
+                conn.close()
+
+        return file_size, generator()
+    except FileNotFoundError:
+        raise NotFoundException(f"Remote file not found: {path}")
+    except PermissionError:
+        raise NotAuthorizedException(f"Permission denied: {path}")
+    except Exception as e:
+        logger.error(f"Remote file stream failed: {e}")
+        raise InternalServerException(f"SFTP stream failed: {e}")
 
 
 def read_file(profile: SlurmProfile, path: str) -> bytes:
@@ -120,6 +204,7 @@ def write_file(
         raise NotAuthorizedException(f"Permission denied: {path}")
     except IOError as e:
         import errno as errno_module
+
         err_num = getattr(e, "errno", None)
         logger.error(f"Remote file write IOError: {e} (errno={err_num})")
 

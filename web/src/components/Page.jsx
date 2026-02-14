@@ -16,7 +16,7 @@ function Page({ task, fullWidth = false, children }) {
       <div className="flex flex-col flex-shrink-0 justify-center h-[calc(100vh-64px)]">
         <div className="flex flex-row justify-center items-center">
           <img
-            className="h-16 w-auto mb-8"
+            className="h-16 w-auto mb-8 dark:invert"
             src={assetPath("/img/dead-fish.png")}
             alt="blackfish-error"
           />

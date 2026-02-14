@@ -190,7 +190,17 @@ export async function fetchClusterStatus(profileName) {
   const res = await fetch(`${blackfishApiURL}/api/cluster/${profileName}/status`);
   if (!res.ok) {
     console.debug(`from fetchClusterStatus: failed to fetch cluster status (status=${res.status})`);
-    const error = new Error("Failed to fetch cluster status.");
+    // Try to parse error detail from response body
+    let message = "Failed to fetch cluster status.";
+    try {
+      const body = await res.json();
+      if (body.detail) {
+        message = body.detail;
+      }
+    } catch {
+      // Ignore JSON parse errors, use default message
+    }
+    const error = new Error(message);
     error.status = res.status;
     throw error;
   }

@@ -1,13 +1,11 @@
-import React, { useContext } from "react";
+import { useContext, useState } from "react";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { streamCompletionInference } from "../lib/requests";
 import {
   ArrowPathIcon,
   ClipboardDocumentIcon,
   PaperAirplaneIcon,
-  PaperClipIcon,
-}
-from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/outline";
 
 import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
@@ -20,7 +18,7 @@ import PropTypes from "prop-types";
  * @param {Function} options.setPrompt
  * @param {Function} options.handleSubmit
  * @param {object} options.selectedService
- * @param {boolean} options.isLoading
+ * @param {JSX.Element} options.toolbar
  * @return {JSX.Element}
  */
 function TextGenerationPromptInput({
@@ -47,8 +45,6 @@ function TextGenerationPromptInput({
         </label>
         {toolbar}
       </div>
-
-      {/* TODO: disable while isLoading... */}
 
       <div className="flex items-start space-x-4">
         <div className="min-w-0 flex-1">
@@ -85,18 +81,7 @@ function TextGenerationPromptInput({
               </div>
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
-              <div className="flex items-center space-x-5">
-                <div className="flex items-center">
-                  <button
-                    type="button"
-                    className="-m-2.5 flex size-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-                  >
-                    <PaperClipIcon aria-hidden="true" className="size-5" />
-                    <span className="sr-only">Attach a file</span>
-                  </button>
-                </div>
-              </div>
+            <div className="absolute inset-x-0 bottom-0 flex justify-end py-2 pl-3 pr-2">
               <div className="shrink-0">
                 <button
                   type="submit"
@@ -108,16 +93,6 @@ function TextGenerationPromptInput({
                 >
                   <PaperAirplaneIcon className="size-5" />
                 </button>
-
-
-                {/* <button
-                    type="submit"
-                    disabled={!selectedService || selectedService.status !== ServiceStatus.HEALTHY}
-                    className="relative disabled:text-gray-400 -ml-px inline-flex items-center gap-x-1.5 rounded-md px-3 py-2 text-sm font-medium text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                  >
-                    <PaperAirplaneIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
-                    {selectedService ? `Submit to ${selectedService.name}` : "Submit"}
-                  </button> */}
               </div>
             </div>
           </form>
@@ -132,7 +107,7 @@ TextGenerationPromptInput.propTypes = {
   setPrompt: PropTypes.func,
   handleSubmit: PropTypes.func,
   selectedService: PropTypes.object,
-  isLoading: PropTypes.bool
+  toolbar: PropTypes.node,
 };
 
 /**
@@ -141,7 +116,6 @@ TextGenerationPromptInput.propTypes = {
  * @param {string} options.content
  * @param {Function} options.handleSubmit
  * @param {object} options.selectedService
- * @param {boolean} options.isLoading
  * @return {JSX.Element}
  */
 function TextGenerationResponseOutput({
@@ -192,7 +166,6 @@ TextGenerationResponseOutput.propTypes = {
   content: PropTypes.string,
   handleSubmit: PropTypes.func,
   selectedService: PropTypes.object,
-  isLoading: PropTypes.bool
 };
 
 /**
@@ -204,18 +177,18 @@ TextGenerationResponseOutput.propTypes = {
  */
 function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
-  const [prompt, setPrompt] = React.useState(
+  const [prompt, setPrompt] = useState(
     sessionStorage.getItem("tgci") || ""
   );
-  const [response, setResponse] = React.useState(
+  const [response, setResponse] = useState(
     sessionStorage.getItem("tgco") || ""
   );
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const inputs = prompt === "" ? "Write me a haiku about orcas." : prompt;
+    const textInput = prompt === "" ? "Write me a haiku about orcas." : prompt;
 
     setIsLoading(true);
     setResponse("");
@@ -223,14 +196,13 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
 
     const stream = streamCompletionInference(
       selectedService,
-      inputs,
+      textInput,
       {
         ...parameters,
         stream: true,
       },
       true
     );
-
 
     const data = await stream.next();
     setIsLoading(false);

@@ -1,6 +1,5 @@
 """Unit tests for resource tier configuration and selection."""
 
-import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 

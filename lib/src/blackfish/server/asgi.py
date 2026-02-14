@@ -97,8 +97,10 @@ from blackfish.server.models.metadata import (
     refresh_metadata,
 )
 from blackfish.server.models.tiers import (
+    ResourceSpecs,
     TierSource,
     load_resource_specs,
+    parse_resource_specs,
     get_default_specs,
     get_default_partition,
     get_partition_by_name,
@@ -2079,10 +2081,28 @@ async def get_profile_resources(name: str) -> dict[str, Any]:
     if profile is None:
         raise NotFoundException(detail="Profile not found.")
 
+    if not isinstance(profile, SlurmProfile):
+        raise NotFoundException(
+            detail="Resource tiers are only available for Slurm profiles."
+        )
+
     # Load resource specs from profile's cache directory
-    specs = load_resource_specs(profile.cache_dir)
+    specs: Optional[ResourceSpecs] = None
+
+    if profile.host in ("localhost", "127.0.0.1"):
+        specs = load_resource_specs(profile.cache_dir)
+    else:
+        specs_path = f"{profile.cache_dir}/resource_specs.yaml"
+        try:
+            content = sftp.read_file(profile, specs_path)
+            specs = parse_resource_specs(content)
+        except NotFoundException:
+            logger.debug(f"No resource_specs.yaml found at {specs_path}")
+        except Exception as e:
+            logger.warning(f"Failed to fetch remote resource_specs.yaml: {e}")
+
     if specs is None:
-        # Use default specs if no config file exists
+        logger.debug(f"Using default resource specs for profile '{name}'")
         specs = get_default_specs()
 
     return specs.to_dict()
@@ -2186,6 +2206,7 @@ async def get_model_tier(
         "model_size_gb": metadata.model_size_gb,
         "source": source,
     }
+
 
 # --- Config ---
 BASE_DIR = module_to_os_path("blackfish.server")

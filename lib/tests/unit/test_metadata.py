@@ -1,7 +1,6 @@
 """Unit tests for model metadata fetching and caching."""
 
 import json
-import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch, MagicMock

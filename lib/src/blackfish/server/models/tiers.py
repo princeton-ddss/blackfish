@@ -115,6 +115,47 @@ def _parse_partition(name: str, data: dict[str, Any]) -> Partition:
     )
 
 
+def parse_resource_specs(content: bytes | str) -> Optional[ResourceSpecs]:
+    """Parse resource specifications from YAML content.
+
+    Args:
+        content: YAML content as bytes or string
+
+    Returns:
+        ResourceSpecs if parsing succeeds, None otherwise
+    """
+    try:
+        data = yaml.safe_load(content)
+
+        if not data:
+            return None
+
+        # Parse time constraints
+        time_data = data.get("time", {})
+        time_constraints = TimeConstraints(
+            default=time_data.get("default", 30),
+            max=time_data.get("max", 180),
+        )
+
+        # Parse partitions
+        partitions_data = data.get("partitions", {})
+        partitions = []
+        for name, partition_data in partitions_data.items():
+            partitions.append(_parse_partition(name, partition_data))
+
+        # Parse model overrides
+        models = data.get("models", {})
+
+        return ResourceSpecs(
+            time=time_constraints,
+            partitions=partitions,
+            models=models,
+        )
+    except (yaml.YAMLError, KeyError, TypeError) as e:
+        print(f"Warning: Failed to parse resource_specs.yaml: {e}")
+        return None
+
+
 def load_resource_specs(cache_dir: str) -> Optional[ResourceSpecs]:
     """Load resource specifications from YAML file.
 

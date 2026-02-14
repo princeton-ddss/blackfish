@@ -2112,7 +2112,6 @@ async def get_profile_resources(name: str) -> dict[str, Any]:
 async def get_model_tier(
     model_id: str,
     session: AsyncSession,
-    profile: Optional[str] = None,
     partition: Optional[str] = None,
     refresh: bool = False,
 ) -> dict[str, Any]:
@@ -2120,7 +2119,6 @@ async def get_model_tier(
 
     Args:
         model_id: UUID of the model
-        profile: Profile name (uses model's profile if not specified)
         partition: Partition name (uses default partition if not specified)
         refresh: Force refresh of model metadata from HF Hub
 
@@ -2138,15 +2136,14 @@ async def get_model_tier(
     except NoResultFound:
         raise NotFoundException(detail=f"Model {model_id} not found")
 
-    # Get profile
-    profile_name = profile or model.profile
+    # Get profile from model
     try:
-        profile_obj = deserialize_profile(blackfish_config.HOME_DIR, profile_name)
+        profile_obj = deserialize_profile(blackfish_config.HOME_DIR, model.profile)
     except FileNotFoundError:
         raise NotFoundException(detail="Profile config not found.")
 
     if profile_obj is None:
-        raise NotFoundException(detail=f"Profile {profile_name} not found.")
+        raise NotFoundException(detail=f"Profile {model.profile} not found.")
 
     # Get model metadata
     metadata: Optional[ModelMetadata] = None

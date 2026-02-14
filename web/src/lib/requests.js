@@ -24,6 +24,7 @@ export async function fetchModels(path) {
   const data = await res.json();
   return data.map(model => {
     return {
+      id: model.id,
       repo_id: model.repo,
       revision: model.revision,
       profile: model.profile,
@@ -216,12 +217,13 @@ export async function fetchProfileResources(profileName) {
 }
 
 /** Fetch recommended tier for a model. */
-export async function fetchModelTier(modelId, profileName, partition = null) {
-  const params = new URLSearchParams({ profile: profileName });
+export async function fetchModelTier(modelId, partition = null) {
+  const params = new URLSearchParams();
   if (partition) {
     params.append("partition", partition);
   }
-  const res = await fetch(`${blackfishApiURL}/api/models/${modelId}/tier?${params}`);
+  const query = params.toString() ? `?${params}` : "";
+  const res = await fetch(`${blackfishApiURL}/api/models/${modelId}/tier${query}`);
   if (!res.ok) {
     console.debug(`from fetchModelTier: failed to fetch tier (status=${res.status})`);
     return null;

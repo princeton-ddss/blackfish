@@ -36,6 +36,7 @@ function ServiceModalForm({
 }) {
 
   const [repoId, setRepoId] = React.useState(null);
+  const [modelId, setModelId] = React.useState(null);
 
   // Tier-based resource selection state
   const [selectedPartition, setSelectedPartition] = React.useState(null);
@@ -108,8 +109,8 @@ function ServiceModalForm({
 
   // Fetch recommended tier when model or partition changes
   React.useEffect(() => {
-    if (repoId && profile && selectedPartition) {
-      fetchModelTier(encodeURIComponent(repoId), profile.name, selectedPartition)
+    if (modelId && selectedPartition) {
+      fetchModelTier(modelId, selectedPartition)
         .then(data => {
           if (data && data.tier) {
             setRecommendedTier(data.tier);
@@ -125,7 +126,7 @@ function ServiceModalForm({
           }
         });
     }
-  }, [repoId, profile, selectedPartition, tiers]);
+  }, [modelId, selectedPartition, tiers]);
 
   // Update jobOptions when tier selection changes
   React.useEffect(() => {
@@ -274,6 +275,7 @@ function ServiceModalForm({
               models={models}
               repoId={repoId}
               setRepoId={setRepoId}
+              setModelId={setModelId}
               disabled={disabled}
             />
           </fieldset>

@@ -62,6 +62,38 @@ Always use `/pr` to create pull requests. This command:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full PR checklist.
 
+## GitHub Project Integration
+
+Work is tracked in GitHub Projects (Kanban boards). Run `/project-setup` to add projects to `.claude/projects.json` (not tracked in git).
+
+### When creating issues
+
+1. Create the issue: `gh issue create --title "..." --body "..."`
+2. Ask user: "Ready to implement or Backlog?"
+3. Read `.claude/projects.json` and ask user which project to use (if multiple)
+4. Add to project and set status:
+   ```bash
+   # Add issue to project (use owner and project_number from config)
+   gh project item-add <project_number> --owner <owner> --url <issue-url>
+
+   # Get item ID
+   ITEM_ID=$(gh project item-list <project_number> --owner <owner> --format json | jq -r '.items[] | select(.content.url == "<issue-url>") | .id')
+
+   # Set status (use IDs from .claude/project.json)
+   gh project item-edit --id "$ITEM_ID" --project-id "<project_id>" --field-id "<status.id>" --single-select-option-id "<status.options[status]>"
+   ```
+
+### When starting work on an issue
+
+1. Ensure a tracking issue exists (create one if needed)
+2. Move issue to "In progress" status using the option ID from config
+
+### When opening a PR
+
+1. Link the issue in PR body with "Closes #N"
+2. Move issue to "In review" status
+3. The `/pr` command handles this automatically
+
 ## See Also
 
 - [lib/CLAUDE.md](lib/CLAUDE.md) - Python backend details

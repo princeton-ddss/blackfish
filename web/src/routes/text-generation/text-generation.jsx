@@ -27,8 +27,8 @@ import CodeSnippetModal from "./components/CodeSnippetModal";
 import PropTypes from "prop-types";
 
 const modes = [
-  { label: "Completion", value: "completion" },
   { label: "Chat", value: "chat" },
+  { label: "Completion (Legacy)", value: "completion" },
 ];
 
 function ModeSelect({ selectedMode, setSelectedMode }) {
@@ -52,7 +52,7 @@ function ModeSelect({ selectedMode, setSelectedMode }) {
             <ListboxOption
               key={mode.value}
               value={mode}
-              className="group flex gap-2 bg-white dark:bg-gray-700 data-[focus]:bg-blue-500 data-[focus]:text-white relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100"
+              className="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 data-[focus]:bg-blue-500 data-[focus]:text-white"
             >
               <span className="block truncate font-normal group-data-[selected]:font-semibold">
                 {mode.label}
@@ -75,8 +75,8 @@ ModeSelect.propTypes = {
 
 export default function TextGenerationPage() {
   const [mode, setMode] = useState({
-    label: "Completion",
-    value: "completion",
+    label: "Chat",
+    value: "chat",
     icon: null,
   });
 
@@ -90,7 +90,7 @@ export default function TextGenerationPage() {
     frequency_penalty: 0.0,
     // logit_bias: null,
     // logprobs: null,
-    max_tokens: 16,
+    max_tokens: 256,
     // n: 1,
     presence_penalty: 0.0,
     seed: null,
@@ -138,7 +138,7 @@ export default function TextGenerationPage() {
     // function_call: null,
     // functions: null,
     // logit_bias: null,
-    max_completion_tokens: 16,
+    max_completion_tokens: 256,
     // max_tokens: null,
     // metadata: null,
     // modalities: ['text'],

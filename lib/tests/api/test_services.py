@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from litestar.testing import AsyncTestClient
 
-from blackfish.server.services.base import Service
+from blackfish.server.services.base import Service, ServiceLaunchError
 
 
 pytestmark = pytest.mark.anyio
@@ -452,3 +452,98 @@ class TestPruneServicesAPI:
         # The actual count depends on test data, just verify it returns a number
         result = response.json()
         assert isinstance(result, int)
+
+
+class TestCreateServiceErrorHandling:
+    """Test cases for error handling in service creation."""
+
+    async def test_service_launch_error_returns_user_message(
+        self, client: AsyncTestClient
+    ):
+        """Test that ServiceLaunchError returns user-friendly message in response."""
+        with patch.object(
+            Service,
+            "start",
+            new_callable=AsyncMock,
+            side_effect=ServiceLaunchError("ssh", "cluster.example.com"),
+        ):
+            data = {
+                "name": "test",
+                "image": "text_generation",
+                "repo_id": "meta-llama/Llama-3.2-3B",
+                "profile": {
+                    "name": "test",
+                    "home_dir": "test",
+                    "cache_dir": "test",
+                },
+                "container_config": {"port": 8080},
+                "job_config": {},
+            }
+
+            response = await client.post("/api/services", json=data)
+
+            assert response.status_code == 500
+            result = response.json()
+            # Error message should be user-friendly, not a Python traceback
+            assert "Could not connect to cluster.example.com" in result["detail"]
+
+    async def test_service_launch_error_container_message(
+        self, client: AsyncTestClient
+    ):
+        """Test that container errors return helpful message about Docker/nvidia."""
+        with patch.object(
+            Service,
+            "start",
+            new_callable=AsyncMock,
+            side_effect=ServiceLaunchError("container", "localhost"),
+        ):
+            data = {
+                "name": "test",
+                "image": "text_generation",
+                "repo_id": "meta-llama/Llama-3.2-3B",
+                "profile": {
+                    "name": "test",
+                    "home_dir": "test",
+                    "cache_dir": "test",
+                },
+                "container_config": {"port": 8080},
+                "job_config": {},
+            }
+
+            response = await client.post("/api/services", json=data)
+
+            assert response.status_code == 500
+            result = response.json()
+            assert "Docker" in result["detail"]
+            assert "nvidia-container-toolkit" in result["detail"]
+
+    async def test_unexpected_error_returns_generic_message(
+        self, client: AsyncTestClient
+    ):
+        """Test that unexpected errors return generic message (no traceback leak)."""
+        with patch.object(
+            Service,
+            "start",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("Internal database connection failed"),
+        ):
+            data = {
+                "name": "test",
+                "image": "text_generation",
+                "repo_id": "meta-llama/Llama-3.2-3B",
+                "profile": {
+                    "name": "test",
+                    "home_dir": "test",
+                    "cache_dir": "test",
+                },
+                "container_config": {"port": 8080},
+                "job_config": {},
+            }
+
+            response = await client.post("/api/services", json=data)
+
+            assert response.status_code == 500
+            result = response.json()
+            # Should NOT leak internal error details
+            assert "Internal database connection failed" not in result["detail"]
+            assert result["detail"] == "Failed to launch service."

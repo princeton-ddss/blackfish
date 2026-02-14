@@ -22,7 +22,7 @@ function Pagination({ filesPerPage, totalFiles, currentPage, setCurrentPage, dis
   }
 
   return (
-    <div className="flex justify-center mt-2">
+    <div className="flex justify-center py-1">
       <button
         disabled={currentPage === 1 || pageNumbers.length === 0 || disabled}
         onClick={() => {

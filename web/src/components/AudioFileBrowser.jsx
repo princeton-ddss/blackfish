@@ -149,7 +149,7 @@ function AudioFileBrowserTable({
                       <td colSpan={5} className="h-64">
                         <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                           <img
-                            className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             width="56"
                             src={assetPath("/img/dead-fish.png")}
@@ -164,7 +164,7 @@ function AudioFileBrowserTable({
                       <td colSpan={5} className="h-64">
                         <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                           <img
-                            className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             width="56"
                             src={assetPath("/img/dead-fish.png")}
@@ -189,7 +189,7 @@ function AudioFileBrowserTable({
                       <td colSpan={5} className="h-64">
                         <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                           <img
-                            className="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            className="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             width="56"
                             src={assetPath("/img/question-mark.png")}

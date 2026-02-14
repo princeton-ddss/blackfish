@@ -212,7 +212,8 @@ class SlurmJob(Job):
                         str(self.job_id),
                         "-o",
                         "NodeList",
-                    ]
+                    ],
+                    timeout=10,
                 )
             else:
                 res = subprocess.check_output(
@@ -229,11 +230,14 @@ class SlurmJob(Job):
                         str(self.job_id),
                         "-o",
                         "NodeList",
-                    ]
+                    ],
+                    timeout=10,
                 )
 
             self.node = None if res == b"" else res.decode("utf-8").strip()
             logger.debug(f"Job {self.job_id} node set to {self.node}.")
+        except subprocess.TimeoutExpired:
+            logger.warning(f"Timeout fetching node for job {self.job_id}.")
         except subprocess.CalledProcessError as e:
             logger.warning(
                 f"Failed to update job node (job_id={self.job_id},"

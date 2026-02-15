@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple, Any, Type, Annotated
+from typing import Optional, Tuple, Any, Type, Annotated, Callable
 import asyncio
 from pathlib import Path
 import bcrypt
@@ -19,7 +19,6 @@ from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 
 from fabric.connection import Connection
-from paramiko.sftp_client import SFTPClient
 from pydantic import BaseModel, AfterValidator, ConfigDict
 
 import sqlalchemy as sa
@@ -92,11 +91,10 @@ from blackfish.server.models.profile import (
 )
 from blackfish.server.models.model import Model, PIPELINE_IMAGES, get_pipeline
 from blackfish.server.models.metadata import (
-    ModelMetadata,
     fetch_model_metadata,
 )
 from huggingface_hub import model_info as hf_model_info
-from huggingface_hub.utils import HfHubHTTPError
+from huggingface_hub.errors import HfHubHTTPError
 from blackfish.server.models.tiers import (
     ResourceSpecs,
     load_resource_specs,
@@ -253,7 +251,9 @@ def _get_validated_slurm_profile(profile_name: str) -> SlurmProfile:
     return profile
 
 
-def fetch_model_info_from_hub(repo_id: str, token: Optional[str] = None) -> Tuple[str, Optional[dict]]:
+def fetch_model_info_from_hub(
+    repo_id: str, token: Optional[str] = None
+) -> Tuple[str, Optional[dict[str, Any]]]:
     """Fetch image (pipeline tag) and metadata from HuggingFace Hub.
 
     Args:
@@ -280,7 +280,9 @@ def fetch_model_info_from_hub(repo_id: str, token: Optional[str] = None) -> Tupl
         metadata = fetch_model_metadata(repo_id, token)
         metadata_dict = metadata.to_dict() if metadata else None
 
-        logger.debug(f"Fetched info for {repo_id}: image={image}, size={metadata.model_size_gb if metadata else 'unknown'}GB")
+        logger.debug(
+            f"Fetched info for {repo_id}: image={image}, size={metadata.model_size_gb if metadata else 'unknown'}GB"
+        )
         return image, metadata_dict
 
     except HfHubHTTPError as e:
@@ -305,7 +307,7 @@ async def find_models(profile: Profile) -> list[Model]:
     models = []
     seen_revisions: set[str] = set()
 
-    def scan_directory(base_dir: str, listdir_fn) -> None:
+    def scan_directory(base_dir: str, listdir_fn: Callable[[str], list[str]]) -> None:
         """Scan a directory for model folders and revisions."""
         logger.debug(f"Scanning directory: {base_dir}")
         try:
@@ -1661,7 +1663,9 @@ async def get_models(
             m for m in fs_models if (m.repo, m.profile, m.revision) not in db_lookup
         ]
         if to_add:
-            logger.debug(f"Adding {len(to_add)} new models to DB, fetching info from HuggingFace Hub...")
+            logger.debug(
+                f"Adding {len(to_add)} new models to DB, fetching info from HuggingFace Hub..."
+            )
             # Get tokens for each profile for gated model access
             profile_tokens = {p.name: getattr(p, "token", None) for p in profiles}
 
@@ -1679,7 +1683,8 @@ async def get_models(
 
         # 5. Update existing models with missing metadata
         to_update = [
-            m for m in db_models
+            m
+            for m in db_models
             if (m.repo, m.profile, m.revision) in fs_keys and m.metadata_ is None
         ]
         if to_update:
@@ -1711,8 +1716,8 @@ async def get_models(
             final_query = final_query.where(Model.image.in_(compatible))
 
         final_query = final_query.order_by(sa.func.lower(Model.repo))
-        result = await session.execute(final_query)
-        models = list(result.scalars().all())
+        final_result = await session.execute(final_query)
+        models = list(final_result.scalars().all())
         logger.debug(f"Final query returned {len(models)} models")
         return models
     else:

@@ -98,16 +98,18 @@ class TestFetchModelsAPI:
         existing_revision = existing_models[0]["revision"]
 
         # Use AsyncMock for async function find_models
-        mock_find_models = AsyncMock(return_value=[
-            Model(
-                repo=existing_repo,
-                profile="default",
-                revision=existing_revision,
-                image="unknown",  # find_models now returns "unknown"
-                model_dir="/home/test/.blackfish/models/test",
-                metadata_=None,
-            ),
-        ])
+        mock_find_models = AsyncMock(
+            return_value=[
+                Model(
+                    repo=existing_repo,
+                    profile="default",
+                    revision=existing_revision,
+                    image="unknown",  # find_models now returns "unknown"
+                    model_dir="/home/test/.blackfish/models/test",
+                    metadata_=None,
+                ),
+            ]
+        )
         mock_fetch = MagicMock(return_value=("text-generation", {"model_size_gb": 1.0}))
 
         with patch("blackfish.server.asgi.find_models", mock_find_models):
@@ -124,24 +126,26 @@ class TestFetchModelsAPI:
 
     async def test_refresh_adds_new_models(self, client: AsyncTestClient):
         """Test that refresh adds models that are on filesystem but not in DB."""
-        mock_find_models = AsyncMock(return_value=[
-            Model(
-                repo="openai/whisper-large-v3",
-                profile="default",
-                revision="1",
-                image="unknown",
-                model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
-                metadata_=None,
-            ),
-            Model(
-                repo="new-org/new-model",
-                profile="default",
-                revision="main",
-                image="unknown",
-                model_dir="/home/test/.blackfish/models/models--new-org/new-model",
-                metadata_=None,
-            ),
-        ])
+        mock_find_models = AsyncMock(
+            return_value=[
+                Model(
+                    repo="openai/whisper-large-v3",
+                    profile="default",
+                    revision="1",
+                    image="unknown",
+                    model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
+                    metadata_=None,
+                ),
+                Model(
+                    repo="new-org/new-model",
+                    profile="default",
+                    revision="main",
+                    image="unknown",
+                    model_dir="/home/test/.blackfish/models/models--new-org/new-model",
+                    metadata_=None,
+                ),
+            ]
+        )
         mock_fetch = MagicMock(return_value=("text-generation", {"model_size_gb": 1.0}))
 
         with patch("blackfish.server.asgi.find_models", mock_find_models):
@@ -179,25 +183,29 @@ class TestFetchModelsAPI:
         """Test refreshing models for specific profile."""
         # Use repos/revisions that match existing fixture data for default profile
         # Fixture has: whisper-large-v3 (rev=1, default), Llama-3.2-3B (rev=3, default)
-        mock_find_models = AsyncMock(return_value=[
-            Model(
-                repo="openai/whisper-large-v3",
-                profile="default",
-                revision="1",  # Same as fixture
-                image="unknown",
-                model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
-                metadata_=None,
-            ),
-            Model(
-                repo="meta-llama/Llama-3.2-3B",
-                profile="default",
-                revision="3",  # Same as fixture
-                image="unknown",
-                model_dir="/home/test/.blackfish/models/models--meta-llama/Llama-3.2-3B",
-                metadata_=None,
-            ),
-        ])
-        mock_fetch = MagicMock(return_value=("speech-recognition", {"model_size_gb": 1.0}))
+        mock_find_models = AsyncMock(
+            return_value=[
+                Model(
+                    repo="openai/whisper-large-v3",
+                    profile="default",
+                    revision="1",  # Same as fixture
+                    image="unknown",
+                    model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
+                    metadata_=None,
+                ),
+                Model(
+                    repo="meta-llama/Llama-3.2-3B",
+                    profile="default",
+                    revision="3",  # Same as fixture
+                    image="unknown",
+                    model_dir="/home/test/.blackfish/models/models--meta-llama/Llama-3.2-3B",
+                    metadata_=None,
+                ),
+            ]
+        )
+        mock_fetch = MagicMock(
+            return_value=("speech-recognition", {"model_size_gb": 1.0})
+        )
 
         with patch("blackfish.server.asgi.find_models", mock_find_models):
             with patch("blackfish.server.asgi.fetch_model_info_from_hub", mock_fetch):

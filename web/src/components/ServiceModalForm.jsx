@@ -108,9 +108,6 @@ function ServiceModalForm({
     }
   }, [partitions, selectedPartition]);
 
-  // Model overrides from resource specs (e.g., "meta-llama/Llama-2-70b": "gpu.Large")
-  const modelOverrides = resources?.models || {};
-
   // Select recommended tier based on model size
   // Priority: 1. model override, 2. client-side data, 3. HuggingFace Hub, 4. no auto-selection
   React.useEffect(() => {
@@ -119,6 +116,8 @@ function ServiceModalForm({
     const selectedModel = models?.find(m => m.id === modelId);
     const repoId = selectedModel?.repo_id;
     const cachedSizeGb = selectedModel?.model_size_gb ?? null;
+    // Model overrides from resource specs (e.g., "meta-llama/Llama-2-70b": "gpu.Large")
+    const modelOverrides = resources?.models || {};
 
     console.debug(`[TierSelect] Model ${repoId} (${modelId}): cached size = ${cachedSizeGb}`);
 
@@ -178,7 +177,7 @@ function ServiceModalForm({
     } else {
       console.debug(`[TierSelect] No repo_id for model ${modelId}, skipping tier selection`);
     }
-  }, [modelId, tiers, models, modelOverrides]);
+  }, [modelId, tiers, models, resources?.models]);
 
   // Update jobOptions when tier selection changes
   React.useEffect(() => {
@@ -529,6 +528,7 @@ ServiceModalForm.propTypes = {
         tiers: PropTypes.array,
       })
     ),
+    models: PropTypes.objectOf(PropTypes.string),
   }),
   children: PropTypes.node,
 };

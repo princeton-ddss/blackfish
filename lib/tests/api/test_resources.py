@@ -143,20 +143,28 @@ class TestGetModelTierAPI:
         assert "model_size_gb" in result
         assert "source" in result
 
-    async def test_no_metadata_source(self, client: AsyncTestClient):
-        """Test source is NO_METADATA when no cached metadata exists."""
+    async def test_no_metadata_returns_no_metadata_source(
+        self, client: AsyncTestClient
+    ):
+        """Test source is NO_METADATA when both cache and HF Hub return no metadata."""
         model_id = "cc64bbef-816c-4070-941d-3dabece7a3b9"
 
+        # Mock both cache miss and HF Hub returning empty metadata
+        empty_metadata = ModelMetadata(model_size_gb=0.0, size_source="unknown")
         with patch("blackfish.server.asgi.get_cached_metadata", return_value=None):
-            response = await client.get(f"/api/models/{model_id}/tier")
+            with patch(
+                "blackfish.server.asgi.fetch_model_metadata",
+                return_value=empty_metadata,
+            ):
+                response = await client.get(f"/api/models/{model_id}/tier")
 
         assert response.status_code == 200
         result = response.json()
         assert result["tier"] is None
         assert result["source"] == TierSource.NO_METADATA.value
 
-    async def test_refresh_parameter_triggers_fetch(self, client: AsyncTestClient):
-        """Test that refresh=true calls refresh_metadata."""
+    async def test_fetches_on_demand_when_no_cache(self, client: AsyncTestClient):
+        """Test that endpoint fetches from HF Hub when no cached metadata."""
         model_id = "cc64bbef-816c-4070-941d-3dabece7a3b9"
 
         mock_metadata = ModelMetadata(
@@ -164,13 +172,16 @@ class TestGetModelTierAPI:
             size_source="safetensors",
         )
 
-        with patch(
-            "blackfish.server.asgi.refresh_metadata", return_value=mock_metadata
-        ) as mock_refresh:
-            response = await client.get(f"/api/models/{model_id}/tier?refresh=true")
+        with patch("blackfish.server.asgi.get_cached_metadata", return_value=None):
+            with patch(
+                "blackfish.server.asgi.fetch_model_metadata", return_value=mock_metadata
+            ) as mock_fetch:
+                response = await client.get(f"/api/models/{model_id}/tier")
 
         assert response.status_code == 200
-        mock_refresh.assert_called_once()
+        mock_fetch.assert_called_once()
+        result = response.json()
+        assert result["model_size_gb"] == 26.0
 
     async def test_partition_parameter_passed_through(self, client: AsyncTestClient):
         """Test that partition parameter is used."""
@@ -193,3 +204,46 @@ class TestGetModelTierAPI:
         mock_get_partition.assert_called()
         call_args = mock_get_partition.call_args
         assert call_args[0][1] == "custom-gpu"
+
+
+class TestRefreshModelMetadataAPI:
+    """Test cases for POST /api/models/{model_id}/metadata endpoint."""
+
+    async def test_requires_authentication(self, no_auth_client: AsyncTestClient):
+        """Test that endpoint requires authentication."""
+        model_id = "cc64bbef-816c-4070-941d-3dabece7a3b9"
+        response = await no_auth_client.post(f"/api/models/{model_id}/metadata")
+        assert response.status_code in [401, 403] or response.is_redirect
+
+    async def test_model_not_found(self, client: AsyncTestClient):
+        """Test 404 when model doesn't exist."""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+        response = await client.post(f"/api/models/{fake_id}/metadata")
+        assert response.status_code == 404
+
+    async def test_invalid_uuid(self, client: AsyncTestClient):
+        """Test validation error for invalid UUID."""
+        response = await client.post("/api/models/not-a-uuid/metadata")
+        assert response.status_code == 400
+
+    async def test_returns_metadata_on_success(self, client: AsyncTestClient):
+        """Test successful metadata refresh returns metadata."""
+        model_id = "cc64bbef-816c-4070-941d-3dabece7a3b9"
+
+        mock_metadata = ModelMetadata(
+            model_size_gb=13.5,
+            size_source="safetensors",
+        )
+
+        with patch(
+            "blackfish.server.asgi.fetch_model_metadata", return_value=mock_metadata
+        ):
+            with patch("blackfish.server.asgi.update_cached_metadata"):
+                response = await client.post(f"/api/models/{model_id}/metadata")
+
+        assert response.status_code == 201
+        result = response.json()
+        assert "model_id" in result
+        assert "repo" in result
+        assert "metadata" in result
+        assert result["metadata"]["model_size_gb"] == 13.5

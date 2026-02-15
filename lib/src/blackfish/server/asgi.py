@@ -93,8 +93,9 @@ from blackfish.server.models.profile import (
 from blackfish.server.models.model import Model
 from blackfish.server.models.metadata import (
     ModelMetadata,
+    fetch_model_metadata,
     get_cached_metadata,
-    refresh_metadata,
+    update_cached_metadata,
 )
 from blackfish.server.models.tiers import (
     ResourceSpecs,
@@ -1692,6 +1693,7 @@ async def get_models(
 
     res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
+        # 1. Scan filesystem to get current models
         if profile is not None:
             matched = next((p for p in profiles if p.name == profile), None)
             if matched is None:
@@ -1699,39 +1701,59 @@ async def get_models(
                     f"Profile '{profile}' not found. Returning an empty list."
                 )
                 return list()
-            models = await find_models(matched)
-            logger.debug(
-                f"Deleting existing models WHERE model.profile == '{profile}'..."
-            )
-            try:
-                delete_query = sa.delete(Model).where(Model.profile == profile)
-                await session.execute(delete_query)
-            except Exception as e:
-                logger.error(f"Failed to execute query: {e}")
+            fs_models = await find_models(matched)
         else:
             gathered = await asyncio.gather(
-                *[find_models(profile) for profile in profiles], return_exceptions=True
+                *[find_models(p) for p in profiles], return_exceptions=True
             )
-            models = []
+            fs_models = []
             for p, result in zip(profiles, gathered):
                 if isinstance(result, Exception):
                     logger.error(
                         f"Failed to find models for profile '{p.name}': {result}"
                     )
                 elif isinstance(result, list):
-                    models.extend(result)
-            logger.debug("Deleting all existing models...")
+                    fs_models.extend(result)
+
+        # 2. Fetch existing models from DB
+        if profile is not None:
+            existing_query = sa.select(Model).where(Model.profile == profile)
+        else:
+            existing_query = sa.select(Model)
+        existing_result = await session.execute(existing_query)
+        db_models = list(existing_result.scalars().all())
+
+        # Create lookups by (repo, profile, revision)
+        fs_keys = {(m.repo, m.profile, m.revision) for m in fs_models}
+        db_lookup = {(m.repo, m.profile, m.revision): m for m in db_models}
+
+        # 3. Delete models in DB but not on filesystem
+        to_delete = [
+            m for m in db_models if (m.repo, m.profile, m.revision) not in fs_keys
+        ]
+        if to_delete:
+            logger.debug(f"Deleting {len(to_delete)} stale models from DB...")
+            for m in to_delete:
+                await session.delete(m)
             try:
-                delete_all_query = sa.delete(Model)
-                await session.execute(delete_all_query)
+                await session.flush()
             except Exception as e:
-                logger.error(f"Failed to execute query: {e}")
-        logger.debug("Inserting refreshed models...")
-        session.add_all(models)
-        try:
-            await session.flush()
-        except Exception as e:
-            logger.error(f"Failed to execute transaction: {e}")
+                logger.error(f"Failed to delete stale models: {e}")
+
+        # 4. Add models on filesystem but not in DB
+        to_add = [
+            m for m in fs_models if (m.repo, m.profile, m.revision) not in db_lookup
+        ]
+        if to_add:
+            logger.debug(f"Adding {len(to_add)} new models to DB...")
+            session.add_all(to_add)
+            try:
+                await session.flush()
+            except Exception as e:
+                logger.error(f"Failed to add new models: {e}")
+
+        # Return all current models (existing + new)
+        models = [db_lookup[k] for k in fs_keys if k in db_lookup] + to_add
         if image is not None:
             # Use compatible pipelines if defined, otherwise exact match
             compatible = COMPATIBLE_PIPELINES.get(image, [image])
@@ -2113,14 +2135,15 @@ async def get_model_tier(
     model_id: str,
     session: AsyncSession,
     partition: Optional[str] = None,
-    refresh: bool = False,
 ) -> dict[str, Any]:
     """Get recommended tier for a model based on its size.
+
+    Tries to read from cache first, falls back to fetching from HF Hub on-demand.
+    Does not modify the cache - use POST /api/models/{id}/metadata to update cache.
 
     Args:
         model_id: UUID of the model
         partition: Partition name (uses default partition if not specified)
-        refresh: Force refresh of model metadata from HF Hub
 
     Returns:
         Recommended tier information including partition, tier name, and source
@@ -2145,13 +2168,34 @@ async def get_model_tier(
     if profile_obj is None:
         raise NotFoundException(detail=f"Profile {model.profile} not found.")
 
-    # Get model metadata
+    # Get model metadata - try cache first, then fetch on-demand
     metadata: Optional[ModelMetadata] = None
-    if refresh:
-        token = getattr(profile_obj, "token", None)
-        metadata = refresh_metadata(model.repo, profile_obj.cache_dir, token)
+    is_remote = isinstance(profile_obj, SlurmProfile) and profile_obj.host not in (
+        "localhost",
+        "127.0.0.1",
+    )
+    info_path = f"{profile_obj.cache_dir}/info.json"
+
+    # Try to read from cache
+    if is_remote:
+        assert isinstance(profile_obj, SlurmProfile)
+        try:
+            content = sftp.read_file(profile_obj, info_path)
+            data = json.loads(content)
+            entry = data.get(model.repo)
+            if isinstance(entry, dict) and "metadata" in entry:
+                metadata = ModelMetadata.from_dict(entry["metadata"])
+        except NotFoundException:
+            logger.debug(f"No info.json found at {info_path}")
+        except Exception as e:
+            logger.debug(f"Failed to read remote info.json: {e}")
     else:
         metadata = get_cached_metadata(model.repo, profile_obj.cache_dir)
+
+    # If no cache, fetch on-demand (but don't cache)
+    if metadata is None:
+        token = getattr(profile_obj, "token", None)
+        metadata = fetch_model_metadata(model.repo, token)
 
     if metadata is None or metadata.model_size_gb == 0:
         return {
@@ -2202,6 +2246,112 @@ async def get_model_tier(
         "tier": tier.name,
         "model_size_gb": metadata.model_size_gb,
         "source": source,
+    }
+
+
+@post("/api/models/{model_id:str}/metadata", guards=ENDPOINT_GUARDS)
+async def refresh_model_metadata(
+    model_id: str,
+    session: AsyncSession,
+) -> dict[str, Any]:
+    """Refresh and cache model metadata from HuggingFace Hub.
+
+    This is an admin endpoint that fetches fresh metadata and updates the cache.
+    Requires write permissions to the profile's cache directory.
+
+    Args:
+        model_id: UUID of the model
+
+    Returns:
+        The fetched metadata
+
+    Raises:
+        NotFoundException: If model or profile not found
+        NotAuthorizedException: If unable to write to cache (permission denied)
+    """
+    # Get model from database
+    query = sa.select(Model).where(Model.id == model_id)
+    try:
+        res = await session.execute(query)
+    except StatementError:
+        raise ValidationException(detail=f"{model_id} is not a valid UUID.")
+    try:
+        model = res.scalar_one()
+    except NoResultFound:
+        raise NotFoundException(detail=f"Model {model_id} not found")
+
+    # Get profile from model
+    try:
+        profile_obj = deserialize_profile(blackfish_config.HOME_DIR, model.profile)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profile config not found.")
+
+    if profile_obj is None:
+        raise NotFoundException(detail=f"Profile {model.profile} not found.")
+
+    # Fetch fresh metadata from HF Hub
+    token = getattr(profile_obj, "token", None)
+    metadata = fetch_model_metadata(model.repo, token)
+
+    # Update cache - handle remote vs local profiles
+    is_remote = isinstance(profile_obj, SlurmProfile) and profile_obj.host not in (
+        "localhost",
+        "127.0.0.1",
+    )
+    info_path = f"{profile_obj.cache_dir}/info.json"
+
+    if is_remote:
+        assert isinstance(profile_obj, SlurmProfile)
+        # Read existing info.json, update entry, write back
+        file_exists = True
+        try:
+            content = sftp.read_file(profile_obj, info_path)
+            data = json.loads(content)
+        except NotFoundException:
+            data = {}
+            file_exists = False
+        except Exception as e:
+            raise InternalServerException(
+                detail=f"Failed to read remote info.json: {e}"
+            )
+
+        # Preserve existing image or use default
+        existing = data.get(model.repo)
+        if isinstance(existing, str):
+            image = existing
+        elif isinstance(existing, dict):
+            image = existing.get("image", model.image or "unknown")
+        else:
+            image = model.image or "unknown"
+
+        data[model.repo] = {
+            "image": image,
+            "metadata": metadata.to_dict(),
+        }
+
+        try:
+            sftp.write_file(
+                profile_obj,
+                info_path,
+                json.dumps(data, indent=2).encode(),
+                update=file_exists,
+            )
+        except NotAuthorizedException:
+            raise NotAuthorizedException(
+                detail="Permission denied: unable to write to cache. "
+                "Only the Blackfish admin can update model metadata."
+            )
+        except Exception as e:
+            raise InternalServerException(
+                detail=f"Failed to write remote info.json: {e}"
+            )
+    else:
+        update_cached_metadata(model.repo, profile_obj.cache_dir, metadata)
+
+    return {
+        "model_id": model_id,
+        "repo": model.repo,
+        "metadata": metadata.to_dict(),
     }
 
 
@@ -2360,6 +2510,7 @@ app = Litestar(
         get_cluster_status,
         get_profile_resources,
         get_model_tier,
+        refresh_model_metadata,
         assets_server,
         img_server,
     ],

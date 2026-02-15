@@ -86,39 +86,109 @@ class TestFetchModelsAPI:
         vlm_ids = [m["id"] for m in result if m["image"] == "image-text-to-text"]
         assert vlm_model["id"] in vlm_ids
 
-    async def test_fetch_models_with_refresh(self, client: AsyncTestClient):
-        """Test fetching models with refresh parameter."""
+    async def test_refresh_preserves_existing_model_ids(self, client: AsyncTestClient):
+        """Test that refresh preserves IDs for models that already exist."""
+        # Get existing model ID before refresh
+        response = await client.get("/api/models", params={"profile": "default"})
+        assert response.status_code == 200
+        existing_models = response.json()
+        assert len(existing_models) > 0
+        existing_id = existing_models[0]["id"]
+        existing_repo = existing_models[0]["repo"]
+        existing_revision = existing_models[0]["revision"]
 
-        # TODO: This is a bit complicated because we call blackfish.server.asgi.find_models for each test profile, but there is no actual model data to find.
-        # We can either add test data dummy files or mock the call, but the return of each mocked call should be different.
+        with patch("blackfish.server.asgi.find_models") as mock_find_models:
+            # Return the same model (simulating no change on filesystem)
+            mock_find_models.return_value = [
+                Model(
+                    repo=existing_repo,
+                    profile="default",
+                    revision=existing_revision,
+                    image="speech_recognition",
+                    model_dir="/home/test/.blackfish/models/test",
+                ),
+            ]
 
-        pass
+            response = await client.get(
+                "/api/models", params={"profile": "default", "refresh": True}
+            )
+
+            assert response.status_code == 200
+            result = response.json()
+            assert len(result) == 1
+            # ID should be preserved
+            assert result[0]["id"] == existing_id
+
+    async def test_refresh_adds_new_models(self, client: AsyncTestClient):
+        """Test that refresh adds models that are on filesystem but not in DB."""
+        with patch("blackfish.server.asgi.find_models") as mock_find_models:
+            # Return existing models plus a new one
+            mock_find_models.return_value = [
+                Model(
+                    repo="openai/whisper-large-v3",
+                    profile="default",
+                    revision="1",
+                    image="speech_recognition",
+                    model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
+                ),
+                Model(
+                    repo="new-org/new-model",
+                    profile="default",
+                    revision="main",
+                    image="text_generation",
+                    model_dir="/home/test/.blackfish/models/models--new-org/new-model",
+                ),
+            ]
+
+            response = await client.get(
+                "/api/models", params={"profile": "default", "refresh": True}
+            )
+
+            assert response.status_code == 200
+            result = response.json()
+            # Should have the new model
+            repos = [m["repo"] for m in result]
+            assert "new-org/new-model" in repos
+
+    async def test_refresh_deletes_stale_models(self, client: AsyncTestClient):
+        """Test that refresh removes models in DB but not on filesystem."""
+        # Get existing model
+        response = await client.get("/api/models", params={"profile": "default"})
+        existing_models = response.json()
+        assert len(existing_models) > 0
+
+        with patch("blackfish.server.asgi.find_models") as mock_find_models:
+            # Return empty list (simulating all models removed from filesystem)
+            mock_find_models.return_value = []
+
+            response = await client.get(
+                "/api/models", params={"profile": "default", "refresh": True}
+            )
+
+            assert response.status_code == 200
+            result = response.json()
+            # All models should be deleted
+            assert len(result) == 0
 
     async def test_fetch_models_refresh_with_profile(self, client: AsyncTestClient):
         """Test refreshing models for specific profile."""
 
         with patch("blackfish.server.asgi.find_models") as mock_find_models:
-            # Return fixture data for "default" profile
+            # Return models without IDs (like real find_models does)
             mock_find_models.return_value = [
                 Model(
-                    **{
-                        "id": "cc64bbef-816c-4070-941d-3dabece7a3b9",
-                        "repo": "openai/whisper-large-v3",
-                        "profile": "default",
-                        "revision": "1",
-                        "image": "speech_recognition",
-                        "model_dir": "/home/test/.blackfish/models/models--openai/whisper-large-v3",
-                    }
+                    repo="openai/whisper-large-v3",
+                    profile="default",
+                    revision="1",
+                    image="speech_recognition",
+                    model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
                 ),
                 Model(
-                    **{
-                        "id": "0022468b-3182-4381-a76a-25d06248398f",
-                        "repo": "openai/whisper-tiny",
-                        "profile": "default",
-                        "revision": "2",
-                        "image": "speech_recognition",
-                        "model_dir": "/home/test/.blackfish/models/models--openai/whisper-tiny",
-                    }
+                    repo="openai/whisper-tiny",
+                    profile="default",
+                    revision="2",
+                    image="speech_recognition",
+                    model_dir="/home/test/.blackfish/models/models--openai/whisper-tiny",
                 ),
             ]
 

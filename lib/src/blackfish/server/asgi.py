@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
-from typing import Optional, Tuple, Any, Type, Annotated
+from typing import Optional, Tuple, Any, Type, Annotated, Callable
 import asyncio
 from pathlib import Path
 import bcrypt
@@ -19,7 +19,6 @@ from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 
 from fabric.connection import Connection
-from paramiko.sftp_client import SFTPClient
 from pydantic import BaseModel, AfterValidator, ConfigDict
 
 import sqlalchemy as sa
@@ -90,7 +89,18 @@ from blackfish.server.models.profile import (
     LocalProfile,
     BlackfishProfile as Profile,
 )
-from blackfish.server.models.model import Model
+from blackfish.server.models.model import Model, PIPELINE_IMAGES, get_pipeline
+from blackfish.server.models.metadata import (
+    fetch_model_metadata,
+)
+from huggingface_hub import model_info as hf_model_info
+from huggingface_hub.errors import HfHubHTTPError
+from blackfish.server.models.tiers import (
+    ResourceSpecs,
+    load_resource_specs,
+    parse_resource_specs,
+    get_default_specs,
+)
 from blackfish.server.job import JobConfig, JobScheduler, SlurmJobConfig
 from blackfish.server.cluster import ClusterQueryError, SlurmClusterInfo
 from blackfish.server.browser import RemoteFileBrowserSession
@@ -214,9 +224,6 @@ async def get_batch_job(job_id: str, session: AsyncSession) -> BatchJob | None:
         return None
 
 
-ModelInfoResult = dict[str, str]
-
-
 def _get_validated_slurm_profile(profile_name: str) -> SlurmProfile:
     """Get and validate a profile for remote SFTP operations.
 
@@ -244,197 +251,124 @@ def _get_validated_slurm_profile(profile_name: str) -> SlurmProfile:
     return profile
 
 
-def model_info(profile: Profile) -> Tuple[ModelInfoResult, ModelInfoResult]:
-    if not profile.is_local():
-        logger.error("Profile should be local.")
-        raise Exception("Profile should be local.")
+def fetch_model_info_from_hub(
+    repo_id: str, token: Optional[str] = None
+) -> Tuple[str, Optional[dict[str, Any]]]:
+    """Fetch image (pipeline tag) and metadata from HuggingFace Hub.
 
-    cache_dir = Path(*[profile.cache_dir, "models", "info.json"])
+    Args:
+        repo_id: The model repository ID (e.g., "meta-llama/Llama-2-7b")
+        token: Optional HuggingFace token for gated models
+
+    Returns:
+        Tuple of (image, metadata_dict) where image is the pipeline type
+        and metadata_dict contains model_size_gb etc.
+    """
     try:
-        with open(cache_dir, "r") as f:
-            cache_info = json.load(f)
-    except OSError as e:
-        logger.error(f"Failed to open cache info.json: {e}.")
-        cache_info = dict()
-    home_dir = Path(*[profile.home_dir, "models", "info.json"])
-    try:
-        with open(home_dir, "r") as f:
-            home_info = json.load(f)
-    except OSError as e:
-        logger.error(f"Failed to open home info.json: {e}.")
-        home_info = dict()
-    return cache_info, home_info
+        info = hf_model_info(repo_id, token=token)
+        pipeline = get_pipeline(info)
 
+        # Convert pipeline tag to image name
+        if pipeline is not None and pipeline in PIPELINE_IMAGES:
+            image = PIPELINE_IMAGES[pipeline]
+        else:
+            image = pipeline if pipeline else "unknown"
+            if pipeline and pipeline not in PIPELINE_IMAGES:
+                logger.warning(f"Unknown pipeline tag for {repo_id}: {pipeline}")
 
-def remote_model_info(
-    profile: Profile, sftp: SFTPClient
-) -> Tuple[ModelInfoResult, ModelInfoResult]:
-    if not isinstance(profile, SlurmProfile):
-        raise Exception("Profile should be a SlurmProfile.")
+        # Fetch metadata (model size, etc.)
+        metadata = fetch_model_metadata(repo_id, token)
+        metadata_dict = metadata.to_dict() if metadata else None
 
-    cache_dir = os.path.join(profile.cache_dir, "models", "info.json")
-    try:
-        with sftp.open(cache_dir, "r") as f:
-            cache_info = json.load(f)
+        logger.debug(
+            f"Fetched info for {repo_id}: image={image}, size={metadata.model_size_gb if metadata else 'unknown'}GB"
+        )
+        return image, metadata_dict
+
+    except HfHubHTTPError as e:
+        logger.warning(f"Failed to fetch info for {repo_id} from HuggingFace Hub: {e}")
+        return "unknown", None
     except Exception as e:
-        logger.error(f"Failed to open remote cache info.json: {e}")
-        cache_info = dict()
-    home_dir = os.path.join(profile.home_dir, "models", "info.json")
-    try:
-        with sftp.open(home_dir, "r") as f:
-            home_info = json.load(f)
-    except Exception as e:
-        logger.error(f"Failed to open remote home info.json: {e}")
-        home_info = dict()
-    return cache_info, home_info
+        logger.error(f"Error fetching info for {repo_id}: {e}")
+        return "unknown", None
 
 
 async def find_models(profile: Profile) -> list[Model]:
-    """Find all model revisions associated with a given profile.
+    """Find all model revisions on the filesystem for a given profile.
 
-    The model files associated with a given profile are determined by the contents
-    found in `profile.home_dir` and `profile.cache_dir`. We assume that model files
-    are stored using the same schema as Hugging Face.
+    Scans `profile.home_dir` and `profile.cache_dir` for HuggingFace-style
+    model directories. Returns Model objects with repo, revision, model_dir,
+    and profile set. Image and metadata are not set here - they should be
+    populated from the database or fetched from HuggingFace Hub.
+
+    Returns:
+        List of Model objects found on filesystem (image and metadata_ are None)
     """
     models = []
-    revisions = []
+    seen_revisions: set[str] = set()
+
+    def scan_directory(base_dir: str, listdir_fn: Callable[[str], list[str]]) -> None:
+        """Scan a directory for model folders and revisions."""
+        logger.debug(f"Scanning directory: {base_dir}")
+        try:
+            model_dirs = listdir_fn(base_dir)
+        except (FileNotFoundError, OSError) as e:
+            logger.debug(f"Directory not found or inaccessible: {base_dir} ({e})")
+            return
+
+        for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
+            try:
+                _, namespace, model_name = model_dir.split("--")
+            except ValueError:
+                logger.warning(f"Invalid model directory format: {model_dir}")
+                continue
+
+            repo = f"{namespace}/{model_name}"
+            snapshots_path = os.path.join(base_dir, model_dir, "snapshots")
+            logger.debug(f"Found model {repo}, scanning snapshots")
+
+            try:
+                revisions = listdir_fn(snapshots_path)
+            except (FileNotFoundError, OSError) as e:
+                logger.warning(f"No snapshots found for {repo}: {e}")
+                continue
+
+            for revision in revisions:
+                if revision in seen_revisions:
+                    continue
+                seen_revisions.add(revision)
+                logger.debug(f"Found revision {revision} for {repo}")
+                models.append(
+                    Model(
+                        repo=repo,
+                        profile=profile.name,
+                        revision=revision,
+                        image="unknown",  # Will be populated from DB or HF Hub
+                        model_dir=os.path.join(base_dir, model_dir),
+                        metadata_=None,  # Will be populated from DB or HF Hub
+                    )
+                )
+
     if isinstance(profile, SlurmProfile) and not profile.is_local():
+        # Remote profile: use SFTP
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
         with (
             Connection(host=profile.host, user=profile.user) as conn,
             conn.sftp() as sftp,
         ):
-            cache_info, home_info = remote_model_info(profile, sftp=sftp)
             cache_dir = os.path.join(profile.cache_dir, "models")
-            logger.debug(f"Searching cache directory {cache_dir}")
-            try:
-                model_dirs = sftp.listdir(cache_dir)
-                for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
-                    _, namespace, model = model_dir.split("--")
-                    repo = f"{namespace}/{model}"
-                    logger.debug(f"Found model {repo}")
-                    image = cache_info.get(repo)
-                    if image is None:
-                        logger.warning(
-                            f"No image info found for model {repo} in {cache_dir}!"
-                        )
-                        image = "missing"
-                    for revision in sftp.listdir(
-                        os.path.join(cache_dir, model_dir, "snapshots")
-                    ):
-                        if revision not in revisions:
-                            logger.debug(f"Found revision {revision}")
-                            models.append(
-                                Model(
-                                    repo=repo,
-                                    profile=profile.name,
-                                    revision=revision,
-                                    image=image,
-                                    model_dir=os.path.join(cache_dir, model_dir),
-                                )
-                            )
-                            revisions.append(revision)
-            except FileNotFoundError as e:
-                logger.error(f"Failed to list directory: {e}")
-
             home_dir = os.path.join(profile.home_dir, "models")
-            logger.debug(f"Searching home directory: {home_dir}")
-            try:
-                model_dirs = sftp.listdir(home_dir)
-                for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
-                    _, namespace, model = model_dir.split("--")
-                    repo = f"{namespace}/{model}"
-                    logger.debug("Found model {repo}")
-                    image = home_info.get(repo)
-                    if image is None:
-                        logger.warning(
-                            f"No image info found for model {repo} in {home_dir}!"
-                        )
-                        image = "missing"
-                    for revision in sftp.listdir(
-                        os.path.join(home_dir, model_dir, "snapshots")
-                    ):
-                        if revision not in revisions:
-                            logger.debug(f"Found revision {revision}")
-                            models.append(
-                                Model(
-                                    repo=repo,
-                                    profile=profile.name,
-                                    revision=revision,
-                                    image=image,
-                                    model_dir=os.path.join(home_dir, model_dir),
-                                )
-                            )
-                            revisions.append(revision)
-            except FileNotFoundError as e:
-                logger.error(f"Failed to list directory: {e}")
-            return models
+            scan_directory(cache_dir, sftp.listdir)
+            scan_directory(home_dir, sftp.listdir)
     else:
-        cache_info, home_info = model_info(profile)
+        # Local profile: use os.listdir
         cache_dir = os.path.join(profile.cache_dir, "models")
-        logger.debug(f"Searching cache directory {cache_dir}")
-        try:
-            model_dirs = os.listdir(cache_dir)
-            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
-                _, namespace, model = model_dir.split("--")
-                repo = f"{namespace}/{model}"
-                logger.debug(f"Found model {repo}")
-                image = cache_info.get(repo)
-                if image is None:
-                    logger.warning(
-                        f"No image info found for model {repo} in {cache_dir}!"
-                    )
-                    image = "missing"
-                for revision in os.listdir(
-                    os.path.join(cache_dir, model_dir, "snapshots")
-                ):
-                    if revision not in revisions:
-                        logger.debug(f"Found revision {revision}")
-                        models.append(
-                            Model(
-                                repo=repo,
-                                profile=profile.name,
-                                revision=revision,
-                                image=image,
-                                model_dir=os.path.join(cache_dir, model_dir),
-                            )
-                        )
-                        revisions.append(revision)
-        except FileNotFoundError as e:
-            logger.error(f"Failed to list directory: {e}")
-
         home_dir = os.path.join(profile.home_dir, "models")
-        logger.debug(f"Searching home directory: {home_dir}")
-        try:
-            model_dirs = os.listdir(home_dir)
-            for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
-                _, namespace, model = model_dir.split("--")
-                repo = f"{namespace}/{model}"
-                logger.debug(f"Found model {repo}")
-                image = home_info.get(repo)
-                if image is None:
-                    logger.warning(
-                        f"No image info found for model {repo} in {home_dir}!"
-                    )
-                    image = "missing"
-                for revision in os.listdir(
-                    os.path.join(home_dir, model_dir, "snapshots")
-                ):
-                    if revision not in revisions:
-                        logger.debug(f"Found revision {revision}")
-                        models.append(
-                            Model(
-                                repo=repo,
-                                profile=profile.name,
-                                revision=revision,
-                                image=image,
-                                model_dir=os.path.join(home_dir, model_dir),
-                            )
-                        )
-                        revisions.append(revision)
-        except FileNotFoundError as e:
-            logger.error(f"Failed to list directory: {e}")
-        return list(models)
+        scan_directory(cache_dir, os.listdir)
+        scan_directory(home_dir, os.listdir)
+
+    logger.debug(f"Found {len(models)} models for profile {profile.name}")
+    return models
 
 
 # --- Pages ---
@@ -1677,6 +1611,7 @@ async def get_models(
 
     res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
+        # 1. Scan filesystem to get current models
         if profile is not None:
             matched = next((p for p in profiles if p.name == profile), None)
             if matched is None:
@@ -1684,48 +1619,107 @@ async def get_models(
                     f"Profile '{profile}' not found. Returning an empty list."
                 )
                 return list()
-            models = await find_models(matched)
-            logger.debug(
-                f"Deleting existing models WHERE model.profile == '{profile}'..."
-            )
-            try:
-                delete_query = sa.delete(Model).where(Model.profile == profile)
-                await session.execute(delete_query)
-            except Exception as e:
-                logger.error(f"Failed to execute query: {e}")
+            fs_models = await find_models(matched)
         else:
             gathered = await asyncio.gather(
-                *[find_models(profile) for profile in profiles], return_exceptions=True
+                *[find_models(p) for p in profiles], return_exceptions=True
             )
-            models = []
+            fs_models = []
             for p, result in zip(profiles, gathered):
                 if isinstance(result, Exception):
                     logger.error(
                         f"Failed to find models for profile '{p.name}': {result}"
                     )
                 elif isinstance(result, list):
-                    models.extend(result)
-            logger.debug("Deleting all existing models...")
-            try:
-                delete_all_query = sa.delete(Model)
-                await session.execute(delete_all_query)
-            except Exception as e:
-                logger.error(f"Failed to execute query: {e}")
-        logger.debug("Inserting refreshed models...")
-        session.add_all(models)
-        try:
-            await session.flush()
-        except Exception as e:
-            logger.error(f"Failed to execute transaction: {e}")
-        if image is not None:
-            # Use compatible pipelines if defined, otherwise exact match
-            compatible = COMPATIBLE_PIPELINES.get(image, [image])
-            return sorted(
-                list(filter(lambda x: x.image in compatible, models)),
-                key=lambda x: x.repo.lower(),
-            )
+                    fs_models.extend(result)
+
+        # 2. Fetch existing models from DB
+        if profile is not None:
+            existing_query = sa.select(Model).where(Model.profile == profile)
         else:
-            return sorted(models, key=lambda x: x.repo.lower())
+            existing_query = sa.select(Model)
+        existing_result = await session.execute(existing_query)
+        db_models = list(existing_result.scalars().all())
+
+        # Create lookups by (repo, profile, revision)
+        fs_keys = {(m.repo, m.profile, m.revision) for m in fs_models}
+        db_lookup = {(m.repo, m.profile, m.revision): m for m in db_models}
+
+        # 3. Delete models in DB but not on filesystem
+        to_delete = [
+            m for m in db_models if (m.repo, m.profile, m.revision) not in fs_keys
+        ]
+        if to_delete:
+            logger.debug(f"Deleting {len(to_delete)} stale models from DB...")
+            for m in to_delete:
+                await session.delete(m)
+            try:
+                await session.flush()
+            except Exception as e:
+                logger.error(f"Failed to delete stale models: {e}")
+
+        # 4. Add models on filesystem but not in DB (fetch info from HF Hub)
+        to_add = [
+            m for m in fs_models if (m.repo, m.profile, m.revision) not in db_lookup
+        ]
+        if to_add:
+            logger.debug(
+                f"Adding {len(to_add)} new models to DB, fetching info from HuggingFace Hub..."
+            )
+            # Get tokens for each profile for gated model access
+            profile_tokens = {p.name: getattr(p, "token", None) for p in profiles}
+
+            for m in to_add:
+                token = profile_tokens.get(m.profile)
+                image, metadata_dict = fetch_model_info_from_hub(m.repo, token)
+                m.image = image
+                m.metadata_ = metadata_dict
+
+            session.add_all(to_add)
+            try:
+                await session.flush()
+            except Exception as e:
+                logger.error(f"Failed to add new models: {e}")
+
+        # 5. Update existing models with missing metadata
+        to_update = [
+            m
+            for m in db_models
+            if (m.repo, m.profile, m.revision) in fs_keys and m.metadata_ is None
+        ]
+        if to_update:
+            logger.debug(f"Updating {len(to_update)} models with missing metadata...")
+            profile_tokens = {p.name: getattr(p, "token", None) for p in profiles}
+
+            for m in to_update:
+                token = profile_tokens.get(m.profile)
+                hub_image, metadata_dict = fetch_model_info_from_hub(m.repo, token)
+                # Only update if we got valid data
+                if metadata_dict is not None:
+                    m.metadata_ = metadata_dict
+                if m.image in ("unknown", "missing") and hub_image not in ("unknown",):
+                    m.image = hub_image
+                session.add(m)
+
+            try:
+                await session.flush()
+            except Exception as e:
+                logger.error(f"Failed to update model metadata: {e}")
+
+        # Re-query to get fresh state after all modifications
+        logger.debug(f"Re-querying models (profile={profile}, image={image})")
+        final_query = sa.select(Model)
+        if profile is not None:
+            final_query = final_query.where(Model.profile == profile)
+        if image is not None:
+            compatible = COMPATIBLE_PIPELINES.get(image, [image])
+            final_query = final_query.where(Model.image.in_(compatible))
+
+        final_query = final_query.order_by(sa.func.lower(Model.repo))
+        final_result = await session.execute(final_query)
+        models = list(final_result.scalars().all())
+        logger.debug(f"Final query returned {len(models)} models")
+        return models
     else:
         logger.info("Querying model table...")
 
@@ -2051,6 +2045,48 @@ async def get_cluster_status(profile_name: str) -> ClusterStatusResponse:
     )
 
 
+@get("/api/profiles/{name: str}/resources", guards=ENDPOINT_GUARDS)
+async def get_profile_resources(name: str) -> dict[str, Any]:
+    """Get resource tiers and time constraints for a profile.
+
+    Returns partitions with their available tiers, and time constraints.
+    Used by the frontend to populate the tier selection UI.
+    """
+    try:
+        profile = deserialize_profile(blackfish_config.HOME_DIR, name)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profile config not found.")
+
+    if profile is None:
+        raise NotFoundException(detail="Profile not found.")
+
+    if not isinstance(profile, SlurmProfile):
+        raise NotFoundException(
+            detail="Resource tiers are only available for Slurm profiles."
+        )
+
+    # Load resource specs from profile's cache directory
+    specs: Optional[ResourceSpecs] = None
+
+    if profile.host in ("localhost", "127.0.0.1"):
+        specs = load_resource_specs(profile.cache_dir)
+    else:
+        specs_path = f"{profile.cache_dir}/resource_specs.yaml"
+        try:
+            content = sftp.read_file(profile, specs_path)
+            specs = parse_resource_specs(content)
+        except NotFoundException:
+            logger.debug(f"No resource_specs.yaml found at {specs_path}")
+        except Exception as e:
+            logger.warning(f"Failed to fetch remote resource_specs.yaml: {e}")
+
+    if specs is None:
+        logger.debug(f"Using default resource specs for profile '{name}'")
+        specs = get_default_specs()
+
+    return specs.to_dict()
+
+
 # --- Config ---
 BASE_DIR = module_to_os_path("blackfish.server")
 
@@ -2204,6 +2240,7 @@ app = Litestar(
         read_profiles,
         read_profile,
         get_cluster_status,
+        get_profile_resources,
         assets_server,
         img_server,
     ],

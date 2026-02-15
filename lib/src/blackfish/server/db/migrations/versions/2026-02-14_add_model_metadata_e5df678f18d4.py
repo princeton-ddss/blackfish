@@ -2,7 +2,7 @@
 """Add model.metadata column for storing HF Hub metadata
 
 Revision ID: e5df678f18d4
-Revises: 27b628a63d4e
+Revises: f4fb4d42a827
 Create Date: 2026-02-14
 
 """
@@ -43,7 +43,7 @@ sa.EncryptedText = EncryptedText
 
 # revision identifiers, used by Alembic.
 revision = "e5df678f18d4"
-down_revision = "27b628a63d4e"
+down_revision = "f4fb4d42a827"
 branch_labels = None
 depends_on = None
 

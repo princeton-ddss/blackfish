@@ -35,7 +35,7 @@ class Tier:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result = {
             "name": self.name,
             "description": self.description,
             "max_model_size_gb": self.max_model_size_gb,
@@ -44,6 +44,9 @@ class Tier:
             "cpu_cores": self.cpu_cores,
             "memory_gb": self.memory_gb,
         }
+        if self.slurm:
+            result["slurm"] = self.slurm
+        return result
 
 
 @dataclass
@@ -85,10 +88,13 @@ class ResourceSpecs:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result = {
             "time": self.time.to_dict(),
             "partitions": [p.to_dict() for p in self.partitions],
         }
+        if self.models:
+            result["models"] = self.models
+        return result
 
 
 def _parse_tier(data: dict[str, Any]) -> Tier:

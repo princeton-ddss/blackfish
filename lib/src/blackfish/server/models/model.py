@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-from typing import Tuple, Optional
-import json
+from typing import Any, Tuple, Optional
 import shutil
 from pathlib import Path
 from log_symbols.symbols import LogSymbols
 from huggingface_hub import snapshot_download, model_info, scan_cache_dir, ModelInfo
 from advanced_alchemy.base import UUIDAuditBase
-from sqlalchemy.orm import Mapped
+from sqlalchemy import JSON
+from sqlalchemy.orm import Mapped, mapped_column
 from blackfish.server.models.profile import BlackfishProfile as Profile
-from blackfish.server.models.metadata import (
-    fetch_model_metadata,
-    update_cached_metadata,
-)
+from blackfish.server.models.metadata import fetch_model_metadata
 
 
 PIPELINE_IMAGES = {
@@ -42,6 +39,9 @@ class Model(UUIDAuditBase):
     revision: Mapped[str]
     image: Mapped[str]  # e.g., "text-generation"
     model_dir: Mapped[str]  # e.g., "<home_dir>/models/models--<namespace>--<model>"
+    metadata_: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        "metadata", JSON, nullable=True
+    )  # model size, dtype, etc. from HF Hub
 
 
 class ModelNotFoundError(FileNotFoundError): ...
@@ -58,12 +58,11 @@ def split(repo_id: str) -> Tuple[str, str]:
 def remove_model(
     repo_id: str, profile: Profile, revision: str | None = None, use_cache: bool = False
 ) -> None:
-    """Delete a model's snapshot files and remove its data from the local info cache.
+    """Delete a model's snapshot files from the filesystem.
 
     This method only works for *local* profiles, i.e., the model files can only be
-    deleted locally. In addition to deleting the model files, the method deletes the entry
-    in models/info.json that serves as a local cache of the model's pipeline tag, i.e.,
-    which API image(s) the model is compatible with.
+    deleted locally. Note: the caller is responsible for removing the model entry
+    from the database.
 
     Args:
         repo_id: the model to remove, e.g., "bigscience/bloom-560m".
@@ -95,14 +94,6 @@ def remove_model(
         else:
             op.execute()
 
-    with open(f"{cache_dir}/info.json", mode="r") as f:
-        data = json.load(f)
-        if repo_id in data.keys():
-            del data[repo_id]
-
-    with open(f"{cache_dir}/info.json", mode="w") as f:
-        f.write(json.dumps(data))
-
 
 def get_pipeline(res: ModelInfo) -> str | None:
     if res.pipeline_tag is not None:
@@ -123,9 +114,8 @@ def add_model(
     """Download a model from Hugging Face and makes it available to Blackfish.
 
     This method only works for *local* profiles, i.e., the model files can only be
-    downloaded locally. In addition to downloading the model files, the method creates
-    or updates an entry in models/info.json that serves as a local cache of the model's
-    pipeline tag, i.e., which API image(s) the model is compatible with.
+    downloaded locally. The returned Model object includes metadata fetched from
+    HuggingFace Hub, which should be saved to the database by the caller.
 
     Args:
         repo_id: the model to download, e.g., "bigscience/bloom-560m".
@@ -138,7 +128,7 @@ def add_model(
             stored to the profile's home directory. Default: False.
 
     Returns:
-        A mapped Model object
+        A tuple of (Model object with metadata, snapshot path)
 
     Raises:
         RepositoryNotFoundError
@@ -181,10 +171,7 @@ def add_model(
     print(f"{LogSymbols.INFO.value} Fetching model metadata...")
     metadata = fetch_model_metadata(repo_id, token)
 
-    # Update info.json with extended format (includes metadata)
-    update_cached_metadata(repo_id, str(cache_dir), metadata, image)
-
-    if metadata.model_size_gb > 0:
+    if metadata and metadata.model_size_gb > 0:
         print(
             f"{LogSymbols.SUCCESS.value} Model size: {metadata.model_size_gb:.1f} GB "
             f"(source: {metadata.size_source})"
@@ -196,6 +183,7 @@ def add_model(
             revision=revision,
             profile=profile.name,
             image=image,
+            metadata_=metadata.to_dict() if metadata else None,
         ),
         path,
     )

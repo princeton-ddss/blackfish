@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock, MagicMock
 from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from litestar.testing import AsyncTestClient
@@ -97,58 +97,64 @@ class TestFetchModelsAPI:
         existing_repo = existing_models[0]["repo"]
         existing_revision = existing_models[0]["revision"]
 
-        with patch("blackfish.server.asgi.find_models") as mock_find_models:
-            # Return the same model (simulating no change on filesystem)
-            mock_find_models.return_value = [
-                Model(
-                    repo=existing_repo,
-                    profile="default",
-                    revision=existing_revision,
-                    image="speech_recognition",
-                    model_dir="/home/test/.blackfish/models/test",
-                ),
-            ]
+        # Use AsyncMock for async function find_models
+        mock_find_models = AsyncMock(return_value=[
+            Model(
+                repo=existing_repo,
+                profile="default",
+                revision=existing_revision,
+                image="unknown",  # find_models now returns "unknown"
+                model_dir="/home/test/.blackfish/models/test",
+                metadata_=None,
+            ),
+        ])
+        mock_fetch = MagicMock(return_value=("text-generation", {"model_size_gb": 1.0}))
 
-            response = await client.get(
-                "/api/models", params={"profile": "default", "refresh": True}
-            )
+        with patch("blackfish.server.asgi.find_models", mock_find_models):
+            with patch("blackfish.server.asgi.fetch_model_info_from_hub", mock_fetch):
+                response = await client.get(
+                    "/api/models", params={"profile": "default", "refresh": True}
+                )
 
-            assert response.status_code == 200
-            result = response.json()
-            assert len(result) == 1
-            # ID should be preserved
-            assert result[0]["id"] == existing_id
+                assert response.status_code == 200
+                result = response.json()
+                assert len(result) == 1
+                # ID should be preserved
+                assert result[0]["id"] == existing_id
 
     async def test_refresh_adds_new_models(self, client: AsyncTestClient):
         """Test that refresh adds models that are on filesystem but not in DB."""
-        with patch("blackfish.server.asgi.find_models") as mock_find_models:
-            # Return existing models plus a new one
-            mock_find_models.return_value = [
-                Model(
-                    repo="openai/whisper-large-v3",
-                    profile="default",
-                    revision="1",
-                    image="speech_recognition",
-                    model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
-                ),
-                Model(
-                    repo="new-org/new-model",
-                    profile="default",
-                    revision="main",
-                    image="text_generation",
-                    model_dir="/home/test/.blackfish/models/models--new-org/new-model",
-                ),
-            ]
+        mock_find_models = AsyncMock(return_value=[
+            Model(
+                repo="openai/whisper-large-v3",
+                profile="default",
+                revision="1",
+                image="unknown",
+                model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
+                metadata_=None,
+            ),
+            Model(
+                repo="new-org/new-model",
+                profile="default",
+                revision="main",
+                image="unknown",
+                model_dir="/home/test/.blackfish/models/models--new-org/new-model",
+                metadata_=None,
+            ),
+        ])
+        mock_fetch = MagicMock(return_value=("text-generation", {"model_size_gb": 1.0}))
 
-            response = await client.get(
-                "/api/models", params={"profile": "default", "refresh": True}
-            )
+        with patch("blackfish.server.asgi.find_models", mock_find_models):
+            with patch("blackfish.server.asgi.fetch_model_info_from_hub", mock_fetch):
+                response = await client.get(
+                    "/api/models", params={"profile": "default", "refresh": True}
+                )
 
-            assert response.status_code == 200
-            result = response.json()
-            # Should have the new model
-            repos = [m["repo"] for m in result]
-            assert "new-org/new-model" in repos
+                assert response.status_code == 200
+                result = response.json()
+                # Should have the new model
+                repos = [m["repo"] for m in result]
+                assert "new-org/new-model" in repos
 
     async def test_refresh_deletes_stale_models(self, client: AsyncTestClient):
         """Test that refresh removes models in DB but not on filesystem."""
@@ -157,10 +163,9 @@ class TestFetchModelsAPI:
         existing_models = response.json()
         assert len(existing_models) > 0
 
-        with patch("blackfish.server.asgi.find_models") as mock_find_models:
-            # Return empty list (simulating all models removed from filesystem)
-            mock_find_models.return_value = []
+        mock_find_models = AsyncMock(return_value=[])
 
+        with patch("blackfish.server.asgi.find_models", mock_find_models):
             response = await client.get(
                 "/api/models", params={"profile": "default", "refresh": True}
             )
@@ -172,34 +177,39 @@ class TestFetchModelsAPI:
 
     async def test_fetch_models_refresh_with_profile(self, client: AsyncTestClient):
         """Test refreshing models for specific profile."""
+        # Use repos/revisions that match existing fixture data for default profile
+        # Fixture has: whisper-large-v3 (rev=1, default), Llama-3.2-3B (rev=3, default)
+        mock_find_models = AsyncMock(return_value=[
+            Model(
+                repo="openai/whisper-large-v3",
+                profile="default",
+                revision="1",  # Same as fixture
+                image="unknown",
+                model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
+                metadata_=None,
+            ),
+            Model(
+                repo="meta-llama/Llama-3.2-3B",
+                profile="default",
+                revision="3",  # Same as fixture
+                image="unknown",
+                model_dir="/home/test/.blackfish/models/models--meta-llama/Llama-3.2-3B",
+                metadata_=None,
+            ),
+        ])
+        mock_fetch = MagicMock(return_value=("speech-recognition", {"model_size_gb": 1.0}))
 
-        with patch("blackfish.server.asgi.find_models") as mock_find_models:
-            # Return models without IDs (like real find_models does)
-            mock_find_models.return_value = [
-                Model(
-                    repo="openai/whisper-large-v3",
-                    profile="default",
-                    revision="1",
-                    image="speech_recognition",
-                    model_dir="/home/test/.blackfish/models/models--openai/whisper-large-v3",
-                ),
-                Model(
-                    repo="openai/whisper-tiny",
-                    profile="default",
-                    revision="2",
-                    image="speech_recognition",
-                    model_dir="/home/test/.blackfish/models/models--openai/whisper-tiny",
-                ),
-            ]
+        with patch("blackfish.server.asgi.find_models", mock_find_models):
+            with patch("blackfish.server.asgi.fetch_model_info_from_hub", mock_fetch):
+                response = await client.get(
+                    "/api/models", params={"profile": "default", "refresh": True}
+                )
 
-            response = await client.get(
-                "/api/models", params={"profile": "default", "refresh": True}
-            )
-
-            assert response.status_code == 200
-            mock_find_models.assert_called_once()
-            result = response.json()
-            assert isinstance(result, list)
+                assert response.status_code == 200
+                mock_find_models.assert_called_once()
+                result = response.json()
+                assert isinstance(result, list)
+                assert len(result) == 2
             assert len(result) == 2
             for model in result:
                 assert model.get("profile") == "default"

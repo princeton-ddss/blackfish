@@ -984,3 +984,42 @@ class TestUpdateModelAPI:
         # Should return 404 because "test" profile doesn't exist in profiles.cfg
         # (only "default" exists based on test fixtures)
         assert response.status_code == 404
+
+    @patch("huggingface_hub.model_info")
+    async def test_update_model_already_have_latest_in_another_row(
+        self, mock_model_info, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test that update returns up_to_date when another row has the latest revision."""
+        # Create two models for same repo with different revisions
+        old_model = Model(
+            id=str(uuid4()),
+            repo="test/multi-revision-model",
+            profile="default",
+            revision="old123",
+            image="text-generation",
+            model_dir="/test/path/old",
+        )
+        latest_model = Model(
+            id=str(uuid4()),
+            repo="test/multi-revision-model",
+            profile="default",
+            revision="latest456",
+            image="text-generation",
+            model_dir="/test/path/latest",
+        )
+        session.add_all([old_model, latest_model])
+        await session.commit()
+
+        # Mock HF to return the same revision as latest_model
+        mock_info = AsyncMock()
+        mock_info.sha = "latest456"
+        mock_model_info.return_value = mock_info
+
+        # Check the OLD model - should say up_to_date because we have latest in another row
+        response = await client.put(f"/api/models/{old_model.id}")
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["status"] == "up_to_date"
+        assert result["old_revision"] == "old123"
+        assert result["new_revision"] == "latest456"

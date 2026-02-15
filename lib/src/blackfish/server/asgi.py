@@ -2047,8 +2047,15 @@ async def update_model(
             message=f"Failed to fetch model info: {e}",
         )
 
-    # 5. Compare revisions
-    if model.revision == latest_revision:
+    # 5. Check if we already have the latest revision (in any row for this repo/profile)
+    existing_latest = await session.execute(
+        sa.select(Model).where(
+            Model.repo == model.repo,
+            Model.profile == model.profile,
+            Model.revision == latest_revision,
+        )
+    )
+    if existing_latest.scalar_one_or_none():
         return ModelUpdateResponse(
             model_id=str(model.id),
             status="up_to_date",

@@ -250,3 +250,81 @@ export async function deleteModels({ repo_id, profile, revision }) {
   }
   return res.json();
 }
+
+/** Initiate a model download from Hugging Face. */
+export async function downloadModel({ repo_id, profile, revision = null }) {
+  const res = await fetch(`${blackfishApiURL}/api/models/download`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo_id, profile, revision }),
+  });
+
+  if (!res.ok) {
+    let message = "Failed to initiate download";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Get the status of a download task. */
+export async function getDownloadStatus(taskId) {
+  const res = await fetch(`${blackfishApiURL}/api/models/downloads/${taskId}`);
+  if (!res.ok) {
+    const error = new Error("Failed to get download status");
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** List download tasks, optionally filtered by status or profile. */
+export async function listDownloads({ status = null, profile = null } = {}) {
+  const params = new URLSearchParams();
+  if (status) params.append("status", status);
+  if (profile) params.append("profile", profile);
+
+  const url = params.toString()
+    ? `${blackfishApiURL}/api/models/downloads?${params}`
+    : `${blackfishApiURL}/api/models/downloads`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    const error = new Error("Failed to list downloads");
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Update a model (check for or download latest revision). */
+export async function updateModel(modelId, { checkOnly = false } = {}) {
+  const params = new URLSearchParams();
+  if (checkOnly) params.append("check_only", "true");
+
+  const res = await fetch(`${blackfishApiURL}/api/models/${modelId}?${params}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    let message = "Failed to update model";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}

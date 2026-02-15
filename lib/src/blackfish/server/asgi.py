@@ -91,6 +91,7 @@ from blackfish.server.models.profile import (
     BlackfishProfile as Profile,
 )
 from blackfish.server.models.model import Model
+from blackfish.server.models.download import DownloadTask, DownloadStatus
 from blackfish.server.job import JobConfig, JobScheduler, SlurmJobConfig
 from blackfish.server.cluster import ClusterQueryError, SlurmClusterInfo
 from blackfish.server.browser import RemoteFileBrowserSession
@@ -405,7 +406,9 @@ async def find_models(profile: Profile) -> list[Model]:
                         # Get mtime from the snapshot directory
                         snapshot_path = os.path.join(snapshots_dir, revision)
                         try:
-                            mtime = datetime.fromtimestamp(os.path.getmtime(snapshot_path))
+                            mtime = datetime.fromtimestamp(
+                                os.path.getmtime(snapshot_path)
+                            )
                         except Exception:
                             mtime = None
                         model = Model(
@@ -443,7 +446,9 @@ async def find_models(profile: Profile) -> list[Model]:
                         # Get mtime from the snapshot directory
                         snapshot_path = os.path.join(snapshots_dir, revision)
                         try:
-                            mtime = datetime.fromtimestamp(os.path.getmtime(snapshot_path))
+                            mtime = datetime.fromtimestamp(
+                                os.path.getmtime(snapshot_path)
+                            )
                         except Exception:
                             mtime = None
                         model = Model(
@@ -1690,6 +1695,7 @@ async def proxy_service(
         return res
 
 
+
 @get("/api/models", guards=ENDPOINT_GUARDS)
 async def get_models(
     session: AsyncSession,
@@ -1786,22 +1792,17 @@ async def get_model(model_id: str, session: AsyncSession) -> Model:
         raise NotFoundException(detail=f"Model {model_id} not found") from e
 
 
-@post("/api/models", guards=ENDPOINT_GUARDS)
-async def create_model(data: Model, session: AsyncSession) -> Model:
-    session.add(data)
-    return data
-
-
 @delete("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
-async def delete_model(model_id: str, session: AsyncSession) -> None:
+async def delete_model(model_id: str, session: AsyncSession, state: State) -> None:
     """Delete a specific model by its database ID (UUID).
 
-    This endpoint removes a single model from the database using its unique identifier.
-    Use this when you have the exact model UUID and want to delete that specific record.
+    This endpoint removes a single model from the database and deletes the model files
+    from disk for local profiles. For remote profiles, only the database record is removed.
 
     Args:
         model_id: The UUID of the model to delete (e.g., "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
         session: Database session (injected)
+        state: Application state (injected)
 
     Returns:
         None (204 No Content on success)
@@ -1813,15 +1814,53 @@ async def delete_model(model_id: str, session: AsyncSession) -> None:
     Example:
         DELETE /api/models/a1b2c3d4-e5f6-7890-abcd-ef1234567890
     """
+    from blackfish.server.models.model import remove_model
+
+    # First fetch the model to get its details
     try:
-        query = sa.delete(Model).where(Model.id == model_id)
-        res = await session.execute(query)
+        select_query = sa.select(Model).where(Model.id == model_id)
+        result = await session.execute(select_query)
+        model = result.scalar_one()
     except StatementError:
         logger.error(f"{model_id} is not a valid UUID.")
-        raise ValidationException(detail="{model_id} is not a valid UUID.")
+        raise ValidationException(detail=f"{model_id} is not a valid UUID.")
+    except NoResultFound:
+        raise NotFoundException(detail=f"Model {model_id} not found.")
 
-    if res.rowcount == 0:  # type: ignore[attr-defined]
-        raise NotFoundException(detail=f"No model deleted: {model_id} not found.")
+    # Look up the profile to delete files
+    profiles = deserialize_profiles(state.HOME_DIR)
+    profile_obj = next((p for p in profiles if p.name == model.profile), None)
+
+    # Delete files from disk for local profiles
+    if profile_obj is not None and profile_obj.is_local():
+        # Determine if model is in cache_dir or home_dir
+        use_cache = model.model_dir.startswith(profile_obj.cache_dir)
+        try:
+            await asyncio.to_thread(
+                remove_model,
+                repo_id=model.repo,
+                profile=profile_obj,
+                revision=model.revision,
+                use_cache=use_cache,
+            )
+            logger.debug(
+                f"Deleted files for model {model.repo} revision {model.revision}"
+            )
+        except FileNotFoundError:
+            logger.warning(
+                f"Files not found for model {model.repo}, continuing with DB deletion"
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete files for model {model.repo}: {e}")
+            # Continue with DB deletion even if file deletion fails
+
+    # Delete from database
+    try:
+        delete_query = sa.delete(Model).where(Model.id == model_id)
+        await session.execute(delete_query)
+    except Exception as e:
+        logger.error(f"Failed to delete model {model_id} from database: {e}")
+        raise
 
 
 @dataclass
@@ -1831,9 +1870,11 @@ class DeleteModelResponse:
     message: Optional[str] = None
 
 
+
 @delete("/api/models", guards=ENDPOINT_GUARDS, status_code=200)
 async def delete_models(
     session: AsyncSession,
+    state: State,
     repo_id: Optional[str] = None,
     profile: Optional[str] = None,
     revision: Optional[str] = None,
@@ -1841,8 +1882,8 @@ async def delete_models(
     """Bulk delete models matching query parameters.
 
     This endpoint deletes multiple models based on their attributes (repo_id, profile,
-    revision) rather than database IDs. Useful for operations like "delete all models
-    for a profile" or "delete all revisions of a specific model".
+    revision) rather than database IDs. Also deletes model files from disk for local
+    profiles when possible.
 
     At least one query parameter must be provided to prevent accidental deletion of all
     models. The operation attempts to delete each matching model individually and reports
@@ -1851,6 +1892,7 @@ async def delete_models(
 
     Args:
         session: Database session (injected)
+        state: Application state (injected)
         repo_id: Filter by repository ID (e.g., "openai/whisper-large-v3")
         profile: Filter by profile name (e.g., "default", "production")
         revision: Filter by model revision/commit hash
@@ -1882,6 +1924,7 @@ async def delete_models(
         If you have the exact model UUID, use DELETE /api/models/{model_id} instead.
         This bulk endpoint is designed for CLI usage and filtering by model attributes.
     """
+    from blackfish.server.models.model import remove_model
 
     # Build query parameters
     query_params = {
@@ -1913,10 +1956,38 @@ async def delete_models(
         logger.warning(f"The query parameters {query_params} did not match any models.")
         return []
 
+    # Load profiles once for file deletion
+    profiles = deserialize_profiles(state.HOME_DIR)
+    profile_map = {p.name: p for p in profiles}
+
     # Delete models
     res = []
     for model in models:
         logger.debug(f"Attempting to delete model {model.id}")
+
+        # Delete files from disk for local profiles
+        profile_obj = profile_map.get(model.profile)
+        if profile_obj is not None and profile_obj.is_local():
+            use_cache = model.model_dir.startswith(profile_obj.cache_dir)
+            try:
+                await asyncio.to_thread(
+                    remove_model,
+                    repo_id=model.repo,
+                    profile=profile_obj,
+                    revision=model.revision,
+                    use_cache=use_cache,
+                )
+                logger.debug(
+                    f"Deleted files for model {model.repo} revision {model.revision}"
+                )
+            except FileNotFoundError:
+                logger.warning(
+                    f"Files not found for model {model.repo}, continuing with DB deletion"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to delete files for model {model.repo}: {e}")
+
+        # Delete from database
         deletion = sa.delete(Model).where(Model.id == model.id)
         try:
             await session.execute(deletion)
@@ -2059,6 +2130,204 @@ async def update_model(
             status="error",
             message=f"Failed to download update: {e}",
         )
+
+
+# ============================================================================
+# Model Download Endpoints
+# ============================================================================
+
+
+@dataclass
+class DownloadModelRequest:
+    """Request to download a model from Hugging Face."""
+
+    repo_id: str
+    profile: str
+    revision: Optional[str] = None
+
+
+@dataclass
+class DownloadModelResponse:
+    """Response containing download task information."""
+
+    task_id: str
+    status: str
+    repo_id: str
+    message: Optional[str] = None
+
+
+async def _run_download_task(
+    task_id: str,
+    repo_id: str,
+    profile: Profile,
+    revision: Optional[str],
+    db_url: str,
+) -> None:
+    """Background task to download a model.
+
+    Runs in a thread pool to avoid blocking the event loop.
+    Updates the DownloadTask record with status as it progresses.
+    """
+    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+    from sqlalchemy.orm import sessionmaker
+    from blackfish.server.models.model import add_model
+
+    engine = create_async_engine(db_url)
+    async_session_factory = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async def update_task_status(
+        status: str, error_message: str | None = None, model_id: str | None = None
+    ) -> None:
+        async with async_session_factory() as session:
+            task = await session.get(DownloadTask, task_id)
+            if task:
+                task.status = status
+                if error_message:
+                    task.error_message = error_message
+                if model_id:
+                    task.model_id = model_id
+                await session.commit()
+
+    try:
+        # Update status to DOWNLOADING
+        await update_task_status(DownloadStatus.DOWNLOADING)
+
+        # Run the blocking download in a thread pool
+        result = await asyncio.to_thread(add_model, repo_id, profile, revision)
+
+        if result is None:
+            await update_task_status(
+                DownloadStatus.FAILED,
+                error_message="Download failed - add_model returned None",
+            )
+            return
+
+        new_model, path = result
+
+        # Add model to database
+        async with async_session_factory() as session:
+            # Check if model already exists
+            query = sa.select(Model).where(
+                Model.repo == repo_id,
+                Model.profile == profile.name,
+                Model.revision == new_model.revision,
+            )
+            existing = (await session.execute(query)).scalar_one_or_none()
+
+            if existing:
+                model_id = str(existing.id)
+            else:
+                session.add(new_model)
+                await session.commit()
+                model_id = str(new_model.id)
+
+        await update_task_status(DownloadStatus.COMPLETED, model_id=model_id)
+
+    except Exception as e:
+        logger.error(f"Download task {task_id} failed: {e}")
+        await update_task_status(DownloadStatus.FAILED, error_message=str(e))
+    finally:
+        await engine.dispose()
+
+
+@post("/api/models/download", guards=ENDPOINT_GUARDS)
+async def download_model(
+    data: DownloadModelRequest,
+    session: AsyncSession,
+) -> DownloadModelResponse:
+    """Initiate a background model download.
+
+    Creates a download task and starts downloading the model in the background.
+    Use GET /api/models/downloads/{task_id} to poll for status.
+
+    Args:
+        data: Download request with repo_id, profile, and optional revision
+
+    Returns:
+        DownloadModelResponse with task_id to poll for status
+    """
+    # Validate profile exists and is local
+    profiles = deserialize_profiles(blackfish_config.HOME_DIR)
+    profile = next((p for p in profiles if p.name == data.profile), None)
+    if profile is None:
+        raise NotFoundException(detail=f"Profile '{data.profile}' not found")
+    if not isinstance(profile, LocalProfile):
+        raise ValidationException(detail="Downloads only supported for local profiles")
+
+    # Create download task record
+    task = DownloadTask(
+        repo_id=data.repo_id,
+        profile=data.profile,
+        revision=data.revision,
+        status=DownloadStatus.PENDING,
+    )
+    session.add(task)
+    await session.flush()
+    task_id = str(task.id)
+
+    # Get database URL for background task
+    db_url = f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite"
+
+    # Start background download
+    asyncio.create_task(
+        _run_download_task(task_id, data.repo_id, profile, data.revision, db_url)
+    )
+
+    return DownloadModelResponse(
+        task_id=task_id,
+        status=DownloadStatus.PENDING,
+        repo_id=data.repo_id,
+        message="Download started",
+    )
+
+
+@get("/api/models/downloads/{task_id:str}", guards=ENDPOINT_GUARDS)
+async def get_download_task(task_id: str, session: AsyncSession) -> DownloadTask:
+    """Get the status of a download task.
+
+    Args:
+        task_id: UUID of the download task
+
+    Returns:
+        DownloadTask with current status
+    """
+    try:
+        task = await session.get(DownloadTask, task_id)
+    except StatementError:
+        raise ValidationException(detail=f"{task_id} is not a valid UUID.")
+
+    if task is None:
+        raise NotFoundException(detail=f"Download task {task_id} not found")
+
+    return task
+
+
+@get("/api/models/downloads", guards=ENDPOINT_GUARDS)
+async def list_download_tasks(
+    session: AsyncSession,
+    status: Optional[str] = None,
+    profile: Optional[str] = None,
+) -> list[DownloadTask]:
+    """List download tasks, optionally filtered by status or profile.
+
+    Args:
+        status: Filter by status (pending, downloading, completed, failed)
+        profile: Filter by profile name
+
+    Returns:
+        List of DownloadTask objects
+    """
+    query = sa.select(DownloadTask).order_by(DownloadTask.created_at.desc())
+
+    if status:
+        query = query.where(DownloadTask.status == status)
+    if profile:
+        query = query.where(DownloadTask.profile == profile)
+
+    result = await session.execute(query)
+    return list(result.scalars().all())
 
 
 @get("/api/profiles", guards=ENDPOINT_GUARDS)
@@ -2304,8 +2573,81 @@ def internal_server_exception_handler(
     )
 
 
+async def resume_incomplete_downloads(app: Litestar) -> None:
+    """Resume any downloads that were interrupted by server shutdown.
+
+    Called on app startup. Finds PENDING or DOWNLOADING tasks and restarts them.
+    """
+    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+    from sqlalchemy.orm import sessionmaker
+
+    db_url = f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite"
+    engine = create_async_engine(db_url)
+    async_session_factory = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    try:
+        async with async_session_factory() as session:
+            # Find incomplete downloads
+            query = sa.select(DownloadTask).where(
+                DownloadTask.status.in_(
+                    [DownloadStatus.PENDING, DownloadStatus.DOWNLOADING]
+                )
+            )
+            result = await session.execute(query)
+            incomplete_tasks = list(result.scalars().all())
+
+            if not incomplete_tasks:
+                logger.debug("No incomplete downloads to resume")
+                return
+
+            logger.info(f"Resuming {len(incomplete_tasks)} incomplete download(s)")
+
+            profiles = deserialize_profiles(blackfish_config.HOME_DIR)
+
+            for task in incomplete_tasks:
+                profile = next((p for p in profiles if p.name == task.profile), None)
+                if profile is None:
+                    logger.warning(
+                        f"Profile {task.profile} not found, marking task {task.id} as failed"
+                    )
+                    task.status = DownloadStatus.FAILED
+                    task.error_message = f"Profile {task.profile} not found"
+                    continue
+
+                if not isinstance(profile, LocalProfile):
+                    logger.warning(
+                        f"Profile {task.profile} is not local, marking task {task.id} as failed"
+                    )
+                    task.status = DownloadStatus.FAILED
+                    task.error_message = "Downloads only supported for local profiles"
+                    continue
+
+                # Reset status to PENDING and restart
+                task.status = DownloadStatus.PENDING
+                logger.info(
+                    f"Resuming download: {task.repo_id} for profile {task.profile}"
+                )
+
+                asyncio.create_task(
+                    _run_download_task(
+                        str(task.id),
+                        task.repo_id,
+                        profile,
+                        task.revision,
+                        db_url,
+                    )
+                )
+
+            await session.commit()
+    finally:
+        await engine.dispose()
+
+
 app = Litestar(
     path=blackfish_config.BASE_PATH,
+    on_startup=[resume_incomplete_downloads],
     route_handlers=[
         dashboard,
         dashboard_login,
@@ -2343,12 +2685,14 @@ app = Litestar(
         get_job,
         stop_job,
         delete_job,
-        create_model,
         get_model,
         get_models,
         update_model,
         delete_model,
         delete_models,
+        download_model,
+        get_download_task,
+        list_download_tasks,
         read_profiles,
         read_profile,
         get_cluster_status,

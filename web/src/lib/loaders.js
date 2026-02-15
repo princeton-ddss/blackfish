@@ -9,11 +9,12 @@ export const useModels = (profile, image = null) => {
   const key = profile
     ? `models?profile=${profile.name}${image ? `&image=${image}` : ""}&refresh=true`
     : null;
-  const { data, error, isLoading, mutate } = useSWR(key, fetchModels);
+  const { data, error, isLoading, isValidating, mutate } = useSWR(key, fetchModels);
   return {
     models: data,
     error: error,
     isLoading: isLoading,
+    isRefreshing: isValidating,
     mutate: mutate,
   };
 };

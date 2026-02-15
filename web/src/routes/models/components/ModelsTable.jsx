@@ -14,6 +14,7 @@ import {
     ArrowTopRightOnSquareIcon,
     ChevronDownIcon,
     ArrowDownTrayIcon,
+    PlusIcon,
 } from "@heroicons/react/24/outline";
 import { lastModified } from "@/lib/util";
 import PropTypes from "prop-types";
@@ -278,11 +279,13 @@ function ModelsTable({
     onUpdateClick,
     onDownloadClick,
     isLoading = false,
+    isRefreshing = false,
     onRefresh,
     cacheDir = null,
     homeDir = null,
     hasActiveDownloads = false,
     updatingModel = null,
+    isRemote = false,
 }) {
     const [selectedModel, setSelectedModel] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -358,6 +361,15 @@ function ModelsTable({
                                     onTaskChange={setSelectedTask}
                                 />
                             </div>
+                            <button
+                                onClick={onDownloadClick}
+                                disabled={isRemote}
+                                title={isRemote ? "Not available for remote profiles" : "Add model"}
+                                className={`inline-flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed ${hasActiveDownloads ? "animate-pulse" : ""}`}
+                            >
+                                <PlusIcon className="h-4 w-4" />
+                                Add
+                            </button>
                         </div>
                     </div>
                     <div className={`ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg ${heightClass} overflow-y-auto`}>
@@ -386,26 +398,15 @@ function ModelsTable({
                                         scope="col"
                                         className="sticky top-0 z-10 pl-3 pr-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pr-6 w-20 backdrop-blur bg-gray-50 dark:bg-gray-800"
                                     >
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={onDownloadClick}
-                                                title="Download new model"
-                                                className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-                                            >
-                                                <ArrowDownTrayIcon
-                                                    className={`h-4 w-4 ${hasActiveDownloads ? "animate-bounce" : ""}`}
-                                                />
-                                            </button>
-                                            <button
-                                                onClick={onRefresh}
-                                                title="Refresh"
-                                                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                                            >
-                                                <ArrowPathIcon
-                                                    className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-                                                />
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={onRefresh}
+                                            title="Refresh"
+                                            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                        >
+                                            <ArrowPathIcon
+                                                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                                            />
+                                        </button>
                                     </th>
                                 </tr>
                             </thead>
@@ -479,9 +480,9 @@ function ModelsTable({
                                                             e.stopPropagation();
                                                             onUpdateClick(model);
                                                         }}
-                                                        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50"
-                                                        title="Check for updates"
-                                                        disabled={updatingModel === model.repo_id}
+                                                        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        title={isRemote ? "Not available for remote profiles" : "Check for updates"}
+                                                        disabled={isRemote || updatingModel === model.repo_id}
                                                     >
                                                         <ArrowDownTrayIcon
                                                             className={`h-4 w-4 ${updatingModel === model.repo_id ? "animate-pulse" : ""}`}
@@ -581,8 +582,9 @@ function ModelsTable({
                                             <td className="whitespace-nowrap py-3 pl-4 pr-6 text-right">
                                                 <button
                                                     onClick={() => onDeleteClick(revision)}
-                                                    className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-                                                    title="Delete revision"
+                                                    disabled={isRemote}
+                                                    className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title={isRemote ? "Not available for remote profiles" : "Delete revision"}
                                                 >
                                                     <TrashIcon className="h-4 w-4" />
                                                 </button>
@@ -605,11 +607,13 @@ ModelsTable.propTypes = {
     onUpdateClick: PropTypes.func.isRequired,
     onDownloadClick: PropTypes.func.isRequired,
     isLoading: PropTypes.bool,
+    isRefreshing: PropTypes.bool,
     onRefresh: PropTypes.func.isRequired,
     cacheDir: PropTypes.string,
     homeDir: PropTypes.string,
     hasActiveDownloads: PropTypes.bool,
     updatingModel: PropTypes.string,
+    isRemote: PropTypes.bool,
 };
 
 export default ModelsTable;

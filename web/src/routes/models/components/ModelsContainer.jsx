@@ -9,7 +9,12 @@ import Notification from "@/components/Notification";
 
 function ModelsContainer() {
     const { profile } = useContext(ProfileContext);
-    const { models, isLoading, mutate } = useModels(profile, null);
+    const { models, isLoading, isRefreshing, mutate } = useModels(profile, null);
+
+    // Remote profiles don't support CRUD operations yet
+    const isRemote = profile?.schema === "slurm" &&
+                     profile?.host &&
+                     profile.host !== "localhost";
 
     const [modelToDelete, setModelToDelete] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -120,11 +125,13 @@ function ModelsContainer() {
                     onUpdateClick={handleUpdateClick}
                     onDownloadClick={handleDownloadClick}
                     isLoading={isLoading}
+                    isRefreshing={isRefreshing}
                     onRefresh={handleRefresh}
                     cacheDir={profile?.cache_dir}
                     homeDir={profile?.home_dir}
                     hasActiveDownloads={activeDownloads.length > 0}
                     updatingModel={updatingModel}
+                    isRemote={isRemote}
                 />
             </div>
 

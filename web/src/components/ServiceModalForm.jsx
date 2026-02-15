@@ -7,7 +7,8 @@ import PartitionSelect from "@/components/PartitionSelect";
 import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
-import { fetchModelTier } from "@/lib/requests";
+import { selectTierByModelSize } from "@/lib/util";
+import { fetchModelSizeFromHub } from "@/lib/requests";
 import PropTypes from "prop-types";
 
 
@@ -107,26 +108,77 @@ function ServiceModalForm({
     }
   }, [partitions, selectedPartition]);
 
-  // Fetch recommended tier when model or partition changes
+  // Model overrides from resource specs (e.g., "meta-llama/Llama-2-70b": "gpu.Large")
+  const modelOverrides = resources?.models || {};
+
+  // Select recommended tier based on model size
+  // Priority: 1. model override, 2. client-side data, 3. HuggingFace Hub, 4. no auto-selection
   React.useEffect(() => {
-    if (modelId && selectedPartition) {
-      fetchModelTier(modelId, selectedPartition)
-        .then(data => {
-          if (data && data.tier) {
-            setRecommendedTier(data.tier);
-            // Auto-select the recommended tier
-            setSelectedTier(data.tier);
+    if (!modelId || tiers.length === 0) return;
+
+    const selectedModel = models?.find(m => m.id === modelId);
+    const repoId = selectedModel?.repo_id;
+    const cachedSizeGb = selectedModel?.model_size_gb ?? null;
+
+    console.debug(`[TierSelect] Model ${repoId} (${modelId}): cached size = ${cachedSizeGb}`);
+
+    // 1. Check for model override first
+    if (repoId && modelOverrides[repoId]) {
+      const override = modelOverrides[repoId];
+      // Override format: "partition.tier" or just "tier"
+      if (override.includes('.')) {
+        const [partitionName, tierName] = override.split('.');
+        console.debug(`[TierSelect] Using override for ${repoId}: partition=${partitionName}, tier=${tierName}`);
+        setSelectedPartition(partitionName);
+        setRecommendedTier(tierName);
+        setSelectedTier(tierName);
+      } else {
+        console.debug(`[TierSelect] Using override for ${repoId}: tier=${override}`);
+        setRecommendedTier(override);
+        setSelectedTier(override);
+      }
+      return;
+    }
+
+    // 2. Try client-side cached data
+    if (cachedSizeGb !== null) {
+      console.debug(`[TierSelect] Using cached size for ${repoId}: ${cachedSizeGb} GB`);
+      const tierName = selectTierByModelSize(tiers, cachedSizeGb);
+      if (tierName) {
+        console.debug(`[TierSelect] Selected tier for ${repoId}: ${tierName}`);
+        setRecommendedTier(tierName);
+        setSelectedTier(tierName);
+      }
+      return;
+    }
+
+    // 3. Fetch from HuggingFace Hub
+    if (repoId) {
+      console.debug(`[TierSelect] No cached size for ${repoId}, fetching from HuggingFace Hub`);
+      fetchModelSizeFromHub(repoId)
+        .then(sizeGb => {
+          if (sizeGb !== null) {
+            console.debug(`[TierSelect] Got size from Hub for ${repoId}: ${sizeGb.toFixed(2)} GB`);
+            const tierName = selectTierByModelSize(tiers, sizeGb);
+            if (tierName) {
+              console.debug(`[TierSelect] Selected tier for ${repoId}: ${tierName}`);
+              setRecommendedTier(tierName);
+              setSelectedTier(tierName);
+            }
+          } else {
+            // 4. No size available - don't auto-select, let user decide
+            console.debug(`[TierSelect] No size data for ${repoId}, skipping auto-selection`);
+            setRecommendedTier(null);
           }
         })
         .catch(err => {
-          console.debug("from ServiceModalForm: failed to fetch model tier", err);
-          // Fallback to first tier
-          if (tiers.length > 0) {
-            setSelectedTier(tiers[0].name);
-          }
+          console.error(`[TierSelect] Error fetching size for ${repoId}:`, err);
+          setRecommendedTier(null);
         });
+    } else {
+      console.debug(`[TierSelect] No repo_id for model ${modelId}, skipping tier selection`);
     }
-  }, [modelId, selectedPartition, tiers]);
+  }, [modelId, tiers, models, modelOverrides]);
 
   // Update jobOptions when tier selection changes
   React.useEffect(() => {

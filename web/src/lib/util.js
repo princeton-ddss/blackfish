@@ -275,3 +275,37 @@ export function isDeepEmpty(item) {
   // If non of these checks catch, the item must not be empty.
   return false;
 }
+
+/**
+ * Select the appropriate resource tier based on model size.
+ *
+ * Tiers are assumed to be ordered by increasing capacity. Each tier has a
+ * `max_model_size_gb` property indicating the maximum model size it can handle.
+ * Returns the smallest tier that can accommodate the model size.
+ *
+ * @param {Array<object>} tiers - Available resource tiers, ordered by capacity.
+ * @param {number|null} modelSizeGb - Model size in GB, or null if unknown.
+ * @return {string|null} The name of the recommended tier, or null if no match.
+ */
+export function selectTierByModelSize(tiers, modelSizeGb) {
+  if (!tiers || tiers.length === 0) {
+    return null;
+  }
+
+  // If no model size info, default to first tier
+  if (modelSizeGb === null || modelSizeGb === undefined) {
+    return tiers[0]?.name ?? null;
+  }
+
+  // Find the smallest tier that can fit the model
+  for (const tier of tiers) {
+    const maxSize = tier.max_model_size_gb;
+    // Tier has no size limit or model fits within limit
+    if (maxSize === null || maxSize === undefined || modelSizeGb <= maxSize) {
+      return tier.name;
+    }
+  }
+
+  // Model is larger than all tiers, return the largest one
+  return tiers[tiers.length - 1]?.name ?? null;
+}

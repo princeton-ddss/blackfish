@@ -30,6 +30,7 @@ export async function fetchModels(path) {
       profile: model.profile,
       image: model.image,
       model_dir: model.model_dir,
+      model_size_gb: model.metadata_?.model_size_gb ?? null,
     }
   })
 }
@@ -216,17 +217,58 @@ export async function fetchProfileResources(profileName) {
   return res.json();
 }
 
-/** Fetch recommended tier for a model. */
-export async function fetchModelTier(modelId, partition = null) {
-  const params = new URLSearchParams();
-  if (partition) {
-    params.append("partition", partition);
-  }
-  const query = params.toString() ? `?${params}` : "";
-  const res = await fetch(`${blackfishApiURL}/api/models/${modelId}/tier${query}`);
-  if (!res.ok) {
-    console.debug(`from fetchModelTier: failed to fetch tier (status=${res.status})`);
+/** Fetch model size from HuggingFace Hub API.
+ * @param {string} repoId - The model repo ID (e.g., "meta-llama/Llama-2-7b")
+ * @returns {Promise<number|null>} Model size in GB, or null if unavailable
+ */
+export async function fetchModelSizeFromHub(repoId) {
+  console.debug(`[fetchModelSizeFromHub] Fetching size for ${repoId} from HuggingFace Hub`);
+  try {
+    const res = await fetch(`https://huggingface.co/api/models/${repoId}`);
+    if (!res.ok) {
+      console.debug(`[fetchModelSizeFromHub] Failed to fetch ${repoId} (status=${res.status})`);
+      return null;
+    }
+    const data = await res.json();
+    console.debug(`[fetchModelSizeFromHub] Received data for ${repoId}:`, {
+      hasSafetensors: !!data.safetensors,
+      safetensorsTotal: data.safetensors?.total,
+      siblingsCount: data.siblings?.length,
+    });
+
+    let rawSizeGb = null;
+
+    // 1. Try safetensors metadata (most accurate)
+    if (data.safetensors?.total) {
+      rawSizeGb = data.safetensors.total / (1024 * 1024 * 1024);
+      console.debug(`[fetchModelSizeFromHub] ${repoId} raw size from safetensors: ${rawSizeGb.toFixed(2)} GB`);
+    }
+    // 2. Sum up model weight files from siblings listing
+    else if (data.siblings?.length > 0) {
+      const modelFiles = data.siblings.filter(f =>
+        f.rfilename?.endsWith('.safetensors') ||
+        f.rfilename?.endsWith('.bin') ||
+        f.rfilename?.endsWith('.pt') ||
+        f.rfilename?.endsWith('.pth')
+      );
+      if (modelFiles.length > 0) {
+        const totalBytes = modelFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+        if (totalBytes > 0) {
+          rawSizeGb = totalBytes / (1024 * 1024 * 1024);
+          console.debug(`[fetchModelSizeFromHub] ${repoId} raw size from files (${modelFiles.length} files): ${rawSizeGb.toFixed(2)} GB`);
+        }
+      }
+    }
+
+    if (rawSizeGb !== null) {
+      console.debug(`[fetchModelSizeFromHub] ${repoId} model size: ${rawSizeGb.toFixed(2)} GB`);
+      return rawSizeGb;
+    }
+
+    console.debug(`[fetchModelSizeFromHub] No size data found for ${repoId}`);
+    return null;
+  } catch (err) {
+    console.error(`[fetchModelSizeFromHub] Error fetching ${repoId}:`, err);
     return null;
   }
-  return res.json();
 }

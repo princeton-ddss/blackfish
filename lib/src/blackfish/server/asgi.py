@@ -1730,11 +1730,24 @@ async def proxy_service(
         url = f"http://localhost:{port}/{cmd}"
 
     if streaming:
+        headers = {"Content-Type": "application/json"}
+        upstream_res = requests.post(url, json=data, headers=headers, stream=True)
+
+        if not upstream_res.ok:
+            try:
+                error_body = upstream_res.json()
+                error_message = error_body.get("message", "Upstream service error")
+            except Exception:
+                error_message = upstream_res.text or "Upstream service error"
+            upstream_res.close()
+            raise HTTPException(
+                status_code=upstream_res.status_code,
+                detail=error_message,
+            )
 
         async def generator() -> AsyncGenerator:  # type: ignore
-            headers = {"Content-Type": "application/json"}
-            with requests.post(url, json=data, headers=headers, stream=True) as res:
-                for x in res.iter_content(chunk_size=None):
+            with upstream_res:
+                for x in upstream_res.iter_content(chunk_size=None):
                     if x:
                         yield x
 

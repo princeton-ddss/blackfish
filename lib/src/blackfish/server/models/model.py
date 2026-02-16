@@ -81,18 +81,50 @@ def remove_model(
     model_dir = cache_dir.joinpath(f"models--{namespace}--{model_id}")
 
     if revision is None:
+        # Delete entire model directory
         try:
             shutil.rmtree(model_dir)
         except FileNotFoundError:
             raise ModelNotFoundError(f"{repo_id} not found in directory {cache_dir}.")
     else:
-        op = scan_cache_dir().delete_revisions(revision)
-        if len(list(op.blobs)) == 0:
+        # Check if model directory exists
+        if not model_dir.exists():
+            raise ModelNotFoundError(f"{repo_id} not found in directory {cache_dir}.")
+
+        # Check snapshots directory for revisions
+        snapshots_dir = model_dir / "snapshots"
+        if not snapshots_dir.exists():
+            # No snapshots directory - delete entire model dir
+            shutil.rmtree(model_dir)
+            return
+
+        # List actual revision directories
+        revision_dirs = [d for d in snapshots_dir.iterdir() if d.is_dir()]
+
+        # Check if the target revision exists
+        target_revision_dir = snapshots_dir / revision
+        if not target_revision_dir.exists():
             raise RevisionNotFoundError(
-                f"{revision} not found in directory {cache_dir}."
+                f"{revision} not found for {repo_id} in directory {cache_dir}."
             )
+
+        # If this is the only revision, delete the entire model directory
+        if len(revision_dirs) == 1:
+            shutil.rmtree(model_dir)
         else:
-            op.execute()
+            # Multiple revisions - try HF's cache deletion first for proper cleanup
+            try:
+                cache = scan_cache_dir(cache_dir)
+                repo = next((r for r in cache.repos if r.repo_id == repo_id), None)
+                if repo is not None:
+                    op = cache.delete_revisions(revision)
+                    op.execute()
+                else:
+                    # HF scan didn't find it - delete snapshot directory directly
+                    shutil.rmtree(target_revision_dir)
+            except Exception:
+                # Fall back to direct deletion if HF cache operations fail
+                shutil.rmtree(target_revision_dir)
 
 
 def get_pipeline(res: ModelInfo) -> str | None:

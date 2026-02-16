@@ -95,7 +95,7 @@ from blackfish.server.models.metadata import (
     fetch_model_metadata,
 )
 from huggingface_hub import model_info as hf_model_info
-from huggingface_hub.errors import HfHubHTTPError
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from blackfish.server.models.tiers import (
     ResourceSpecs,
     load_resource_specs,
@@ -1600,7 +1600,6 @@ async def proxy_service(
         return res
 
 
-
 @get("/api/models", guards=ENDPOINT_GUARDS)
 async def get_models(
     session: AsyncSession,
@@ -1835,7 +1834,6 @@ class DeleteModelResponse:
     message: Optional[str] = None
 
 
-
 @delete("/api/models", guards=ENDPOINT_GUARDS, status_code=200)
 async def delete_models(
     session: AsyncSession,
@@ -1930,7 +1928,7 @@ async def delete_models(
     for model in models:
         logger.debug(f"Attempting to delete model {model.id}")
 
-        # Delete files from disk for local profiles
+        # Delete files from disk first (files are source of truth)
         profile_obj = profile_map.get(model.profile)
         if profile_obj is not None and profile_obj.is_local():
             use_cache = model.model_dir.startswith(profile_obj.cache_dir)
@@ -1946,13 +1944,23 @@ async def delete_models(
                     f"Deleted files for model {model.repo} revision {model.revision}"
                 )
             except FileNotFoundError:
-                logger.warning(
-                    f"Files not found for model {model.repo}, continuing with DB deletion"
+                # Files already gone - proceed with DB cleanup
+                logger.debug(
+                    f"Files already removed for {model.repo} revision {model.revision}"
                 )
             except Exception as e:
-                logger.warning(f"Failed to delete files for model {model.repo}: {e}")
+                # File deletion failed - don't delete from DB
+                logger.error(f"Failed to delete files for model {model.repo}: {e}")
+                res.append(
+                    DeleteModelResponse(
+                        model_id=str(model.id),
+                        status="error",
+                        message=f"Failed to delete files: {e}",
+                    )
+                )
+                continue
 
-        # Delete from database
+        # Delete from database (only if file deletion succeeded or files already gone)
         deletion = sa.delete(Model).where(Model.id == model.id)
         try:
             await session.execute(deletion)
@@ -1963,12 +1971,12 @@ async def delete_models(
                 )
             )
         except Exception as e:
-            logger.error(f"Failed to delete model {model.id}: {e}")
+            logger.error(f"Failed to delete model {model.id} from database: {e}")
             res.append(
                 DeleteModelResponse(
                     model_id=str(model.id),
                     status="error",
-                    message=f"Failed to delete model: {e}",
+                    message=f"Failed to delete from database: {e}",
                 )
             )
 
@@ -2116,6 +2124,7 @@ class DownloadModelRequest:
     repo_id: str
     profile: str
     revision: Optional[str] = None
+    use_cache: bool = False
 
 
 @dataclass
@@ -2134,6 +2143,7 @@ async def _run_download_task(
     profile: Profile,
     revision: Optional[str],
     db_url: str,
+    use_cache: bool = False,
 ) -> None:
     """Background task to download a model.
 
@@ -2167,7 +2177,9 @@ async def _run_download_task(
         await update_task_status(DownloadStatus.DOWNLOADING)
 
         # Run the blocking download in a thread pool
-        result = await asyncio.to_thread(add_model, repo_id, profile, revision)
+        result = await asyncio.to_thread(
+            add_model, repo_id, profile, revision, use_cache
+        )
 
         if result is None:
             await update_task_status(
@@ -2176,7 +2188,11 @@ async def _run_download_task(
             )
             return
 
-        new_model, path = result
+        new_model, snapshot_path = result
+
+        # model_dir is the parent of snapshots directory (2 levels up from snapshot path)
+        model_dir = str(Path(snapshot_path).parent.parent)
+        new_model.model_dir = model_dir
 
         # Add model to database
         async with async_session_factory() as session:
@@ -2228,6 +2244,15 @@ async def download_model(
     if not isinstance(profile, LocalProfile):
         raise ValidationException(detail="Downloads only supported for local profiles")
 
+    # Validate model exists on HuggingFace Hub before starting download
+    token = getattr(profile, "token", None)
+    try:
+        hf_model_info(repo_id=data.repo_id, token=token, revision=data.revision)
+    except RepositoryNotFoundError:
+        raise NotFoundException(
+            detail=f"Model '{data.repo_id}' not found on HuggingFace Hub"
+        )
+
     # Create download task record
     task = DownloadTask(
         repo_id=data.repo_id,
@@ -2244,7 +2269,9 @@ async def download_model(
 
     # Start background download
     asyncio.create_task(
-        _run_download_task(task_id, data.repo_id, profile, data.revision, db_url)
+        _run_download_task(
+            task_id, data.repo_id, profile, data.revision, db_url, data.use_cache
+        )
     )
 
     return DownloadModelResponse(

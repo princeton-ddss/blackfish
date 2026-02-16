@@ -13,9 +13,11 @@ import {
     MagnifyingGlassIcon,
     ArrowTopRightOnSquareIcon,
     ChevronDownIcon,
-    ArrowDownTrayIcon,
+    ChevronRightIcon,
     PlusIcon,
+    XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { ArrowDownCircleIcon, ExclamationCircleIcon as ExclamationCircleIconSolid } from "@heroicons/react/24/solid";
 import { lastModified } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -258,6 +260,7 @@ function groupModelsByRepo(models) {
             created_at: model.created_at,
             repo_id: model.repo_id,
             profile: model.profile,
+            model_size_gb: model.model_size_gb,
         });
     }
 
@@ -273,6 +276,131 @@ function groupModelsByRepo(models) {
     return Object.values(grouped);
 }
 
+/**
+ * Revision rows shown when a model is expanded on mobile.
+ * Returns an array of tr elements to be rendered in the parent tbody.
+ */
+function RevisionRows({ revisions, activeDownload, cacheDir, homeDir, isRemote, onDeleteClick, onDismissDownload }) {
+    const isFailed = activeDownload?.status === "failed";
+    const rows = [];
+
+    // Header row for revisions - columns must match main table
+    // Below md: 4 columns (Chevron, Model, Task, Action)
+    // md to xl: 5 columns (Chevron, Model, Task, Size, Action)
+    rows.push(
+        <tr key="header" className="xl:hidden bg-gray-100 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-600">
+            <td className="py-2 pl-4 pr-1 w-8"></td>
+            <td className="py-2 pl-2 pr-3 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <span className="pl-4">Revision</span>
+            </td>
+            <td className="py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Location
+            </td>
+            <td className="hidden md:table-cell py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Added
+            </td>
+            <td className="py-2 pl-3 pr-4 sm:pr-6"></td>
+        </tr>
+    );
+
+    // Show downloading row if applicable
+    if (activeDownload) {
+        rows.push(
+            <tr key="downloading" className={`xl:hidden bg-gray-50 dark:bg-gray-900 ${!isFailed ? "animate-pulse" : ""}`}>
+                <td className="py-2 pl-4 pr-1 w-8"></td>
+                <td className="py-2 pl-2 pr-3 text-sm">
+                    <div className="flex items-center gap-1.5 pl-4">
+                        {isFailed && (
+                            <ExclamationCircleIconSolid
+                                className="h-4 w-4 text-red-500 flex-shrink-0"
+                                title={activeDownload.error || "Download failed"}
+                            />
+                        )}
+                        <span className="text-gray-500 dark:text-gray-400">
+                            {isFailed ? "Failed" : activeDownload.status === "downloading" ? "Downloading..." : "Pending..."}
+                        </span>
+                    </div>
+                </td>
+                <td className="py-2 px-3 text-sm text-gray-400">-</td>
+                <td className="hidden md:table-cell py-2 px-3 text-sm text-gray-400">-</td>
+                <td className="py-2 pl-3 pr-4 sm:pr-6">
+                    <div className="flex justify-end">
+                        {isFailed ? (
+                            <button
+                                onClick={() => onDismissDownload(activeDownload.task_id)}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                title="Dismiss"
+                            >
+                                <XMarkIcon className="h-4 w-4" />
+                            </button>
+                        ) : (
+                            <ArrowPathIcon className="h-4 w-4 text-gray-400 animate-spin" />
+                        )}
+                    </div>
+                </td>
+            </tr>
+        );
+    }
+
+    // Revision rows
+    for (const revision of revisions) {
+        rows.push(
+            <tr key={revision.revision} className="xl:hidden bg-gray-50 dark:bg-gray-900">
+                <td className="py-2 pl-4 pr-1 w-8"></td>
+                <td className="py-2 pl-2 pr-3 text-sm">
+                    <div className="flex items-center gap-2 pl-4">
+                        <span className="font-mono text-xs text-gray-700 dark:text-gray-300" title={revision.revision}>
+                            {revision.revision.slice(0, 12)}
+                        </span>
+                        <CopyButton text={revision.revision} />
+                    </div>
+                </td>
+                <td className="py-2 px-3 text-sm">
+                    <LocationBadge path={revision.model_dir} cacheDir={cacheDir} homeDir={homeDir} />
+                </td>
+                <td className="hidden md:table-cell py-2 px-3 text-xs text-gray-500 dark:text-gray-400">
+                    {revision.created_at ? lastModified(revision.created_at) : "-"}
+                </td>
+                <td className="py-2 pl-3 pr-4 sm:pr-6">
+                    <div className="flex justify-end">
+                        <button
+                            onClick={() => onDeleteClick(revision)}
+                            disabled={isRemote}
+                            className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={isRemote ? "Not available for remote profiles" : "Delete"}
+                        >
+                            <TrashIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        );
+    }
+
+    // Empty state
+    if (revisions.length === 0 && !activeDownload) {
+        rows.push(
+            <tr key="empty" className="xl:hidden bg-gray-50 dark:bg-gray-900">
+                <td colSpan={5} className="py-3 text-center text-sm text-gray-400">
+                    No revisions
+                </td>
+            </tr>
+        );
+    }
+
+    return rows;
+}
+
+RevisionRows.propTypes = {
+    revisions: PropTypes.array.isRequired,
+    activeDownload: PropTypes.object,
+    cacheDir: PropTypes.string,
+    homeDir: PropTypes.string,
+    isRemote: PropTypes.bool,
+    onDeleteClick: PropTypes.func.isRequired,
+    onDismissDownload: PropTypes.func,
+};
+
 function ModelsTable({
     models,
     onDeleteClick,
@@ -283,13 +411,18 @@ function ModelsTable({
     onRefresh,
     cacheDir = null,
     homeDir = null,
-    hasActiveDownloads = false,
+    activeDownloads = [],
     updatingModel = null,
     isRemote = false,
+    modelsWithUpdates = new Set(),
+    checkingUpdates = false,
+    selectedModel = null,
+    onSelectModel,
+    onDismissDownload,
 }) {
-    const [selectedModel, setSelectedModel] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedTask, setSelectedTask] = useState("");
+    const [expandedModel, setExpandedModel] = useState(null);
 
     // Get unique tasks for filter dropdown
     const availableTasks = useMemo(() => {
@@ -324,79 +457,123 @@ function ModelsTable({
         );
     }, [groupedModels]);
 
-    // Auto-select first model when list changes
-    useEffect(() => {
-        if (sortedModels.length > 0 && !sortedModels.find(m => m.repo_id === selectedModel?.repo_id)) {
-            setSelectedModel(sortedModels[0]);
-        } else if (sortedModels.length === 0) {
-            setSelectedModel(null);
-        }
-    }, [sortedModels, selectedModel?.repo_id]);
+    // Create set of existing repo_ids for quick lookup
+    const existingRepoIds = useMemo(() => {
+        return new Set(sortedModels.map((m) => m.repo_id));
+    }, [sortedModels]);
 
-    const heightClass = "lg:h-[calc(100vh-14rem)]";
+    // Get active downloads that aren't already in the model list
+    const downloadingModels = useMemo(() => {
+        return activeDownloads
+            .filter((d) => !existingRepoIds.has(d.repo_id))
+            .map((d) => ({
+                repo_id: d.repo_id,
+                task_id: d.task_id,
+                isDownloading: true,
+                downloadStatus: d.status,
+                downloadError: d.error,
+                revisions: [],
+            }));
+    }, [activeDownloads, existingRepoIds]);
+
+    // Combined list: downloading models at top, then sorted models
+    const modelsToDisplay = useMemo(() => {
+        return [...downloadingModels, ...sortedModels];
+    }, [downloadingModels, sortedModels]);
+
+    // Auto-select first model when list changes (for desktop layout)
+    useEffect(() => {
+        // Check if current selection exists in the combined list (including downloading)
+        const selectionExists = modelsToDisplay.find(m => m.repo_id === selectedModel?.repo_id);
+        if (!selectionExists && modelsToDisplay.length > 0) {
+            onSelectModel(modelsToDisplay[0]);
+        } else if (modelsToDisplay.length === 0) {
+            onSelectModel(null);
+        }
+    }, [modelsToDisplay, selectedModel?.repo_id, onSelectModel]);
+
+    const heightClass = "xl:h-[calc(100vh-14rem)]";
+
+    // Toggle expansion for mobile view
+    const toggleExpanded = (repoId) => {
+        setExpandedModel(expandedModel === repoId ? null : repoId);
+    };
 
     return (
         <div id="models-table" name="models-table" className={`flex-none ${heightClass}`}>
-            {/* Side-by-side layout */}
+            {/* Main content area */}
             <div className="flex gap-6">
-                {/* Left panel: Models list */}
+                {/* Models table - full width on mobile, flex-1 on desktop */}
                 <div className="flex-1 min-w-0">
                     {/* Header with search and filter */}
-                    <div className="flex items-center justify-between mb-2 gap-4">
-                        <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100 flex-shrink-0">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2 sm:gap-4">
+                        <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100 flex-shrink-0 flex items-center gap-2">
                             Models
+                            {(() => {
+                                const activeCount = activeDownloads.filter(d => d.status !== "failed").length;
+                                return activeCount > 0 && (
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs font-medium text-white">
+                                        {activeCount}
+                                    </span>
+                                );
+                            })()}
                         </label>
-                        <div className="flex items-center gap-2">
-                            <div className="w-48">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <button
+                                onClick={onDownloadClick}
+                                disabled={isRemote}
+                                title={isRemote ? "Not available for remote profiles" : "Add model"}
+                                className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <PlusIcon className="h-5 w-5" />
+                            </button>
+                            <div className="flex-1 sm:flex-none sm:w-48">
                                 <SearchInput
                                     value={searchQuery}
                                     onChange={setSearchQuery}
                                     placeholder="Search..."
                                 />
                             </div>
-                            <div className="w-48">
+                            <div className="w-36 sm:w-48">
                                 <TaskFilter
                                     tasks={availableTasks}
                                     selectedTask={selectedTask}
                                     onTaskChange={setSelectedTask}
                                 />
                             </div>
-                            <button
-                                onClick={onDownloadClick}
-                                disabled={isRemote}
-                                title={isRemote ? "Not available for remote profiles" : "Add model"}
-                                className={`inline-flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed ${hasActiveDownloads ? "animate-pulse" : ""}`}
-                            >
-                                <PlusIcon className="h-4 w-4" />
-                                Add
-                            </button>
                         </div>
                     </div>
                     <div className={`ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg ${heightClass} overflow-y-auto`}>
                         <table className="divide-y divide-gray-300 dark:divide-gray-600 w-full">
-                            <thead>
+                            <thead className="bg-gray-50 dark:bg-gray-800">
                                 <tr>
+                                    {/* Expand chevron column - mobile only */}
                                     <th
                                         scope="col"
-                                        className="sticky top-0 z-10 py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pl-6 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                        className="xl:hidden sticky top-0 z-10 py-3 pl-4 pr-1 w-8 bg-gray-50 dark:bg-gray-800"
+                                    >
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="sticky top-0 z-10 py-3 pl-2 lg:pl-6 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800"
                                     >
                                         Model
                                     </th>
                                     <th
                                         scope="col"
-                                        className="sticky top-0 z-10 px-3 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-40 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                        className="sticky top-0 z-10 px-3 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-40 bg-gray-50 dark:bg-gray-800"
                                     >
                                         Task
                                     </th>
                                     <th
                                         scope="col"
-                                        className="sticky top-0 z-10 px-3 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-32 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                        className="sticky top-0 z-10 px-3 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-32 bg-gray-50 dark:bg-gray-800 hidden md:table-cell"
                                     >
                                         Size
                                     </th>
                                     <th
                                         scope="col"
-                                        className="sticky top-0 z-10 pl-3 pr-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pr-6 w-20 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                        className="sticky top-0 z-10 pl-3 pr-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pr-6 w-20 bg-gray-50 dark:bg-gray-800"
                                     >
                                         <button
                                             onClick={onRefresh}
@@ -404,7 +581,7 @@ function ModelsTable({
                                             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                         >
                                             <ArrowPathIcon
-                                                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                                                className={`h-4 w-4 ${isRefreshing || checkingUpdates ? "animate-spin" : ""}`}
                                             />
                                         </button>
                                     </th>
@@ -415,81 +592,182 @@ function ModelsTable({
                                     <>
                                         {Array.from({ length: 5 }).map((_, i) => (
                                             <tr key={i}>
-                                                <td colSpan={4} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
+                                                <td colSpan={5} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
                                                     <div className="bg-gray-100 dark:bg-gray-700 h-9 rounded-md"></div>
                                                 </td>
                                             </tr>
                                         ))}
                                     </>
-                                ) : sortedModels.length === 0 ? (
+                                ) : modelsToDisplay.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="h-64">
+                                        <td colSpan={5} className="h-64">
                                             <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
                                                 {models.length === 0 ? "No models found" : "No models match your filters"}
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    sortedModels.map((model) => {
+                                    modelsToDisplay.map((model) => {
                                         const isSelected = selectedModel?.repo_id === model.repo_id;
+                                        const isExpanded = expandedModel === model.repo_id;
+                                        const downloadingForModel = activeDownloads.find(d => d.repo_id === model.repo_id);
+
+                                        // Downloading model placeholder row
+                                        if (model.isDownloading) {
+                                            const isFailed = model.downloadStatus === "failed";
+                                            return (
+                                                <tr
+                                                    key={`downloading-${model.repo_id}`}
+                                                    className={`cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-gray-100 dark:bg-gray-700"
+                                                            : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750"
+                                                    }`}
+                                                    onClick={() => onSelectModel(model)}
+                                                >
+                                                    {/* Chevron column - mobile only */}
+                                                    <td className="xl:hidden py-3 pl-4 pr-1 w-8">
+                                                        <ChevronRightIcon className="h-4 w-4 text-gray-300" />
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 pl-2 lg:pl-6 pr-3 text-left text-sm">
+                                                        <div className={`flex items-center gap-2 ${!isFailed ? "animate-pulse" : ""}`}>
+                                                            {isFailed && (
+                                                                <span
+                                                                    className="text-red-500 dark:text-red-400 flex-shrink-0"
+                                                                    title={model.downloadError || "Download failed"}
+                                                                >
+                                                                    <ExclamationCircleIconSolid className="h-4 w-4" />
+                                                                </span>
+                                                            )}
+                                                            <span className="text-gray-900 dark:text-gray-100 truncate">
+                                                                {model.repo_id}
+                                                            </span>
+                                                            <a
+                                                                href={`https://huggingface.co/${model.repo_id}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                title="View on Hugging Face"
+                                                            >
+                                                                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+                                                            </a>
+                                                        </div>
+                                                    </td>
+                                                    <td className={`whitespace-nowrap py-3 px-3 text-left text-sm w-40 ${!isFailed ? "animate-pulse" : ""}`}>
+                                                        <span className="text-gray-400 dark:text-gray-500">-</span>
+                                                    </td>
+                                                    <td className={`whitespace-nowrap py-3 px-3 text-left text-sm text-gray-600 dark:text-gray-400 w-32 hidden md:table-cell ${!isFailed ? "animate-pulse" : ""}`}>
+                                                        <span className="text-gray-400 dark:text-gray-500">-</span>
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 pl-3 pr-4 sm:pr-6 w-20">
+                                                        <div className="flex justify-end">
+                                                            {isFailed ? (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        onDismissDownload(model.task_id);
+                                                                    }}
+                                                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                                    title="Dismiss"
+                                                                >
+                                                                    <XMarkIcon className="h-4 w-4" />
+                                                                </button>
+                                                            ) : (
+                                                                <ArrowPathIcon className="h-4 w-4 text-gray-400 animate-spin" />
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
 
                                         return (
-                                            <tr
-                                                key={model.repo_id}
-                                                className={`cursor-pointer ${
-                                                    isSelected
-                                                        ? "bg-gray-100 dark:bg-gray-700"
-                                                        : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750"
-                                                }`}
-                                                onClick={() => setSelectedModel(model)}
-                                            >
-                                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-sm sm:pl-6">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-gray-900 dark:text-gray-100 truncate">
-                                                            {model.repo_id}
-                                                        </span>
-                                                        <a
-                                                            href={`https://huggingface.co/${model.repo_id}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            title="View on Hugging Face"
-                                                        >
-                                                            <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm w-40">
-                                                    <TaskBadge task={model.image} />
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-600 dark:text-gray-400 w-32">
-                                                    {model.model_size_gb || model.parameter_count ? (
-                                                        <span title={model.dtype ? `${model.dtype}` : undefined}>
-                                                            {model.parameter_count ? formatParameters(model.parameter_count) : null}
-                                                            {model.parameter_count && model.model_size_gb ? " · " : null}
-                                                            {model.model_size_gb ? formatSizeGB(model.model_size_gb) : null}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-gray-400 dark:text-gray-500">-</span>
-                                                    )}
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 pl-3 pr-4 sm:pr-6 text-right w-12">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onUpdateClick(model);
-                                                        }}
-                                                        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        title={isRemote ? "Not available for remote profiles" : "Check for updates"}
-                                                        disabled={isRemote || updatingModel === model.repo_id}
-                                                    >
-                                                        <ArrowDownTrayIcon
-                                                            className={`h-4 w-4 ${updatingModel === model.repo_id ? "animate-pulse" : ""}`}
+                                            <>
+                                                <tr
+                                                    key={model.repo_id}
+                                                    className={`cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-gray-100 dark:bg-gray-700"
+                                                            : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750"
+                                                    }`}
+                                                    onClick={() => {
+                                                        // Desktop: select model for right panel
+                                                        onSelectModel(model);
+                                                        // Mobile: toggle expansion
+                                                        toggleExpanded(model.repo_id);
+                                                    }}
+                                                >
+                                                    {/* Chevron column - mobile only */}
+                                                    <td className="xl:hidden py-3 pl-4 pr-1 w-8">
+                                                        <ChevronRightIcon
+                                                            className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                                                         />
-                                                    </button>
-                                                </td>
-                                            </tr>
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 pl-2 lg:pl-6 pr-3 text-left text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-gray-900 dark:text-gray-100 truncate">
+                                                                {model.repo_id}
+                                                            </span>
+                                                            <a
+                                                                href={`https://huggingface.co/${model.repo_id}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                title="View on Hugging Face"
+                                                            >
+                                                                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+                                                            </a>
+                                                        </div>
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 px-3 text-left text-sm w-40">
+                                                        <TaskBadge task={model.image} />
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-600 dark:text-gray-400 w-32 hidden md:table-cell">
+                                                        {model.model_size_gb || model.parameter_count ? (
+                                                            <span title={model.dtype ? `${model.dtype}` : undefined}>
+                                                                {model.parameter_count ? formatParameters(model.parameter_count) : null}
+                                                                {model.parameter_count && model.model_size_gb ? " · " : null}
+                                                                {model.model_size_gb ? formatSizeGB(model.model_size_gb) : null}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 pl-3 pr-4 sm:pr-6 w-20">
+                                                        <div className="flex justify-end">
+                                                            {!checkingUpdates && modelsWithUpdates.has(model.repo_id) && !isRemote ? (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        onUpdateClick(model);
+                                                                    }}
+                                                                    className="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    title="Update available - click to download"
+                                                                    disabled={updatingModel === model.repo_id}
+                                                                >
+                                                                    <ArrowDownCircleIcon
+                                                                        className={`h-4 w-4 ${updatingModel === model.repo_id ? "animate-pulse" : ""}`}
+                                                                    />
+                                                                </button>
+                                                            ) : null}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {/* Expanded revision rows - mobile only */}
+                                                {isExpanded && (
+                                                    <RevisionRows
+                                                        revisions={model.revisions}
+                                                        activeDownload={downloadingForModel}
+                                                        cacheDir={cacheDir}
+                                                        homeDir={homeDir}
+                                                        isRemote={isRemote}
+                                                        onDeleteClick={onDeleteClick}
+                                                        onDismissDownload={onDismissDownload}
+                                                    />
+                                                )}
+                                            </>
                                         );
                                     })
                                 )}
@@ -498,8 +776,8 @@ function ModelsTable({
                     </div>
                 </div>
 
-                {/* Right panel: Revisions for selected model */}
-                <div className="w-[560px] flex-shrink-0">
+                {/* Right panel: Revisions for selected model - desktop only */}
+                <div className="w-[400px] 2xl:w-[560px] flex-shrink-0 hidden xl:block">
                     {/* Header */}
                     <div className="flex items-center gap-2 mb-2 h-9">
                         <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">
@@ -513,29 +791,29 @@ function ModelsTable({
                     </div>
                     <div className={`ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg ${heightClass} overflow-y-auto`}>
                         <table className="divide-y divide-gray-300 dark:divide-gray-600 w-full">
-                            <thead>
+                            <thead className="bg-gray-50 dark:bg-gray-800">
                                 <tr>
                                     <th
                                         scope="col"
-                                        className="sticky top-0 z-10 py-3 pl-6 pr-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                        className="sticky top-0 z-10 py-3 pl-6 pr-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 w-full"
                                     >
                                         Revision
                                     </th>
                                     <th
                                         scope="col"
-                                        className="sticky top-0 z-10 py-3 px-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                        className="sticky top-0 z-10 py-3 px-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 hidden 2xl:table-cell"
                                     >
                                         Location
                                     </th>
                                     <th
                                         scope="col"
-                                        className="sticky top-0 z-10 py-3 px-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                        className="sticky top-0 z-10 py-3 px-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 hidden 2xl:table-cell"
                                     >
                                         Added
                                     </th>
                                     <th
                                         scope="col"
-                                        className="sticky top-0 z-10 py-3 pl-4 pr-6 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                        className="sticky top-0 z-10 py-3 pl-4 pr-6 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 w-12"
                                     >
                                     </th>
                                 </tr>
@@ -549,49 +827,111 @@ function ModelsTable({
                                             </div>
                                         </td>
                                     </tr>
-                                ) : selectedModel.revisions.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} className="h-64">
-                                            <div className="font-light sm:text-sm text-center align-middle text-gray-400 dark:text-gray-500">
-                                                No revisions
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    selectedModel.revisions.map((revision) => (
-                                        <tr key={revision.revision} className="bg-white dark:bg-gray-800">
-                                            <td className="py-3 pl-6 pr-4 text-left text-sm">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span
-                                                        className="font-mono text-xs text-gray-700 dark:text-gray-300"
-                                                        title={revision.revision}
-                                                    >
-                                                        {revision.revision.slice(0, 12)}
-                                                    </span>
-                                                    <CopyButton text={revision.revision} />
-                                                </div>
-                                            </td>
-                                            <td className="whitespace-nowrap py-3 px-4 text-left text-sm">
-                                                <LocationBadge path={revision.model_dir} cacheDir={cacheDir} homeDir={homeDir} />
-                                            </td>
-                                            <td className="whitespace-nowrap py-3 px-4 text-left text-sm text-gray-500 dark:text-gray-400">
-                                                {revision.created_at
-                                                    ? lastModified(revision.created_at)
-                                                    : "-"}
-                                            </td>
-                                            <td className="whitespace-nowrap py-3 pl-4 pr-6 text-right">
-                                                <button
-                                                    onClick={() => onDeleteClick(revision)}
-                                                    disabled={isRemote}
-                                                    className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    title={isRemote ? "Not available for remote profiles" : "Delete revision"}
-                                                >
-                                                    <TrashIcon className="h-4 w-4" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
+                                ) : (() => {
+                                    // Check if there's an active download for this model
+                                    const downloadingForModel = activeDownloads.find(
+                                        (d) => d.repo_id === selectedModel.repo_id
+                                    );
+                                    const hasRevisions = selectedModel.revisions.length > 0;
+
+                                    if (!hasRevisions && !downloadingForModel) {
+                                        return (
+                                            <tr>
+                                                <td colSpan={4} className="h-64">
+                                                    <div className="font-light sm:text-sm text-center align-middle text-gray-400 dark:text-gray-500">
+                                                        No revisions
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    return (
+                                        <>
+                                            {/* Show downloading placeholder if applicable */}
+                                            {downloadingForModel && (() => {
+                                                const isFailed = downloadingForModel.status === "failed";
+                                                return (
+                                                    <tr className="bg-white dark:bg-gray-800">
+                                                        <td className={`py-3 pl-6 pr-4 text-left text-sm w-full ${!isFailed ? "animate-pulse" : ""}`}>
+                                                            <div className="flex items-center gap-1.5">
+                                                                {isFailed && (
+                                                                    <span
+                                                                        className="text-red-500 dark:text-red-400 flex-shrink-0"
+                                                                        title={downloadingForModel.error || "Download failed"}
+                                                                    >
+                                                                        <ExclamationCircleIconSolid className="h-4 w-4" />
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-gray-400 dark:text-gray-500">
+                                                                    {isFailed
+                                                                        ? "Failed"
+                                                                        : downloadingForModel.status === "downloading"
+                                                                            ? "Downloading..."
+                                                                            : "Pending..."}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td className={`whitespace-nowrap py-3 px-4 text-left text-sm hidden 2xl:table-cell ${!isFailed ? "animate-pulse" : ""}`}>
+                                                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                                                        </td>
+                                                        <td className={`whitespace-nowrap py-3 px-4 text-left text-sm text-gray-500 dark:text-gray-400 hidden 2xl:table-cell ${!isFailed ? "animate-pulse" : ""}`}>
+                                                            -
+                                                        </td>
+                                                        <td className="whitespace-nowrap py-3 pl-4 pr-6 w-12">
+                                                            <div className="flex justify-end">
+                                                                {isFailed ? (
+                                                                    <button
+                                                                        onClick={() => onDismissDownload(downloadingForModel.task_id)}
+                                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                                        title="Dismiss"
+                                                                    >
+                                                                        <XMarkIcon className="h-4 w-4" />
+                                                                    </button>
+                                                                ) : (
+                                                                    <ArrowPathIcon className="h-4 w-4 text-gray-400 animate-spin" />
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })()}
+                                            {selectedModel.revisions.map((revision) => (
+                                                <tr key={revision.revision} className="bg-white dark:bg-gray-800">
+                                                    <td className="py-3 pl-6 pr-4 text-left text-sm w-full">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span
+                                                                className="font-mono text-xs text-gray-700 dark:text-gray-300"
+                                                                title={revision.revision}
+                                                            >
+                                                                {revision.revision.slice(0, 12)}
+                                                            </span>
+                                                            <CopyButton text={revision.revision} />
+                                                        </div>
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 px-4 text-left text-sm hidden 2xl:table-cell">
+                                                        <LocationBadge path={revision.model_dir} cacheDir={cacheDir} homeDir={homeDir} />
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 px-4 text-left text-sm text-gray-500 dark:text-gray-400 hidden 2xl:table-cell">
+                                                        {revision.created_at
+                                                            ? lastModified(revision.created_at)
+                                                            : "-"}
+                                                    </td>
+                                                    <td className="whitespace-nowrap py-3 pl-4 pr-6 text-right w-12">
+                                                        <button
+                                                            onClick={() => onDeleteClick(revision)}
+                                                            disabled={isRemote}
+                                                            className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            title={isRemote ? "Not available for remote profiles" : "Delete revision"}
+                                                        >
+                                                            <TrashIcon className="h-4 w-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
                             </tbody>
                         </table>
                     </div>
@@ -611,9 +951,14 @@ ModelsTable.propTypes = {
     onRefresh: PropTypes.func.isRequired,
     cacheDir: PropTypes.string,
     homeDir: PropTypes.string,
-    hasActiveDownloads: PropTypes.bool,
+    activeDownloads: PropTypes.array,
     updatingModel: PropTypes.string,
     isRemote: PropTypes.bool,
+    modelsWithUpdates: PropTypes.instanceOf(Set),
+    checkingUpdates: PropTypes.bool,
+    selectedModel: PropTypes.object,
+    onSelectModel: PropTypes.func.isRequired,
+    onDismissDownload: PropTypes.func,
 };
 
 export default ModelsTable;

@@ -222,6 +222,59 @@ export async function fetchProfileResources(profileName) {
  * @param {string} repoId - The model repo ID (e.g., "meta-llama/Llama-2-7b")
  * @returns {Promise<number|null>} Model size in GB, or null if unavailable
  */
+/**
+ * Search for models on HuggingFace Hub.
+ * Returns array of { id, downloads, likes } or empty array on error.
+ */
+export async function searchHuggingFaceModels(query, limit = 10) {
+  if (!query || query.length < 2) {
+    return [];
+  }
+  try {
+    const res = await fetch(
+      `https://huggingface.co/api/models?search=${encodeURIComponent(query)}&limit=${limit}&sort=downloads&direction=-1`
+    );
+    if (!res.ok) {
+      return [];
+    }
+    const data = await res.json();
+    return data.map((m) => ({
+      id: m.id,
+      downloads: m.downloads,
+      likes: m.likes,
+      pipeline: m.pipeline_tag,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Fetch model refs (branches/tags) from HuggingFace Hub.
+ * Returns { branches: [{name, sha}], tags: [{name, sha}] } or error object.
+ */
+export async function fetchModelRefs(repoId) {
+  if (!repoId || !repoId.includes("/")) {
+    return null;
+  }
+  try {
+    const res = await fetch(`https://huggingface.co/api/models/${repoId}/refs`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        return { error: "Model not found", notFound: true };
+      }
+      return { error: `Failed to fetch refs (${res.status})` };
+    }
+    const data = await res.json();
+    return {
+      branches: data.branches?.map((b) => ({ name: b.name, sha: b.targetCommit })) || [],
+      tags: data.tags?.map((t) => ({ name: t.name, sha: t.targetCommit })) || [],
+    };
+  } catch {
+    return { error: "Connection failed" };
+  }
+}
+
 export async function fetchModelSizeFromHub(repoId) {
   console.debug(`[fetchModelSizeFromHub] Fetching size for ${repoId} from HuggingFace Hub`);
   try {
@@ -274,32 +327,33 @@ export async function fetchModelSizeFromHub(repoId) {
   }
 }
 
-/** Delete models by query parameters. */
-export async function deleteModels({ repo_id, profile, revision }) {
-  const params = new URLSearchParams();
-  if (repo_id) params.append("repo_id", repo_id);
-  if (profile) params.append("profile", profile);
-  if (revision) params.append("revision", revision);
-
-  const res = await fetch(`${blackfishApiURL}/api/models?${params}`, {
+/** Delete a model by its database ID. */
+export async function deleteModel(modelId) {
+  const res = await fetch(`${blackfishApiURL}/api/models/${modelId}`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
   });
 
   if (!res.ok) {
-    const error = new Error("Failed to delete models");
+    let message = "Failed to delete model";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
     error.status = res.status;
     throw error;
   }
-  return res.json();
 }
 
 /** Initiate a model download from Hugging Face. */
-export async function downloadModel({ repo_id, profile, revision = null }) {
+export async function downloadModel({ repo_id, profile, revision = null, use_cache = false }) {
   const res = await fetch(`${blackfishApiURL}/api/models/download`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ repo_id, profile, revision }),
+    body: JSON.stringify({ repo_id, profile, revision, use_cache }),
   });
 
   if (!res.ok) {

@@ -57,6 +57,70 @@ export async function fetchProfiles() {
   return await res.json();
 }
 
+/** Create a new profile. */
+export async function createProfile(profile) {
+  const res = await fetch(`${blackfishApiURL}/api/profiles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profile),
+  });
+  if (!res.ok) {
+    let message = "Failed to create profile.";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Update an existing profile. */
+export async function updateProfile(name, data) {
+  const res = await fetch(`${blackfishApiURL}/api/profiles/${encodeURIComponent(name)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    let message = "Failed to update profile.";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Delete a profile. */
+export async function deleteProfile(name) {
+  const res = await fetch(`${blackfishApiURL}/api/profiles/${encodeURIComponent(name)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    let message = "Failed to delete profile.";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
 /** Start an service to perform the specified ML/AI pipeline. */
 export async function runService(pipeline, model, jobConfig, containerConfig, profile) {
   let body;
@@ -225,6 +289,68 @@ export async function fetchModelTier(modelId, profileName, partition = null) {
   if (!res.ok) {
     console.debug(`from fetchModelTier: failed to fetch tier (status=${res.status})`);
     return null;
+  }
+  return res.json();
+}
+
+/** Fetch app info/config. */
+export async function fetchAppInfo() {
+  const res = await fetch(`${blackfishApiURL}/api/info`);
+  if (!res.ok) {
+    console.debug(`from fetchAppInfo: failed to fetch info (status=${res.status})`);
+    return null;
+  }
+  return res.json();
+}
+
+/** Fetch Hugging Face token status. */
+export async function fetchHfTokenStatus() {
+  const res = await fetch(`${blackfishApiURL}/api/settings/hf_token`);
+  if (!res.ok) {
+    console.debug(`from fetchHfTokenStatus: failed to fetch status (status=${res.status})`);
+    return { configured: false };
+  }
+  return res.json();
+}
+
+/** Set Hugging Face token. */
+export async function setHfToken(token) {
+  const res = await fetch(`${blackfishApiURL}/api/settings/hf_token`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) {
+    let message = "Failed to set token.";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Delete Hugging Face token. */
+export async function deleteHfToken() {
+  const res = await fetch(`${blackfishApiURL}/api/settings/hf_token`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    let message = "Failed to delete token.";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
   }
   return res.json();
 }

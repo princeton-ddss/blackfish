@@ -6,7 +6,9 @@ import { ProfileProvider } from "@/components/ProfileSelect";
 import { RemoteFileSystemProvider } from "@/providers/RemoteFileSystemProvider";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
+import SettingsSlideOver from "@/components/SettingsSlideOver";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { SettingsProvider } from "@/providers/SettingsProvider";
 
 function RootLayoutContent() {
   const location = useLocation();
@@ -21,6 +23,7 @@ function RootLayoutContent() {
     return (
       <div className="font-sans">
         <Outlet />
+        <SettingsSlideOver />
       </div>
     );
   }
@@ -33,6 +36,7 @@ function RootLayoutContent() {
         <section className="mb-4 mt-6 mx-8">
           <Outlet />
         </section>
+        <SettingsSlideOver />
       </div>
     );
   }
@@ -76,6 +80,8 @@ function RootLayoutContent() {
           <Outlet />
         </div>
       </main>
+
+      <SettingsSlideOver />
     </div>
   );
 }
@@ -83,11 +89,13 @@ function RootLayoutContent() {
 function RootLayout() {
   return (
     <ThemeProvider>
-      <ProfileProvider>
-        <RemoteFileSystemProvider>
-          <RootLayoutContent />
-        </RemoteFileSystemProvider>
-      </ProfileProvider>
+      <SettingsProvider>
+        <ProfileProvider>
+          <RemoteFileSystemProvider>
+            <RootLayoutContent />
+          </RemoteFileSystemProvider>
+        </ProfileProvider>
+      </SettingsProvider>
     </ThemeProvider>
   );
 }

@@ -61,6 +61,44 @@ docker pull vllm/vllm-openai:v0.8.4
 
 ## Models
 
+### Hugging Face Authentication
+
+Some models on Hugging Face are "gated" and require authentication to download. Blackfish uses the [`huggingface_hub`](https://github.com/huggingface/huggingface_hub) library, which automatically detects authentication tokens from:
+
+1. The `HF_TOKEN` environment variable
+2. A token stored at `~/.cache/huggingface/token` (set via `huggingface-cli login` or the Settings UI)
+
+#### Setting a Token via the UI
+
+The easiest way to configure your Hugging Face token is through the Blackfish Settings panel:
+
+1. Click the gear icon in the navigation bar to open Settings
+2. Find the "Hugging Face" section
+3. Click "Set Token" and enter your [Hugging Face access token](https://huggingface.co/settings/tokens)
+4. Click "Save" to store the token
+
+The token is validated and stored securely using `huggingface_hub`'s standard token storage. Once configured, all Hugging Face operations (model downloads, API calls) will automatically use this token.
+
+#### Setting a Token via Environment Variable
+
+Alternatively, you can set the `HF_TOKEN` environment variable:
+
+```shell
+export HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Add this to your shell profile (`.bashrc`, `.zshrc`, etc.) for persistence.
+
+#### Setting a Token via CLI
+
+You can also use the Hugging Face CLI:
+
+```shell
+huggingface-cli login
+```
+
+This stores the token at `~/.cache/huggingface/token`.
+
 ### Automatic Downloads
 
 You can download models with the `blackfish model add` command. Blackfish stores downloaded models to the `home_dir` of the specified profile by default. If you are downloading models to share with other users, add the `--use-cache` flag to save files to the `cache_dir` instead. Model download support is currently limited to *local* profiles. If you want to download models for use on HPC, you'll need to be running Blackfish on your cluster.

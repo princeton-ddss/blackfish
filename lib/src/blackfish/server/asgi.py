@@ -89,7 +89,13 @@ from blackfish.server.models.profile import (
     LocalProfile,
     BlackfishProfile as Profile,
 )
-from blackfish.server.models.model import Model, PIPELINE_IMAGES, get_pipeline
+from blackfish.server.models.model import (
+    Model,
+    PIPELINE_IMAGES,
+    get_pipeline,
+    validate_repo_id,
+    InvalidRepoIdError,
+)
 from blackfish.server.models.download import DownloadTask, DownloadStatus
 from blackfish.server.models.metadata import (
     fetch_model_metadata,
@@ -1814,9 +1820,16 @@ async def delete_model(model_id: str, session: AsyncSession, state: State) -> No
             logger.warning(
                 f"Files not found for model {model.repo}, continuing with DB deletion"
             )
-        except Exception as e:
-            logger.error(f"Failed to delete files for model {model.repo}: {e}")
-            # Continue with DB deletion even if file deletion fails
+        except PermissionError as e:
+            logger.error(
+                f"Permission denied deleting files for model {model.repo}: {e}"
+            )
+            raise ValidationException(
+                detail="Permission denied: cannot delete model files. Check file permissions."
+            )
+        except OSError as e:
+            logger.error(f"OS error deleting files for model {model.repo}: {e}")
+            raise ValidationException(detail=f"Failed to delete model files: {e}")
 
     # Delete from database
     try:
@@ -1948,14 +1961,23 @@ async def delete_models(
                 logger.debug(
                     f"Files already removed for {model.repo} revision {model.revision}"
                 )
-            except Exception as e:
-                # File deletion failed - don't delete from DB
-                logger.error(f"Failed to delete files for model {model.repo}: {e}")
+            except PermissionError as e:
+                logger.error(f"Permission denied deleting {model.repo}: {e}")
                 res.append(
                     DeleteModelResponse(
                         model_id=str(model.id),
                         status="error",
-                        message=f"Failed to delete files: {e}",
+                        message="Permission denied: cannot delete model files",
+                    )
+                )
+                continue
+            except OSError as e:
+                logger.error(f"OS error deleting {model.repo}: {e}")
+                res.append(
+                    DeleteModelResponse(
+                        model_id=str(model.id),
+                        status="error",
+                        message=f"OS error: {e}",
                     )
                 )
                 continue
@@ -2150,17 +2172,20 @@ async def _run_download_task(
     Runs in a thread pool to avoid blocking the event loop.
     Updates the DownloadTask record with status as it progresses.
     """
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine,
+        AsyncSession,
+        async_sessionmaker,
+    )
     from blackfish.server.models.model import add_model
 
     engine = create_async_engine(db_url)
-    async_session_factory = sessionmaker(
+    async_session_factory = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
 
     async def update_task_status(
-        status: str, error_message: str | None = None, model_id: str | None = None
+        status: str, error_message: str | None = None, model_id: UUID | None = None
     ) -> None:
         async with async_session_factory() as session:
             task = await session.get(DownloadTask, task_id)
@@ -2177,18 +2202,9 @@ async def _run_download_task(
         await update_task_status(DownloadStatus.DOWNLOADING)
 
         # Run the blocking download in a thread pool
-        result = await asyncio.to_thread(
+        new_model, snapshot_path = await asyncio.to_thread(
             add_model, repo_id, profile, revision, use_cache
         )
-
-        if result is None:
-            await update_task_status(
-                DownloadStatus.FAILED,
-                error_message="Download failed - add_model returned None",
-            )
-            return
-
-        new_model, snapshot_path = result
 
         # model_dir is the parent of snapshots directory (2 levels up from snapshot path)
         model_dir = str(Path(snapshot_path).parent.parent)
@@ -2205,13 +2221,13 @@ async def _run_download_task(
             existing = (await session.execute(query)).scalar_one_or_none()
 
             if existing:
-                model_id = str(existing.id)
+                completed_model_id = existing.id
             else:
                 session.add(new_model)
                 await session.commit()
-                model_id = str(new_model.id)
+                completed_model_id = new_model.id
 
-        await update_task_status(DownloadStatus.COMPLETED, model_id=model_id)
+        await update_task_status(DownloadStatus.COMPLETED, model_id=completed_model_id)
 
     except Exception as e:
         logger.error(f"Download task {task_id} failed: {e}")
@@ -2236,6 +2252,12 @@ async def download_model(
     Returns:
         DownloadModelResponse with task_id to poll for status
     """
+    # Validate repo_id format
+    try:
+        validate_repo_id(data.repo_id)
+    except InvalidRepoIdError as e:
+        raise ValidationException(detail=str(e))
+
     # Validate profile exists and is local
     profiles = deserialize_profiles(blackfish_config.HOME_DIR)
     profile = next((p for p in profiles if p.name == data.profile), None)
@@ -2251,6 +2273,20 @@ async def download_model(
     except RepositoryNotFoundError:
         raise NotFoundException(
             detail=f"Model '{data.repo_id}' not found on HuggingFace Hub"
+        )
+
+    # Check for existing in-progress download
+    existing_query = sa.select(DownloadTask).where(
+        DownloadTask.repo_id == data.repo_id,
+        DownloadTask.profile == data.profile,
+        DownloadTask.status.in_([DownloadStatus.PENDING, DownloadStatus.DOWNLOADING]),
+    )
+    if data.revision:
+        existing_query = existing_query.where(DownloadTask.revision == data.revision)
+    existing_task = (await session.execute(existing_query)).scalar_one_or_none()
+    if existing_task:
+        raise ValidationException(
+            detail=f"Download already in progress for '{data.repo_id}'"
         )
 
     # Create download task record
@@ -2619,12 +2655,15 @@ async def resume_incomplete_downloads(app: Litestar) -> None:
 
     Called on app startup. Finds PENDING or DOWNLOADING tasks and restarts them.
     """
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine,
+        AsyncSession,
+        async_sessionmaker,
+    )
 
     db_url = f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite"
     engine = create_async_engine(db_url)
-    async_session_factory = sessionmaker(
+    async_session_factory = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
 

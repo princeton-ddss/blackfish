@@ -1,4 +1,9 @@
 import { Fragment, useState, useEffect, useCallback } from "react";
+
+// Search configuration
+const MIN_SEARCH_LENGTH = 2;
+const SEARCH_DEBOUNCE_MS = 300;
+const REFS_DEBOUNCE_MS = 500;
 import {
     Dialog,
     DialogPanel,
@@ -45,7 +50,7 @@ function ModelDownloadDialog({
     useEffect(() => {
         const query = searchQuery.trim();
 
-        if (!query || query.length < 2) {
+        if (!query || query.length < MIN_SEARCH_LENGTH) {
             setSearchResults([]);
             return;
         }
@@ -55,7 +60,7 @@ function ModelDownloadDialog({
             const results = await searchHuggingFaceModels(query);
             setSearchResults(results);
             setSearchLoading(false);
-        }, 300);
+        }, SEARCH_DEBOUNCE_MS);
 
         return () => clearTimeout(timeoutId);
     }, [searchQuery]);
@@ -100,7 +105,7 @@ function ModelDownloadDialog({
             }
 
             setLoadingRefs(false);
-        }, 500);
+        }, REFS_DEBOUNCE_MS);
 
         return () => clearTimeout(timeoutId);
     }, [repoId]);

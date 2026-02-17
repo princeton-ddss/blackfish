@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from uuid import uuid4
@@ -591,9 +592,30 @@ class TestDownloadModelAPI:
         response = await client.post("/api/models/download", json=data)
         assert response.status_code == 404
 
+    async def test_download_model_invalid_repo_id_format(self, client: AsyncTestClient):
+        """Test download with invalid repo_id format returns 400."""
+        invalid_repo_ids = [
+            "invalid-repo-id",  # Missing slash
+            "",  # Empty string
+            "namespace/",  # Missing model name
+            "/model",  # Missing namespace
+        ]
+        for repo_id in invalid_repo_ids:
+            data = {"repo_id": repo_id, "profile": "default"}
+            response = await client.post("/api/models/download", json=data)
+            assert response.status_code == 400, f"Expected 400 for repo_id='{repo_id}'"
+            assert "Invalid repo_id" in response.json()["detail"], (
+                f"Expected error message for repo_id='{repo_id}'"
+            )
+
+    @patch("blackfish.server.asgi.hf_model_info")
     @patch("blackfish.server.asgi._run_download_task")
     async def test_download_model_valid_data(
-        self, mock_run_task: AsyncMock, client: AsyncTestClient, session: AsyncSession
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
+        session: AsyncSession,
     ):
         """Test download with valid data creates a task."""
         data = {"repo_id": "test/model", "profile": "default"}
@@ -605,9 +627,14 @@ class TestDownloadModelAPI:
         assert result["status"] == "pending"
         assert result["repo_id"] == "test/model"
 
+    @patch("blackfish.server.asgi.hf_model_info")
     @patch("blackfish.server.asgi._run_download_task")
     async def test_download_model_creates_database_entry(
-        self, mock_run_task: AsyncMock, client: AsyncTestClient, session: AsyncSession
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
+        session: AsyncSession,
     ):
         """Test that download creates a DownloadTask in the database."""
         data = {"repo_id": "test/db-entry-model", "profile": "default"}
@@ -626,17 +653,121 @@ class TestDownloadModelAPI:
         assert task.profile == "default"
         assert task.status == DownloadStatus.PENDING
 
+    @patch("blackfish.server.asgi.hf_model_info")
     @patch("blackfish.server.asgi._run_download_task")
     async def test_download_model_with_revision(
-        self, mock_run_task: AsyncMock, client: AsyncTestClient
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
     ):
         """Test download with optional revision parameter."""
         data = {"repo_id": "test/model", "profile": "default", "revision": "v1.0"}
         response = await client.post("/api/models/download", json=data)
 
         assert response.status_code == 201
-        result = response.json()
-        assert result["status"] == "pending"
+
+    @patch("blackfish.server.asgi.hf_model_info")
+    @patch("blackfish.server.asgi._run_download_task")
+    async def test_download_model_rejects_duplicate_in_progress(
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
+    ):
+        """Test that starting a duplicate download while one is in progress returns 400."""
+        data = {"repo_id": "test/duplicate-model", "profile": "default"}
+
+        # First download should succeed
+        response1 = await client.post("/api/models/download", json=data)
+        assert response1.status_code == 201
+
+        # Second download of same model should fail
+        response2 = await client.post("/api/models/download", json=data)
+        assert response2.status_code == 400
+        assert "already in progress" in response2.json()["detail"]
+
+
+class TestDownloadLifecycle:
+    """Integration tests for the full download task lifecycle."""
+
+    @patch("blackfish.server.asgi.hf_model_info")
+    @patch("blackfish.server.models.model.add_model")
+    async def test_download_lifecycle_success(
+        self,
+        mock_add_model: MagicMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Test successful download: PENDING -> DOWNLOADING -> COMPLETED."""
+        # Create a mock Model to return from add_model
+        mock_model = Model(
+            repo="test/lifecycle-model",
+            profile="default",
+            revision="abc123",
+            image="text-generation",
+            model_dir="/tmp/models/models--test--lifecycle-model",
+        )
+        mock_add_model.return_value = (
+            mock_model,
+            "/tmp/models/models--test--lifecycle-model/snapshots/abc123",
+        )
+
+        # Start download
+        data = {"repo_id": "test/lifecycle-model", "profile": "default"}
+        response = await client.post("/api/models/download", json=data)
+        assert response.status_code == 201
+        task_id = response.json()["task_id"]
+
+        # Wait for background task to complete (with timeout)
+        for _ in range(20):  # 2 second timeout
+            await asyncio.sleep(0.1)
+            query = sa.select(DownloadTask).where(DownloadTask.id == task_id)
+            result = await session.execute(query)
+            task = result.scalar_one_or_none()
+            if task and task.status == DownloadStatus.COMPLETED:
+                break
+
+        # Verify final state
+        assert task is not None
+        assert task.status == DownloadStatus.COMPLETED
+        assert task.model_id is not None
+        assert task.error_message is None
+
+    @patch("blackfish.server.asgi.hf_model_info")
+    @patch("blackfish.server.models.model.add_model")
+    async def test_download_lifecycle_failure(
+        self,
+        mock_add_model: MagicMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Test failed download: PENDING -> DOWNLOADING -> FAILED."""
+        # Make add_model raise an exception
+        mock_add_model.side_effect = Exception("Simulated download failure")
+
+        # Start download
+        data = {"repo_id": "test/failing-model", "profile": "default"}
+        response = await client.post("/api/models/download", json=data)
+        assert response.status_code == 201
+        task_id = response.json()["task_id"]
+
+        # Wait for background task to complete (with timeout)
+        for _ in range(20):  # 2 second timeout
+            await asyncio.sleep(0.1)
+            query = sa.select(DownloadTask).where(DownloadTask.id == task_id)
+            result = await session.execute(query)
+            task = result.scalar_one_or_none()
+            if task and task.status == DownloadStatus.FAILED:
+                break
+
+        # Verify final state
+        assert task is not None
+        assert task.status == DownloadStatus.FAILED
+        assert task.error_message is not None
+        assert "Simulated download failure" in task.error_message
 
 
 class TestGetDownloadTaskAPI:
@@ -661,9 +792,13 @@ class TestGetDownloadTaskAPI:
         response = await client.get("/api/models/downloads/not-a-uuid")
         assert response.status_code == 400
 
+    @patch("blackfish.server.asgi.hf_model_info")
     @patch("blackfish.server.asgi._run_download_task")
     async def test_get_download_task_valid(
-        self, mock_run_task: AsyncMock, client: AsyncTestClient
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
     ):
         """Test getting a valid download task returns correct data."""
         # First create a task
@@ -701,9 +836,13 @@ class TestListDownloadTasksAPI:
         result = response.json()
         assert isinstance(result, list)
 
+    @patch("blackfish.server.asgi.hf_model_info")
     @patch("blackfish.server.asgi._run_download_task")
     async def test_list_downloads_returns_tasks(
-        self, mock_run_task: AsyncMock, client: AsyncTestClient
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
     ):
         """Test listing downloads returns created tasks."""
         # Create some tasks
@@ -718,9 +857,13 @@ class TestListDownloadTasksAPI:
         assert isinstance(result, list)
         assert len(result) >= 3
 
+    @patch("blackfish.server.asgi.hf_model_info")
     @patch("blackfish.server.asgi._run_download_task")
     async def test_list_downloads_filter_by_profile(
-        self, mock_run_task: AsyncMock, client: AsyncTestClient
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
     ):
         """Test filtering downloads by profile."""
         await client.post(
@@ -738,9 +881,13 @@ class TestListDownloadTasksAPI:
         for task in result:
             assert task["profile"] == "default"
 
+    @patch("blackfish.server.asgi.hf_model_info")
     @patch("blackfish.server.asgi._run_download_task")
     async def test_list_downloads_filter_by_status(
-        self, mock_run_task: AsyncMock, client: AsyncTestClient
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
     ):
         """Test filtering downloads by status."""
         # Create a task (will be pending)

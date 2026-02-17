@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Tuple, Optional
 import shutil
 from pathlib import Path
@@ -50,9 +51,48 @@ class ModelNotFoundError(FileNotFoundError): ...
 class RevisionNotFoundError(FileNotFoundError): ...
 
 
+class InvalidRepoIdError(ValueError):
+    """Raised when a repo_id doesn't match the expected format."""
+
+    pass
+
+
+# Pattern for valid HuggingFace repo IDs: namespace/model_name
+# Both parts can contain letters, numbers, hyphens, underscores, and periods
+REPO_ID_PATTERN = re.compile(r"^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$")
+
+
+def validate_repo_id(repo_id: str) -> None:
+    """Validate that a repo_id matches the expected HuggingFace format.
+
+    Args:
+        repo_id: The repository ID to validate (e.g., "meta-llama/Llama-2-7b-hf")
+
+    Raises:
+        InvalidRepoIdError: If the repo_id doesn't match the expected format.
+    """
+    if not repo_id or not REPO_ID_PATTERN.match(repo_id):
+        raise InvalidRepoIdError(
+            f"Invalid repo_id '{repo_id}'. Expected format: 'namespace/model_name' "
+            "(e.g., 'meta-llama/Llama-2-7b-hf')"
+        )
+
+
 def split(repo_id: str) -> Tuple[str, str]:
-    repo_id, revision = repo_id.split("/")
-    return repo_id, revision
+    """Split a repo_id into namespace and model name.
+
+    Args:
+        repo_id: The repository ID (e.g., "bigscience/bloom-560m")
+
+    Returns:
+        A tuple of (namespace, model_name)
+
+    Raises:
+        InvalidRepoIdError: If the repo_id doesn't match the expected format.
+    """
+    validate_repo_id(repo_id)
+    namespace, model_name = repo_id.split("/")
+    return namespace, model_name
 
 
 def remove_model(
@@ -142,7 +182,7 @@ def add_model(
     profile: Profile,
     revision: str | None = None,
     use_cache: bool = False,
-) -> Optional[Tuple[Model, str]]:
+) -> Tuple[Model, str]:
     """Download a model from Hugging Face and makes it available to Blackfish.
 
     This method only works for *local* profiles, i.e., the model files can only be

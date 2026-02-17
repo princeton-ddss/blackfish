@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from enum import StrEnum, auto
 from typing import Optional
+from uuid import UUID
 
 from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy.orm import Mapped, mapped_column
@@ -26,4 +27,4 @@ class DownloadTask(UUIDAuditBase):
     revision: Mapped[Optional[str]] = mapped_column(default=None)  # None = latest
     status: Mapped[str] = mapped_column(default=DownloadStatus.PENDING)
     error_message: Mapped[Optional[str]] = mapped_column(default=None)
-    model_id: Mapped[Optional[str]] = mapped_column(default=None)  # Set when completed
+    model_id: Mapped[Optional[UUID]] = mapped_column(default=None)  # Set when completed

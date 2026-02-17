@@ -204,6 +204,52 @@ class TestCreateProfileAPI:
             mock_tf_client.setup.assert_called_once()
             mock_save_config.assert_called_once()
 
+    async def test_create_slurm_profile_localhost_uses_local_runner(
+        self, client: AsyncTestClient
+    ):
+        """Test creating a Slurm profile with localhost uses LocalRunner.
+
+        This is the Open OnDemand scenario where blackfish runs on the
+        cluster's login node and Slurm is accessed locally.
+        """
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi._save_profiles_config") as mock_save_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
+            patch("blackfish.server.asgi.LocalRunner") as mock_local_runner_cls,
+            patch("blackfish.server.asgi.SSHRunner") as mock_ssh_runner_cls,
+        ):
+            mock_get_config.return_value = MagicMock()
+            mock_get_config.return_value.__contains__ = MagicMock(return_value=False)
+
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client_cls.return_value = mock_tf_client
+
+            mock_local_runner = MagicMock()
+            mock_local_runner_cls.return_value = mock_local_runner
+
+            response = await client.post(
+                "/api/profiles",
+                json={
+                    "name": "ondemand-slurm",
+                    "schema_type": "slurm",
+                    "host": "localhost",
+                    "user": "ondemand",
+                    "home_dir": "/home/ondemand/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                },
+            )
+
+            assert response.status_code == 201
+            # Verify LocalRunner was used, not SSHRunner
+            mock_local_runner_cls.assert_called_once()
+            mock_ssh_runner_cls.assert_not_called()
+            mock_tf_client.setup.assert_called_once()
+
     async def test_create_profile_already_exists(self, client: AsyncTestClient):
         """Test that creating a duplicate profile returns 409."""
         with patch("blackfish.server.asgi._get_profiles_config") as mock_get_config:
@@ -609,6 +655,46 @@ class TestRepairProfileAPI:
             result = response.json()
             assert result["status"] == "ok"
             assert "reinstalled" in result["message"].lower()
+            mock_tf_client.cleanup.assert_called_once()
+
+    async def test_repair_slurm_profile_localhost_uses_local_runner(
+        self, client: AsyncTestClient
+    ):
+        """Test repairing a Slurm profile with localhost uses LocalRunner.
+
+        This is the Open OnDemand scenario.
+        """
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
+            patch("blackfish.server.asgi.LocalRunner") as mock_local_runner_cls,
+            patch("blackfish.server.asgi.SSHRunner") as mock_ssh_runner_cls,
+        ):
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_config.__getitem__ = MagicMock(
+                return_value={
+                    "schema": "slurm",
+                    "host": "localhost",
+                    "user": "ondemand",
+                    "home_dir": "/home/ondemand/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                }
+            )
+            mock_get_config.return_value = mock_config
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client_cls.return_value = mock_tf_client
+
+            mock_local_runner = MagicMock()
+            mock_local_runner_cls.return_value = mock_local_runner
+
+            response = await client.put("/api/profiles/ondemand-slurm/repair")
+
+            assert response.status_code == 200
+            # Verify LocalRunner was used, not SSHRunner
+            mock_local_runner_cls.assert_called_once()
+            mock_ssh_runner_cls.assert_not_called()
             mock_tf_client.cleanup.assert_called_once()
 
     async def test_repair_profile_not_found(self, client: AsyncTestClient):

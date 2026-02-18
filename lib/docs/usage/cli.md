@@ -56,6 +56,7 @@ A *Slurm profile* specifies how to schedule services *on* a (possibly) remote se
 - `user`: a user name used to connect to server.
 - `home`: a location on the server to store application model, image and job data, e.g., `/home/<user>/.blackfish`. User should have read-write access to this directory.
 - `cache`: a location on the server to source additional shared model and images files from. Blackfish does *not* attempt to create this directory for you, but it does require that it can be found. User should *at least* have read access to this directory.
+- `python_path` (optional): path to Python on the cluster, e.g., `python3` (default) or `/usr/local/bin/python3.11`. This may also include module load commands like `module load python && python3`. Used for setting up the TigerFlow environment for batch jobs.
 
 ### Managing Profiles
 

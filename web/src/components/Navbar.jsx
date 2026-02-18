@@ -21,8 +21,9 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
   const { theme, isDark, toggleTheme } = useTheme();
   const { openSettings } = useSettings();
 
-  // Get the appropriate icon for current theme mode
-  const ThemeIcon = theme === "system" ? ComputerDesktopIcon : isDark ? SunIcon : MoonIcon;
+  // Show icon for the NEXT state (what clicking will activate)
+  // Cycle: light -> dark -> system -> light
+  const ThemeIcon = theme === "light" ? MoonIcon : theme === "dark" ? ComputerDesktopIcon : SunIcon;
 
   const isDashboard = variant === "dashboard";
 

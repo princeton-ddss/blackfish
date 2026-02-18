@@ -339,7 +339,9 @@ class TestAddModel:
     ):
         """Test successful model download."""
         mock_download.return_value = str(tmp_path / "snapshots" / "abc123def")
-        mock_info.return_value = MagicMock(pipeline_tag="text-generation", card_data=None)
+        mock_info.return_value = MagicMock(
+            pipeline_tag="text-generation", card_data=None
+        )
         mock_metadata.return_value = ModelMetadata(
             model_size_gb=3.5,
             size_source="safetensors",
@@ -393,7 +395,9 @@ class TestAddModel:
         """Test downloading to cache directory."""
         cache_dir = tmp_path / "cache"
         mock_download.return_value = str(cache_dir / "snapshots" / "main")
-        mock_info.return_value = MagicMock(pipeline_tag="text-generation", card_data=None)
+        mock_info.return_value = MagicMock(
+            pipeline_tag="text-generation", card_data=None
+        )
         mock_metadata.return_value = ModelMetadata(
             model_size_gb=2.0, size_source="calculated"
         )
@@ -458,7 +462,9 @@ class TestAddModel:
     ):
         """Test downloading with authentication token."""
         mock_download.return_value = str(tmp_path / "snapshots" / "main")
-        mock_info.return_value = MagicMock(pipeline_tag="text-generation", card_data=None)
+        mock_info.return_value = MagicMock(
+            pipeline_tag="text-generation", card_data=None
+        )
         mock_metadata.return_value = ModelMetadata(
             model_size_gb=5.0, size_source="safetensors"
         )

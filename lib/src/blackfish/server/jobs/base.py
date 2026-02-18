@@ -14,7 +14,6 @@ from blackfish.server.jobs.client import (
     LocalRunner,
     SSHRunner,
     TigerFlowClient,
-    TigerFlowError,
 )
 
 if TYPE_CHECKING:
@@ -57,7 +56,9 @@ def create_tigerflow_client_for_profile(
         raise FileNotFoundError(f"Profile '{profile_name}' not found")
 
     if isinstance(profile, SlurmProfile):
-        runner: SSHRunner | LocalRunner = SSHRunner(user=profile.user, host=profile.host)
+        runner: SSHRunner | LocalRunner = SSHRunner(
+            user=profile.user, host=profile.host
+        )
         python_path = profile.python_path
     else:
         runner = LocalRunner()
@@ -262,4 +263,3 @@ class BatchJob(UUIDAuditBase):
             self.status = BatchJobStatus.STOPPED
 
         return self.status
-

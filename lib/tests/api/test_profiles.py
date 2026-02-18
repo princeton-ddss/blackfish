@@ -214,7 +214,6 @@ class TestCreateProfileAPI:
         """
         with (
             patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
-            patch("blackfish.server.asgi._save_profiles_config") as mock_save_config,
             patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
             patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
             patch("blackfish.server.asgi.LocalRunner") as mock_local_runner_cls,

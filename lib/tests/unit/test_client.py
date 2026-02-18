@@ -259,7 +259,9 @@ class TestTigerFlowClient:
     def test_python_path_can_be_customized(self) -> None:
         """python_path should accept custom values."""
         runner = MockRunner()
-        client = TigerFlowClient(runner, "/home/user", python_path="/usr/bin/python3.11")
+        client = TigerFlowClient(
+            runner, "/home/user", python_path="/usr/bin/python3.11"
+        )
         assert client.python_path == "/usr/bin/python3.11"
 
 
@@ -269,12 +271,14 @@ class TestTigerFlowClientSetup:
     async def test_setup_creates_directory_and_venv(self) -> None:
         """Setup should create .blackfish directory and venv."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # venv creation
-            (0, b"", b""),  # pip upgrade
-            (0, b"", b""),  # pip install
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # venv creation
+                (0, b"", b""),  # pip upgrade
+                (0, b"", b""),  # pip install
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.setup()
@@ -285,12 +289,14 @@ class TestTigerFlowClientSetup:
     async def test_setup_installs_tigerflow_packages(self) -> None:
         """Setup should install tigerflow and tigerflow-ml."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # venv creation
-            (0, b"", b""),  # pip upgrade
-            (0, b"", b""),  # pip install
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # venv creation
+                (0, b"", b""),  # pip upgrade
+                (0, b"", b""),  # pip install
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.setup()
@@ -302,12 +308,14 @@ class TestTigerFlowClientSetup:
     async def test_setup_uses_configured_python_path(self) -> None:
         """Setup should use the configured python_path for venv creation."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # venv creation
-            (0, b"", b""),  # pip upgrade
-            (0, b"", b""),  # pip install
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # venv creation
+                (0, b"", b""),  # pip upgrade
+                (0, b"", b""),  # pip install
+            ]
+        )
         client = TigerFlowClient(
             runner, "/home/user", python_path="/opt/python3.11/bin/python3"
         )
@@ -320,12 +328,14 @@ class TestTigerFlowClientSetup:
     async def test_setup_uses_venv_pip_not_system_pip(self) -> None:
         """Setup should use pip from the venv, not system pip."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # venv creation
-            (0, b"", b""),  # pip upgrade
-            (0, b"", b""),  # pip install
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # venv creation
+                (0, b"", b""),  # pip upgrade
+                (0, b"", b""),  # pip install
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.setup()
@@ -350,10 +360,12 @@ class TestTigerFlowClientSetup:
     async def test_setup_raises_setup_error_when_venv_creation_fails(self) -> None:
         """Setup should raise setup error if venv creation fails."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir succeeds
-            (1, b"", b"venv module not found"),  # venv fails
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir succeeds
+                (1, b"", b"venv module not found"),  # venv fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -365,10 +377,12 @@ class TestTigerFlowClientSetup:
     async def test_setup_raises_setup_error_when_python_path_missing(self) -> None:
         """Setup should raise setup error if configured python_path doesn't exist."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir succeeds
-            (127, b"", b"/opt/python3.11/bin/python3: No such file or directory"),
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir succeeds
+                (127, b"", b"/opt/python3.11/bin/python3: No such file or directory"),
+            ]
+        )
         client = TigerFlowClient(
             runner, "/home/user", python_path="/opt/python3.11/bin/python3"
         )
@@ -382,12 +396,14 @@ class TestTigerFlowClientSetup:
     async def test_setup_raises_install_error_when_pip_fails(self) -> None:
         """Setup should raise install error if pip install fails."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # venv creation
-            (0, b"", b""),  # pip upgrade
-            (1, b"", b"Could not find package"),  # pip install fails
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # venv creation
+                (0, b"", b""),  # pip upgrade
+                (1, b"", b"Could not find package"),  # pip install fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -488,13 +504,15 @@ class TestTigerFlowClientCleanup:
     async def test_cleanup_removes_venv_and_recreates(self) -> None:
         """cleanup should remove venv and call setup."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # rm -rf
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # venv creation
-            (0, b"", b""),  # pip upgrade
-            (0, b"", b""),  # pip install
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # rm -rf
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # venv creation
+                (0, b"", b""),  # pip upgrade
+                (0, b"", b""),  # pip install
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.cleanup()
@@ -520,11 +538,21 @@ class TestTigerFlowClientCheckHealth:
     async def test_check_health_returns_versions_when_healthy(self) -> None:
         """check_health should return installed versions when environment is ready."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # test -d venv
-            (0, f"Version: {MIN_TIGERFLOW_VERSION}".encode(), b""),  # pip show tigerflow
-            (0, f"Version: {MIN_TIGERFLOW_ML_VERSION}".encode(), b""),  # pip show tigerflow-ml
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # test -d venv
+                (
+                    0,
+                    f"Version: {MIN_TIGERFLOW_VERSION}".encode(),
+                    b"",
+                ),  # pip show tigerflow
+                (
+                    0,
+                    f"Version: {MIN_TIGERFLOW_ML_VERSION}".encode(),
+                    b"",
+                ),  # pip show tigerflow-ml
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         versions = await client.check_health()
@@ -545,13 +573,17 @@ class TestTigerFlowClientCheckHealth:
         assert exc_info.value.error_type == "missing"
         assert "venv" in str(exc_info.value.details).lower()
 
-    async def test_check_health_raises_missing_when_tigerflow_not_installed(self) -> None:
+    async def test_check_health_raises_missing_when_tigerflow_not_installed(
+        self,
+    ) -> None:
         """check_health should raise missing error when tigerflow not installed."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # test -d venv
-            (1, b"", b"Package not found"),  # pip show tigerflow fails
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # test -d venv
+                (1, b"", b"Package not found"),  # pip show tigerflow fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -563,10 +595,12 @@ class TestTigerFlowClientCheckHealth:
     async def test_check_health_raises_version_when_tigerflow_outdated(self) -> None:
         """check_health should raise version error when tigerflow version too old."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # test -d venv
-            (0, b"Version: 0.0.1", b""),  # pip show tigerflow - outdated
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # test -d venv
+                (0, b"Version: 0.0.1", b""),  # pip show tigerflow - outdated
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -575,14 +609,22 @@ class TestTigerFlowClientCheckHealth:
         assert exc_info.value.error_type == "version"
         assert "tigerflow" in str(exc_info.value.details).lower()
 
-    async def test_check_health_raises_missing_when_tigerflow_ml_not_installed(self) -> None:
+    async def test_check_health_raises_missing_when_tigerflow_ml_not_installed(
+        self,
+    ) -> None:
         """check_health should raise missing error when tigerflow-ml not installed."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # test -d venv
-            (0, f"Version: {MIN_TIGERFLOW_VERSION}".encode(), b""),  # pip show tigerflow
-            (1, b"", b"Package not found"),  # pip show tigerflow-ml fails
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # test -d venv
+                (
+                    0,
+                    f"Version: {MIN_TIGERFLOW_VERSION}".encode(),
+                    b"",
+                ),  # pip show tigerflow
+                (1, b"", b"Package not found"),  # pip show tigerflow-ml fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -594,11 +636,17 @@ class TestTigerFlowClientCheckHealth:
     async def test_check_health_raises_version_when_tigerflow_ml_outdated(self) -> None:
         """check_health should raise version error when tigerflow-ml version too old."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # test -d venv
-            (0, f"Version: {MIN_TIGERFLOW_VERSION}".encode(), b""),  # pip show tigerflow
-            (0, b"Version: 0.0.1", b""),  # pip show tigerflow-ml - outdated
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # test -d venv
+                (
+                    0,
+                    f"Version: {MIN_TIGERFLOW_VERSION}".encode(),
+                    b"",
+                ),  # pip show tigerflow
+                (0, b"Version: 0.0.1", b""),  # pip show tigerflow-ml - outdated
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -614,10 +662,12 @@ class TestTigerFlowClientCheckCapabilities:
     async def test_check_capabilities_passes_when_all_features_available(self) -> None:
         """check_capabilities should pass when tasks and status commands work."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b'[{"name": "transcribe"}]', b""),  # tasks list
-            (0, b"Usage: tigerflow status", b""),  # status --help
-        ])
+        runner.set_responses(
+            [
+                (0, b'[{"name": "transcribe"}]', b""),  # tasks list
+                (0, b"Usage: tigerflow status", b""),  # status --help
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         # Should not raise
@@ -626,9 +676,11 @@ class TestTigerFlowClientCheckCapabilities:
     async def test_check_capabilities_raises_when_tasks_command_unknown(self) -> None:
         """check_capabilities should raise when tasks command not available."""
         runner = MockRunner()
-        runner.set_responses([
-            (1, b"", b"Error: unknown command 'tasks'"),  # tasks list fails
-        ])
+        runner.set_responses(
+            [
+                (1, b"", b"Error: unknown command 'tasks'"),  # tasks list fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -640,10 +692,12 @@ class TestTigerFlowClientCheckCapabilities:
     async def test_check_capabilities_raises_when_status_command_unknown(self) -> None:
         """check_capabilities should raise when status command not available."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b'[{"name": "transcribe"}]', b""),  # tasks list succeeds
-            (1, b"", b"Error: no such command 'status'"),  # status --help fails
-        ])
+        runner.set_responses(
+            [
+                (0, b'[{"name": "transcribe"}]', b""),  # tasks list succeeds
+                (1, b"", b"Error: no such command 'status'"),  # status --help fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -655,9 +709,15 @@ class TestTigerFlowClientCheckCapabilities:
     async def test_check_capabilities_ignores_other_errors(self) -> None:
         """check_capabilities should not raise for non-'unknown command' errors."""
         runner = MockRunner()
-        runner.set_responses([
-            (1, b"", b"Error: connection refused"),  # tasks list fails for other reason
-        ])
+        runner.set_responses(
+            [
+                (
+                    1,
+                    b"",
+                    b"Error: connection refused",
+                ),  # tasks list fails for other reason
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         # Should not raise - error is not "unknown command"
@@ -670,13 +730,17 @@ class TestTigerFlowClientRun:
     async def test_run_writes_config_yaml_to_output_dir(self) -> None:
         """run should write pipeline config as YAML to output_dir/pipeline.yaml."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # cat config
-            (0, b"", b""),  # tigerflow run
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # cat config
+                (0, b"", b""),  # tigerflow run
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
-        config = {"tasks": [{"name": "transcribe", "library": "tigerflow_ml.transcribe"}]}
+        config = {
+            "tasks": [{"name": "transcribe", "library": "tigerflow_ml.transcribe"}]
+        }
 
         await client.run(config, "/data/in", "/data/out")
 
@@ -689,11 +753,13 @@ class TestTigerFlowClientRun:
     async def test_run_builds_command_with_config_and_paths(self) -> None:
         """run should build tigerflow command with config path, input, and output."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # cat config
-            (0, b"", b""),  # tigerflow run
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # cat config
+                (0, b"", b""),  # tigerflow run
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
         config = {"tasks": [{"name": "transcribe"}]}
 
@@ -710,11 +776,13 @@ class TestTigerFlowClientRun:
     async def test_run_includes_idle_timeout(self) -> None:
         """run should include idle-timeout flag with specified value."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # cat config
-            (0, b"", b""),  # tigerflow run
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # cat config
+                (0, b"", b""),  # tigerflow run
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
         config = {"tasks": []}
 
@@ -725,10 +793,12 @@ class TestTigerFlowClientRun:
     async def test_run_raises_error_when_config_write_fails(self) -> None:
         """run should raise run error when writing config fails."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir succeeds
-            (1, b"", b"Permission denied"),  # cat fails
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir succeeds
+                (1, b"", b"Permission denied"),  # cat fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
         config = {"tasks": []}
 
@@ -741,11 +811,13 @@ class TestTigerFlowClientRun:
     async def test_run_raises_error_when_tigerflow_fails(self) -> None:
         """run should raise run error when tigerflow command fails."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # mkdir
-            (0, b"", b""),  # cat config
-            (1, b"", b"Invalid config"),  # tigerflow run fails
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # cat config
+                (1, b"", b"Invalid config"),  # tigerflow run fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
         config = {"tasks": []}
 
@@ -761,16 +833,26 @@ class TestTigerFlowClientStatus:
     async def test_status_parses_valid_response(self) -> None:
         """status should parse valid tigerflow JSON response."""
         runner = MockRunner()
-        runner.set_response(0, json.dumps({
-            "pid": 12345,
-            "running": True,
-            "staged": 100,
-            "finished": 50,
-            "failed": 5,
-            "tasks": [
-                {"name": "transcribe", "processed": 50, "ongoing": 10, "failed": 5},
-            ],
-        }).encode())
+        runner.set_response(
+            0,
+            json.dumps(
+                {
+                    "pid": 12345,
+                    "running": True,
+                    "staged": 100,
+                    "finished": 50,
+                    "failed": 5,
+                    "tasks": [
+                        {
+                            "name": "transcribe",
+                            "processed": 50,
+                            "ongoing": 10,
+                            "failed": 5,
+                        },
+                    ],
+                }
+            ).encode(),
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         status = await client.status("/data/out")
@@ -786,9 +868,14 @@ class TestTigerFlowClientStatus:
     async def test_status_raises_error_when_format_changes(self) -> None:
         """status should raise error if tigerflow changes its response format."""
         runner = MockRunner()
-        runner.set_response(0, json.dumps({
-            "unexpected": "format",
-        }).encode())
+        runner.set_response(
+            0,
+            json.dumps(
+                {
+                    "unexpected": "format",
+                }
+            ).encode(),
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -810,14 +897,19 @@ class TestTigerFlowClientStatus:
     async def test_status_builds_command_with_output_dir_and_json_flag(self) -> None:
         """status should build command with output_dir and --json flag."""
         runner = MockRunner()
-        runner.set_response(0, json.dumps({
-            "pid": None,
-            "running": False,
-            "staged": 0,
-            "finished": 0,
-            "failed": 0,
-            "tasks": [],
-        }).encode())
+        runner.set_response(
+            0,
+            json.dumps(
+                {
+                    "pid": None,
+                    "running": False,
+                    "staged": 0,
+                    "finished": 0,
+                    "failed": 0,
+                    "tasks": [],
+                }
+            ).encode(),
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.status("/data/output")
@@ -873,10 +965,12 @@ class TestTigerFlowClientListTasks:
     async def test_list_tasks_returns_parsed_json(self) -> None:
         """list_tasks should return parsed JSON list of tasks."""
         runner = MockRunner()
-        tasks_json = json.dumps([
-            {"name": "transcribe", "description": "Transcribe audio"},
-            {"name": "translate", "description": "Translate text"},
-        ])
+        tasks_json = json.dumps(
+            [
+                {"name": "transcribe", "description": "Transcribe audio"},
+                {"name": "translate", "description": "Translate text"},
+            ]
+        )
         runner.set_response(0, tasks_json.encode())
         client = TigerFlowClient(runner, "/home/user")
 
@@ -930,11 +1024,13 @@ class TestTigerFlowClientGetTaskInfo:
     async def test_get_task_info_returns_parsed_json(self) -> None:
         """get_task_info should return parsed JSON task details."""
         runner = MockRunner()
-        task_json = json.dumps({
-            "name": "transcribe",
-            "description": "Transcribe audio files",
-            "params": {"language": {"type": "string", "default": "en"}},
-        })
+        task_json = json.dumps(
+            {
+                "name": "transcribe",
+                "description": "Transcribe audio files",
+                "params": {"language": {"type": "string", "default": "en"}},
+            }
+        )
         runner.set_response(0, task_json.encode())
         client = TigerFlowClient(runner, "/home/user")
 

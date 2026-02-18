@@ -304,9 +304,7 @@ class TestCreateTigerflowClientForProfile:
             create_tigerflow_client_for_profile("nonexistent", MockAppConfig())
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
-    def test_creates_ssh_runner_for_slurm_profile(
-        self, mock_deserialize: Mock
-    ) -> None:
+    def test_creates_ssh_runner_for_slurm_profile(self, mock_deserialize: Mock) -> None:
         """Should create SSHRunner for SlurmProfile."""
         from blackfish.server.models.profile import SlurmProfile
         from blackfish.server.jobs.client import SSHRunner

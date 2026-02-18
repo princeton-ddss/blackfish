@@ -104,15 +104,18 @@ class TestRemoteImageDownload:
         png_bytes = create_test_png()
         remote_profile = create_remote_profile()
 
+        def mock_generator():
+            yield png_bytes
+
         with (
             mock.patch(
                 "blackfish.server.asgi._get_validated_slurm_profile",
                 return_value=remote_profile,
             ) as mock_get_profile,
             mock.patch(
-                "blackfish.server.asgi.sftp.read_file",
-                return_value=png_bytes,
-            ) as mock_read,
+                "blackfish.server.asgi.sftp.stream_file",
+                return_value=(len(png_bytes), mock_generator()),
+            ) as mock_stream,
         ):
             response = await client.get(
                 "/api/image",
@@ -124,7 +127,7 @@ class TestRemoteImageDownload:
             assert response.headers["content-type"] == "image/png"
 
             mock_get_profile.assert_called_once_with("remote-cluster")
-            mock_read.assert_called_once_with(remote_profile, "images/test.png")
+            mock_stream.assert_called_once_with(remote_profile, "images/test.png")
 
 
 class TestRemoteImageUpdate:
@@ -615,7 +618,7 @@ class TestRemoteFileErrorHandling:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.asgi.sftp.read_file",
+                "blackfish.server.asgi.sftp.stream_file",
                 side_effect=NotFoundException("Remote file not found"),
             ),
         ):

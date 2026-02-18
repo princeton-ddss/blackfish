@@ -7,17 +7,42 @@ import {
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+/**
+ * Format bytes into a human-readable string.
+ * @param {number} bytes
+ * @return {string}
+ */
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${Math.round(bytes / (1024 * 1024))}MB`;
+}
 
 /**
  * Dropdown menu for attaching files (browser upload or remote selection).
+ * Configurable for different file types (images, text files, etc.).
  * @param {object} props
+ * @param {string} props.accept - File types to accept (e.g., "image/*" or ".txt,.md,.py").
+ * @param {number} props.maxFileSize - Maximum file size in bytes.
+ * @param {React.ElementType} props.icon - Icon component to display.
+ * @param {string} props.label - Screen reader label for the button.
  * @param {object|null} props.profile - Current profile to determine remote availability.
  * @param {Function} props.onBrowserUpload - Callback when browser files are selected.
  * @param {Function} props.onRemoteSelect - Callback to open remote file browser.
  * @param {Function} props.onError - Callback when file validation fails.
  */
-function AttachmentMenu({ profile, onBrowserUpload, onRemoteSelect, onError }) {
+function AttachmentMenu({
+  accept,
+  maxFileSize = DEFAULT_MAX_FILE_SIZE,
+  icon: Icon = PaperClipIcon,
+  label = "Attach a file",
+  profile,
+  onBrowserUpload,
+  onRemoteSelect,
+  onError,
+}) {
   const fileInputRef = useRef(null);
   const isRemote = profile && profile.schema !== "local";
 
@@ -26,9 +51,9 @@ function AttachmentMenu({ profile, onBrowserUpload, onRemoteSelect, onError }) {
     const validFiles = [];
 
     for (const file of files) {
-      if (file.size > MAX_FILE_SIZE) {
+      if (file.size > maxFileSize) {
         if (onError) {
-          onError(file.name, "File exceeds 5MB limit");
+          onError(file.name, `File exceeds ${formatBytes(maxFileSize)} limit`);
         }
       } else {
         validFiles.push(file);
@@ -51,7 +76,7 @@ function AttachmentMenu({ profile, onBrowserUpload, onRemoteSelect, onError }) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept={accept}
         multiple
         onChange={handleFileInputChange}
         className="hidden"
@@ -59,8 +84,8 @@ function AttachmentMenu({ profile, onBrowserUpload, onRemoteSelect, onError }) {
 
       <Menu as="div" className="relative inline-block text-left">
         <MenuButton className="-m-2.5 flex size-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
-          <PaperClipIcon aria-hidden="true" className="size-5" />
-          <span className="sr-only">Attach a file</span>
+          <Icon aria-hidden="true" className="size-5" />
+          <span className="sr-only">{label}</span>
         </MenuButton>
 
         <MenuItems
@@ -117,6 +142,10 @@ function AttachmentMenu({ profile, onBrowserUpload, onRemoteSelect, onError }) {
 }
 
 AttachmentMenu.propTypes = {
+  accept: PropTypes.string,
+  maxFileSize: PropTypes.number,
+  icon: PropTypes.elementType,
+  label: PropTypes.string,
   profile: PropTypes.object,
   onBrowserUpload: PropTypes.func.isRequired,
   onRemoteSelect: PropTypes.func.isRequired,

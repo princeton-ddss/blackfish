@@ -14,7 +14,7 @@ export async function fetchFiles(path) {
 
 /** Return a list of available models. */
 export async function fetchModels(path) {
-  const res = await fetch(`${blackfishApiURL}/api/${path}&refresh=true`);
+  const res = await fetch(`${blackfishApiURL}/api/${path}`);
   if (!res.ok) {
     console.debug(`from fetchModels: failed to fetch models (status=${res.status})`);
     const error = new Error("Failed to fetch models.");
@@ -22,7 +22,7 @@ export async function fetchModels(path) {
     throw error;
   }
   const data = await res.json();
-  return data.map(model => {
+  return data.map((model) => {
     return {
       id: model.id,
       repo_id: model.repo,
@@ -30,9 +30,10 @@ export async function fetchModels(path) {
       profile: model.profile,
       image: model.image,
       model_dir: model.model_dir,
+      created_at: model.created_at,
       model_size_gb: model.metadata_?.model_size_gb ?? null,
-    }
-  })
+    };
+  });
 }
 
 /** Return a list of blackfish services. */
@@ -221,6 +222,59 @@ export async function fetchProfileResources(profileName) {
  * @param {string} repoId - The model repo ID (e.g., "meta-llama/Llama-2-7b")
  * @returns {Promise<number|null>} Model size in GB, or null if unavailable
  */
+/**
+ * Search for models on HuggingFace Hub.
+ * Returns array of { id, downloads, likes } or empty array on error.
+ */
+export async function searchHuggingFaceModels(query, limit = 10) {
+  if (!query || query.length < 2) {
+    return [];
+  }
+  try {
+    const res = await fetch(
+      `https://huggingface.co/api/models?search=${encodeURIComponent(query)}&limit=${limit}&sort=downloads&direction=-1`
+    );
+    if (!res.ok) {
+      return [];
+    }
+    const data = await res.json();
+    return data.map((m) => ({
+      id: m.id,
+      downloads: m.downloads,
+      likes: m.likes,
+      pipeline: m.pipeline_tag,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Fetch model refs (branches/tags) from HuggingFace Hub.
+ * Returns { branches: [{name, sha}], tags: [{name, sha}] } or error object.
+ */
+export async function fetchModelRefs(repoId) {
+  if (!repoId || !repoId.includes("/")) {
+    return null;
+  }
+  try {
+    const res = await fetch(`https://huggingface.co/api/models/${repoId}/refs`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        return { error: "Model not found", notFound: true };
+      }
+      return { error: `Failed to fetch refs (${res.status})` };
+    }
+    const data = await res.json();
+    return {
+      branches: data.branches?.map((b) => ({ name: b.name, sha: b.targetCommit })) || [],
+      tags: data.tags?.map((t) => ({ name: t.name, sha: t.targetCommit })) || [],
+    };
+  } catch {
+    return { error: "Connection failed" };
+  }
+}
+
 export async function fetchModelSizeFromHub(repoId) {
   console.debug(`[fetchModelSizeFromHub] Fetching size for ${repoId} from HuggingFace Hub`);
   try {
@@ -271,4 +325,103 @@ export async function fetchModelSizeFromHub(repoId) {
     console.error(`[fetchModelSizeFromHub] Error fetching ${repoId}:`, err);
     return null;
   }
+}
+
+/** Delete a model by its database ID. */
+export async function deleteModel(modelId) {
+  const res = await fetch(`${blackfishApiURL}/api/models/${modelId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    let message = "Failed to delete model";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+}
+
+/** Initiate a model download from Hugging Face. */
+export async function downloadModel({ repo_id, profile, revision = null, use_cache = false }) {
+  const res = await fetch(`${blackfishApiURL}/api/models/download`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo_id, profile, revision, use_cache }),
+  });
+
+  if (!res.ok) {
+    let message = "Failed to initiate download";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Get the status of a download task. */
+export async function getDownloadStatus(taskId) {
+  const res = await fetch(`${blackfishApiURL}/api/models/downloads/${taskId}`);
+  if (!res.ok) {
+    const error = new Error("Failed to get download status");
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** List download tasks, optionally filtered by status or profile. */
+export async function listDownloads({ status = null, profile = null } = {}) {
+  const params = new URLSearchParams();
+  if (status) params.append("status", status);
+  if (profile) params.append("profile", profile);
+
+  const url = params.toString()
+    ? `${blackfishApiURL}/api/models/downloads?${params}`
+    : `${blackfishApiURL}/api/models/downloads`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    const error = new Error("Failed to list downloads");
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Update a model (check for or download latest revision). */
+export async function updateModel(modelId, { checkOnly = false } = {}) {
+  const params = new URLSearchParams();
+  if (checkOnly) params.append("check_only", "true");
+
+  const res = await fetch(`${blackfishApiURL}/api/models/${modelId}?${params}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    let message = "Failed to update model";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
 }

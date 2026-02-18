@@ -72,7 +72,7 @@ function RootLayoutContent() {
 
       {/* Main content */}
       <main className="lg:pl-72">
-        <div className="px-4 py-6 sm:px-6 lg:pl-8 lg:pr-2 lg:pt-16">
+        <div className="px-4 py-6 sm:px-6 lg:px-8 lg:pt-16">
           <Outlet />
         </div>
       </main>

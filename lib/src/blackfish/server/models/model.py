@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Tuple, Optional
 import shutil
 from pathlib import Path
@@ -50,9 +51,48 @@ class ModelNotFoundError(FileNotFoundError): ...
 class RevisionNotFoundError(FileNotFoundError): ...
 
 
+class InvalidRepoIdError(ValueError):
+    """Raised when a repo_id doesn't match the expected format."""
+
+    pass
+
+
+# Pattern for valid HuggingFace repo IDs: namespace/model_name
+# Both parts can contain letters, numbers, hyphens, underscores, and periods
+REPO_ID_PATTERN = re.compile(r"^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$")
+
+
+def validate_repo_id(repo_id: str) -> None:
+    """Validate that a repo_id matches the expected HuggingFace format.
+
+    Args:
+        repo_id: The repository ID to validate (e.g., "meta-llama/Llama-2-7b-hf")
+
+    Raises:
+        InvalidRepoIdError: If the repo_id doesn't match the expected format.
+    """
+    if not repo_id or not REPO_ID_PATTERN.match(repo_id):
+        raise InvalidRepoIdError(
+            f"Invalid repo_id '{repo_id}'. Expected format: 'namespace/model_name' "
+            "(e.g., 'meta-llama/Llama-2-7b-hf')"
+        )
+
+
 def split(repo_id: str) -> Tuple[str, str]:
-    repo_id, revision = repo_id.split("/")
-    return repo_id, revision
+    """Split a repo_id into namespace and model name.
+
+    Args:
+        repo_id: The repository ID (e.g., "bigscience/bloom-560m")
+
+    Returns:
+        A tuple of (namespace, model_name)
+
+    Raises:
+        InvalidRepoIdError: If the repo_id doesn't match the expected format.
+    """
+    validate_repo_id(repo_id)
+    namespace, model_name = repo_id.split("/")
+    return namespace, model_name
 
 
 def remove_model(
@@ -81,18 +121,50 @@ def remove_model(
     model_dir = cache_dir.joinpath(f"models--{namespace}--{model_id}")
 
     if revision is None:
+        # Delete entire model directory
         try:
             shutil.rmtree(model_dir)
         except FileNotFoundError:
             raise ModelNotFoundError(f"{repo_id} not found in directory {cache_dir}.")
     else:
-        op = scan_cache_dir().delete_revisions(revision)
-        if len(list(op.blobs)) == 0:
+        # Check if model directory exists
+        if not model_dir.exists():
+            raise ModelNotFoundError(f"{repo_id} not found in directory {cache_dir}.")
+
+        # Check snapshots directory for revisions
+        snapshots_dir = model_dir / "snapshots"
+        if not snapshots_dir.exists():
+            # No snapshots directory - delete entire model dir
+            shutil.rmtree(model_dir)
+            return
+
+        # List actual revision directories
+        revision_dirs = [d for d in snapshots_dir.iterdir() if d.is_dir()]
+
+        # Check if the target revision exists
+        target_revision_dir = snapshots_dir / revision
+        if not target_revision_dir.exists():
             raise RevisionNotFoundError(
-                f"{revision} not found in directory {cache_dir}."
+                f"{revision} not found for {repo_id} in directory {cache_dir}."
             )
+
+        # If this is the only revision, delete the entire model directory
+        if len(revision_dirs) == 1:
+            shutil.rmtree(model_dir)
         else:
-            op.execute()
+            # Multiple revisions - try HF's cache deletion first for proper cleanup
+            try:
+                cache = scan_cache_dir(cache_dir)
+                repo = next((r for r in cache.repos if r.repo_id == repo_id), None)
+                if repo is not None:
+                    op = cache.delete_revisions(revision)
+                    op.execute()
+                else:
+                    # HF scan didn't find it - delete snapshot directory directly
+                    shutil.rmtree(target_revision_dir)
+            except Exception:
+                # Fall back to direct deletion if HF cache operations fail
+                shutil.rmtree(target_revision_dir)
 
 
 def get_pipeline(res: ModelInfo) -> str | None:
@@ -110,7 +182,7 @@ def add_model(
     profile: Profile,
     revision: str | None = None,
     use_cache: bool = False,
-) -> Optional[Tuple[Model, str]]:
+) -> Tuple[Model, str]:
     """Download a model from Hugging Face and makes it available to Blackfish.
 
     This method only works for *local* profiles, i.e., the model files can only be

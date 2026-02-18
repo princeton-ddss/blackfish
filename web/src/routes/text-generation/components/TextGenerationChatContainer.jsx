@@ -17,15 +17,15 @@ import {
   buildMultimodalContent,
   extractTextFromContent,
   extractImagesFromContent,
+  MAX_IMAGE_FILE_SIZE,
 } from "../lib/imageUtils";
 import {
-  readFileAsText,
-  fetchRemoteText,
   prependFileContext,
   getTextFileAcceptString,
   MAX_TEXT_FILE_SIZE,
   TEXT_FILE_EXTENSIONS,
 } from "../lib/fileUtils";
+import { useFileAttachments } from "../lib/useFileAttachments";
 import AttachmentMenu from "./AttachmentMenu";
 import ImageAttachmentList from "./ImageAttachmentList";
 import FileAttachmentList from "./FileAttachmentList";
@@ -152,7 +152,7 @@ function UserMessageInput({
                 {/* Image attachment menu */}
                 <AttachmentMenu
                   accept="image/*"
-                  maxFileSize={5 * 1024 * 1024}
+                  maxFileSize={MAX_IMAGE_FILE_SIZE}
                   icon={PhotoIcon}
                   label="Attach image"
                   profile={profile}
@@ -610,12 +610,23 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     content: sessionStorage.getItem("tgcc-um") || "",
   });
   const [attachedImages, setAttachedImages] = useState([]);
-  const [attachedFiles, setAttachedFiles] = useState([]);
   const [imageBrowserOpen, setImageBrowserOpen] = useState(false);
-  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
   const [imageError, setImageError] = useState(null);
-  const [fileError, setFileError] = useState(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+
+  // File attachment state and handlers
+  const {
+    attachedFiles,
+    fileBrowserOpen,
+    setFileBrowserOpen,
+    fileError,
+    setFileError,
+    handleFileBrowserUpload,
+    handleFileRemoteSelect,
+    handleRemoveFile,
+    handleFileError,
+    clearFiles,
+  } = useFileAttachments();
 
   const elementRef = useRef(null);
 
@@ -658,59 +669,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     );
   }, []);
 
-  // File attachment handlers
-  const handleFileBrowserUpload = useCallback(async (files) => {
-    for (const file of files) {
-      try {
-        const content = await readFileAsText(file);
-        setAttachedFiles((prev) => [
-          ...prev,
-          {
-            source: "browser",
-            file: file,
-            name: file.name,
-            content: content,
-          },
-        ]);
-      } catch (error) {
-        console.error("Failed to read file:", error);
-        setFileError({ fileName: file.name, message: "Failed to read file" });
-        setTimeout(() => setFileError(null), 5000);
-      }
-    }
-  }, []);
-
-  const handleFileRemoteSelect = useCallback(async (fileInfo) => {
-    try {
-      const content = await fetchRemoteText(fileInfo.path, fileInfo.profile);
-      const fileName = fileInfo.path.split("/").pop();
-      setAttachedFiles((prev) => [
-        ...prev,
-        {
-          source: "remote",
-          path: fileInfo.path,
-          profile: fileInfo.profile,
-          name: fileName,
-          content: content,
-        },
-      ]);
-    } catch (error) {
-      console.error("Failed to fetch remote file:", error);
-      const fileName = fileInfo.path.split("/").pop();
-      setFileError({ fileName, message: error.message });
-      setTimeout(() => setFileError(null), 5000);
-    }
-  }, []);
-
-  const handleRemoveFile = (index) => {
-    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleFileError = useCallback((fileName, errorMessage) => {
-    setFileError({ fileName, message: errorMessage });
-    setTimeout(() => setFileError(null), 5000);
-  }, []);
-
+  
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("user message submitted");
@@ -770,7 +729,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     // Clear attachments after sending
     setAttachedImages([]);
-    setAttachedFiles([]);
+    clearFiles();
 
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);

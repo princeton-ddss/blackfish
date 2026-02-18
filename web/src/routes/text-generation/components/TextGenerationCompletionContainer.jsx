@@ -1,4 +1,4 @@
-import { useContext, useState, useCallback } from "react";
+import { useContext, useState } from "react";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
@@ -9,13 +9,12 @@ import {
   PaperAirplaneIcon,
 } from "@heroicons/react/24/outline";
 import {
-  readFileAsText,
-  fetchRemoteText,
   prependFileContext,
   getTextFileAcceptString,
   MAX_TEXT_FILE_SIZE,
   TEXT_FILE_EXTENSIONS,
 } from "../lib/fileUtils";
+import { useFileAttachments } from "../lib/useFileAttachments";
 import AttachmentMenu from "./AttachmentMenu";
 import FileAttachmentList from "./FileAttachmentList";
 import FileSelectModal from "@/components/FileSelectModal";
@@ -239,62 +238,19 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
     sessionStorage.getItem("tgco") || ""
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [attachedFiles, setAttachedFiles] = useState([]);
-  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
-  const [fileError, setFileError] = useState(null);
 
-  // File attachment handlers
-  const handleFileBrowserUpload = useCallback(async (files) => {
-    for (const file of files) {
-      try {
-        const content = await readFileAsText(file);
-        setAttachedFiles((prev) => [
-          ...prev,
-          {
-            source: "browser",
-            file: file,
-            name: file.name,
-            content: content,
-          },
-        ]);
-      } catch (error) {
-        console.error("Failed to read file:", error);
-        setFileError({ fileName: file.name, message: "Failed to read file" });
-        setTimeout(() => setFileError(null), 5000);
-      }
-    }
-  }, []);
-
-  const handleFileRemoteSelect = useCallback(async (fileInfo) => {
-    try {
-      const content = await fetchRemoteText(fileInfo.path, fileInfo.profile);
-      const fileName = fileInfo.path.split("/").pop();
-      setAttachedFiles((prev) => [
-        ...prev,
-        {
-          source: "remote",
-          path: fileInfo.path,
-          profile: fileInfo.profile,
-          name: fileName,
-          content: content,
-        },
-      ]);
-    } catch (error) {
-      console.error("Failed to fetch remote file:", error);
-      const fileName = fileInfo.path.split("/").pop();
-      setFileError({ fileName, message: error.message });
-      setTimeout(() => setFileError(null), 5000);
-    }
-  }, []);
-
-  const handleRemoveFile = (index) => {
-    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleFileError = useCallback((fileName, errorMessage) => {
-    setFileError({ fileName, message: errorMessage });
-    setTimeout(() => setFileError(null), 5000);
-  }, []);
+  // File attachment state and handlers
+  const {
+    attachedFiles,
+    fileBrowserOpen,
+    setFileBrowserOpen,
+    fileError,
+    setFileError,
+    handleFileBrowserUpload,
+    handleFileRemoteSelect,
+    handleRemoveFile,
+    handleFileError,
+  } = useFileAttachments();
 
   const handleSubmit = async (event) => {
     event.preventDefault();

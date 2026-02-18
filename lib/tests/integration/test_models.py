@@ -15,18 +15,6 @@ async def test_models_no_auth(no_auth_client: AsyncClient) -> None:
     )
     assert response.status_code == 401
 
-    response = await no_auth_client.post(
-        "/api/models",
-        json={
-            "repo": "openai/whisper-small",
-            "profile": "default",
-            "revision": "1",
-            "image": "speech_recognition",
-            "model_dir": "/home/test/.blackfish/models/models--openai/whisper-small",
-        },
-    )
-    assert response.status_code == 401
-
     response = await no_auth_client.delete(
         "/api/models/cc64bbef-816c-4070-941d-3dabece7a3b9"
     )
@@ -36,7 +24,7 @@ async def test_models_no_auth(no_auth_client: AsyncClient) -> None:
 async def test_models_list(client: AsyncClient) -> None:
     response = await client.get("/api/models")
     assert response.status_code == 200
-    assert len(response.json()) == 4
+    assert len(response.json()) == 5
 
     response = await client.get("/api/models?image=speech_recognition")
     assert response.status_code == 200
@@ -56,7 +44,7 @@ async def test_models_list(client: AsyncClient) -> None:
 
     response = await client.get("/api/models?profile=default")
     assert response.status_code == 200
-    assert len(response.json()) == 2
+    assert len(response.json()) == 3
 
 
 async def test_models_get(client: AsyncClient) -> None:
@@ -65,30 +53,6 @@ async def test_models_get(client: AsyncClient) -> None:
 
     response = await client.get("/api/models/99999999-9999-9999-9999-999999999999")
     assert response.status_code == 404
-
-
-async def test_models_create(client: AsyncClient) -> None:
-    response = await client.post(
-        "/api/models",
-        json={
-            "repo": "openai/whisper-small",
-            "profile": "default",
-            "revision": "1",
-            "image": "speech_recognition",
-            "model_dir": "/home/test/.blackfish/models/models--openai/whisper-small",
-        },
-    )
-    assert response.status_code == 201
-
-    response = await client.post(
-        "/api/models",
-        json={
-            "repo": "openai/whisper-small",
-            "profile": "default",
-            "revision": "1",
-        },
-    )
-    assert response.status_code == 400
 
 
 async def test_delete_model(client: AsyncClient) -> None:

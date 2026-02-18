@@ -27,7 +27,8 @@ import Stepper from "@/components/Stepper";
 import DirectoryBrowser from "@/components/DirectoryBrowser";
 import { useModels } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
-import { fetchProfileResources, fetchModelTier } from "@/lib/requests";
+import { fetchProfileResources, fetchModelSizeFromHub } from "@/lib/requests";
+import { selectTierByModelSize } from "@/lib/util";
 import PropTypes from "prop-types";
 
 // Task definitions - each task maps to a service type
@@ -258,24 +259,41 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     }
   }, [partitions, selectedPartition]);
 
-  // Fetch recommended tier when model or partition changes
+  // Select recommended tier based on model size (client-side)
   useEffect(() => {
-    if (repoId && profile && selectedPartition) {
-      fetchModelTier(encodeURIComponent(repoId), profile.name, selectedPartition)
-        .then(data => {
-          if (data && data.tier) {
-            setRecommendedTier(data.tier);
-            setSelectedTier(data.tier);
-          }
-        })
-        .catch(err => {
-          console.debug("NewJobModal: failed to fetch model tier", err);
-          if (tiers.length > 0 && !selectedTier) {
-            setSelectedTier(tiers[0].name);
-          }
-        });
+    if (!repoId || tiers.length === 0) return;
+
+    // Check for model override first
+    const modelOverrides = resources?.models || {};
+    if (modelOverrides[repoId]) {
+      const override = modelOverrides[repoId];
+      if (override.includes('.')) {
+        const [partitionName, tierName] = override.split('.');
+        setSelectedPartition(partitionName);
+        setRecommendedTier(tierName);
+        setSelectedTier(tierName);
+      } else {
+        setRecommendedTier(override);
+        setSelectedTier(override);
+      }
+      return;
     }
-  }, [repoId, profile, selectedPartition, tiers, selectedTier]);
+
+    // Fetch model size from HuggingFace and select tier
+    fetchModelSizeFromHub(repoId)
+      .then(sizeGb => {
+        if (sizeGb !== null) {
+          const tierName = selectTierByModelSize(tiers, sizeGb);
+          if (tierName) {
+            setRecommendedTier(tierName);
+            setSelectedTier(tierName);
+          }
+        }
+      })
+      .catch(err => {
+        console.debug("NewJobModal: failed to fetch model size", err);
+      });
+  }, [repoId, tiers, resources?.models]);
 
   // Reset form on open
   useEffect(() => {

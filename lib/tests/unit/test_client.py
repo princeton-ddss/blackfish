@@ -166,10 +166,10 @@ class TestSSHRunner:
             assert exc_info.value.host == "slow-host"
             mock_proc.kill.assert_called_once()
 
-    async def test_run_uses_default_timeout_of_60_seconds(self) -> None:
-        """Run should use 60 second timeout by default."""
+    async def test_run_uses_default_timeout_of_120_seconds(self) -> None:
+        """Run should use 120 second timeout by default."""
         runner = SSHRunner("user", "host")
-        assert runner.timeout == 60
+        assert runner.timeout == 120
 
 
 class TestLocalRunner:

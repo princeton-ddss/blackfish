@@ -231,7 +231,7 @@ class BatchJob(UUIDAuditBase):
 
         await client.stop(self.output_dir)
 
-    async def update(self, client: TigerFlowClient) -> BatchJobStatus | None:
+    async def update(self, client: TigerFlowClient) -> BatchJobStatus:
         """Update job status from TigerFlow.
 
         Polls TigerFlow for current status and updates job fields.
@@ -241,7 +241,10 @@ class BatchJob(UUIDAuditBase):
             client: TigerFlowClient for remote operations
 
         Returns:
-            Current batch job status, or None if update failed
+            Current batch job status
+
+        Raises:
+            TigerFlowError: If status check fails
         """
         logger.debug(
             f"Checking status of batch job {self.id}. "

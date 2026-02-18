@@ -114,7 +114,7 @@ class SSHRunner:
 
     SSH_ERROR_EXIT_CODE = 255
 
-    def __init__(self, user: str, host: str, timeout: float = 60):
+    def __init__(self, user: str, host: str, timeout: float = 120):
         self.user = user
         self._host = host
         self.timeout = timeout

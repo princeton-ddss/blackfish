@@ -448,11 +448,14 @@ function ProfilesSection() {
   return (
     <div>
       {renderHeader()}
-      <div className="divide-y divide-gray-100 dark:divide-gray-700">
+      <div className="divide-y divide-gray-100 dark:divide-gray-700 mt-2">
         {profiles?.map((p) => (
-          <div key={p.name} className="py-3 first:pt-0 last:pb-0">
+          <div key={p.name} className="py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
+                {selectedProfile?.name === p.name && (
+                  <CheckIcon className="h-4 w-4 text-blue-500" />
+                )}
                 <span className="text-sm font-medium text-gray-900 dark:text-white">{p.name}</span>
                 <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${
                   p.schema === "slurm"

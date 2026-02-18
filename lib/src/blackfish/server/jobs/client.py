@@ -7,7 +7,7 @@ import json
 import re
 from typing import Any, Optional, Protocol
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 from packaging.version import Version
 from pydantic import BaseModel, ValidationError
 
@@ -361,9 +361,7 @@ class TigerFlowClient:
         Returns:
             Version string if installed, None otherwise
         """
-        returncode, stdout, _ = await self.runner.run(
-            f"{self._pip_bin} show {package}"
-        )
+        returncode, stdout, _ = await self.runner.run(f"{self._pip_bin} show {package}")
         if returncode != 0:
             return None
 
@@ -495,7 +493,9 @@ class TigerFlowClient:
             write_cmd = f"cat > {config_path} << 'TIGERFLOW_CONFIG_EOF'\n{yaml_content}TIGERFLOW_CONFIG_EOF"
             await self._run(write_cmd)
         except TigerFlowError as e:
-            raise TigerFlowError("run", self.host, f"Failed to write config: {e.details}")
+            raise TigerFlowError(
+                "run", self.host, f"Failed to write config: {e.details}"
+            )
 
         # Run tigerflow
         command = (
@@ -576,11 +576,16 @@ class TigerFlowClient:
 
         try:
             stdout, _ = await self._run(command)
-            return json.loads(stdout.decode("utf-8"))
+            result: list[dict[str, Any]] = json.loads(stdout.decode("utf-8"))
+            return result
         except TigerFlowError as e:
-            raise TigerFlowError("command", self.host, f"Failed to list tasks: {e.details}")
+            raise TigerFlowError(
+                "command", self.host, f"Failed to list tasks: {e.details}"
+            )
         except json.JSONDecodeError as e:
-            raise TigerFlowError("command", self.host, f"Invalid JSON from tasks list: {e}")
+            raise TigerFlowError(
+                "command", self.host, f"Invalid JSON from tasks list: {e}"
+            )
 
     async def get_task_info(self, task: str) -> dict[str, Any]:
         """Get details for a specific task.
@@ -598,8 +603,13 @@ class TigerFlowClient:
 
         try:
             stdout, _ = await self._run(command)
-            return json.loads(stdout.decode("utf-8"))
+            result: dict[str, Any] = json.loads(stdout.decode("utf-8"))
+            return result
         except TigerFlowError as e:
-            raise TigerFlowError("command", self.host, f"Failed to get task info: {e.details}")
+            raise TigerFlowError(
+                "command", self.host, f"Failed to get task info: {e.details}"
+            )
         except json.JSONDecodeError as e:
-            raise TigerFlowError("command", self.host, f"Invalid JSON from task info: {e}")
+            raise TigerFlowError(
+                "command", self.host, f"Invalid JSON from task info: {e}"
+            )

@@ -149,7 +149,6 @@ service_classes = load_service_classes()
 ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
 
 
-
 # --- Auth ---
 AUTH_TOKEN: Optional[bytes] = None
 if blackfish_config.AUTH_TOKEN is not None:
@@ -1374,7 +1373,8 @@ async def get_task(
         raise NotFoundException(detail=f"Profile '{profile}' not found")
     except TigerFlowError as e:
         # Check if this is a "task not found" type error
-        if "not found" in e.details.lower() or "unknown task" in e.details.lower():
+        details = e.details or ""
+        if "not found" in details.lower() or "unknown task" in details.lower():
             raise NotFoundException(detail=f"Task '{task}' not found")
         raise InternalServerException(detail=e.user_message())
 

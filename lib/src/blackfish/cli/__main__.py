@@ -713,11 +713,7 @@ def list_batch_jobs(
             return
 
     def is_active(job: Any) -> bool:
-        return job["status"] in [
-            BatchJobStatus.SUBMITTED,
-            BatchJobStatus.PENDING,
-            BatchJobStatus.RUNNING,
-        ]
+        return bool(job["status"] == BatchJobStatus.RUNNING)
 
     jobs = res.json()
     for job in jobs:

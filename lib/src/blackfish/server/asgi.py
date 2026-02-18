@@ -1762,6 +1762,49 @@ async def get_model(model_id: str, session: AsyncSession) -> Model:
         raise NotFoundException(detail=f"Model {model_id} not found") from e
 
 
+@post("/api/models", guards=ENDPOINT_GUARDS)
+async def create_model(data: CreateModelRequest, session: AsyncSession) -> Model:
+    """Create a model record in the database, or return existing if already present.
+
+    This endpoint is used by the CLI after downloading a model locally.
+    The web UI uses the /api/models/download endpoint instead, which handles
+    both downloading and database insertion in a background task.
+
+    If a model with the same repo/profile/revision already exists, the existing
+    record is returned (idempotent behavior for CLI re-runs).
+
+    Args:
+        data: Model creation request with repo, profile, revision, image, model_dir
+        session: Database session (injected)
+
+    Returns:
+        The created or existing Model object
+    """
+    # Check for existing model with same repo, profile, and revision
+    existing_query = sa.select(Model).where(
+        Model.repo == data.repo,
+        Model.profile == data.profile,
+        Model.revision == data.revision,
+    )
+    result = await session.execute(existing_query)
+    existing_model = result.scalar_one_or_none()
+    if existing_model is not None:
+        # Return existing model (idempotent)
+        return existing_model
+
+    model = Model(
+        repo=data.repo,
+        profile=data.profile,
+        revision=data.revision,
+        image=data.image,
+        model_dir=data.model_dir,
+        metadata_=data.metadata_,
+    )
+    session.add(model)
+    await session.flush()  # Populate ID before returning
+    return model
+
+
 @delete("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
 async def delete_model(model_id: str, session: AsyncSession, state: State) -> None:
     """Delete a specific model by its database ID (UUID).
@@ -2137,6 +2180,18 @@ async def update_model(
 # ============================================================================
 # Model Download Endpoints
 # ============================================================================
+
+
+@dataclass
+class CreateModelRequest:
+    """Request to create a model record (used by CLI after local download)."""
+
+    repo: str
+    profile: str
+    revision: str
+    image: str
+    model_dir: str
+    metadata_: Optional[dict[str, Any]] = None
 
 
 @dataclass
@@ -2767,6 +2822,7 @@ app = Litestar(
         delete_job,
         get_model,
         get_models,
+        create_model,
         update_model,
         delete_model,
         delete_models,

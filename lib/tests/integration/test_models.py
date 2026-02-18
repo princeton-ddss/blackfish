@@ -15,6 +15,18 @@ async def test_models_no_auth(no_auth_client: AsyncClient) -> None:
     )
     assert response.status_code == 401
 
+    response = await no_auth_client.post(
+        "/api/models",
+        json={
+            "repo": "test/model",
+            "profile": "default",
+            "revision": "main",
+            "image": "text-generation",
+            "model_dir": "/tmp/test",
+        },
+    )
+    assert response.status_code == 401
+
     response = await no_auth_client.delete(
         "/api/models/cc64bbef-816c-4070-941d-3dabece7a3b9"
     )
@@ -53,6 +65,23 @@ async def test_models_get(client: AsyncClient) -> None:
 
     response = await client.get("/api/models/99999999-9999-9999-9999-999999999999")
     assert response.status_code == 404
+
+
+async def test_create_model(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/models",
+        json={
+            "repo": "new-org/new-model",
+            "profile": "default",
+            "revision": "v1.0",
+            "image": "text-generation",
+            "model_dir": "/tmp/models/new-org--new-model",
+        },
+    )
+    assert response.status_code == 201
+    result = response.json()
+    assert result["repo"] == "new-org/new-model"
+    assert "id" in result
 
 
 async def test_delete_model(client: AsyncClient) -> None:

@@ -1049,17 +1049,13 @@ def models_add(
             return
 
     try:
-        model_data = add_model(
+        model, path = add_model(
             repo_id, profile=matched, revision=revision, use_cache=use_cache
         )
-        if model_data is not None:
-            model, path = model_data
-            print(
-                f"{LogSymbols.SUCCESS.value} Successfully downloaded model {repo_id} to"
-                f" {path}."
-            )
-        else:
-            return None
+        print(
+            f"{LogSymbols.SUCCESS.value} Successfully downloaded model {repo_id} to"
+            f" {path}."
+        )
     except Exception as e:
         print(f"{LogSymbols.ERROR.value} Failed to download model {repo_id}: {e}.")
         return
@@ -1074,6 +1070,7 @@ def models_add(
                     "revision": model.revision,
                     "image": model.image,
                     "model_dir": path,
+                    "metadata_": model.metadata_,
                 },
             )
             if not res.ok:

@@ -570,6 +570,95 @@ class TestDeleteModelsAPI:
         assert remaining_models[0]["revision"] == "specific-v2"
 
 
+class TestCreateModelAPI:
+    """Test cases for the POST /api/models endpoint (CLI compatibility)."""
+
+    async def test_create_model_requires_authentication(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that model creation requires authentication."""
+        data = {
+            "repo": "test/model",
+            "profile": "default",
+            "revision": "main",
+            "image": "text-generation",
+            "model_dir": "/tmp/models/test--model",
+        }
+        response = await no_auth_client.post("/api/models", json=data)
+        assert response.status_code == 401
+
+    async def test_create_model_success(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test successful model creation."""
+        data = {
+            "repo": "new-org/new-model",
+            "profile": "default",
+            "revision": "v1.0",
+            "image": "text-generation",
+            "model_dir": "/tmp/models/new-org--new-model",
+        }
+        response = await client.post("/api/models", json=data)
+        assert response.status_code == 201
+
+        result = response.json()
+        assert result["repo"] == "new-org/new-model"
+        assert result["profile"] == "default"
+        assert result["revision"] == "v1.0"
+        assert result["image"] == "text-generation"
+        assert result["model_dir"] == "/tmp/models/new-org--new-model"
+        assert "id" in result
+
+    async def test_create_model_with_metadata(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test model creation with metadata (as CLI sends after add_model)."""
+        data = {
+            "repo": "meta-org/meta-model",
+            "profile": "default",
+            "revision": "v2.0",
+            "image": "speech-recognition",
+            "model_dir": "/tmp/models/meta-org--meta-model",
+            "metadata_": {"model_size_gb": 3.5, "dtype": "float16"},
+        }
+        response = await client.post("/api/models", json=data)
+        assert response.status_code == 201
+
+        result = response.json()
+        assert result["repo"] == "meta-org/meta-model"
+        assert result["metadata_"] == {"model_size_gb": 3.5, "dtype": "float16"}
+
+    async def test_create_model_missing_required_fields(self, client: AsyncTestClient):
+        """Test that missing required fields returns 400."""
+        data = {"repo": "incomplete/model"}
+        response = await client.post("/api/models", json=data)
+        assert response.status_code == 400
+
+    async def test_create_model_idempotent(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test that creating same model twice returns existing record (idempotent)."""
+        data = {
+            "repo": "dup-org/dup-model",
+            "profile": "default",
+            "revision": "v1.0",
+            "image": "text-generation",
+            "model_dir": "/tmp/models/dup-org--dup-model",
+        }
+        # First creation should succeed
+        response1 = await client.post("/api/models", json=data)
+        assert response1.status_code == 201
+        model1 = response1.json()
+
+        # Second creation with same repo/profile/revision returns existing
+        response2 = await client.post("/api/models", json=data)
+        assert response2.status_code == 201
+        model2 = response2.json()
+
+        # Same model ID returned
+        assert model1["id"] == model2["id"]
+
+
 class TestDownloadModelAPI:
     """Test cases for the POST /api/models/download endpoint."""
 

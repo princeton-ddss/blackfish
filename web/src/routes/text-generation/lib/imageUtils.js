@@ -108,6 +108,11 @@ export const IMAGE_EXTENSIONS = [
 ];
 
 /**
+ * Maximum file size for image attachments (5MB).
+ */
+export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+
+/**
  * Check if a filename has a supported image extension.
  * @param {string} filename - The filename to check.
  * @returns {boolean} True if supported image file.

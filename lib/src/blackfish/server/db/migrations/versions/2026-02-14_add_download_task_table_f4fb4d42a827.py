@@ -2,7 +2,7 @@
 """add download_task table
 
 Revision ID: f4fb4d42a827
-Revises: 27b628a63d4e
+Revises: b2c3d4e5f6a7
 Create Date: 2026-02-14 15:21:16.594635+00:00
 
 """
@@ -44,7 +44,7 @@ sa.EncryptedText = EncryptedText
 
 # revision identifiers, used by Alembic.
 revision = "f4fb4d42a827"
-down_revision = "27b628a63d4e"
+down_revision = "b2c3d4e5f6a7"
 branch_labels = None
 depends_on = None
 

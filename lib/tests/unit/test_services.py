@@ -205,7 +205,9 @@ class TestServiceLaunchError:
 
     def test_details_included_in_message(self):
         """Test that details are appended to user message when provided."""
-        error = ServiceLaunchError("ssh", "cluster.example.com", details="Connection refused")
+        error = ServiceLaunchError(
+            "ssh", "cluster.example.com", details="Connection refused"
+        )
         message = error.user_message()
         assert "Could not connect to cluster.example.com" in message
         assert "(Connection refused)" in message

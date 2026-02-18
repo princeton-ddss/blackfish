@@ -81,4 +81,97 @@ The `snapshot_download` method store models files to `~/.cache/huggingface/hub/`
 
     In addition to downloading model files, the `blackfish model add` command extracts metadata from the model and adds it go an internal database of models available to the profile that was used to add the model. Manually added models will not show up when running `blackfish model ls` (because they are not added to this database), but Blackfish will still be able to discover and run these models.
 
+## Resource Tiers
+
+Resource tiers allow HPC administrators to define pre-configured resource bundles that users can select when launching services. This simplifies the user experience by presenting meaningful options like "Small", "Medium", and "Large" instead of requiring users to manually specify GPU counts, memory, and CPU cores.
+
+### Configuration File
+
+Resource tiers are configured in a `resource_specs.yaml` file placed in the profile's `cache_dir`. For shared HPC environments, this is typically a shared directory like `/shared/.blackfish/resource_specs.yaml`.
+
+If no configuration file exists, Blackfish uses sensible defaults with four tiers: CPU Only, Small (1 GPU), Medium (2 GPUs), and Large (4 GPUs).
+
+### Schema
+
+```yaml
+# Time constraints for job submission (in minutes)
+time:
+  default: 30    # Default job time
+  max: 180       # Maximum allowed job time
+
+# Slurm partitions and their available tiers
+partitions:
+  gpu:                          # Partition name (matches Slurm partition)
+    default: true               # Mark as default partition
+    tiers:
+      - name: Small
+        description: "Small models (up to 16GB)"
+        max_model_size_gb: 16   # Maximum model size for this tier
+        gpu_count: 1
+        gpu_type: a100          # Optional: for display purposes
+        cpu_cores: 4
+        memory_gb: 16
+        slurm:                  # Optional: additional Slurm flags
+          constraint: "gpu80"   # Passed to --constraint
+
+      - name: Medium
+        description: "Medium models (up to 80GB)"
+        max_model_size_gb: 80
+        gpu_count: 2
+        cpu_cores: 8
+        memory_gb: 32
+
+      - name: Large
+        description: "Large models (80GB+)"
+        max_model_size_gb: null  # No limit (catch-all tier)
+        gpu_count: 4
+        cpu_cores: 16
+        memory_gb: 64
+
+  cpu:                          # Additional partition
+    default: false
+    tiers:
+      - name: CPU Only
+        description: "For testing or small models"
+        max_model_size_gb: 2
+        gpu_count: 0
+        cpu_cores: 4
+        memory_gb: 8
+
+# Optional: Model-specific tier overrides
+models:
+  "meta-llama/Llama-2-70b-hf": "gpu.Large"      # Force specific tier
+  "openai/whisper-large-v3": "gpu.Medium"
+```
+
+### Tier Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Display name for the tier |
+| `description` | string | Yes | User-facing description |
+| `max_model_size_gb` | number/null | Yes | Maximum model size (null = no limit) |
+| `gpu_count` | integer | Yes | Number of GPUs to request |
+| `gpu_type` | string | No | GPU type (for display only) |
+| `cpu_cores` | integer | Yes | Number of CPU cores |
+| `memory_gb` | integer | Yes | Memory in GB |
+| `slurm` | object | No | Additional Slurm flags |
+
+### Slurm Configuration
+
+The optional `slurm` section supports:
+
+- `constraint`: Passed directly to Slurm's `--constraint` flag (e.g., `"gpu80"` for 80GB GPUs)
+- `gres`: Custom gres specification (e.g., `"gpu:a100"`)
+
+### Tier Selection
+
+When a user launches a service, Blackfish automatically recommends a tier based on the model's size:
+
+1. **Model override**: If the model appears in the `models` section, that tier is used
+2. **Size matching**: Otherwise, the smallest tier whose `max_model_size_gb` exceeds the model size is selected
+3. **Catch-all**: If no tier matches, the tier with `max_model_size_gb: null` is used
+
+Users can override the automatic selection in the UI.
+
 [^1]: If you only intend to run services on your laptop, Blackfish will attempt to download each image automatically the first time you run its corresponding service. In this case, expect the startup time for the first run of each service type to take much longer than subsequent runs.

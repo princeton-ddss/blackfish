@@ -18,19 +18,22 @@ import { classNames, getUniqueRepoIds } from "@/lib/util";
  * @param {boolean} options.disabled
  * @return {JSX.Element}
  */
-function ModelSelect({ models, setRepoId, disabled }) {
+function ModelSelect({ models, setRepoId, setModelId, disabled }) {
 
   const [selected, setSelected] = useState(null);
 
   // filter unique repo_ids
   const repos = getUniqueRepoIds(models);
 
-  // update repo_id on selection
+  // update repo_id and model_id on selection
   useEffect(() => {
     if (selected) {
       setRepoId(selected.repo_id);
+      if (setModelId) {
+        setModelId(selected.id);
+      }
     }
-  }, [selected, setRepoId]);
+  }, [selected, setRepoId, setModelId]);
 
   // update selection on models refresh
   useEffect(() => {
@@ -140,6 +143,7 @@ function ModelSelect({ models, setRepoId, disabled }) {
 ModelSelect.propTypes = {
   models: PropTypes.array,
   setRepoId: PropTypes.func,
+  setModelId: PropTypes.func,
   disabled: PropTypes.bool,
 };
 

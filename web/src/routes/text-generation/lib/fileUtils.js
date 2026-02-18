@@ -81,14 +81,33 @@ export async function fetchRemoteText(path, profile) {
   const response = await fetch(url);
   if (!response.ok) {
     const statusMessages = {
-      404: "File not found",
+      400: "Bad request",
+      401: "Authentication required",
       403: "Access denied",
+      404: "File not found",
       500: "Server error",
+      502: "Bad gateway",
+      503: "Service unavailable",
+      504: "Gateway timeout",
     };
     throw new Error(statusMessages[response.status] || `Error (${response.status})`);
   }
 
   return response.text();
+}
+
+/**
+ * Escape special characters in a string for use in XML/HTML attributes.
+ * @param {string} str - The string to escape.
+ * @returns {string} Escaped string.
+ */
+function escapeXmlAttribute(str) {
+  return str.replace(/[<>"&]/g, (c) => ({
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    '&': '&amp;',
+  }[c]));
 }
 
 /**
@@ -103,7 +122,10 @@ export function buildFileContext(files) {
   }
 
   return files
-    .map((f) => `<document name="${f.name}">\n${f.content}\n</document>`)
+    .map((f) => {
+      const safeName = escapeXmlAttribute(f.name);
+      return `<document name="${safeName}">\n${f.content}\n</document>`;
+    })
     .join("\n\n");
 }
 

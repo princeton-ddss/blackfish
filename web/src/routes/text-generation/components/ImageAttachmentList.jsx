@@ -39,7 +39,7 @@ ImageAttachmentList.propTypes = {
       profile: PropTypes.object,
     })
   ).isRequired,
-  onRemove: PropTypes.func.isRequired,
+  onRemove: PropTypes.func,
   onImageError: PropTypes.func,
   onImageLoad: PropTypes.func,
 };

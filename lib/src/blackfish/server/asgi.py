@@ -2799,7 +2799,7 @@ async def repair_profile(
             home_dir=home_dir,
             python_path=python_path,
         )
-        await client.setup(
+        await client.cleanup(
             tigerflow_spec=tigerflow_spec,
             tigerflow_ml_spec=tigerflow_ml_spec,
         )

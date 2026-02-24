@@ -728,7 +728,7 @@ def repair_profile(
             python_path=python_path,
             on_progress=on_progress,
         )
-        await tigerflow.setup(
+        await tigerflow.cleanup(
             tigerflow_spec=tigerflow_spec,
             tigerflow_ml_spec=tigerflow_ml_spec,
         )

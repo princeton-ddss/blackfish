@@ -678,7 +678,7 @@ class TestRepairProfileAPI:
             assert "repaired" in result["message"].lower()
             mock_profile_mgr.create_directories.assert_called_once()
             mock_profile_mgr.check_cache.assert_called_once()
-            mock_tf_client.setup.assert_called_once()
+            mock_tf_client.cleanup.assert_called_once()
 
     async def test_repair_slurm_profile_localhost_uses_local_runner(
         self, client: AsyncTestClient
@@ -722,7 +722,7 @@ class TestRepairProfileAPI:
             # Verify LocalRunner was used, not SSHRunner
             mock_local_runner_cls.assert_called_once()
             mock_ssh_runner_cls.assert_not_called()
-            mock_tf_client.setup.assert_called_once()
+            mock_tf_client.cleanup.assert_called_once()
 
     async def test_repair_profile_not_found(self, client: AsyncTestClient):
         """Test repairing a nonexistent profile returns 404."""
@@ -798,7 +798,7 @@ class TestRepairProfileAPI:
             mock_profile_mgr_cls.return_value = mock_profile_mgr
 
             mock_tf_client = AsyncMock()
-            mock_tf_client.setup.side_effect = TigerFlowError(
+            mock_tf_client.cleanup.side_effect = TigerFlowError(
                 "install", "cluster.edu", "Failed to install tigerflow"
             )
             mock_tf_client_cls.return_value = mock_tf_client

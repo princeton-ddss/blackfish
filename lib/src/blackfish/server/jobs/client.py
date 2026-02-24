@@ -365,10 +365,23 @@ class TigerFlowClient:
             TigerFlowError: If upgrade fails
         """
         self._on_progress(f"Upgrading TigerFlow on {self.host}...")
+
         try:
-            await self._run(
-                f"{self._pip_bin} install --upgrade {tigerflow_spec} {tigerflow_ml_spec}"
-            )
+            # When installing from git, uninstall first to ensure clean install.
+            # This is faster than --force-reinstall which also reinstalls all deps.
+            if tigerflow_spec.startswith("git+") or tigerflow_ml_spec.startswith("git+"):
+                self._on_progress("Uninstalling existing packages...")
+                await self._run(
+                    f"{self._pip_bin} uninstall -y tigerflow tigerflow-ml"
+                )
+                self._on_progress("Installing packages...")
+                await self._run(
+                    f"{self._pip_bin} install {tigerflow_spec} {tigerflow_ml_spec}"
+                )
+            else:
+                await self._run(
+                    f"{self._pip_bin} install --upgrade {tigerflow_spec} {tigerflow_ml_spec}"
+                )
         except TigerFlowError as e:
             raise TigerFlowError("install", self.host, e.details)
         self._on_progress("TigerFlow upgrade complete")

@@ -30,10 +30,10 @@ class TestTigerFlowError:
         assert "cluster.example.com" in error.user_message()
 
     def test_user_message_includes_details_when_provided(self) -> None:
-        """Error message should include details in parentheses."""
+        """Error message should include details after colon."""
         error = TigerFlowError("command", "host", "exit code 1")
         message = error.user_message()
-        assert "(exit code 1)" in message
+        assert "exit code 1" in message
 
     def test_user_message_omits_details_when_none(self) -> None:
         """Error message should not have parentheses when no details."""
@@ -496,6 +496,50 @@ class TestTigerFlowClientUpgrade:
             await client.upgrade()
 
         assert exc_info.value.error_type == "install"
+
+    async def test_upgrade_uninstalls_first_for_git_tigerflow_spec(self) -> None:
+        """upgrade should uninstall then install when tigerflow_spec is a git URL."""
+        runner = MockRunner()
+        runner.set_responses([
+            (0, b"", b""),  # uninstall
+            (0, b"Successfully installed", b""),  # install
+        ])
+        client = TigerFlowClient(runner, "/home/user")
+
+        await client.upgrade(tigerflow_spec="git+https://github.com/org/tigerflow@main")
+
+        assert len(runner.commands) == 2
+        assert "uninstall -y tigerflow tigerflow-ml" in runner.commands[0]
+        assert "git+https://github.com/org/tigerflow@main" in runner.commands[1]
+
+    async def test_upgrade_uninstalls_first_for_git_tigerflow_ml_spec(self) -> None:
+        """upgrade should uninstall then install when tigerflow_ml_spec is a git URL."""
+        runner = MockRunner()
+        runner.set_responses([
+            (0, b"", b""),  # uninstall
+            (0, b"Successfully installed", b""),  # install
+        ])
+        client = TigerFlowClient(runner, "/home/user")
+
+        await client.upgrade(
+            tigerflow_ml_spec="git+https://github.com/org/tigerflow-ml@main"
+        )
+
+        assert len(runner.commands) == 2
+        assert "uninstall -y tigerflow tigerflow-ml" in runner.commands[0]
+        assert "git+https://github.com/org/tigerflow-ml@main" in runner.commands[1]
+
+    async def test_upgrade_no_uninstall_for_pypi_packages(self) -> None:
+        """upgrade should use --upgrade without uninstall for regular PyPI packages."""
+        runner = MockRunner()
+        runner.set_response(0, b"Successfully installed")
+        client = TigerFlowClient(runner, "/home/user")
+
+        await client.upgrade()
+
+        assert len(runner.commands) == 1
+        assert "--upgrade" in runner.commands[0]
+        assert "uninstall" not in runner.commands[0]
 
 
 class TestTigerFlowClientCleanup:

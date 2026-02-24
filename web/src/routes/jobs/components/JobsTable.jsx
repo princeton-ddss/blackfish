@@ -10,58 +10,73 @@ import Pagination from "@/components/Pagination";
 import { TASKS } from "./NewJobModal";
 import PropTypes from "prop-types";
 
-function StatusBadge({ status }) {
+// Derive display status from API status and progress fields
+function deriveDisplayStatus(job) {
+    if (job.status === "running") return "running";
+    // status === "stopped"
+    if ((job.staged ?? 0) === 0 && (job.errored ?? 0) === 0) return "done";
+    if ((job.errored ?? 0) > 0) return "error";
+    return "stopped";
+}
+
+function StatusBadge({ displayStatus }) {
     const getStatusConfig = () => {
-        switch (status) {
+        switch (displayStatus) {
             case "done":
                 return {
                     bg: "bg-green-50 dark:bg-green-900/30",
                     text: "text-green-700 dark:text-green-400",
                     ring: "ring-green-600/20 dark:ring-green-500/30",
+                    label: "Done",
                 };
             case "running":
                 return {
                     bg: "bg-yellow-50 dark:bg-yellow-900/30",
                     text: "text-yellow-700 dark:text-yellow-400",
                     ring: "ring-yellow-600/20 dark:ring-yellow-500/30",
+                    label: "Running",
                 };
             case "error":
                 return {
                     bg: "bg-red-50 dark:bg-red-900/30",
                     text: "text-red-700 dark:text-red-400",
                     ring: "ring-red-600/20 dark:ring-red-500/30",
+                    label: "Error",
                 };
-            case "submitted":
+            case "stopped":
             default:
                 return {
                     bg: "bg-gray-50 dark:bg-gray-700",
                     text: "text-gray-600 dark:text-gray-400",
                     ring: "ring-gray-500/10 dark:ring-gray-600",
+                    label: "Stopped",
                 };
         }
     };
 
     const config = getStatusConfig();
-    const label = status.charAt(0).toUpperCase() + status.slice(1);
 
     return (
         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.bg} ${config.text} ${config.ring}`}>
-            {label}
+            {config.label}
         </span>
     );
 }
 
 StatusBadge.propTypes = {
-    status: PropTypes.string.isRequired,
+    displayStatus: PropTypes.string.isRequired,
 };
 
-function ProgressDisplay({ completed, remaining, failed }) {
-    const total = completed + remaining + failed;
+function ProgressDisplay({ finished, staged, errored }) {
+    const done = finished ?? 0;
+    const pending = staged ?? 0;
+    const failed = errored ?? 0;
+    const total = done + pending + failed;
     return (
         <div className="flex items-center gap-2 text-xs">
-            <span className="text-green-600 dark:text-green-400">{completed}</span>
+            <span className="text-green-600 dark:text-green-400">{done}</span>
             <span className="text-gray-400">/</span>
-            <span className="text-gray-500 dark:text-gray-400">{remaining}</span>
+            <span className="text-gray-500 dark:text-gray-400">{pending}</span>
             {failed > 0 && (
                 <>
                     <span className="text-gray-400">/</span>
@@ -74,12 +89,12 @@ function ProgressDisplay({ completed, remaining, failed }) {
 }
 
 ProgressDisplay.propTypes = {
-    completed: PropTypes.number.isRequired,
-    remaining: PropTypes.number.isRequired,
-    failed: PropTypes.number.isRequired,
+    finished: PropTypes.number,
+    staged: PropTypes.number,
+    errored: PropTypes.number,
 };
 
-function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false, onNewClick, profile }) {
+function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false, onNewClick, profile, useMockData, setUseMockData }) {
     const isSlurm = profile?.schema === "slurm";
     const [currentPage, setCurrentPage] = useState(1);
     const jobsPerPage = 20;
@@ -88,7 +103,7 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
     const indexOfFirstJob = indexOfLastJob - jobsPerPage;
 
     const sortedJobs = [...jobs].sort((a, b) =>
-        new Date(b.submitted_at) - new Date(a.submitted_at)
+        new Date(b.created_at) - new Date(a.created_at)
     );
 
     const currentJobs = sortedJobs.slice(indexOfFirstJob, indexOfLastJob);
@@ -100,36 +115,46 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                 <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">
                     Jobs
                 </label>
-                {isSlurm && (
-                    <Menu as="div" className="relative">
-                        <MenuButton className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-gray-700 px-2.5 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 shadow ring-1 ring-inset ring-gray-300 dark:ring-gray-500 dark:shadow-gray-900/50 hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-shadow focus:outline-none">
-                            New Job
-                            <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        </MenuButton>
-                        <Portal>
-                            <MenuItems
-                                anchor="bottom end"
-                                className="z-50 w-56 rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none"
-                            >
-                                <div className="py-1">
-                                    {TASKS.map((task) => (
-                                        <MenuItem key={task.id}>
-                                            <button
-                                                onClick={() => onNewClick(task)}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-blue-500 data-[focus]:text-white"
-                                            >
-                                                <div className="font-medium">{task.name}</div>
-                                                <div className="text-xs opacity-75">
-                                                    {task.description}
-                                                </div>
-                                            </button>
-                                        </MenuItem>
-                                    ))}
-                                </div>
-                            </MenuItems>
-                        </Portal>
-                    </Menu>
-                )}
+                <div className="flex items-center gap-2">
+                    {import.meta.env.DEV && (
+                        <button
+                            onClick={() => setUseMockData(!useMockData)}
+                            className={`text-xs px-2 py-1 rounded ${useMockData ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"}`}
+                        >
+                            {useMockData ? "Mock" : "API"}
+                        </button>
+                    )}
+                    {isSlurm && (
+                        <Menu as="div" className="relative">
+                            <MenuButton className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-gray-700 px-2.5 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 shadow ring-1 ring-inset ring-gray-300 dark:ring-gray-500 dark:shadow-gray-900/50 hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-shadow focus:outline-none">
+                                New Job
+                                <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            </MenuButton>
+                            <Portal>
+                                <MenuItems
+                                    anchor="bottom end"
+                                    className="z-50 w-56 rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none"
+                                >
+                                    <div className="py-1">
+                                        {TASKS.map((task) => (
+                                            <MenuItem key={task.id}>
+                                                <button
+                                                    onClick={() => onNewClick(task)}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 data-[focus]:bg-blue-500 data-[focus]:text-white"
+                                                >
+                                                    <div className="font-medium">{task.name}</div>
+                                                    <div className="text-xs opacity-75">
+                                                        {task.description}
+                                                    </div>
+                                                </button>
+                                            </MenuItem>
+                                        ))}
+                                    </div>
+                                </MenuItems>
+                            </Portal>
+                        </Menu>
+                    )}
+                </div>
             </div>
             <div className="flow-root">
                 <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -223,16 +248,16 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                                     {job.id}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
-                                                    {lastModified(job.submitted_at)}
+                                                    {lastModified(job.created_at)}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm">
-                                                    <StatusBadge status={job.status} />
+                                                    <StatusBadge displayStatus={deriveDisplayStatus(job)} />
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     <ProgressDisplay
-                                                        completed={job.completed}
-                                                        remaining={job.remaining}
-                                                        failed={job.failed}
+                                                        finished={job.finished}
+                                                        staged={job.staged}
+                                                        errored={job.errored}
                                                     />
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-right">
@@ -284,6 +309,8 @@ JobsTable.propTypes = {
     isLoading: PropTypes.bool,
     onNewClick: PropTypes.func,
     profile: PropTypes.object,
+    useMockData: PropTypes.bool,
+    setUseMockData: PropTypes.func,
 };
 
 export default JobsTable;

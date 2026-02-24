@@ -1,31 +1,35 @@
 import { useContext, useState } from "react";
 import { ProfileContext } from "@/components/ProfileSelect";
+import { useJobs } from "@/lib/loaders";
 import JobsTable from "./JobsTable";
 import JobResultsTable from "./JobResultsTable";
 import JobDetailsPanel from "./JobDetailsPanel";
 import ResultPreview from "./ResultPreview";
 import NewJobModal from "./NewJobModal";
 
-// Mock data for development
-const mockJobs = [
+// Mock data for development - matches API BatchJob structure
+const MOCK_JOBS = [
     {
         id: "job-001",
         name: "Batch Translation - French",
-        submitted_at: "2024-01-15T10:30:00Z",
-        status: "done",
-        completed: 50,
-        remaining: 0,
-        failed: 2,
-        slurm: {
-            memory: "32GB",
+        created_at: "2024-01-15T10:30:00Z",
+        status: "stopped",
+        staged: 0,
+        finished: 50,
+        errored: 2,
+        task: "translate",
+        repo_id: "meta-llama/Llama-2-7b-chat-hf",
+        revision: "main",
+        input_dir: "/scratch/user/data/input",
+        output_dir: "/scratch/user/data/output",
+        resources: {
+            memory_gb: 32,
             cpus: 4,
-            gpus: 1,
+            gpu_count: 1,
             partition: "gpu",
-            time_limit: "4:00:00",
+            max_workers: 2,
         },
-        task: {
-            model: "meta-llama/Llama-2-7b-chat-hf",
-            revision: "main",
+        params: {
             prompt: "Translate the following text to French:",
             temperature: 0.3,
             max_tokens: 512,
@@ -34,44 +38,48 @@ const mockJobs = [
     {
         id: "job-002",
         name: "Audio Transcription",
-        submitted_at: "2024-01-15T14:45:00Z",
+        created_at: "2024-01-15T14:45:00Z",
         status: "running",
-        completed: 23,
-        remaining: 77,
-        failed: 0,
-        slurm: {
-            memory: "16GB",
+        staged: 77,
+        finished: 23,
+        errored: 0,
+        task: "transcribe",
+        repo_id: "openai/whisper-large-v3",
+        revision: "main",
+        input_dir: "/scratch/user/audio/input",
+        output_dir: "/scratch/user/audio/output",
+        resources: {
+            memory_gb: 16,
             cpus: 2,
-            gpus: 1,
+            gpu_count: 1,
             partition: "gpu",
-            time_limit: "2:00:00",
+            max_workers: 1,
         },
-        task: {
-            model: "openai/whisper-large-v3",
-            revision: "main",
-            prompt: "Transcribe the audio file.",
-            temperature: 0.0,
-            max_tokens: 1024,
+        params: {
+            language: "en",
         },
     },
     {
         id: "job-003",
         name: "Document Summarization",
-        submitted_at: "2024-01-14T09:00:00Z",
-        status: "error",
-        completed: 15,
-        remaining: 0,
-        failed: 35,
-        slurm: {
-            memory: "64GB",
+        created_at: "2024-01-14T09:00:00Z",
+        status: "stopped",
+        staged: 0,
+        finished: 15,
+        errored: 35,
+        task: "summarize",
+        repo_id: "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        revision: "main",
+        input_dir: "/scratch/user/docs/input",
+        output_dir: "/scratch/user/docs/output",
+        resources: {
+            memory_gb: 64,
             cpus: 8,
-            gpus: 2,
+            gpu_count: 2,
             partition: "gpu-large",
-            time_limit: "8:00:00",
+            max_workers: 4,
         },
-        task: {
-            model: "mistralai/Mixtral-8x7B-Instruct-v0.1",
-            revision: "main",
+        params: {
             prompt: "Summarize the following document in 3 sentences:",
             temperature: 0.5,
             max_tokens: 256,
@@ -80,21 +88,24 @@ const mockJobs = [
     {
         id: "job-004",
         name: "Code Review Analysis",
-        submitted_at: "2024-01-16T08:00:00Z",
-        status: "submitted",
-        completed: 0,
-        remaining: 100,
-        failed: 0,
-        slurm: {
-            memory: "32GB",
+        created_at: "2024-01-16T08:00:00Z",
+        status: "running",
+        staged: 100,
+        finished: 0,
+        errored: 0,
+        task: "review",
+        repo_id: "codellama/CodeLlama-34b-Instruct-hf",
+        revision: "main",
+        input_dir: "/scratch/user/code/input",
+        output_dir: "/scratch/user/code/output",
+        resources: {
+            memory_gb: 32,
             cpus: 4,
-            gpus: 1,
+            gpu_count: 1,
             partition: "gpu",
-            time_limit: "4:00:00",
+            max_workers: 2,
         },
-        task: {
-            model: "codellama/CodeLlama-34b-Instruct-hf",
-            revision: "main",
+        params: {
             prompt: "Review the following code for potential issues:",
             temperature: 0.1,
             max_tokens: 1024,
@@ -102,30 +113,31 @@ const mockJobs = [
     },
 ];
 
-const mockResults = {
+// Mock results - started_at/finished_at not available from TigerFlow
+const MOCK_RESULTS = {
     "job-001": [
         {
             id: "result-001",
             input_file: "document_1.txt",
             output_file: "document_1_fr.txt",
-            started_at: "2024-01-15T10:30:05Z",
-            finished_at: "2024-01-15T10:30:12Z",
+            started_at: null,
+            finished_at: null,
             success: true,
         },
         {
             id: "result-002",
             input_file: "document_2.txt",
             output_file: "document_2_fr.txt",
-            started_at: "2024-01-15T10:30:12Z",
-            finished_at: "2024-01-15T10:30:18Z",
+            started_at: null,
+            finished_at: null,
             success: true,
         },
         {
             id: "result-003",
             input_file: "document_3.txt",
             output_file: null,
-            started_at: "2024-01-15T10:30:18Z",
-            finished_at: "2024-01-15T10:30:25Z",
+            started_at: null,
+            finished_at: null,
             success: false,
             error: "File encoding not supported",
         },
@@ -135,8 +147,8 @@ const mockResults = {
             id: "result-004",
             input_file: "recording_1.mp3",
             output_file: "recording_1.txt",
-            started_at: "2024-01-15T14:45:05Z",
-            finished_at: "2024-01-15T14:46:30Z",
+            started_at: null,
+            finished_at: null,
             success: true,
         },
     ],
@@ -144,12 +156,15 @@ const mockResults = {
 
 function JobsContainer() {
     const { profile } = useContext(ProfileContext);
+    const { jobs: apiJobs, error, isLoading, mutate } = useJobs(profile);
+    const [useMockData, setUseMockData] = useState(false);
     const [selectedJob, setSelectedJob] = useState(null);
     const [selectedResult, setSelectedResult] = useState(null);
     const [viewingResults, setViewingResults] = useState(false);
     const [isNewPipelineModalOpen, setIsNewPipelineModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
-    const [jobs, setJobs] = useState(mockJobs);
+
+    const jobs = useMockData ? MOCK_JOBS : apiJobs;
 
     // Click on job row to show details (without drilling in)
     const handleJobClick = (job) => {
@@ -178,27 +193,12 @@ function JobsContainer() {
         setIsNewPipelineModalOpen(true);
     };
 
-    const handleJobCreated = (newJob) => {
-        // Add the new job to the list (in a real app, this would refetch from API)
-        setJobs((prevJobs) => [
-            {
-                ...newJob,
-                completed: 0,
-                remaining: 100,
-                failed: 0,
-                slurm: {
-                    memory: "32GB",
-                    cpus: 4,
-                    gpus: 1,
-                    partition: "gpu",
-                    time_limit: "4:00:00",
-                },
-            },
-            ...prevJobs,
-        ]);
+    const handleJobCreated = () => {
+        // Refetch jobs from API
+        mutate();
     };
 
-    const jobResults = selectedJob ? mockResults[selectedJob.id] || [] : [];
+    const jobResults = selectedJob ? MOCK_RESULTS[selectedJob.id] || [] : [];
 
     // Determine what to show in right column
     const showResultPreview = selectedResult !== null;
@@ -222,6 +222,9 @@ function JobsContainer() {
                         selectedJob={selectedJob}
                         onNewClick={handleNewPipelineClick}
                         profile={profile}
+                        isLoading={isLoading}
+                        useMockData={useMockData}
+                        setUseMockData={setUseMockData}
                     />
                 )}
             </div>

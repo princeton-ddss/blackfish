@@ -208,6 +208,27 @@ export async function fetchClusterStatus(profileName) {
   return res.json();
 }
 
+/** Fetch batch jobs, optionally filtered by profile. */
+export async function fetchJobs(path) {
+  const res = await fetch(`${blackfishApiURL}/api/${path}`);
+  if (!res.ok) {
+    console.debug(`from fetchJobs: failed to fetch jobs (status=${res.status})`);
+    let message = "Failed to fetch jobs.";
+    try {
+      const body = await res.json();
+      if (body.detail) {
+        message = body.detail;
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
 /** Fetch resource tiers and time constraints for a profile. */
 export async function fetchProfileResources(profileName) {
   const res = await fetch(`${blackfishApiURL}/api/profiles/${profileName}/resources`);

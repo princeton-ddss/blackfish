@@ -377,22 +377,41 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     setSubmitError(null);
 
     try {
+      // Build resources object from selected tier
+      const selectedTierObj = tiers.find(t => t.name === selectedTier);
+      const resources = {
+        partition: selectedPartition,
+        tier: selectedTier,
+        cpus: selectedTierObj?.cpu_cores,
+        memory_gb: selectedTierObj?.memory_gb,
+        gpu_count: selectedTierObj?.gpu_count,
+        max_workers: maxWorkers,
+      };
+
+      // Add optional advanced options
+      if (account) resources.account = account;
+      if (workerTimeout) resources.worker_timeout = workerTimeout;
+      if (clientTimeout) resources.client_timeout = clientTimeout;
+
       // TODO: Replace with actual API call when backend is ready
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
+      // Mock job object matching API BatchJob structure
       const newJob = {
         id: `job-${Date.now()}`,
         name: `${task.name} - ${model?.repo_id || repoId}`,
         task: task.id,
-        model: model?.repo_id || repoId,
+        repo_id: model?.repo_id || repoId,
         revision: model?.revision,
         input_dir: inputDir,
         output_dir: outputDir,
-        tier: selectedTier,
-        max_workers: maxWorkers,
+        resources: resources,
         params: taskParams,
-        status: "submitted",
-        submitted_at: new Date().toISOString(),
+        status: "running",
+        created_at: new Date().toISOString(),
+        staged: 0,
+        finished: 0,
+        errored: 0,
       };
 
       console.debug("Job created:", newJob);

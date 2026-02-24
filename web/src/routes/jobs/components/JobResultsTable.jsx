@@ -161,10 +161,10 @@ function JobResultsTable({
                                                     <div className="overflow-x-scroll">{result.input_file}</div>
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
-                                                    {lastModified(result.started_at)}
+                                                    {result.started_at ? lastModified(result.started_at) : "-"}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-500 dark:text-gray-400">
-                                                    {formatElapsedTime(result.started_at, result.finished_at)}
+                                                    {result.started_at && result.finished_at ? formatElapsedTime(result.started_at, result.finished_at) : "-"}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-center">
                                                     <StatusIcon success={result.success} />

@@ -2630,10 +2630,10 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
     if name not in config:
         raise NotFoundException(detail=f"Profile '{name}' not found.")
 
-    # Update the profile (name change not supported)
+    # Block name changes until we add default flag to profiles
     if data.name != name:
         raise ValidationException(
-            detail="Profile name cannot be changed. Delete and recreate instead."
+            detail="Profile name cannot be changed. Delete and recreate the profile instead."
         )
 
     if data.schema_type == "slurm":
@@ -2642,7 +2642,37 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
                 detail="'host' and 'user' are required for Slurm profiles."
             )
 
-        config[name] = {
+        # Set up directories and TigerFlow if missing
+        runner: SSHRunner | LocalRunner
+        if data.host == "localhost":
+            runner = LocalRunner()
+        else:
+            runner = SSHRunner(user=data.user, host=data.host)
+
+        try:
+            profile_mgr = ProfileManager(
+                runner=runner,
+                home_dir=data.home_dir,
+                cache_dir=data.cache_dir,
+            )
+            await profile_mgr.create_directories()
+            await profile_mgr.check_cache()
+
+            # Install TigerFlow if not present
+            tigerflow = TigerFlowClient(
+                runner=runner,
+                home_dir=data.home_dir,
+                python_path=data.python_path or "python3",
+            )
+            version_ok, current_version = await tigerflow.check_version()
+            if current_version is None:
+                await tigerflow.setup()
+        except ProfileSetupError as e:
+            raise InternalServerException(detail=e.user_message())
+        except TigerFlowError as e:
+            raise InternalServerException(detail=e.user_message())
+
+        config[data.name] = {
             "schema": "slurm",
             "host": data.host,
             "user": data.user,
@@ -2650,12 +2680,12 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
             "cache_dir": data.cache_dir,
         }
         if data.python_path:
-            config[name]["python_path"] = data.python_path
+            config[data.name]["python_path"] = data.python_path
 
         _save_profiles_config(config)
 
         return SlurmProfile(
-            name=name,
+            name=data.name,
             host=data.host,
             user=data.user,
             home_dir=data.home_dir,
@@ -2663,7 +2693,20 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
         )
 
     elif data.schema_type == "local":
-        config[name] = {
+        # Set up directories
+        try:
+            runner = LocalRunner()
+            profile_mgr = ProfileManager(
+                runner=runner,
+                home_dir=data.home_dir,
+                cache_dir=data.cache_dir,
+            )
+            await profile_mgr.create_directories()
+            await profile_mgr.check_cache()
+        except ProfileSetupError as e:
+            raise InternalServerException(detail=e.user_message())
+
+        config[data.name] = {
             "schema": "local",
             "home_dir": data.home_dir,
             "cache_dir": data.cache_dir,
@@ -2671,7 +2714,7 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
         _save_profiles_config(config)
 
         return LocalProfile(
-            name=name,
+            name=data.name,
             home_dir=data.home_dir,
             cache_dir=data.cache_dir,
         )
@@ -2700,10 +2743,16 @@ async def delete_profile(name: str) -> dict[str, str]:
 
 
 @put("/api/profiles/{name:str}/repair", guards=ENDPOINT_GUARDS)
-async def repair_profile(name: str) -> dict[str, str]:
-    """Repair TigerFlow installation on a Slurm profile.
+async def repair_profile(
+    name: str,
+    tigerflow_spec: str = "tigerflow",
+    tigerflow_ml_spec: str = "tigerflow-ml",
+) -> dict[str, str]:
+    """Repair a Slurm profile.
 
-    Removes and reinstalls TigerFlow. Useful when the installation is broken.
+    Re-runs profile setup to ensure directories exist and TigerFlow is installed.
+    Use this when a profile is in a broken state.
+    Use query params to specify custom package specs (e.g., git URLs).
     """
     config = _get_profiles_config()
 
@@ -2715,6 +2764,76 @@ async def repair_profile(name: str) -> dict[str, str]:
 
     if schema != "slurm":
         raise ValidationException(detail="Repair is only available for Slurm profiles.")
+
+    host = profile_data.get("host")
+    user = profile_data.get("user")
+    home_dir = profile_data.get("home_dir")
+    cache_dir = profile_data.get("cache_dir")
+    python_path = profile_data.get("python_path", "python3")
+
+    if not host or not user or not home_dir or not cache_dir:
+        raise ValidationException(
+            detail="Profile is missing required fields (host, user, home_dir, cache_dir)."
+        )
+
+    # Choose runner based on host
+    runner: SSHRunner | LocalRunner
+    if host == "localhost":
+        runner = LocalRunner()
+    else:
+        runner = SSHRunner(user=user, host=host)
+
+    try:
+        # Set up directories
+        profile_mgr = ProfileManager(
+            runner=runner,
+            home_dir=home_dir,
+            cache_dir=cache_dir,
+        )
+        await profile_mgr.create_directories()
+        await profile_mgr.check_cache()
+
+        # Set up TigerFlow
+        client = TigerFlowClient(
+            runner=runner,
+            home_dir=home_dir,
+            python_path=python_path,
+        )
+        await client.setup(
+            tigerflow_spec=tigerflow_spec,
+            tigerflow_ml_spec=tigerflow_ml_spec,
+        )
+    except ProfileSetupError as e:
+        raise InternalServerException(detail=e.user_message())
+    except TigerFlowError as e:
+        raise InternalServerException(detail=e.user_message())
+
+    return {"status": "ok", "message": f"Profile '{name}' repaired on {host}."}
+
+
+@put("/api/profiles/{name:str}/upgrade", guards=ENDPOINT_GUARDS)
+async def upgrade_profile(
+    name: str,
+    tigerflow_spec: str = "tigerflow",
+    tigerflow_ml_spec: str = "tigerflow-ml",
+) -> dict[str, str]:
+    """Upgrade TigerFlow on a Slurm profile.
+
+    Upgrades tigerflow and tigerflow-ml packages to the latest version.
+    Use query params to specify custom package specs (e.g., git URLs).
+    """
+    config = _get_profiles_config()
+
+    if name not in config:
+        raise NotFoundException(detail=f"Profile '{name}' not found.")
+
+    profile_data = dict(config[name])
+    schema = profile_data.get("schema") or profile_data.get("type")
+
+    if schema != "slurm":
+        raise ValidationException(
+            detail="Upgrade is only available for Slurm profiles."
+        )
 
     host = profile_data.get("host")
     user = profile_data.get("user")
@@ -2739,11 +2858,14 @@ async def repair_profile(name: str) -> dict[str, str]:
             home_dir=home_dir,
             python_path=python_path,
         )
-        await client.cleanup()
+        await client.upgrade(
+            tigerflow_spec=tigerflow_spec,
+            tigerflow_ml_spec=tigerflow_ml_spec,
+        )
     except TigerFlowError as e:
         raise InternalServerException(detail=e.user_message())
 
-    return {"status": "ok", "message": f"TigerFlow reinstalled on {host}."}
+    return {"status": "ok", "message": f"TigerFlow upgraded on {host}."}
 
 
 # --- Cluster Status ---
@@ -3136,6 +3258,7 @@ app = Litestar(
         update_profile,
         delete_profile,
         repair_profile,
+        upgrade_profile,
         get_cluster_status,
         get_profile_resources,
         assets_server,

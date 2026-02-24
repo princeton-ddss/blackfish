@@ -19,6 +19,8 @@ from blackfish.cli.profile import (
     list_profiles,
     update_profile,
     delete_profile,
+    upgrade_tigerflow,
+    repair_profile,
 )
 from blackfish.server.config import config
 from blackfish.server.logger import logger
@@ -156,6 +158,8 @@ profile.add_command(show_profile, "show")
 profile.add_command(create_profile, "add")
 profile.add_command(delete_profile, "rm")
 profile.add_command(update_profile, "update")
+profile.add_command(upgrade_tigerflow, "upgrade")
+profile.add_command(repair_profile, "repair")
 
 
 @main.command()
@@ -215,6 +219,72 @@ def start(reload: bool) -> None:  # pragma: no cover
             logger.info("Database is already up-to-date. Skipping.")
         else:
             logger.error(f"Failed to upgrade database: {e}")
+
+    # Check TigerFlow versions on Slurm profiles
+    import asyncio
+    import configparser
+    from blackfish.server.jobs.client import (
+        TigerFlowClient,
+        TigerFlowError,
+        SSHRunner,
+        LocalRunner,
+        MIN_TIGERFLOW_VERSION,
+    )
+
+    async def check_tigerflow_versions() -> None:
+        profiles = configparser.ConfigParser()
+        profiles.read(os.path.join(config.HOME_DIR, "profiles.cfg"))
+
+        for name in profiles.sections():
+            profile = profiles[name]
+            schema = profile.get("schema") or profile.get("type")
+            if schema != "slurm":
+                continue
+
+            host = profile.get("host")
+            user = profile.get("user")
+            home_dir = profile.get("home_dir")
+            python_path = profile.get("python_path", "python3")
+
+            if not host or not user or not home_dir:
+                continue
+
+            try:
+                logger.info(f"Checking TigerFlow on profile '{name}' ({host})...")
+
+                runner: SSHRunner | LocalRunner
+                if host == "localhost":
+                    runner = LocalRunner()
+                else:
+                    runner = SSHRunner(user=user, host=host)
+
+                client = TigerFlowClient(
+                    runner=runner,
+                    home_dir=home_dir,
+                    python_path=python_path,
+                )
+                version_ok, current_version = await client.check_version()
+
+                if current_version is None:
+                    logger.warning(
+                        f"TigerFlow not installed on profile '{name}'. "
+                        f"Run: blackfish profile upgrade --name {name}"
+                    )
+                elif not version_ok:
+                    logger.warning(
+                        f"TigerFlow {current_version} on profile '{name}' is below "
+                        f"minimum {MIN_TIGERFLOW_VERSION}. "
+                        f"Run: blackfish profile upgrade --name {name}"
+                    )
+                else:
+                    logger.info(f"TigerFlow {current_version} on profile '{name}' is up to date.")
+            except TigerFlowError as e:
+                logger.warning(f"Could not check TigerFlow on profile '{name}': {e}")
+
+    try:
+        asyncio.run(check_tigerflow_versions())
+    except Exception as e:
+        logger.warning(f"TigerFlow version check failed: {e}")
 
     reload = True if config.DEBUG else reload
 

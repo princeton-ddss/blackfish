@@ -104,6 +104,33 @@ blackfish profile update --name <profile>
 This command updates the default profile if not `--name` is specified. Note that you cannot change
 the `name` or `schema` attributes of a profile.
 
+#### upgrade - Upgrade TigerFlow
+
+Slurm profiles use [TigerFlow](https://github.com/princeton-ddss/tigerflow) for batch job processing.
+To upgrade TigerFlow to the latest version on a profile, use:
+
+```shell
+blackfish profile upgrade --name <profile>
+```
+
+You can also install from a specific git branch for testing unreleased features:
+
+```shell
+blackfish profile upgrade --name <profile> \
+    --tigerflow-spec "git+https://github.com/princeton-ddss/tigerflow@feature-branch"
+```
+
+#### repair - Repair a profile
+
+If a Slurm profile is in a broken state (missing directories, corrupted TigerFlow installation),
+you can repair it by re-running the setup process:
+
+```shell
+blackfish profile repair --name <profile>
+```
+
+This recreates the profile's directories and reinstalls TigerFlow.
+
 #### rm - Delete a profile
 
 To delete a profile, type `blackfish profile rm --name <profile>`. By default, the command

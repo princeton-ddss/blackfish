@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from collections.abc import Callable
 from typing import Any, Optional, Protocol
 
 import yaml  # type: ignore[import-untyped]
@@ -19,7 +20,7 @@ MIN_TIGERFLOW_VERSION = "0.1.0a1"
 MIN_TIGERFLOW_ML_VERSION = "0.1.0a1"
 
 # Venv location on remote cluster (relative to home_dir)
-VENV_PATH = ".blackfish/.venv"
+VENV_PATH = ".venv"
 
 
 class TigerFlowTaskStatus(BaseModel):
@@ -71,7 +72,7 @@ class TigerFlowError(Exception):
             "timeout": f"SSH connection to {self.host} timed out.",
             "command": f"Command failed on {self.host}.",
             "setup": f"Failed to set up TigerFlow environment on {self.host}.",
-            "install": f"Failed to install TigerFlow on {self.host}. Check network connectivity.",
+            "install": f"Failed to install TigerFlow on {self.host}.",
             "version": f"TigerFlow version on {self.host} is too old. Run profile setup to upgrade.",
             "missing": f"TigerFlow is not installed on {self.host}. Run profile setup to install.",
             "run": f"Failed to start TigerFlow job on {self.host}.",
@@ -81,7 +82,26 @@ class TigerFlowError(Exception):
         }
         message = messages.get(self.error_type, "TigerFlow operation failed.")
         if self.details:
-            message = f"{message} ({self.details})"
+            # Clean up details: extract the most meaningful line
+            lines = [
+                line.strip()
+                for line in self.details.strip().split("\n")
+                if line.strip()
+            ]
+            # For pip errors, prefer "No matching distribution" as it's clearest
+            detail = None
+            for line in lines:
+                if "No matching distribution" in line:
+                    detail = line.replace("ERROR: ", "")
+                    break
+            # Fall back to first non-empty line
+            if detail is None and lines:
+                detail = lines[0].replace("ERROR: ", "")
+            if detail:
+                # Remove trailing period from main message, append detail
+                message = message.rstrip(".")
+                detail = detail.rstrip(".")
+                message = f"{message}: {detail}."
         return message
 
 
@@ -198,6 +218,7 @@ class TigerFlowClient:
         runner: CommandRunner,
         home_dir: str,
         python_path: str = "python3",
+        on_progress: Callable[[str], None] | None = None,
     ):
         """Initialize TigerFlowClient.
 
@@ -207,6 +228,9 @@ class TigerFlowClient:
             python_path: Path to Python on the cluster (e.g., "python3" or
                 "/usr/local/bin/python3.11"). May also include module load commands
                 like "module load python && python3".
+            on_progress: Optional callback for progress updates. Called with status
+                messages during setup, upgrade, and other operations. If None, uses
+                logger.info for API compatibility.
         """
         self.runner = runner
         self.home_dir = home_dir
@@ -214,6 +238,7 @@ class TigerFlowClient:
         self._venv_path = f"{home_dir}/{VENV_PATH}"
         self._tigerflow_bin = f"{self._venv_path}/bin/tigerflow"
         self._pip_bin = f"{self._venv_path}/bin/pip"
+        self._on_progress = on_progress or logger.info
 
     @property
     def host(self) -> str:
@@ -243,16 +268,26 @@ class TigerFlowClient:
     # Venv Management
     # -------------------------------------------------------------------------
 
-    async def setup(self) -> None:
+    async def setup(
+        self,
+        tigerflow_spec: str = "tigerflow",
+        tigerflow_ml_spec: str = "tigerflow-ml",
+    ) -> None:
         """Create venv and install tigerflow + tigerflow-ml.
 
         Creates the virtual environment at ~/.blackfish/.venv and installs
         the required packages.
 
+        Args:
+            tigerflow_spec: Package spec for tigerflow (default: "tigerflow").
+                Can be a git URL like "git+https://github.com/org/tigerflow@branch"
+            tigerflow_ml_spec: Package spec for tigerflow-ml (default: "tigerflow-ml").
+                Can be a git URL like "git+https://github.com/org/tigerflow-ml@branch"
+
         Raises:
             TigerFlowError: If venv creation or package installation fails
         """
-        logger.info(f"Setting up TigerFlow on {self.host}")
+        self._on_progress(f"Setting up TigerFlow on {self.host}")
 
         # Create parent directory if needed
         try:
@@ -262,7 +297,7 @@ class TigerFlowClient:
 
         # Create venv
         try:
-            logger.debug(f"Creating venv at {self._venv_path}")
+            self._on_progress("Creating virtual environment...")
             await self._run(f"{self.python_path} -m venv {self._venv_path}")
         except TigerFlowError as e:
             raise TigerFlowError(
@@ -271,14 +306,16 @@ class TigerFlowClient:
 
         # Install packages
         try:
-            logger.debug("Upgrading pip")
+            self._on_progress("Upgrading pip...")
             await self._run(f"{self._pip_bin} install --upgrade pip")
-            logger.debug("Installing tigerflow and tigerflow-ml")
-            await self._run(f"{self._pip_bin} install tigerflow tigerflow-ml")
+            self._on_progress("Installing tigerflow packages...")
+            await self._run(
+                f"{self._pip_bin} install {tigerflow_spec} {tigerflow_ml_spec}"
+            )
         except TigerFlowError as e:
             raise TigerFlowError("install", self.host, e.details)
 
-        logger.info(f"TigerFlow setup complete on {self.host}")
+        self._on_progress("TigerFlow setup complete")
 
     async def check_version(self) -> tuple[bool, str | None]:
         """Check if tigerflow meets minimum version.
@@ -296,7 +333,6 @@ class TigerFlowClient:
         )
 
         if returncode != 0:
-            logger.debug("TigerFlow not installed or --version failed")
             return (False, None)
 
         # Parse version from output (e.g., "tigerflow 0.1.0" or "tigerflow 0.1.0a1")
@@ -312,36 +348,49 @@ class TigerFlowClient:
         current_version = match.group(1)
         version_ok = Version(current_version) >= Version(MIN_TIGERFLOW_VERSION)
 
-        if not version_ok:
-            logger.warning(
-                f"TigerFlow version {current_version} is below minimum {MIN_TIGERFLOW_VERSION}"
-            )
-
         return (version_ok, current_version)
 
-    async def upgrade(self) -> None:
+    async def upgrade(
+        self,
+        tigerflow_spec: str = "tigerflow",
+        tigerflow_ml_spec: str = "tigerflow-ml",
+    ) -> None:
         """Upgrade tigerflow + tigerflow-ml to latest.
+
+        Args:
+            tigerflow_spec: Package spec for tigerflow (default: "tigerflow").
+            tigerflow_ml_spec: Package spec for tigerflow-ml (default: "tigerflow-ml").
 
         Raises:
             TigerFlowError: If upgrade fails
         """
-        logger.info(f"Upgrading TigerFlow on {self.host}")
+        self._on_progress(f"Upgrading TigerFlow on {self.host}...")
         try:
-            await self._run(f"{self._pip_bin} install --upgrade tigerflow tigerflow-ml")
+            await self._run(
+                f"{self._pip_bin} install --upgrade {tigerflow_spec} {tigerflow_ml_spec}"
+            )
         except TigerFlowError as e:
             raise TigerFlowError("install", self.host, e.details)
-        logger.info("TigerFlow upgrade complete")
+        self._on_progress("TigerFlow upgrade complete")
 
-    async def cleanup(self) -> None:
+    async def cleanup(
+        self,
+        tigerflow_spec: str = "tigerflow",
+        tigerflow_ml_spec: str = "tigerflow-ml",
+    ) -> None:
         """Remove and recreate venv (for broken setups).
 
         Completely removes the existing venv and creates a fresh one
         with tigerflow installed.
 
+        Args:
+            tigerflow_spec: Package spec for tigerflow (default: "tigerflow").
+            tigerflow_ml_spec: Package spec for tigerflow-ml (default: "tigerflow-ml").
+
         Raises:
             TigerFlowError: If cleanup fails
         """
-        logger.info(f"Cleaning up TigerFlow venv on {self.host}")
+        self._on_progress(f"Cleaning up TigerFlow venv on {self.host}...")
         try:
             await self._run(f"rm -rf {self._venv_path}")
         except TigerFlowError as e:
@@ -350,7 +399,7 @@ class TigerFlowClient:
             )
 
         # Recreate venv
-        await self.setup()
+        await self.setup(tigerflow_spec, tigerflow_ml_spec)
 
     async def _get_package_version(self, package: str) -> str | None:
         """Get installed version of a pip package.

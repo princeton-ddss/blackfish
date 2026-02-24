@@ -3,6 +3,7 @@ from __future__ import annotations
 import configparser
 import os
 import subprocess
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from yaspin import yaspin
@@ -42,6 +43,7 @@ class ProfileManager:
         home_dir: str,
         cache_dir: str,
         config_path: str | None = None,
+        on_progress: Callable[[str], None] | None = None,
     ):
         """Initialize ProfileManager.
 
@@ -50,11 +52,13 @@ class ProfileManager:
             home_dir: Home directory for the profile
             cache_dir: Cache directory for the profile
             config_path: Path to profiles.cfg (defaults to ~/.blackfish/profiles.cfg)
+            on_progress: Optional callback for progress updates. Defaults to logger.info.
         """
         self.runner = runner
         self.home_dir = home_dir
         self.cache_dir = cache_dir
         self.config_path = config_path
+        self._on_progress = on_progress or logger.info
 
     @property
     def host(self) -> str:
@@ -66,7 +70,7 @@ class ProfileManager:
         Raises:
             ProfileSetupError: If directory creation fails
         """
-        logger.info(f"Creating directories on {self.host}")
+        self._on_progress(f"Creating directories on {self.host}...")
 
         try:
             returncode, _, stderr = await self.runner.run(f"mkdir -p {self.home_dir}")
@@ -84,8 +88,6 @@ class ProfileManager:
                     "Failed to create subdirectories",
                     stderr.decode("utf-8").strip() if stderr else None,
                 )
-
-            logger.info(f"Created directories on {self.host}")
         except ProfileSetupError:
             raise
         except Exception as e:
@@ -97,7 +99,7 @@ class ProfileManager:
         Raises:
             ProfileSetupError: If cache directory does not exist
         """
-        logger.debug(f"Checking cache directory {self.cache_dir} on {self.host}")
+        self._on_progress(f"Checking cache directory on {self.host}...")
 
         try:
             returncode, stdout, _ = await self.runner.run(
@@ -107,7 +109,6 @@ class ProfileManager:
                 raise ProfileSetupError(
                     f"Cache directory does not exist: {self.cache_dir}"
                 )
-            logger.debug(f"Cache directory exists on {self.host}")
         except ProfileSetupError:
             raise
         except Exception as e:

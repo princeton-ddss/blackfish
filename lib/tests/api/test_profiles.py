@@ -446,10 +446,14 @@ class TestUpdateProfileAPI:
         with (
             patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
             patch("blackfish.server.asgi._save_profiles_config") as mock_save_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
         ):
             mock_config = MagicMock()
             mock_config.__contains__ = MagicMock(return_value=True)
             mock_get_config.return_value = mock_config
+
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
 
             response = await client.put(
                 "/api/profiles/my-local",
@@ -465,6 +469,8 @@ class TestUpdateProfileAPI:
             result = response.json()
             assert result["name"] == "my-local"
             assert result["home_dir"] == "/home/updated/.blackfish"
+            mock_profile_mgr.create_directories.assert_called_once()
+            mock_profile_mgr.check_cache.assert_called_once()
             mock_save_config.assert_called_once()
 
     async def test_update_slurm_profile_success(self, client: AsyncTestClient):
@@ -472,10 +478,19 @@ class TestUpdateProfileAPI:
         with (
             patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
             patch("blackfish.server.asgi._save_profiles_config") as mock_save_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
         ):
             mock_config = MagicMock()
             mock_config.__contains__ = MagicMock(return_value=True)
             mock_get_config.return_value = mock_config
+
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client.check_version.return_value = (True, "0.1.0")
+            mock_tf_client_cls.return_value = mock_tf_client
 
             response = await client.put(
                 "/api/profiles/my-slurm",
@@ -494,6 +509,8 @@ class TestUpdateProfileAPI:
             assert result["name"] == "my-slurm"
             assert result["host"] == "new-cluster.edu"
             assert result["user"] == "newuser"
+            mock_profile_mgr.create_directories.assert_called_once()
+            mock_profile_mgr.check_cache.assert_called_once()
             mock_save_config.assert_called_once()
 
     async def test_update_profile_not_found(self, client: AsyncTestClient):
@@ -535,6 +552,7 @@ class TestUpdateProfileAPI:
             )
 
             assert response.status_code == 400
+            assert "cannot be changed" in response.json()["detail"]
 
     async def test_update_slurm_profile_missing_host(self, client: AsyncTestClient):
         """Test that updating Slurm profile requires host."""
@@ -630,6 +648,7 @@ class TestRepairProfileAPI:
         """Test repairing a Slurm profile successfully."""
         with (
             patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
             patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
         ):
             mock_config = MagicMock()
@@ -645,6 +664,9 @@ class TestRepairProfileAPI:
             )
             mock_get_config.return_value = mock_config
 
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
+
             mock_tf_client = AsyncMock()
             mock_tf_client_cls.return_value = mock_tf_client
 
@@ -653,8 +675,10 @@ class TestRepairProfileAPI:
             assert response.status_code == 200
             result = response.json()
             assert result["status"] == "ok"
-            assert "reinstalled" in result["message"].lower()
-            mock_tf_client.cleanup.assert_called_once()
+            assert "repaired" in result["message"].lower()
+            mock_profile_mgr.create_directories.assert_called_once()
+            mock_profile_mgr.check_cache.assert_called_once()
+            mock_tf_client.setup.assert_called_once()
 
     async def test_repair_slurm_profile_localhost_uses_local_runner(
         self, client: AsyncTestClient
@@ -665,6 +689,7 @@ class TestRepairProfileAPI:
         """
         with (
             patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
             patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
             patch("blackfish.server.asgi.LocalRunner") as mock_local_runner_cls,
             patch("blackfish.server.asgi.SSHRunner") as mock_ssh_runner_cls,
@@ -682,6 +707,9 @@ class TestRepairProfileAPI:
             )
             mock_get_config.return_value = mock_config
 
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
+
             mock_tf_client = AsyncMock()
             mock_tf_client_cls.return_value = mock_tf_client
 
@@ -694,7 +722,7 @@ class TestRepairProfileAPI:
             # Verify LocalRunner was used, not SSHRunner
             mock_local_runner_cls.assert_called_once()
             mock_ssh_runner_cls.assert_not_called()
-            mock_tf_client.cleanup.assert_called_once()
+            mock_tf_client.setup.assert_called_once()
 
     async def test_repair_profile_not_found(self, client: AsyncTestClient):
         """Test repairing a nonexistent profile returns 404."""
@@ -750,6 +778,51 @@ class TestRepairProfileAPI:
 
         with (
             patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.ProfileManager") as mock_profile_mgr_cls,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
+        ):
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_config.__getitem__ = MagicMock(
+                return_value={
+                    "schema": "slurm",
+                    "host": "cluster.edu",
+                    "user": "testuser",
+                    "home_dir": "/home/testuser/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                }
+            )
+            mock_get_config.return_value = mock_config
+
+            mock_profile_mgr = AsyncMock()
+            mock_profile_mgr_cls.return_value = mock_profile_mgr
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client.setup.side_effect = TigerFlowError(
+                "install", "cluster.edu", "Failed to install tigerflow"
+            )
+            mock_tf_client_cls.return_value = mock_tf_client
+
+            response = await client.put("/api/profiles/my-slurm/repair")
+
+            assert response.status_code == 500
+            assert "Failed to install tigerflow" in response.json()["detail"]
+
+
+class TestUpgradeProfileAPI:
+    """Test cases for the PUT /api/profiles/{name}/upgrade endpoint."""
+
+    async def test_upgrade_profile_requires_authentication(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that upgrading a profile requires authentication."""
+        response = await no_auth_client.put("/api/profiles/test-profile/upgrade")
+        assert response.status_code in [401, 403] or response.is_redirect
+
+    async def test_upgrade_slurm_profile_success(self, client: AsyncTestClient):
+        """Test upgrading a Slurm profile successfully."""
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
             patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
         ):
             mock_config = MagicMock()
@@ -766,12 +839,178 @@ class TestRepairProfileAPI:
             mock_get_config.return_value = mock_config
 
             mock_tf_client = AsyncMock()
-            mock_tf_client.cleanup.side_effect = TigerFlowError(
-                "cleanup", "cluster.edu", "Failed to remove venv"
+            mock_tf_client_cls.return_value = mock_tf_client
+
+            response = await client.put("/api/profiles/my-slurm/upgrade")
+
+            assert response.status_code == 200
+            result = response.json()
+            assert result["status"] == "ok"
+            assert "upgraded" in result["message"].lower()
+            mock_tf_client.upgrade.assert_called_once_with(
+                tigerflow_spec="tigerflow",
+                tigerflow_ml_spec="tigerflow-ml",
+            )
+
+    async def test_upgrade_slurm_profile_with_custom_specs(
+        self, client: AsyncTestClient
+    ):
+        """Test upgrading a Slurm profile with custom package specs."""
+        from urllib.parse import quote
+
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
+        ):
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_config.__getitem__ = MagicMock(
+                return_value={
+                    "schema": "slurm",
+                    "host": "cluster.edu",
+                    "user": "testuser",
+                    "home_dir": "/home/testuser/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                }
+            )
+            mock_get_config.return_value = mock_config
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client_cls.return_value = mock_tf_client
+
+            custom_tf = "git+https://github.com/org/tigerflow@feature"
+            custom_ml = "git+https://github.com/org/tigerflow-ml@feature"
+
+            # URL encode the params for the query string
+            response = await client.put(
+                f"/api/profiles/my-slurm/upgrade"
+                f"?tigerflow_spec={quote(custom_tf, safe='')}"
+                f"&tigerflow_ml_spec={quote(custom_ml, safe='')}"
+            )
+
+            assert response.status_code == 200
+            # The server will decode the URL-encoded params back to the original values
+            mock_tf_client.upgrade.assert_called_once_with(
+                tigerflow_spec=custom_tf,
+                tigerflow_ml_spec=custom_ml,
+            )
+
+    async def test_upgrade_slurm_profile_localhost_uses_local_runner(
+        self, client: AsyncTestClient
+    ):
+        """Test upgrading a Slurm profile with localhost uses LocalRunner.
+
+        This is the Open OnDemand scenario.
+        """
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
+            patch("blackfish.server.asgi.LocalRunner") as mock_local_runner_cls,
+            patch("blackfish.server.asgi.SSHRunner") as mock_ssh_runner_cls,
+        ):
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_config.__getitem__ = MagicMock(
+                return_value={
+                    "schema": "slurm",
+                    "host": "localhost",
+                    "user": "ondemand",
+                    "home_dir": "/home/ondemand/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                }
+            )
+            mock_get_config.return_value = mock_config
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client_cls.return_value = mock_tf_client
+
+            mock_local_runner = MagicMock()
+            mock_local_runner_cls.return_value = mock_local_runner
+
+            response = await client.put("/api/profiles/ondemand-slurm/upgrade")
+
+            assert response.status_code == 200
+            # Verify LocalRunner was used, not SSHRunner
+            mock_local_runner_cls.assert_called_once()
+            mock_ssh_runner_cls.assert_not_called()
+            mock_tf_client.upgrade.assert_called_once()
+
+    async def test_upgrade_profile_not_found(self, client: AsyncTestClient):
+        """Test upgrading a nonexistent profile returns 404."""
+        with patch("blackfish.server.asgi._get_profiles_config") as mock_get_config:
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=False)
+            mock_get_config.return_value = mock_config
+
+            response = await client.put("/api/profiles/nonexistent/upgrade")
+
+            assert response.status_code == 404
+
+    async def test_upgrade_local_profile_not_allowed(self, client: AsyncTestClient):
+        """Test that upgrading a local profile returns 400."""
+        with patch("blackfish.server.asgi._get_profiles_config") as mock_get_config:
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_config.__getitem__ = MagicMock(
+                return_value={
+                    "schema": "local",
+                    "home_dir": "/home/user/.blackfish",
+                    "cache_dir": "/tmp/cache",
+                }
+            )
+            mock_get_config.return_value = mock_config
+
+            response = await client.put("/api/profiles/my-local/upgrade")
+
+            assert response.status_code == 400
+
+    async def test_upgrade_profile_missing_required_fields(
+        self, client: AsyncTestClient
+    ):
+        """Test that upgrade fails when profile has missing fields."""
+        with patch("blackfish.server.asgi._get_profiles_config") as mock_get_config:
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_config.__getitem__ = MagicMock(
+                return_value={
+                    "schema": "slurm",
+                    # Missing host, user, home_dir
+                }
+            )
+            mock_get_config.return_value = mock_config
+
+            response = await client.put("/api/profiles/broken-profile/upgrade")
+
+            assert response.status_code == 400
+
+    async def test_upgrade_profile_tigerflow_error(self, client: AsyncTestClient):
+        """Test that TigerFlowError during upgrade returns 500."""
+        from blackfish.server.jobs.client import TigerFlowError
+
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi.TigerFlowClient") as mock_tf_client_cls,
+        ):
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_config.__getitem__ = MagicMock(
+                return_value={
+                    "schema": "slurm",
+                    "host": "cluster.edu",
+                    "user": "testuser",
+                    "home_dir": "/home/testuser/.blackfish",
+                    "cache_dir": "/scratch/cache",
+                }
+            )
+            mock_get_config.return_value = mock_config
+
+            mock_tf_client = AsyncMock()
+            mock_tf_client.upgrade.side_effect = TigerFlowError(
+                "upgrade", "cluster.edu", "Failed to upgrade tigerflow"
             )
             mock_tf_client_cls.return_value = mock_tf_client
 
-            response = await client.put("/api/profiles/my-slurm/repair")
+            response = await client.put("/api/profiles/my-slurm/upgrade")
 
             assert response.status_code == 500
-            assert "Failed to remove venv" in response.json()["detail"]
+            assert "Failed to upgrade tigerflow" in response.json()["detail"]

@@ -32,6 +32,8 @@ pytestmark = pytest.mark.skipif(
 
 # Tasks we expect to be available in tigerflow-ml
 EXPECTED_TASKS = [
+    "detect",
+    "ocr",
     "transcribe",
     "translate",
 ]

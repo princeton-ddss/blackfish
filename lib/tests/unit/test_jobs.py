@@ -374,6 +374,8 @@ class TestTasks:
 
     def test_is_supported_task_returns_true_for_valid_task(self) -> None:
         """is_supported_task should return True for supported tasks."""
+        assert is_supported_task("detect") is True
+        assert is_supported_task("ocr") is True
         assert is_supported_task("transcribe") is True
         assert is_supported_task("translate") is True
 
@@ -383,7 +385,7 @@ class TestTasks:
 
     def test_get_task_library_returns_library_for_valid_task(self) -> None:
         """get_task_library should return the library module for a task."""
-        assert get_task_library("transcribe") == "tigerflow_ml.transcribe"
+        assert get_task_library("transcribe") == "tigerflow_ml.audio.slurm:Transcribe"
 
     def test_get_task_library_raises_for_invalid_task(self) -> None:
         """get_task_library should raise ValueError for unsupported tasks."""

@@ -3,10 +3,12 @@
 from typing import Any
 
 
-# Maps task name to tigerflow-ml library module
+# Maps task name to tigerflow-ml library module:class
 SUPPORTED_TASKS: dict[str, str] = {
-    "transcribe": "tigerflow_ml.transcribe",
-    "translate": "tigerflow_ml.translate",
+    "detect": "tigerflow_ml.image.detect.slurm:Detect",
+    "ocr": "tigerflow_ml.text.ocr.slurm:OCR",
+    "transcribe": "tigerflow_ml.audio.slurm:Transcribe",
+    "translate": "tigerflow_ml.text.slurm:Translate",
 }
 
 

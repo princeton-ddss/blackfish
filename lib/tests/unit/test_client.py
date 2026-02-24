@@ -467,35 +467,61 @@ class TestTigerFlowClientUpgrade:
     async def test_upgrade_runs_pip_install_upgrade(self) -> None:
         """upgrade should run pip install --upgrade for tigerflow packages."""
         runner = MockRunner()
-        runner.set_response(0, b"Successfully installed")
+        # First: pip list --outdated returns tigerflow as outdated
+        # Second: pip install --upgrade
+        runner.set_responses([
+            (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),
+            (0, b"Successfully installed", b""),
+        ])
         client = TigerFlowClient(runner, "/home/user")
 
         await client.upgrade()
 
-        assert "--upgrade" in runner.commands[0]
-        assert "tigerflow" in runner.commands[0]
+        assert "--outdated" in runner.commands[0]
+        assert "--upgrade" in runner.commands[1]
+        assert "tigerflow" in runner.commands[1]
 
     async def test_upgrade_uses_venv_pip(self) -> None:
         """upgrade should use pip from the venv."""
         runner = MockRunner()
-        runner.set_response(0, b"Successfully installed")
+        runner.set_responses([
+            (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),
+            (0, b"Successfully installed", b""),
+        ])
         client = TigerFlowClient(runner, "/home/user")
 
         await client.upgrade()
 
         expected_pip = f"/home/user/{VENV_PATH}/bin/pip"
         assert expected_pip in runner.commands[0]
+        assert expected_pip in runner.commands[1]
 
     async def test_upgrade_raises_install_error_on_failure(self) -> None:
         """upgrade should raise install error if pip upgrade fails."""
         runner = MockRunner()
-        runner.set_response(1, b"", b"Network error")
+        runner.set_responses([
+            (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),  # outdated check
+            (1, b"", b"Network error"),  # install fails
+        ])
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
             await client.upgrade()
 
         assert exc_info.value.error_type == "install"
+
+    async def test_upgrade_skips_if_up_to_date(self) -> None:
+        """upgrade should skip pip install if packages are up-to-date."""
+        runner = MockRunner()
+        # Empty list means nothing is outdated
+        runner.set_response(0, b"[]")
+        client = TigerFlowClient(runner, "/home/user")
+
+        result = await client.upgrade()
+
+        assert len(runner.commands) == 1  # Only the outdated check
+        assert "--outdated" in runner.commands[0]
+        assert result == "TigerFlow up-to-date."
 
     async def test_upgrade_uninstalls_first_for_git_tigerflow_spec(self) -> None:
         """upgrade should uninstall then install when tigerflow_spec is a git URL."""
@@ -532,14 +558,18 @@ class TestTigerFlowClientUpgrade:
     async def test_upgrade_no_uninstall_for_pypi_packages(self) -> None:
         """upgrade should use --upgrade without uninstall for regular PyPI packages."""
         runner = MockRunner()
-        runner.set_response(0, b"Successfully installed")
+        runner.set_responses([
+            (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),  # outdated
+            (0, b"Successfully installed", b""),  # install
+        ])
         client = TigerFlowClient(runner, "/home/user")
 
         await client.upgrade()
 
-        assert len(runner.commands) == 1
-        assert "--upgrade" in runner.commands[0]
-        assert "uninstall" not in runner.commands[0]
+        assert len(runner.commands) == 2
+        assert "--outdated" in runner.commands[0]
+        assert "--upgrade" in runner.commands[1]
+        assert "uninstall" not in runner.commands[1]
 
 
 class TestTigerFlowClientCleanup:

@@ -100,7 +100,7 @@ from blackfish.server.jobs.client import (
     SSHRunner,
     LocalRunner,
 )
-from blackfish.server.setup import ProfileManager, ProfileSetupError
+from blackfish.server.setup import ProfileManager, ProfileSetupError, repair_slurm_profile
 from blackfish.server.models.model import (
     Model,
     PIPELINE_IMAGES,
@@ -2747,11 +2747,12 @@ async def repair_profile(
     name: str,
     tigerflow_spec: str = "tigerflow",
     tigerflow_ml_spec: str = "tigerflow-ml",
+    force: bool = False,
 ) -> dict[str, str]:
     """Repair a Slurm profile.
 
-    Re-runs profile setup to ensure directories exist and TigerFlow is installed.
-    Use this when a profile is in a broken state.
+    Checks profile health first and skips repair if everything is working.
+    Use force=true to repair anyway.
     Use query params to specify custom package specs (e.g., git URLs).
     """
     config = _get_profiles_config()
@@ -2776,39 +2777,23 @@ async def repair_profile(
             detail="Profile is missing required fields (host, user, home_dir, cache_dir)."
         )
 
-    # Choose runner based on host
-    runner: SSHRunner | LocalRunner
-    if host == "localhost":
-        runner = LocalRunner()
-    else:
-        runner = SSHRunner(user=user, host=host)
-
     try:
-        # Set up directories
-        profile_mgr = ProfileManager(
-            runner=runner,
+        result = await repair_slurm_profile(
+            host=host,
+            user=user,
             home_dir=home_dir,
             cache_dir=cache_dir,
-        )
-        await profile_mgr.create_directories()
-        await profile_mgr.check_cache()
-
-        # Set up TigerFlow
-        client = TigerFlowClient(
-            runner=runner,
-            home_dir=home_dir,
             python_path=python_path,
-        )
-        await client.cleanup(
             tigerflow_spec=tigerflow_spec,
             tigerflow_ml_spec=tigerflow_ml_spec,
+            force=force,
         )
     except ProfileSetupError as e:
         raise InternalServerException(detail=e.user_message())
     except TigerFlowError as e:
         raise InternalServerException(detail=e.user_message())
 
-    return {"status": "ok", "message": f"Profile '{name}' repaired on {host}."}
+    return {"status": "ok", "message": result.message}
 
 
 @put("/api/profiles/{name:str}/upgrade", guards=ENDPOINT_GUARDS)

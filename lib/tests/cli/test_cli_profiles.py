@@ -155,7 +155,7 @@ class TestProfileAdd:
     """Test profile add command."""
 
     @patch("blackfish.cli.profile.input")
-    @patch("blackfish.cli.profile._setup_profile_async")
+    @patch("blackfish.cli.profile._setup_profile")
     def test_add_local_profile_success(
         self, mock_setup, mock_input, cli_runner, temp_home_dir
     ):
@@ -180,7 +180,7 @@ class TestProfileAdd:
             result = cli_runner.invoke(main, ["profile", "add"])
 
             assert result.exit_code == 0
-            assert "Created profile test-local" in result.output
+            assert "Created profile 'test-local'" in result.output
 
             # Check that profile was actually written
             with open(profiles_path, "r") as f:
@@ -189,7 +189,7 @@ class TestProfileAdd:
                 assert "schema = local" in content
 
     @patch("blackfish.cli.profile.input")
-    @patch("blackfish.cli.profile._setup_profile_async")
+    @patch("blackfish.cli.profile._setup_profile")
     def test_add_slurm_profile_success(
         self, mock_setup, mock_input, cli_runner, temp_home_dir
     ):
@@ -217,7 +217,7 @@ class TestProfileAdd:
             result = cli_runner.invoke(main, ["profile", "add"])
 
             assert result.exit_code == 0
-            assert "Created profile test-slurm" in result.output
+            assert "Created profile 'test-slurm'" in result.output
 
             # Check that profile was actually written
             with open(profiles_path, "r") as f:
@@ -251,7 +251,7 @@ class TestProfileAdd:
             assert "Profile named default already exists" in result.output
 
     @patch("blackfish.cli.profile.input")
-    @patch("blackfish.cli.profile._setup_profile_async")
+    @patch("blackfish.cli.profile._setup_profile")
     def test_add_profile_invalid_schema(
         self, mock_setup, mock_input, cli_runner, temp_home_dir
     ):
@@ -278,7 +278,7 @@ class TestProfileAdd:
 
             assert result.exit_code == 0
             assert "Profile schema should be one of" in result.output
-            assert "Created profile test-profile" in result.output
+            assert "Created profile 'test-profile'" in result.output
 
 
 class TestProfileUpdate:
@@ -633,14 +633,8 @@ cache_dir = /scratch/testuser/cache
 python_path = python3
 """
 
-    @patch("blackfish.cli.profile.TigerFlowClient")
-    @patch("blackfish.cli.profile.ProfileManager")
-    @patch("blackfish.cli.profile.SSHRunner")
     def test_repair_slurm_profile_success(
         self,
-        mock_ssh_runner_cls,
-        mock_profile_mgr_cls,
-        mock_tf_client_cls,
         cli_runner,
         temp_home_dir,
         mock_slurm_profiles_config,
@@ -648,25 +642,20 @@ python_path = python3
         """Test successful repair of a Slurm profile."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        mock_ssh_runner = mock_ssh_runner_cls.return_value
-        mock_profile_mgr = mock_profile_mgr_cls.return_value
-        mock_tf_client = mock_tf_client_cls.return_value
-
         with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             with open(profiles_path, "w") as f:
                 f.write(mock_slurm_profiles_config)
 
-            with patch("blackfish.cli.profile.asyncio.run") as mock_asyncio_run:
+            with patch("blackfish.cli.profile._repair_profile") as mock_repair:
+                mock_repair.return_value = True
                 result = cli_runner.invoke(
-                    main, ["profile", "repair", "--name", "slurm-test"]
+                    main, ["profile", "repair", "--name", "slurm-test", "--force"]
                 )
 
                 assert result.exit_code == 0
-                # Spinner shows checkmark on success
-                assert "✔" in result.output or result.exit_code == 0
-                mock_asyncio_run.assert_called_once()
+                mock_repair.assert_called_once()
 
     def test_repair_profile_not_found(
         self, cli_runner, temp_home_dir, mock_slurm_profiles_config
@@ -706,14 +695,8 @@ python_path = python3
             assert result.exit_code == 1
             assert "only supported on Slurm profiles" in result.output
 
-    @patch("blackfish.cli.profile.TigerFlowClient")
-    @patch("blackfish.cli.profile.ProfileManager")
-    @patch("blackfish.cli.profile.SSHRunner")
     def test_repair_with_custom_specs(
         self,
-        mock_ssh_runner_cls,
-        mock_profile_mgr_cls,
-        mock_tf_client_cls,
         cli_runner,
         temp_home_dir,
         mock_slurm_profiles_config,
@@ -721,17 +704,14 @@ python_path = python3
         """Test repair with custom package specs."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        mock_ssh_runner = mock_ssh_runner_cls.return_value
-        mock_profile_mgr = mock_profile_mgr_cls.return_value
-        mock_tf_client = mock_tf_client_cls.return_value
-
         with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             with open(profiles_path, "w") as f:
                 f.write(mock_slurm_profiles_config)
 
-            with patch("blackfish.cli.profile.asyncio.run") as mock_asyncio_run:
+            with patch("blackfish.cli.profile._repair_profile") as mock_repair:
+                mock_repair.return_value = True
                 result = cli_runner.invoke(
                     main,
                     [
@@ -739,6 +719,7 @@ python_path = python3
                         "repair",
                         "--name",
                         "slurm-test",
+                        "--force",
                         "--tigerflow-spec",
                         "git+https://github.com/org/tigerflow@branch",
                         "--tigerflow-ml-spec",
@@ -747,4 +728,8 @@ python_path = python3
                 )
 
                 assert result.exit_code == 0
-                mock_asyncio_run.assert_called_once()
+                mock_repair.assert_called_once()
+                # Verify custom specs were passed
+                call_kwargs = mock_repair.call_args.kwargs
+                assert call_kwargs["tigerflow_spec"] == "git+https://github.com/org/tigerflow@branch"
+                assert call_kwargs["tigerflow_ml_spec"] == "git+https://github.com/org/tigerflow-ml@branch"

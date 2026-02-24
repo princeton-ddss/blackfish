@@ -17,7 +17,7 @@ from blackfish.server.logger import logger
 
 # Minimum required package versions (alpha versions accepted during development)
 MIN_TIGERFLOW_VERSION = "0.1.0a1"
-MIN_TIGERFLOW_ML_VERSION = "0.1.0a1"
+MIN_TIGERFLOW_ML_VERSION = "0.1.0a0"
 
 # Venv location on remote cluster (relative to home_dir)
 VENV_PATH = ".venv"
@@ -354,22 +354,22 @@ class TigerFlowClient:
         self,
         tigerflow_spec: str = "tigerflow",
         tigerflow_ml_spec: str = "tigerflow-ml",
-    ) -> None:
+    ) -> str:
         """Upgrade tigerflow + tigerflow-ml to latest.
 
         Args:
             tigerflow_spec: Package spec for tigerflow (default: "tigerflow").
             tigerflow_ml_spec: Package spec for tigerflow-ml (default: "tigerflow-ml").
 
+        Returns:
+            Completion message describing what happened.
+
         Raises:
             TigerFlowError: If upgrade fails
         """
-        self._on_progress(f"Upgrading TigerFlow on {self.host}...")
-
-        try:
-            # When installing from git, uninstall first to ensure clean install.
-            # This is faster than --force-reinstall which also reinstalls all deps.
-            if tigerflow_spec.startswith("git+") or tigerflow_ml_spec.startswith("git+"):
+        # For git URLs, always upgrade (can't check for updates)
+        if tigerflow_spec.startswith("git+") or tigerflow_ml_spec.startswith("git+"):
+            try:
                 self._on_progress("Uninstalling existing packages...")
                 await self._run(
                     f"{self._pip_bin} uninstall -y tigerflow tigerflow-ml"
@@ -378,13 +378,31 @@ class TigerFlowClient:
                 await self._run(
                     f"{self._pip_bin} install {tigerflow_spec} {tigerflow_ml_spec}"
                 )
-            else:
-                await self._run(
-                    f"{self._pip_bin} install --upgrade {tigerflow_spec} {tigerflow_ml_spec}"
-                )
+            except TigerFlowError as e:
+                raise TigerFlowError("install", self.host, e.details)
+            return "TigerFlow upgraded."
+
+        # For PyPI packages, check if outdated first
+        self._on_progress(f"Checking for updates on {self.host}...")
+        try:
+            returncode, stdout, _ = await self.runner.run(
+                f"{self._pip_bin} list --outdated --format=json"
+            )
+            if returncode == 0:
+                outdated = json.loads(stdout.decode("utf-8"))
+                outdated_names = {pkg["name"].lower() for pkg in outdated}
+                if "tigerflow" not in outdated_names and "tigerflow-ml" not in outdated_names:
+                    return "TigerFlow up-to-date."
+
+            # Upgrade needed
+            self._on_progress("Upgrading TigerFlow...")
+            await self._run(
+                f"{self._pip_bin} install --upgrade {tigerflow_spec} {tigerflow_ml_spec}"
+            )
         except TigerFlowError as e:
             raise TigerFlowError("install", self.host, e.details)
-        self._on_progress("TigerFlow upgrade complete")
+
+        return "TigerFlow upgraded."
 
     async def cleanup(
         self,

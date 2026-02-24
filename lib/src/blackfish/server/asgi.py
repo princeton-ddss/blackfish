@@ -1724,8 +1724,8 @@ async def get_models(
 
             for m in to_add:
                 token = profile_tokens.get(m.profile)
-                image, metadata_dict = fetch_model_info_from_hub(m.repo, token)
-                m.image = image
+                hub_image, metadata_dict = fetch_model_info_from_hub(m.repo, token)
+                m.image = hub_image
                 m.metadata_ = metadata_dict
 
             session.add_all(to_add)

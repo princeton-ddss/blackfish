@@ -398,7 +398,12 @@ class TestTasks:
 
         config = build_pipeline_config(
             task="transcribe",
+            input_ext=".wav",
+            venv_path="/home/user/.blackfish/.venv",
             resources=resources,
         )
 
-        assert config["tasks"][0]["resources"] == resources
+        assert config["tasks"][0]["worker_resources"] == resources
+        assert config["tasks"][0]["setup_commands"] == [
+            "source /home/user/.blackfish/.venv/bin/activate"
+        ]

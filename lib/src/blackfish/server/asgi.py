@@ -3019,7 +3019,7 @@ if os.getenv("PYTEST_CURRENT_TEST"):
 db_config = SQLAlchemyAsyncConfig(
     connection_string=f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite",
     metadata=UUIDAuditBase.metadata,
-    create_all=True,
+    create_all=False,
     engine_config=EngineConfig(**engine_config_params),
     alembic_config=AlembicAsyncConfig(
         version_table_name="ddl_version",

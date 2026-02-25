@@ -7,7 +7,7 @@ from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from blackfish.server.jobs.tasks import build_pipeline_config
+from blackfish.server.jobs.tasks import build_pipeline_config, get_default_input_ext
 from blackfish.server.logger import logger
 from blackfish.server.models.profile import SlurmProfile, deserialize_profile
 from blackfish.server.jobs.client import (
@@ -195,10 +195,11 @@ class BatchJob(UUIDAuditBase):
             params.update(self.params)
 
         # Build pipeline config
+        input_ext = self.input_ext or get_default_input_ext(self.task)
         config = build_pipeline_config(
             task=self.task,
-            input_ext=self.input_ext,
-            output_ext=self.output_ext,
+            input_ext=input_ext,
+            venv_path=client.venv_path,
             params=params,
             resources=self.resources,
         )

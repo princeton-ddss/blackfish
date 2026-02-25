@@ -23,15 +23,6 @@ MIN_TIGERFLOW_ML_VERSION = "0.1.0a0"
 VENV_PATH = ".venv"
 
 
-class TigerFlowTaskStatus(BaseModel):
-    """Status of an individual task within a TigerFlow job."""
-
-    name: str
-    processed: int
-    ongoing: int
-    failed: int
-
-
 class TigerFlowStatus(BaseModel):
     """Status returned by tigerflow status command."""
 
@@ -40,7 +31,6 @@ class TigerFlowStatus(BaseModel):
     staged: int
     finished: int
     failed: int
-    tasks: list[TigerFlowTaskStatus]
 
 
 class TigerFlowVersions(BaseModel):
@@ -243,6 +233,10 @@ class TigerFlowClient:
     @property
     def host(self) -> str:
         return self.runner.host
+
+    @property
+    def venv_path(self) -> str:
+        return self._venv_path
 
     async def _run(self, command: str) -> tuple[bytes, bytes]:
         """Run a command and check for success.
@@ -607,13 +601,27 @@ class TigerFlowClient:
 
         command = f"{self._tigerflow_bin} status {output_dir} --json"
 
+        # Use runner.run() directly instead of _run() because tigerflow status
+        # returns exit code 1 for stopped pipelines but still outputs valid JSON
         try:
-            stdout, _ = await self._run(command)
+            returncode, stdout, stderr = await self.runner.run(command)
             output = stdout.decode("utf-8").strip()
-            data = json.loads(output)
-            return TigerFlowStatus.model_validate(data)
-        except TigerFlowError as e:
-            raise TigerFlowError("status", self.host, e.details)
+
+            # Try to parse JSON even on non-zero exit code
+            # tigerflow returns exit code 1 for stopped pipelines with valid output
+            if output:
+                try:
+                    data = json.loads(output)
+                    return TigerFlowStatus.model_validate(data)
+                except (json.JSONDecodeError, ValidationError):
+                    pass  # Fall through to error handling
+
+            # No valid JSON output - report the error
+            if returncode != 0:
+                error_detail = stderr.decode("utf-8").strip() if stderr else f"Exit code {returncode}"
+                raise TigerFlowError("status", self.host, error_detail)
+
+            raise TigerFlowError("status", self.host, "Empty response from tigerflow status")
         except json.JSONDecodeError as e:
             raise TigerFlowError("status", self.host, f"Invalid JSON response: {e}")
         except ValidationError as e:

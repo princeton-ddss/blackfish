@@ -9,6 +9,7 @@ import PropTypes from "prop-types";
 // Derive display status from API status and progress fields
 function deriveDisplayStatus(job) {
     if (job.status === "running") return "running";
+    if (job.status === "broken") return "broken";
     // status === "stopped"
     if ((job.staged ?? 0) === 0 && (job.errored ?? 0) === 0) return "done";
     if ((job.errored ?? 0) > 0) return "error";
@@ -38,6 +39,13 @@ function StatusBadge({ displayStatus }) {
                     text: "text-red-700 dark:text-red-400",
                     ring: "ring-red-600/20 dark:ring-red-500/30",
                     label: "Error",
+                };
+            case "broken":
+                return {
+                    bg: "bg-orange-50 dark:bg-orange-900/30",
+                    text: "text-orange-700 dark:text-orange-400",
+                    ring: "ring-orange-600/20 dark:ring-orange-500/30",
+                    label: "Broken",
                 };
             case "stopped":
             default:

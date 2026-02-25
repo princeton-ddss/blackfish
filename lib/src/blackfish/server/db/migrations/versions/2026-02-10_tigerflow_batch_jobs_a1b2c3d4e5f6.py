@@ -3,9 +3,10 @@
 
 Replace batch job schema for TigerFlow-based execution.
 
-- Add: task, revision, input_dir, output_dir, params, resources, pid
+- Add: task, revision, input_dir, output_dir, params, resources, pid, max_workers
 - Rename: ntotal->staged, nsuccess->finished, nfail->errored
-- Remove: pipeline, cache_dir, job_id, scheduler, provider, mount
+- Remove: pipeline, job_id, scheduler, provider, mount
+- Keep: cache_dir (exists in both old and new schema)
 
 Revision ID: a1b2c3d4e5f6
 Revises: 27b628a63d4e
@@ -79,6 +80,7 @@ def schema_upgrades() -> None:
         batch_op.add_column(sa.Column("params", sa.JSON(), nullable=True))
         batch_op.add_column(sa.Column("resources", sa.JSON(), nullable=True))
         batch_op.add_column(sa.Column("pid", sa.String(), nullable=True))
+        batch_op.add_column(sa.Column("max_workers", sa.Integer(), nullable=False, server_default="1"))
         batch_op.add_column(sa.Column("tigerflow_version", sa.String(), nullable=True))
         batch_op.add_column(sa.Column("tigerflow_ml_version", sa.String(), nullable=True))
 
@@ -89,7 +91,6 @@ def schema_upgrades() -> None:
 
         # Remove old columns
         batch_op.drop_column("pipeline")
-        batch_op.drop_column("cache_dir")
         batch_op.drop_column("job_id")
         batch_op.drop_column("scheduler")
         batch_op.drop_column("provider")
@@ -102,7 +103,6 @@ def schema_downgrades() -> None:
     with op.batch_alter_table("jobs", schema=None) as batch_op:
         # Restore old columns
         batch_op.add_column(sa.Column("pipeline", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("cache_dir", sa.String(), nullable=True))
         batch_op.add_column(sa.Column("job_id", sa.String(), nullable=True))
         batch_op.add_column(sa.Column("scheduler", sa.String(), nullable=True))
         batch_op.add_column(sa.Column("provider", sa.String(), nullable=True))
@@ -121,6 +121,7 @@ def schema_downgrades() -> None:
         batch_op.drop_column("params")
         batch_op.drop_column("resources")
         batch_op.drop_column("pid")
+        batch_op.drop_column("max_workers")
         batch_op.drop_column("tigerflow_version")
         batch_op.drop_column("tigerflow_ml_version")
 

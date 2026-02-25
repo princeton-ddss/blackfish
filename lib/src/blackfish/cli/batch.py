@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from dataclasses import asdict
 from datetime import datetime
@@ -191,12 +192,11 @@ def list_batch_jobs(
     jobs = res.json()
     for job in jobs:
         if is_active(job) or all:
-            staged = job.get("staged")
-            finished = job.get("finished", 0)
-            if staged is None:
-                progress = "N/A"
-            else:
-                progress = f"{finished}/{staged}" if staged else "0/0"
+            staged = job.get("staged") or 0
+            finished = job.get("finished") or 0
+            errored = job.get("errored") or 0
+            total = staged + finished + errored
+            progress = f"{finished}/{total}" if total else "N/A"
 
             job_status = job.get("status")
             tab.add_row(
@@ -262,8 +262,14 @@ def stop_batch_job(job_id: str) -> None:  # pragma: no cover
             except Exception:
                 pass
         else:
-            spinner.text = f"Stopped batch job {full_job_id[:DISPLAY_ID_LENGTH]}."
-            spinner.ok(f"{LogSymbols.SUCCESS.value}")
+            job_data = res.json()
+            status = job_data.get("status", "").lower()
+            if status == "broken":
+                spinner.text = f"Job {full_job_id[:DISPLAY_ID_LENGTH]} marked as broken due to missing metadata."
+                spinner.ok(f"{LogSymbols.WARNING.value}")
+            else:
+                spinner.text = f"Stopped batch job {full_job_id[:DISPLAY_ID_LENGTH]}."
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
 @click.command(name="rm")
@@ -439,6 +445,12 @@ def remove_batch_job(
     help="Slurm resource configuration as JSON string (e.g., '{\"gpus\": 1, \"cpus\": 4}').",
 )
 @click.option(
+    "--max-workers",
+    type=int,
+    default=1,
+    help="Maximum number of concurrent Slurm workers.",
+)
+@click.option(
     "--input-ext",
     type=str,
     default=None,
@@ -460,6 +472,7 @@ def run_batch_job(
     revision: Optional[str],
     params: Optional[str],
     resources: Optional[str],
+    max_workers: int,
     input_ext: Optional[str],
     dry_run: bool,
 ) -> None:
@@ -500,7 +513,7 @@ def run_batch_job(
             f"Using latest available: {revision}"
         )
 
-    # 4. Get model directory
+    # 4. Get model directory and derive cache_dir
     model_dir = get_model_dir(model, revision, matched_profile)
     if model_dir is None:
         click.echo(
@@ -508,6 +521,8 @@ def run_batch_job(
             f"The requested revision ({revision}) is missing."
         )
         return
+    # cache_dir is the parent of model_dir (e.g., /scratch/.../models)
+    cache_dir = os.path.dirname(model_dir)
 
     # 5. Validate task is supported
     if not is_supported_task(task):
@@ -541,7 +556,7 @@ def run_batch_job(
     # Handle dry-run: print config and exit
     if dry_run:
         # Build the same config that would be sent to TigerFlow
-        task_params: dict = {"model": model}
+        task_params: dict = {"model": model, "cache_dir": cache_dir}
         if revision:
             task_params["revision"] = revision
         if params_dict:
@@ -555,6 +570,8 @@ def run_batch_job(
             venv_path=venv_path,
             params=task_params,
             resources=resources_dict,
+            max_workers=max_workers,
+            cache_dir=cache_dir,
         )
 
         click.echo("Pipeline config (dry run):\n")
@@ -575,8 +592,10 @@ def run_batch_job(
                     "input_dir": input_dir,
                     "output_dir": output_dir,
                     "input_ext": resolved_input_ext,
+                    "cache_dir": cache_dir,
                     "params": params_dict,
                     "resources": resources_dict,
+                    "max_workers": max_workers,
                 },
             )
             if res.ok:

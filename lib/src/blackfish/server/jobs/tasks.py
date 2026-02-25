@@ -3,12 +3,12 @@
 from typing import Any
 
 
-# Maps task name to tigerflow-ml library module:class
+# Maps task name to tigerflow-ml module (as used with python -m)
 SUPPORTED_TASKS: dict[str, str] = {
-    "detect": "tigerflow_ml.image.detect.slurm:Detect",
-    "ocr": "tigerflow_ml.text.ocr.slurm:OCR",
-    "transcribe": "tigerflow_ml.audio.slurm:Transcribe",
-    "translate": "tigerflow_ml.text.slurm:Translate",
+    "detect": "tigerflow_ml.image.detect.slurm",
+    "ocr": "tigerflow_ml.text.ocr.slurm",
+    "transcribe": "tigerflow_ml.audio.transcribe.slurm",
+    "translate": "tigerflow_ml.text.translate.slurm",
 }
 
 # Default input file extensions for each task
@@ -17,6 +17,14 @@ DEFAULT_INPUT_EXT: dict[str, str] = {
     "ocr": ".jpg",
     "transcribe": ".wav",
     "translate": ".txt",
+}
+
+# Default Slurm worker resources for batch jobs
+DEFAULT_WORKER_RESOURCES: dict[str, Any] = {
+    "cpus": 4,
+    "memory": "32GB",
+    "gpus": 1,
+    "time": "01:00:00",
 }
 
 
@@ -58,6 +66,7 @@ def build_pipeline_config(
     params: dict[str, Any] | None = None,
     resources: dict[str, Any] | None = None,
     max_workers: int = 1,
+    cache_dir: str | None = None,
 ) -> dict[str, Any]:
     """Build a TigerFlow pipeline configuration.
 
@@ -68,19 +77,21 @@ def build_pipeline_config(
         params: Task-specific parameters (e.g., model, language)
         resources: Slurm worker resources (e.g., cpus, memory, gpus)
         max_workers: Maximum number of concurrent Slurm workers
+        cache_dir: Model cache directory for HF_HOME
 
     Returns:
         Pipeline configuration dict ready to be written as YAML
     """
     module = get_task_library(task)
 
-    # Default worker resources if not provided
-    worker_resources = resources or {
-        "cpus": 4,
-        "memory": "32GB",
-        "gpus": 1,
-        "time": "01:00:00",
-    }
+    # Merge user resources with defaults
+    worker_resources = {**DEFAULT_WORKER_RESOURCES, **(resources or {})}
+
+    # Build setup commands
+    setup_commands = [f"source {venv_path}/bin/activate"]
+    if cache_dir:
+        setup_commands.append(f"export HF_HOME={cache_dir}")
+        setup_commands.append("export HF_HUB_OFFLINE=1")
 
     task_config: dict[str, Any] = {
         "name": task,
@@ -89,9 +100,7 @@ def build_pipeline_config(
         "input_ext": input_ext,
         "max_workers": max_workers,
         "worker_resources": worker_resources,
-        "setup_commands": [
-            f"source {venv_path}/bin/activate",
-        ],
+        "setup_commands": setup_commands,
     }
 
     if params:

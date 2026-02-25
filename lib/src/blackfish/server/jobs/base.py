@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 class BatchJobStatus(StrEnum):
     RUNNING = auto()
     STOPPED = auto()
+    BROKEN = auto()  # Metadata missing - unable to determine job state
 
 
 def format_status(status: BatchJobStatus | None) -> str:
@@ -132,6 +133,7 @@ class BatchJob(UUIDAuditBase):
     output_dir: Mapped[str]  # Output directory on cluster
     input_ext: Mapped[Optional[str]]  # Input file extension (e.g., ".wav")
     output_ext: Mapped[Optional[str]]  # Output file extension (e.g., ".json")
+    cache_dir: Mapped[Optional[str]]  # Model cache directory on cluster
 
     # Configuration (stored as JSON)
     params: Mapped[Optional[dict[str, Any]]] = mapped_column(
@@ -140,6 +142,7 @@ class BatchJob(UUIDAuditBase):
     resources: Mapped[Optional[dict[str, Any]]] = mapped_column(
         JSON, nullable=True, default=None
     )
+    max_workers: Mapped[int] = mapped_column(default=1)
 
     # Profile info (denormalized for convenience)
     profile: Mapped[str]
@@ -187,10 +190,12 @@ class BatchJob(UUIDAuditBase):
         # Verify required features are available
         await client.check_capabilities()
 
-        # Build params - model/revision merged with user params
+        # Build params - model/revision/cache merged with user params
         params: dict[str, Any] = {"model": self.repo_id}
         if self.revision:
             params["revision"] = self.revision
+        if self.cache_dir:
+            params["cache_dir"] = self.cache_dir
         if self.params:
             params.update(self.params)
 
@@ -202,6 +207,8 @@ class BatchJob(UUIDAuditBase):
             venv_path=client.venv_path,
             params=params,
             resources=self.resources,
+            max_workers=self.max_workers,
+            cache_dir=self.cache_dir,
         )
 
         # Start TigerFlow job
@@ -265,5 +272,11 @@ class BatchJob(UUIDAuditBase):
             self.status = BatchJobStatus.RUNNING
         else:
             self.status = BatchJobStatus.STOPPED
+
+        logger.debug(
+            f"Status check complete for job {self.id}: "
+            f"status={format_status(self.status)}, "
+            f"staged={self.staged}, finished={self.finished}, errored={self.errored}"
+        )
 
         return self.status

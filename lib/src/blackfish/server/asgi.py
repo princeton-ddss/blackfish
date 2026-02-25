@@ -1304,8 +1304,11 @@ class BatchJobRequest(BaseModel):
     profile: Profile
     input_dir: str  # Input directory on cluster
     output_dir: str  # Output directory on cluster
+    input_ext: Optional[str] = None  # Input file extension (e.g., ".mp3")
+    cache_dir: Optional[str] = None  # Model cache directory on cluster
     params: Optional[dict[str, Any]] = None  # Task-specific parameters
     resources: Optional[dict[str, Any]] = None  # Resource requirements
+    max_workers: int = 1  # Max concurrent Slurm workers
 
 
 def build_batch_job(data: BatchJobRequest) -> BatchJob:
@@ -1320,8 +1323,11 @@ def build_batch_job(data: BatchJobRequest) -> BatchJob:
         "home_dir": data.profile.home_dir,
         "input_dir": data.input_dir,
         "output_dir": data.output_dir,
+        "input_ext": data.input_ext,
+        "cache_dir": data.cache_dir,
         "params": data.params,
         "resources": data.resources,
+        "max_workers": data.max_workers,
     }
 
     if isinstance(data.profile, LocalProfile):
@@ -1497,18 +1503,28 @@ async def stop_job(
     if job is None:
         raise NotFoundException(detail=f"Job {job_id} not found")
 
+    client = create_tigerflow_client(job, state)
+
+    # Try to stop - may fail if output dir is missing
     try:
-        client = create_tigerflow_client(job, state)
         await job.stop(client)
-        await job.update(client)
+    except TigerFlowError as e:
+        logger.warning(f"Stop command failed for job {job_id}: {e}")
+        job.status = BatchJobStatus.BROKEN
         session.add(job)
         await session.flush()
         return job
-    except Exception as e:
-        logger.error(f"Failed to stop job {job_id}: {e}")
-        raise InternalServerException(
-            detail="An error occurred while stopping the job."
-        )
+
+    # Try to get final status - may fail if metadata was never created
+    try:
+        await job.update(client)
+    except TigerFlowError as e:
+        logger.warning(f"Status check failed for job {job_id}: {e}")
+        job.status = BatchJobStatus.BROKEN
+
+    session.add(job)
+    await session.flush()
+    return job
 
 
 @dataclass
@@ -1568,7 +1584,7 @@ async def delete_job(
 
     res = []
     for batch_job in jobs:
-        if batch_job.status in [BatchJobStatus.STOPPED, None]:
+        if batch_job.status in [BatchJobStatus.STOPPED, BatchJobStatus.BROKEN, None]:
             logger.debug(f"Queueing batch job {batch_job.id} for deletion")
             deletion = sa.delete(BatchJob).where(BatchJob.id == batch_job.id)
             try:

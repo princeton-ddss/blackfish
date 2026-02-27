@@ -23,6 +23,7 @@ DEFAULT_INPUT_EXT: dict[str, str] = {
 # Tasks not listed here have user-configurable output formats
 DEFAULT_OUTPUT_EXT: dict[str, str] = {
     "detect": ".json",  # Object detection always outputs JSON
+    "translate": ".txt",  # Translation outputs text files
 }
 
 # Default Slurm worker resources for batch jobs

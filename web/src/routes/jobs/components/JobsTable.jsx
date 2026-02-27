@@ -102,7 +102,7 @@ ProgressDisplay.propTypes = {
     errored: PropTypes.number,
 };
 
-function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false, onNewClick, profile, useMockData, setUseMockData }) {
+function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false, isRefreshing = false, onRefresh, onNewClick, profile, useMockData, setUseMockData }) {
     const isSlurm = profile?.schema === "slurm";
     const [currentPage, setCurrentPage] = useState(1);
     const jobsPerPage = 20;
@@ -207,12 +207,13 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                         >
                                             <div className="flex gap-2 justify-end">
                                                 <button
-                                                    onClick={() => {}}
+                                                    onClick={onRefresh}
+                                                    disabled={isRefreshing}
                                                     title="Refresh"
-                                                    className="text-gray-900 dark:text-gray-100 hover:text-gray-400"
+                                                    className="text-gray-900 dark:text-gray-100 hover:text-gray-400 disabled:opacity-50"
                                                 >
                                                     <ArrowPathIcon
-                                                        className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`}
+                                                        className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
                                                     />
                                                 </button>
                                             </div>
@@ -313,6 +314,8 @@ JobsTable.propTypes = {
     onJobDrillIn: PropTypes.func.isRequired,
     selectedJob: PropTypes.object,
     isLoading: PropTypes.bool,
+    isRefreshing: PropTypes.bool,
+    onRefresh: PropTypes.func,
     onNewClick: PropTypes.func,
     profile: PropTypes.object,
     useMockData: PropTypes.bool,

@@ -157,7 +157,7 @@ const MOCK_RESULTS = {
 
 function JobsContainer() {
     const { profile } = useContext(ProfileContext);
-    const { jobs: apiJobs, isLoading, mutate } = useJobs(profile);
+    const { jobs: apiJobs, isLoading, isRefreshing, mutate } = useJobs(profile);
     const [useMockData, setUseMockData] = useState(false);
     const [selectedJobId, setSelectedJobId] = useState(null);
     const [selectedResult, setSelectedResult] = useState(null);
@@ -268,6 +268,8 @@ function JobsContainer() {
                         onNewClick={handleNewPipelineClick}
                         profile={profile}
                         isLoading={isLoading}
+                        isRefreshing={isRefreshing}
+                        onRefresh={() => mutate()}
                         useMockData={useMockData}
                         setUseMockData={setUseMockData}
                     />

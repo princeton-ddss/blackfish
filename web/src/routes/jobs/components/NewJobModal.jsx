@@ -309,17 +309,6 @@ export const TASKS = [
           { value: "zh-tw", label: "Chinese (Traditional)" },
         ],
       },
-      {
-        name: "output_format",
-        type: "select",
-        required: false,
-        label: "Output Format",
-        options: [
-          { value: "plain", label: "Plain (.txt)" },
-          { value: "json", label: "JSON (.json)" },
-        ],
-        default: "plain",
-      },
     ],
   },
 ];
@@ -327,7 +316,6 @@ export const TASKS = [
 // Map output_format values to file extensions
 const OUTPUT_FORMAT_EXT = {
   text: ".txt",
-  plain: ".txt",
   markdown: ".md",
   json: ".json",
   srt: ".srt",

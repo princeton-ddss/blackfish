@@ -198,9 +198,11 @@ function JobsContainer() {
         setIsNewPipelineModalOpen(true);
     };
 
-    const handleJobCreated = () => {
-        // Refetch jobs from API
-        mutate();
+    const handleJobCreated = (newJob) => {
+        // Optimistic update: immediately add job to cache, then revalidate
+        mutate((currentJobs) => [newJob, ...(currentJobs || [])], { revalidate: true });
+        // Select the new job
+        setSelectedJobId(newJob.id);
     };
 
     const handleStopJob = async (job) => {

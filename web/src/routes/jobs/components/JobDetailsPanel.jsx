@@ -3,6 +3,8 @@ import {
     CpuChipIcon,
     ServerIcon,
     FolderIcon,
+    StopIcon,
+    TrashIcon,
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
@@ -72,9 +74,9 @@ StatusBadge.propTypes = {
 };
 
 function ProgressBar({ finished, staged, errored }) {
-    const done = finished ?? 0;
-    const pending = staged ?? 0;
-    const failed = errored ?? 0;
+    const done = Number(finished) || 0;
+    const pending = Number(staged) || 0;
+    const failed = Number(errored) || 0;
     const total = done + pending + failed;
     if (total === 0) return null;
 
@@ -103,7 +105,7 @@ ProgressBar.propTypes = {
     errored: PropTypes.number,
 };
 
-function JobDetailsPanel({ job }) {
+function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
     if (!job) {
         return (
             <div className="bg-white dark:bg-gray-800 p-6 h-full flex flex-col justify-center">
@@ -120,9 +122,9 @@ function JobDetailsPanel({ job }) {
         );
     }
 
-    const done = job.finished ?? 0;
-    const pending = job.staged ?? 0;
-    const failed = job.errored ?? 0;
+    const done = Number(job.finished) || 0;
+    const pending = Number(job.staged) || 0;
+    const failed = Number(job.errored) || 0;
     const total = done + pending + failed;
 
     return (
@@ -137,7 +139,31 @@ function JobDetailsPanel({ job }) {
                         {job.id}
                     </p>
                 </div>
-                <StatusBadge displayStatus={deriveDisplayStatus(job)} />
+                <div className="flex items-center gap-2">
+                    <StatusBadge displayStatus={deriveDisplayStatus(job)} />
+                    {job.status === "running" && onStopJob && (
+                        <button
+                            type="button"
+                            onClick={() => onStopJob(job)}
+                            disabled={jobActionInProgress === job.id}
+                            aria-label="Stop job"
+                            className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
+                        >
+                            <StopIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
+                        </button>
+                    )}
+                    {job.status !== "running" && onDeleteJob && (
+                        <button
+                            type="button"
+                            onClick={() => onDeleteJob(job)}
+                            disabled={jobActionInProgress === job.id}
+                            aria-label="Delete job"
+                            className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
+                        >
+                            <TrashIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Progress Section */}
@@ -146,7 +172,7 @@ function JobDetailsPanel({ job }) {
                     <span className="text-gray-500 dark:text-gray-400">Progress</span>
                     <div className="flex items-center gap-3 text-xs">
                         <span className="text-green-600 dark:text-green-400">{done} done</span>
-                        <span className="text-gray-500 dark:text-gray-400">{pending} pending</span>
+                        <span className="text-gray-500 dark:text-gray-400">{pending} staged</span>
                         {failed > 0 && (
                             <span className="text-red-600 dark:text-red-400">{failed} failed</span>
                         )}
@@ -193,7 +219,7 @@ function JobDetailsPanel({ job }) {
             )}
 
             {/* Resource Config Section */}
-            {job.resources && (
+            {(job.resources || job.max_workers) && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
                     <div className="flex items-center gap-2 mb-3">
                         <ServerIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -202,34 +228,34 @@ function JobDetailsPanel({ job }) {
                         </h4>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                        {job.resources.memory_gb != null && (
+                        {job.resources?.memory && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Memory:</span>
-                                <span className="text-gray-900 dark:text-gray-100">{job.resources.memory_gb} GB</span>
+                                <span className="text-gray-900 dark:text-gray-100">{job.resources.memory}</span>
                             </div>
                         )}
-                        {job.resources.cpus != null && (
+                        {job.resources?.cpus != null && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">CPUs:</span>
                                 <span className="text-gray-900 dark:text-gray-100">{job.resources.cpus}</span>
                             </div>
                         )}
-                        {job.resources.gpu_count != null && (
+                        {job.resources?.gpus != null && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">GPUs:</span>
-                                <span className="text-gray-900 dark:text-gray-100">{job.resources.gpu_count}</span>
+                                <span className="text-gray-900 dark:text-gray-100">{job.resources.gpus}</span>
                             </div>
                         )}
-                        {job.resources.partition && (
+                        {job.resources?.time && (
                             <div className="flex justify-between">
-                                <span className="text-gray-500 dark:text-gray-400">Partition:</span>
-                                <span className="text-gray-900 dark:text-gray-100">{job.resources.partition}</span>
+                                <span className="text-gray-500 dark:text-gray-400">Time:</span>
+                                <span className="text-gray-900 dark:text-gray-100">{job.resources.time}</span>
                             </div>
                         )}
-                        {job.resources.max_workers != null && (
+                        {job.max_workers != null && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Max Workers:</span>
-                                <span className="text-gray-900 dark:text-gray-100">{job.resources.max_workers}</span>
+                                <span className="text-gray-900 dark:text-gray-100">{job.max_workers}</span>
                             </div>
                         )}
                     </div>
@@ -307,15 +333,18 @@ JobDetailsPanel.propTypes = {
         revision: PropTypes.string,
         input_dir: PropTypes.string,
         output_dir: PropTypes.string,
+        max_workers: PropTypes.number,
         resources: PropTypes.shape({
-            memory_gb: PropTypes.number,
+            memory: PropTypes.string,
             cpus: PropTypes.number,
-            gpu_count: PropTypes.number,
-            partition: PropTypes.string,
-            max_workers: PropTypes.number,
+            gpus: PropTypes.number,
+            time: PropTypes.string,
         }),
         params: PropTypes.object,
     }),
+    onStopJob: PropTypes.func,
+    onDeleteJob: PropTypes.func,
+    jobActionInProgress: PropTypes.string,
 };
 
 export default JobDetailsPanel;

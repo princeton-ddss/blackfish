@@ -76,22 +76,22 @@ StatusBadge.propTypes = {
 };
 
 function ProgressDisplay({ finished, staged, errored }) {
-    const done = finished ?? 0;
-    const pending = staged ?? 0;
-    const failed = errored ?? 0;
+    const done = Number(finished) || 0;
+    const pending = Number(staged) || 0;
+    const failed = Number(errored) || 0;
     const total = done + pending + failed;
     return (
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-1.5 text-xs">
             <span className="text-green-600 dark:text-green-400">{done}</span>
             <span className="text-gray-400">/</span>
-            <span className="text-gray-500 dark:text-gray-400">{pending}</span>
-            {failed > 0 && (
-                <>
-                    <span className="text-gray-400">/</span>
-                    <span className="text-red-600 dark:text-red-400">{failed}</span>
-                </>
+            <span className="text-gray-900 dark:text-gray-100">{total}</span>
+            {(pending > 0 || failed > 0) && (
+                <span className="text-gray-400 dark:text-gray-500">
+                    ({pending > 0 && <>{pending} staged</>}
+                    {pending > 0 && failed > 0 && ", "}
+                    {failed > 0 && <span className="text-red-600 dark:text-red-400">{failed} failed</span>})
+                </span>
             )}
-            <span className="text-gray-400 dark:text-gray-500">({total})</span>
         </div>
     );
 }
@@ -252,8 +252,8 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                                 <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-sm text-gray-900 dark:text-gray-100 sm:pl-6">
                                                     <div className="overflow-x-scroll">{job.name}</div>
                                                 </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-500 dark:text-gray-400 font-mono text-xs">
-                                                    {job.id}
+                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-500 dark:text-gray-400 font-mono text-xs" title={job.id}>
+                                                    {job.id?.slice(0, 8)}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     {lastModified(job.created_at)}
@@ -269,17 +269,15 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                                     />
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-right">
-                                                    <div className="flex gap-2 justify-end">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                onJobDrillIn(job);
-                                                            }}
-                                                            className="text-gray-900 dark:text-gray-100 hover:text-gray-400"
-                                                        >
-                                                            <ChevronRightIcon className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onJobDrillIn(job);
+                                                        }}
+                                                        className="text-gray-900 dark:text-gray-100 hover:text-gray-400"
+                                                    >
+                                                        <ChevronRightIcon className="h-4 w-4" />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))

@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useJobs } from "@/lib/loaders";
+import { stopJob, deleteJob } from "@/lib/requests";
 import JobsTable from "./JobsTable";
 import JobResultsTable from "./JobResultsTable";
 import JobDetailsPanel from "./JobDetailsPanel";
@@ -156,25 +157,29 @@ const MOCK_RESULTS = {
 
 function JobsContainer() {
     const { profile } = useContext(ProfileContext);
-    const { jobs: apiJobs, error, isLoading, mutate } = useJobs(profile);
+    const { jobs: apiJobs, isLoading, mutate } = useJobs(profile);
     const [useMockData, setUseMockData] = useState(false);
-    const [selectedJob, setSelectedJob] = useState(null);
+    const [selectedJobId, setSelectedJobId] = useState(null);
     const [selectedResult, setSelectedResult] = useState(null);
     const [viewingResults, setViewingResults] = useState(false);
     const [isNewPipelineModalOpen, setIsNewPipelineModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
+    const [jobActionInProgress, setJobActionInProgress] = useState(null); // job id being stopped/deleted
 
     const jobs = useMockData ? MOCK_JOBS : apiJobs;
 
+    // Derive selectedJob from jobs list - always stays in sync
+    const selectedJob = selectedJobId && jobs ? jobs.find(j => j.id === selectedJobId) : null;
+
     // Click on job row to show details (without drilling in)
     const handleJobClick = (job) => {
-        setSelectedJob(job);
+        setSelectedJobId(job.id);
         setSelectedResult(null);
     };
 
     // Click ">" to drill into job results
     const handleJobDrillIn = (job) => {
-        setSelectedJob(job);
+        setSelectedJobId(job.id);
         setSelectedResult(null);
         setViewingResults(true);
     };
@@ -196,6 +201,34 @@ function JobsContainer() {
     const handleJobCreated = () => {
         // Refetch jobs from API
         mutate();
+    };
+
+    const handleStopJob = async (job) => {
+        setJobActionInProgress(job.id);
+        try {
+            await stopJob(job.id);
+            mutate();
+        } catch (err) {
+            console.error("Failed to stop job:", err);
+        } finally {
+            setJobActionInProgress(null);
+        }
+    };
+
+    const handleDeleteJob = async (job) => {
+        setJobActionInProgress(job.id);
+        try {
+            await deleteJob(job.id);
+            // Clear selection if deleted job was selected
+            if (selectedJobId === job.id) {
+                setSelectedJobId(null);
+            }
+            mutate();
+        } catch (err) {
+            console.error("Failed to delete job:", err);
+        } finally {
+            setJobActionInProgress(null);
+        }
     };
 
     const jobResults = selectedJob ? MOCK_RESULTS[selectedJob.id] || [] : [];
@@ -228,7 +261,7 @@ function JobsContainer() {
                     />
                 )}
             </div>
-            <div className="w-full lg:flex-1 lg:min-w-[24rem] mb-2 lg:mr-6">
+            <div className="w-full lg:flex-1 lg:min-w-[24rem] mb-2">
                 <div className="flex items-center justify-between mb-2 h-9">
                     <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">
                         {showResultPreview ? "Result Preview" : "Job Details"}
@@ -242,7 +275,12 @@ function JobsContainer() {
                             profile={profile}
                         />
                     ) : (
-                        <JobDetailsPanel job={selectedJob} />
+                        <JobDetailsPanel
+                            job={selectedJob}
+                            onStopJob={handleStopJob}
+                            onDeleteJob={handleDeleteJob}
+                            jobActionInProgress={jobActionInProgress}
+                        />
                     )}
                 </div>
             </div>

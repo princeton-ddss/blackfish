@@ -27,55 +27,135 @@ import Stepper from "@/components/Stepper";
 import DirectoryBrowser from "@/components/DirectoryBrowser";
 import { useModels } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
-import { fetchProfileResources, fetchModelSizeFromHub } from "@/lib/requests";
+import { fetchProfileResources, fetchModelSizeFromHub, createJob } from "@/lib/requests";
 import { selectTierByModelSize } from "@/lib/util";
 import PropTypes from "prop-types";
 
-// Task definitions - each task maps to a service type
+// Task definitions - each task maps to a TigerFlow task type
+// id must match backend SUPPORTED_TASKS keys (detect, ocr, transcribe, translate)
+// service can be a string or array of strings for tasks that support multiple model types
 export const TASKS = [
+  {
+    id: "detect",
+    name: "Object Detection",
+    description: "Detect objects in images or videos",
+    service: "object-detection", // Backend COMPATIBLE_PIPELINES includes zero-shot-object-detection
+    defaultInputExt: ".jpg",
+    defaultPrompt: null,
+    inputExtOptions: [
+      { value: ".jpg", label: "JPEG (.jpg)" },
+      { value: ".jpeg", label: "JPEG (.jpeg)" },
+      { value: ".png", label: "PNG (.png)" },
+      { value: ".tiff", label: "TIFF (.tiff)" },
+      { value: ".mp4", label: "MP4 (.mp4)" },
+      { value: ".avi", label: "AVI (.avi)" },
+      { value: ".mov", label: "MOV (.mov)" },
+      { value: ".mkv", label: "MKV (.mkv)" },
+      { value: ".webm", label: "WebM (.webm)" },
+    ],
+    params: [
+      {
+        name: "labels",
+        type: "text",
+        required: false, // Dynamically required for zero-shot models
+        label: "Labels",
+        help: "Comma-separated labels to detect (e.g., \"cat,dog,person\").",
+        placeholder: "cat,dog,person",
+        showWhen: { modelType: "zero-shot-object-detection" },
+      },
+      {
+        name: "threshold",
+        type: "text",
+        required: false,
+        label: "Confidence Threshold",
+        help: "Minimum confidence score (0-1). Default: 0.3",
+        placeholder: "0.3",
+      },
+      {
+        name: "batch_size",
+        type: "text",
+        required: false,
+        label: "Batch Size",
+        help: "Parallel frame processing count. Default: 4",
+        placeholder: "4",
+      },
+      {
+        name: "sample_fps",
+        type: "text",
+        required: false,
+        label: "Sample FPS",
+        help: "Video sampling rate. Use 0 for all frames. Default: 1.0",
+        placeholder: "1.0",
+      },
+    ],
+  },
   {
     id: "ocr",
     name: "OCR",
     description: "Extract text from images",
-    service: "text-generation", // Uses vLLM with vision models
-    defaultPrompt: "Extract all text from this image. Preserve the original formatting and structure as much as possible.",
+    service: "image-text-to-text", // Vision models only
+    defaultInputExt: ".png",
+    defaultPrompt: "Extract all text from this image.",
+    inputExtOptions: [
+      { value: ".png", label: "PNG (.png)" },
+      { value: ".jpg", label: "JPEG (.jpg)" },
+      { value: ".jpeg", label: "JPEG (.jpeg)" },
+      { value: ".tiff", label: "TIFF (.tiff)" },
+      { value: ".pdf", label: "PDF (.pdf)" },
+    ],
     params: [
-      {
-        name: "language",
-        type: "string",
-        required: false,
-        label: "Language",
-        placeholder: "e.g., english",
-        help: "Expected language in the images",
-      },
       {
         name: "output_format",
         type: "select",
         required: false,
         label: "Output Format",
         options: [
-          { value: "plain", label: "Plain (.txt)" },
+          { value: "text", label: "Plain text (.txt)" },
           { value: "markdown", label: "Markdown (.md)" },
           { value: "json", label: "JSON (.json)" },
         ],
-        default: "plain",
+        default: "text",
       },
     ],
   },
   {
-    id: "transcription",
+    id: "transcribe",
     name: "Transcription",
     description: "Convert audio to text",
     service: "speech-recognition", // Uses Whisper models
+    defaultInputExt: ".wav",
     defaultPrompt: null, // Whisper doesn't use prompts
+    inputExtOptions: [
+      { value: ".wav", label: "WAV (.wav)" },
+      { value: ".mp3", label: "MP3 (.mp3)" },
+      { value: ".flac", label: "FLAC (.flac)" },
+      { value: ".m4a", label: "M4A (.m4a)" },
+      { value: ".ogg", label: "OGG (.ogg)" },
+      { value: ".webm", label: "WebM (.webm)" },
+    ],
     params: [
       {
         name: "language",
-        type: "string",
+        type: "select",
         required: false,
         label: "Language",
-        placeholder: "e.g., english (auto-detect if empty)",
         help: "Language spoken in the audio. Leave empty to auto-detect.",
+        options: [
+          { value: "", label: "Auto-detect" },
+          { value: "en", label: "English" },
+          { value: "es", label: "Spanish" },
+          { value: "fr", label: "French" },
+          { value: "de", label: "German" },
+          { value: "it", label: "Italian" },
+          { value: "pt", label: "Portuguese" },
+          { value: "zh", label: "Chinese" },
+          { value: "ja", label: "Japanese" },
+          { value: "ko", label: "Korean" },
+          { value: "ar", label: "Arabic" },
+          { value: "hi", label: "Hindi" },
+          { value: "ru", label: "Russian" },
+        ],
+        default: "",
       },
       {
         name: "output_format",
@@ -83,29 +163,151 @@ export const TASKS = [
         required: false,
         label: "Output Format",
         options: [
-          { value: "plain", label: "Plain (.txt)" },
+          { value: "text", label: "Plain text (.txt)" },
           { value: "srt", label: "Subtitles (.srt)" },
-          { value: "vtt", label: "WebVTT (.vtt)" },
           { value: "json", label: "JSON (.json)" },
         ],
-        default: "plain",
+        default: "text",
       },
     ],
   },
   {
-    id: "translation",
+    id: "translate",
     name: "Translation",
     description: "Translate text between languages",
     service: "text-generation", // Uses LLM models
+    defaultInputExt: ".txt",
     defaultPrompt: "Translate the following text to {target_language}. Preserve the original formatting.",
     params: [
       {
+        name: "source_language",
+        type: "select",
+        required: true,
+        label: "Source Language",
+        default: "auto",
+        help: "Language of the input text.",
+        options: [
+          { value: "auto", label: "Auto-detect" },
+          { value: "af", label: "Afrikaans" },
+          { value: "ar", label: "Arabic" },
+          { value: "bg", label: "Bulgarian" },
+          { value: "bn", label: "Bengali" },
+          { value: "ca", label: "Catalan" },
+          { value: "cs", label: "Czech" },
+          { value: "cy", label: "Welsh" },
+          { value: "da", label: "Danish" },
+          { value: "de", label: "German" },
+          { value: "el", label: "Greek" },
+          { value: "en", label: "English" },
+          { value: "es", label: "Spanish" },
+          { value: "et", label: "Estonian" },
+          { value: "fa", label: "Persian" },
+          { value: "fi", label: "Finnish" },
+          { value: "fr", label: "French" },
+          { value: "gu", label: "Gujarati" },
+          { value: "he", label: "Hebrew" },
+          { value: "hi", label: "Hindi" },
+          { value: "hr", label: "Croatian" },
+          { value: "hu", label: "Hungarian" },
+          { value: "id", label: "Indonesian" },
+          { value: "it", label: "Italian" },
+          { value: "ja", label: "Japanese" },
+          { value: "kn", label: "Kannada" },
+          { value: "ko", label: "Korean" },
+          { value: "lt", label: "Lithuanian" },
+          { value: "lv", label: "Latvian" },
+          { value: "mk", label: "Macedonian" },
+          { value: "ml", label: "Malayalam" },
+          { value: "mr", label: "Marathi" },
+          { value: "ne", label: "Nepali" },
+          { value: "nl", label: "Dutch" },
+          { value: "no", label: "Norwegian" },
+          { value: "pa", label: "Punjabi" },
+          { value: "pl", label: "Polish" },
+          { value: "pt", label: "Portuguese" },
+          { value: "ro", label: "Romanian" },
+          { value: "ru", label: "Russian" },
+          { value: "sk", label: "Slovak" },
+          { value: "sl", label: "Slovenian" },
+          { value: "so", label: "Somali" },
+          { value: "sq", label: "Albanian" },
+          { value: "sv", label: "Swedish" },
+          { value: "sw", label: "Swahili" },
+          { value: "ta", label: "Tamil" },
+          { value: "te", label: "Telugu" },
+          { value: "th", label: "Thai" },
+          { value: "tl", label: "Tagalog" },
+          { value: "tr", label: "Turkish" },
+          { value: "uk", label: "Ukrainian" },
+          { value: "ur", label: "Urdu" },
+          { value: "vi", label: "Vietnamese" },
+          { value: "zh-cn", label: "Chinese (Simplified)" },
+          { value: "zh-tw", label: "Chinese (Traditional)" },
+        ],
+      },
+      {
         name: "target_language",
-        type: "string",
+        type: "select",
         required: true,
         label: "Target Language",
-        placeholder: "e.g., Spanish, French, German",
-        help: "The language to translate into",
+        help: "Language to translate into.",
+        options: [
+          { value: "af", label: "Afrikaans" },
+          { value: "ar", label: "Arabic" },
+          { value: "bg", label: "Bulgarian" },
+          { value: "bn", label: "Bengali" },
+          { value: "ca", label: "Catalan" },
+          { value: "cs", label: "Czech" },
+          { value: "cy", label: "Welsh" },
+          { value: "da", label: "Danish" },
+          { value: "de", label: "German" },
+          { value: "el", label: "Greek" },
+          { value: "en", label: "English" },
+          { value: "es", label: "Spanish" },
+          { value: "et", label: "Estonian" },
+          { value: "fa", label: "Persian" },
+          { value: "fi", label: "Finnish" },
+          { value: "fr", label: "French" },
+          { value: "gu", label: "Gujarati" },
+          { value: "he", label: "Hebrew" },
+          { value: "hi", label: "Hindi" },
+          { value: "hr", label: "Croatian" },
+          { value: "hu", label: "Hungarian" },
+          { value: "id", label: "Indonesian" },
+          { value: "it", label: "Italian" },
+          { value: "ja", label: "Japanese" },
+          { value: "kn", label: "Kannada" },
+          { value: "ko", label: "Korean" },
+          { value: "lt", label: "Lithuanian" },
+          { value: "lv", label: "Latvian" },
+          { value: "mk", label: "Macedonian" },
+          { value: "ml", label: "Malayalam" },
+          { value: "mr", label: "Marathi" },
+          { value: "ne", label: "Nepali" },
+          { value: "nl", label: "Dutch" },
+          { value: "no", label: "Norwegian" },
+          { value: "pa", label: "Punjabi" },
+          { value: "pl", label: "Polish" },
+          { value: "pt", label: "Portuguese" },
+          { value: "ro", label: "Romanian" },
+          { value: "ru", label: "Russian" },
+          { value: "sk", label: "Slovak" },
+          { value: "sl", label: "Slovenian" },
+          { value: "so", label: "Somali" },
+          { value: "sq", label: "Albanian" },
+          { value: "sv", label: "Swedish" },
+          { value: "sw", label: "Swahili" },
+          { value: "ta", label: "Tamil" },
+          { value: "te", label: "Telugu" },
+          { value: "th", label: "Thai" },
+          { value: "tl", label: "Tagalog" },
+          { value: "tr", label: "Turkish" },
+          { value: "uk", label: "Ukrainian" },
+          { value: "ur", label: "Urdu" },
+          { value: "vi", label: "Vietnamese" },
+          { value: "zh-cn", label: "Chinese (Simplified)" },
+          { value: "zh-tw", label: "Chinese (Traditional)" },
+        ],
       },
       {
         name: "output_format",
@@ -121,6 +323,45 @@ export const TASKS = [
     ],
   },
 ];
+
+// ISO language codes supported by langdetect
+const ISO_LANGUAGE_CODES = new Set([
+  "af", "ar", "bg", "bn", "ca", "cs", "cy", "da", "de", "el", "en", "es", "et",
+  "fa", "fi", "fr", "gu", "he", "hi", "hr", "hu", "id", "it", "ja", "kn", "ko",
+  "lt", "lv", "mk", "ml", "mr", "ne", "nl", "no", "pa", "pl", "pt", "ro", "ru",
+  "sk", "sl", "so", "sq", "sv", "sw", "ta", "te", "th", "tl", "tr", "uk", "ur",
+  "vi", "zh-cn", "zh-tw", "zh",
+]);
+
+/**
+ * Extract language pair from model repo_id if present.
+ * Matches patterns like: opus-mt-en-de, model_en_to_de, nllb-en-de
+ * @returns {[string, string] | null} [source, target] or null if not found
+ */
+function extractLanguagePair(repoId) {
+  if (!repoId) return null;
+  const name = repoId.split("/").pop().toLowerCase();
+
+  // Pattern: {src}_to_{tgt} or {src}-to-{tgt}
+  const toMatch = name.match(/[_-]([a-z]{2}(?:-[a-z]{2})?)[_-]to[_-]([a-z]{2}(?:-[a-z]{2})?)/);
+  if (toMatch) {
+    const [, src, tgt] = toMatch;
+    if (ISO_LANGUAGE_CODES.has(src) && ISO_LANGUAGE_CODES.has(tgt)) {
+      return [src, tgt];
+    }
+  }
+
+  // Pattern: -{src}-{tgt} or _{src}_{tgt} at end or before version
+  const pairMatch = name.match(/[_-]([a-z]{2}(?:-[a-z]{2})?)[_-]([a-z]{2}(?:-[a-z]{2})?)(?:[_-]|$)/);
+  if (pairMatch) {
+    const [, src, tgt] = pairMatch;
+    if (ISO_LANGUAGE_CODES.has(src) && ISO_LANGUAGE_CODES.has(tgt)) {
+      return [src, tgt];
+    }
+  }
+
+  return null;
+}
 
 // Default tiers when API doesn't return data (matching ServiceModalForm)
 const DEFAULT_TIERS = [
@@ -188,10 +429,16 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [visitedSteps, setVisitedSteps] = useState(new Set([0]));
 
-  // Model selection - fetch models for the task's service type
+  // Job name
+  const [jobName, setJobName] = useState("");
+
+  // Model selection - fetch models for the task's service type(s)
   const { models, isLoading: modelsLoading, error: modelsError } = useModels(profile, task?.service);
   const [repoId, setRepoId] = useState(null);
   const [model, setModel] = useState(null);
+
+  // Derive model type from selected model's image field (e.g., "object-detection", "zero-shot-object-detection")
+  const modelType = model?.image || null;
 
   // Paths
   const [inputDir, setInputDir] = useState("");
@@ -199,6 +446,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
 
   // Task-specific parameters
   const [taskParams, setTaskParams] = useState({});
+  const [inputExt, setInputExt] = useState(null);
 
   // Resource selection (matching ServiceModalForm pattern)
   const [resources, setResources] = useState(null);
@@ -300,11 +548,13 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     if (open) {
       setCurrentStep(0);
       setVisitedSteps(new Set([0]));
+      setJobName("");
       setRepoId(null);
       setModel(null);
       setInputDir("");
       setOutputDir("");
       setTaskParams({});
+      setInputExt(null);
       setSelectedPartition(null);
       setSelectedTier(null);
       setRecommendedTier(null);
@@ -329,6 +579,20 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     });
     setTaskParams(defaults);
   }, [task]);
+
+  // Auto-detect language pair from model name for translation task
+  useEffect(() => {
+    if (task?.id !== "translate" || !repoId) return;
+    const langPair = extractLanguagePair(repoId);
+    if (langPair) {
+      const [src, tgt] = langPair;
+      setTaskParams(prev => ({
+        ...prev,
+        source_language: src,
+        target_language: tgt,
+      }));
+    }
+  }, [task?.id, repoId]);
 
   // Initialize model when models load
   useEffect(() => {
@@ -379,42 +643,42 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     try {
       // Build resources object from selected tier
       const selectedTierObj = tiers.find(t => t.name === selectedTier);
-      const resources = {
-        partition: selectedPartition,
-        tier: selectedTier,
-        cpus: selectedTierObj?.cpu_cores,
-        memory_gb: selectedTierObj?.memory_gb,
-        gpu_count: selectedTierObj?.gpu_count,
+      const jobResources = {};
+
+      // Map tier fields to backend format
+      if (selectedTierObj?.cpu_cores) jobResources.cpus = selectedTierObj.cpu_cores;
+      if (selectedTierObj?.memory_gb) jobResources.memory = `${selectedTierObj.memory_gb}GB`;
+      if (selectedTierObj?.gpu_count) jobResources.gpus = selectedTierObj.gpu_count;
+
+      // Add optional advanced options as sbatch_options
+      const sbatchOptions = [];
+      if (account) sbatchOptions.push(`--account=${account}`);
+      if (workerTimeout) jobResources.time = workerTimeout;
+      if (sbatchOptions.length > 0) jobResources.sbatch_options = sbatchOptions;
+
+      // Derive cache_dir from model's model_dir (parent directory)
+      const cacheDir = model?.model_dir ? dirname(model.model_dir) : null;
+
+      // Build job request matching BatchJobRequest schema
+      const jobRequest = {
+        name: jobName.trim() || `${task.name} - ${model?.repo_id || repoId}`,
+        task: task.id,
+        repo_id: model?.repo_id || repoId,
+        revision: model?.revision || null,
+        profile: profile,
+        input_dir: inputDir,
+        output_dir: outputDir,
+        input_ext: inputExt || task.defaultInputExt || null,
+        cache_dir: cacheDir,
+        params: Object.keys(taskParams).length > 0 ? taskParams : null,
+        resources: Object.keys(jobResources).length > 0 ? jobResources : null,
         max_workers: maxWorkers,
       };
 
-      // Add optional advanced options
-      if (account) resources.account = account;
-      if (workerTimeout) resources.worker_timeout = workerTimeout;
-      if (clientTimeout) resources.client_timeout = clientTimeout;
-
-      // TODO: Replace with actual API call when backend is ready
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Mock job object matching API BatchJob structure
-      const newJob = {
-        id: `job-${Date.now()}`,
-        name: `${task.name} - ${model?.repo_id || repoId}`,
-        task: task.id,
-        repo_id: model?.repo_id || repoId,
-        revision: model?.revision,
-        input_dir: inputDir,
-        output_dir: outputDir,
-        resources: resources,
-        params: taskParams,
-        status: "running",
-        created_at: new Date().toISOString(),
-        staged: 0,
-        finished: 0,
-        errored: 0,
-      };
-
+      console.debug("Submitting job request:", jobRequest);
+      const newJob = await createJob(jobRequest);
       console.debug("Job created:", newJob);
+
       onJobCreated?.(newJob);
       setOpen(false);
     } catch (error) {
@@ -425,16 +689,29 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     }
   };
 
+  // Helper to get parent directory
+  function dirname(path) {
+    if (!path) return null;
+    const parts = path.split("/");
+    return parts.slice(0, -1).join("/");
+  }
+
   // Validation for each step
   const isStepValid = (stepId) => {
     switch (stepId) {
       case "model":
         return repoId && !modelsLoading;
       case "options":
-        // Check required params
+        // Check required params (including dynamically required ones based on model type)
         if (!task) return false;
         for (const param of task.params) {
-          if (param.required && !taskParams[param.name]) {
+          // Skip params that don't apply to current model type
+          if (param.showWhen?.modelType && modelType !== param.showWhen.modelType) {
+            continue;
+          }
+          // Params with showWhen are required when shown
+          const isRequired = param.showWhen ? true : param.required;
+          if (isRequired && !taskParams[param.name]) {
             return false;
           }
         }
@@ -474,6 +751,22 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       case "model":
         return (
           <div className="space-y-4">
+            <fieldset>
+              <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100 mb-1">
+                Job Name
+              </label>
+              <input
+                type="text"
+                value={jobName}
+                onChange={(e) => setJobName(e.target.value)}
+                placeholder={`${task?.name || "Job"} - ${repoId || "model"}`}
+                disabled={isSubmitting}
+                className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 disabled:bg-gray-100 dark:disabled:bg-gray-800"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Leave empty for auto-generated name.
+              </p>
+            </fieldset>
             {modelsError ? (
               <Alert variant="error" title="Failed to load models">
                 {modelsError.message || "Could not fetch models from the server."}
@@ -514,11 +807,79 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       case "options":
         return (
           <div className="space-y-4">
-            {task.params.map((param) => (
+            {/* Input format - only show for tasks with options */}
+            {task.inputExtOptions && (
+              <fieldset>
+                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100 mb-1">
+                  Input Format
+                </label>
+                <Listbox
+                  value={inputExt || task.defaultInputExt}
+                  onChange={setInputExt}
+                  disabled={isSubmitting}
+                >
+                  <div className="relative">
+                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-1.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 disabled:bg-gray-100 dark:disabled:bg-gray-800">
+                      <span className="block truncate">
+                        {task.inputExtOptions.find(o => o.value === (inputExt || task.defaultInputExt))?.label || task.defaultInputExt}
+                      </span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                        <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </span>
+                    </ListboxButton>
+                    <ListboxOptions
+                      anchor="bottom start"
+                      className="z-50 mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none sm:text-sm"
+                    >
+                      {task.inputExtOptions.map((opt) => (
+                        <ListboxOption
+                          key={opt.value}
+                          value={opt.value}
+                          className={({ focus }) =>
+                            `relative cursor-default select-none py-2 pl-3 pr-9 ${
+                              focus ? "bg-blue-500 text-white" : "text-gray-900 dark:text-gray-100"
+                            }`
+                          }
+                        >
+                          {({ selected, focus }) => (
+                            <>
+                              <span className={`block truncate ${selected ? "font-semibold" : "font-normal"}`}>
+                                {opt.label}
+                              </span>
+                              {selected && (
+                                <span className={`absolute inset-y-0 right-0 flex items-center pr-4 ${focus ? "text-white" : "text-blue-600"}`}>
+                                  <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </ListboxOption>
+                      ))}
+                    </ListboxOptions>
+                  </div>
+                </Listbox>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  File extension to match in the input directory.
+                </p>
+              </fieldset>
+            )}
+
+            {task.params
+              .filter((param) => {
+                // Filter out params with showWhen conditions that don't match
+                if (param.showWhen?.modelType) {
+                  return modelType === param.showWhen.modelType;
+                }
+                return true;
+              })
+              .map((param) => {
+                // Params with showWhen are required when shown
+                const isRequired = param.showWhen ? true : param.required;
+                return (
               <fieldset key={param.name}>
                 <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100 mb-1">
                   {param.label}
-                  {param.required && <span className="text-red-500 ml-1">*</span>}
+                  {isRequired && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 {param.type === "select" ? (
                   <Listbox
@@ -535,7 +896,10 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                           <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                         </span>
                       </ListboxButton>
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none sm:text-sm">
+                      <ListboxOptions
+                        anchor="bottom start"
+                        className="z-50 mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none sm:text-sm"
+                      >
                         {param.options.map((opt) => (
                           <ListboxOption
                             key={opt.value}
@@ -577,7 +941,8 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{param.help}</p>
                 )}
               </fieldset>
-            ))}
+                );
+              })}
 
             {/* Prompt field - only show for tasks that use prompts */}
             {task.defaultPrompt && (
@@ -641,7 +1006,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                 />
                 <span>
                   {isConnected
-                    ? `Connected to ${profile?.name}`
+                    ? `Connected to ${profile?.host}`
                     : connectionError
                       ? "Connection failed"
                       : "Connecting..."}

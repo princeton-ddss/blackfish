@@ -209,7 +209,13 @@ function JobsContainer() {
         setJobActionInProgress(job.id);
         try {
             await stopJob(job.id);
-            mutate();
+            // Optimistic update: mark job as stopped immediately
+            mutate(
+                (currentJobs) => currentJobs?.map((j) =>
+                    j.id === job.id ? { ...j, status: "stopped" } : j
+                ),
+                { revalidate: true }
+            );
         } catch (err) {
             console.error("Failed to stop job:", err);
         } finally {
@@ -225,7 +231,11 @@ function JobsContainer() {
             if (selectedJobId === job.id) {
                 setSelectedJobId(null);
             }
-            mutate();
+            // Optimistic update: remove job from list immediately
+            mutate(
+                (currentJobs) => currentJobs?.filter((j) => j.id !== job.id),
+                { revalidate: true }
+            );
         } catch (err) {
             console.error("Failed to delete job:", err);
         } finally {

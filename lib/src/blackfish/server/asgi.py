@@ -1309,6 +1309,7 @@ class BatchJobRequest(BaseModel):
     input_dir: str  # Input directory on cluster
     output_dir: str  # Output directory on cluster
     input_ext: Optional[str] = None  # Input file extension (e.g., ".mp3")
+    output_ext: Optional[str] = None  # Output file extension (e.g., ".json")
     cache_dir: Optional[str] = None  # Model cache directory on cluster
     params: Optional[dict[str, Any]] = None  # Task-specific parameters
     resources: Optional[dict[str, Any]] = None  # Resource requirements
@@ -1328,6 +1329,7 @@ def build_batch_job(data: BatchJobRequest) -> BatchJob:
         "input_dir": data.input_dir,
         "output_dir": data.output_dir,
         "input_ext": data.input_ext,
+        "output_ext": data.output_ext,
         "cache_dir": data.cache_dir,
         "params": data.params,
         "resources": data.resources,

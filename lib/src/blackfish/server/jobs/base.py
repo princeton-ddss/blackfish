@@ -7,7 +7,11 @@ from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from blackfish.server.jobs.tasks import build_pipeline_config, get_default_input_ext
+from blackfish.server.jobs.tasks import (
+    build_pipeline_config,
+    get_default_input_ext,
+    get_default_output_ext,
+)
 from blackfish.server.logger import logger
 from blackfish.server.models.profile import SlurmProfile, deserialize_profile
 from blackfish.server.jobs.client import (
@@ -201,6 +205,7 @@ class BatchJob(UUIDAuditBase):
 
         # Build pipeline config
         input_ext = self.input_ext or get_default_input_ext(self.task)
+        output_ext = self.output_ext or get_default_output_ext(self.task)
         config = build_pipeline_config(
             task=self.task,
             input_ext=input_ext,
@@ -209,6 +214,7 @@ class BatchJob(UUIDAuditBase):
             resources=self.resources,
             max_workers=self.max_workers,
             cache_dir=self.cache_dir,
+            output_ext=output_ext,
         )
 
         # Start TigerFlow job

@@ -19,6 +19,12 @@ DEFAULT_INPUT_EXT: dict[str, str] = {
     "translate": ".txt",
 }
 
+# Default output file extensions for each task
+# Tasks not listed here have user-configurable output formats
+DEFAULT_OUTPUT_EXT: dict[str, str] = {
+    "detect": ".json",  # Object detection always outputs JSON
+}
+
 # Default Slurm worker resources for batch jobs
 DEFAULT_WORKER_RESOURCES: dict[str, Any] = {
     "cpus": 4,
@@ -59,6 +65,14 @@ def get_default_input_ext(task: str) -> str:
     return DEFAULT_INPUT_EXT[task]
 
 
+def get_default_output_ext(task: str) -> str | None:
+    """Get the default output file extension for a task.
+
+    Returns None if the task doesn't have a fixed output format.
+    """
+    return DEFAULT_OUTPUT_EXT.get(task)
+
+
 def build_pipeline_config(
     task: str,
     input_ext: str,
@@ -67,6 +81,7 @@ def build_pipeline_config(
     resources: dict[str, Any] | None = None,
     max_workers: int = 1,
     cache_dir: str | None = None,
+    output_ext: str | None = None,
 ) -> dict[str, Any]:
     """Build a TigerFlow pipeline configuration.
 
@@ -78,6 +93,7 @@ def build_pipeline_config(
         resources: Slurm worker resources (e.g., cpus, memory, gpus)
         max_workers: Maximum number of concurrent Slurm workers
         cache_dir: Model cache directory for HF_HOME
+        output_ext: Output file extension (e.g., ".json")
 
     Returns:
         Pipeline configuration dict ready to be written as YAML
@@ -102,6 +118,9 @@ def build_pipeline_config(
         "worker_resources": worker_resources,
         "setup_commands": setup_commands,
     }
+
+    if output_ext:
+        task_config["output_ext"] = output_ext
 
     if params:
         task_config["params"] = params

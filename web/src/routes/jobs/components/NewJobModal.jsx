@@ -180,7 +180,7 @@ export const TASKS = [
     defaultPrompt: "Translate the following text to {target_language}. Preserve the original formatting.",
     params: [
       {
-        name: "source_language",
+        name: "source_lang",
         type: "select",
         required: true,
         label: "Source Language",
@@ -246,7 +246,7 @@ export const TASKS = [
         ],
       },
       {
-        name: "target_language",
+        name: "target_lang",
         type: "select",
         required: true,
         label: "Target Language",
@@ -585,8 +585,8 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       const [src, tgt] = langPair;
       setTaskParams(prev => ({
         ...prev,
-        source_language: src,
-        target_language: tgt,
+        source_lang: src,
+        target_lang: tgt,
       }));
     }
   }, [task?.id, repoId]);

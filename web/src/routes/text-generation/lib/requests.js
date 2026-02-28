@@ -31,7 +31,18 @@ export async function* streamCompletionInference(service, prompt, params, use_pr
 
 
   if (!res.ok) {
-    const error = new Error("Stream request failed.");
+    let errorMessage = "Stream request failed.";
+    try {
+      const errorBody = await res.json();
+      if (errorBody.detail) {
+        errorMessage = errorBody.detail;
+      } else if (errorBody.message) {
+        errorMessage = errorBody.message;
+      }
+    } catch {
+      // Response body may not be JSON
+    }
+    const error = new Error(errorMessage);
     error.status = res.status;
     throw error;
   }
@@ -49,22 +60,27 @@ export async function* streamCompletionInference(service, prompt, params, use_pr
 
     const chunks = decoder.decode(value, { stream: true }).split('\n\n');
     console.debug("Received chunks:", chunks);
-    const data = chunks.filter(x => x !== '').map((x) => {
+    const data = [];
+    for (const x of chunks.filter(c => c !== '')) {
       if (x === 'data: [DONE]') {
-        // stream is done
-        return {
-          choices: [
-            {
-              delta: {
-                content: "",
-              }
-            }
-          ]
-        }
+        data.push({ choices: [{ delta: { content: "" } }] });
       } else {
-        return JSON.parse(x.replace('data: {', '{'));
+        try {
+          const parsed = JSON.parse(x.replace('data: {', '{'));
+          if (parsed.object === "error" || parsed.type === "BadRequestError") {
+            const error = new Error(parsed.message || "Service returned an error.");
+            error.status = parsed.code || 500;
+            throw error;
+          }
+          data.push(parsed);
+        } catch (parseError) {
+          if (parseError.status) {
+            throw parseError;
+          }
+          console.warn("Failed to parse SSE chunk:", x, parseError);
+        }
       }
-    });
+    }
 
     yield data;
   }
@@ -155,7 +171,18 @@ export async function* streamChatCompletionInference(service, messages, params, 
   });
 
   if (!res.ok) {
-    const error = new Error("Stream request failed.");
+    let errorMessage = "Stream request failed.";
+    try {
+      const errorBody = await res.json();
+      if (errorBody.detail) {
+        errorMessage = errorBody.detail;
+      } else if (errorBody.message) {
+        errorMessage = errorBody.message;
+      }
+    } catch {
+      // Response body may not be JSON
+    }
+    const error = new Error(errorMessage);
     error.status = res.status;
     throw error;
   }
@@ -173,22 +200,27 @@ export async function* streamChatCompletionInference(service, messages, params, 
 
     const chunks = decoder.decode(value, { stream: true }).split('\n\n');
     console.debug("Received chunks:", chunks);
-    const data = chunks.filter(x => x !== '').map((x) => {
+    const data = [];
+    for (const x of chunks.filter(c => c !== '')) {
       if (x === 'data: [DONE]') {
-        // stream is done
-        return {
-          choices: [
-            {
-              delta: {
-                content: "",
-              }
-            }
-          ]
-        }
+        data.push({ choices: [{ delta: { content: "" } }] });
       } else {
-        return JSON.parse(x.replace('data: {', '{'));
+        try {
+          const parsed = JSON.parse(x.replace('data: {', '{'));
+          if (parsed.object === "error" || parsed.type === "BadRequestError") {
+            const error = new Error(parsed.message || "Service returned an error.");
+            error.status = parsed.code || 500;
+            throw error;
+          }
+          data.push(parsed);
+        } catch (parseError) {
+          if (parseError.status) {
+            throw parseError;
+          }
+          console.warn("Failed to parse SSE chunk:", x, parseError);
+        }
       }
-    });
+    }
 
     yield data;
   }

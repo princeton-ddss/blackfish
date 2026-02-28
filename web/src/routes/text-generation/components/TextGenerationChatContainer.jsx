@@ -373,7 +373,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
         onMouseLeave={() => {
           setHover(false);
         }}
-        className="mt-5"
+        className="mt-3"
       >
         <div className="flex flex-row-reverse">
           <div className="max-w-xl content-end bg-gray-100 dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 shadow-md">
@@ -397,29 +397,28 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             {textContent}
           </div>
         </div>
-        <div className="flex flex-row-reverse h-8">
+        <div className={`flex flex-row-reverse items-center mt-2 transition-opacity duration-150 ${hover ? "opacity-100" : "opacity-0"}`}>
           <button
-            hidden={!hover}
             onClick={() => {
               console.log("deleting user message");
               onDeleteMessage();
             }}
+            className="group relative px-1 py-0.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Delete message: "${textContent}"`}</span>
+            <XMarkIcon className="w-5 h-5" />
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Delete</span>
           </button>
           <button
-            hidden={!hover}
             onClick={() => {
               console.log("edit button clicked");
               setIsEditing(true);
             }}
+            className="group relative px-1 py-0.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <PencilIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Edit message: "${textContent}"`}</span>
+            <PencilIcon className="w-5 h-5" />
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Edit</span>
           </button>
           <button
-            hidden={!hover}
             onClick={() => {
               navigator.clipboard
                 .writeText(textContent)
@@ -428,9 +427,10 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
                   console.error("Failed to copy content: ", err);
                 });
             }}
+            className="group relative px-1 py-0.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Copy message to clipboard: ${textContent}`}</span>
+            <ClipboardDocumentIcon className="w-5 h-5" />
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Copy</span>
           </button>
         </div>
       </div>
@@ -453,13 +453,13 @@ UserMessage.propTypes = {
  */
 function AssisantMessage({ message, handleResubmit }) {
   return (
-    <div className="mt-5 max-w-xl">
+    <div className="mt-3 max-w-xl">
       <div className="flex flex-row">
         <div className="w-fit content-end bg-white dark:bg-transparent text-sm text-gray-900 dark:text-gray-100 rounded-lg ml-2">
           {message.content}
         </div>
       </div>
-      <div className="flex flex-row h-8">
+      <div className="flex flex-row items-center mt-2 ml-1">
         <button
           onClick={() => {
             navigator.clipboard
@@ -469,13 +469,17 @@ function AssisantMessage({ message, handleResubmit }) {
                 console.error("Failed to copy content: ", err);
               });
           }}
+          className="group relative px-1 py-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
         >
-          <ClipboardDocumentIcon className="ml-1.5 w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
+          <ClipboardDocumentIcon className="w-5 h-5" />
+          <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Copy</span>
         </button>
         <button
           onClick={handleResubmit}
+          className="group relative px-1 py-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
         >
-          <ArrowPathIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
+          <ArrowPathIcon className="w-5 h-5" />
+          <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Regenerate</span>
         </button>
       </div>
     </div>
@@ -540,7 +544,7 @@ Message.propTypes = {
 function MessageList({ messages, setMessages, handleResubmit, elementRef, isWaitingForResponse }) {
   try {
     sessionStorage.setItem("tgcc-ml", JSON.stringify(messages));
-  } catch(error) {
+  } catch (error) {
     console.error(error);
   };
   return (

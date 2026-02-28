@@ -909,11 +909,11 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
             type="button"
             onClick={handleClearConversation}
             disabled={messages.length === 0}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Clear conversation"
-            title="Clear conversation"
           >
             <TrashIcon className="h-5 w-5" />
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Clear chat</span>
           </button>
           {toolbar}
         </div>

@@ -296,15 +296,6 @@ export default function TextGenerationPage() {
         open={codeModalOpen}
         onClose={() => setCodeModalOpen(false)}
         mode={mode.value}
-        prompt={sessionStorage.getItem("tgci") || ""}
-        messages={(() => {
-          try {
-            return JSON.parse(sessionStorage.getItem("tgcc-ml") || "[]");
-          } catch {
-            return [];
-          }
-        })()}
-        systemMessage={systemMessage}
         parameters={mode.value === "completion" ? parameters : chatParameters}
       />
     </Page>

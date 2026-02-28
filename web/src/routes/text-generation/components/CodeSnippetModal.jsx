@@ -27,32 +27,37 @@ import "prismjs/components/prism-bash";
 import "prismjs/components/prism-r";
 
 /**
+ * Build a sample request body for the given mode and parameters.
+ * @param {string} mode - "completion" or "chat"
+ * @param {object} parameters - The API parameters
+ * @returns {object} Sample request body
+ */
+function buildSampleBody(mode, parameters) {
+  const body = { ...parameters, stream: false };
+
+  if (mode === "completion") {
+    body.prompt = "Your prompt here";
+  } else {
+    body.messages = [
+      { role: "system", content: "You are a helpful assistant." },
+      { role: "user", content: "Your message here" },
+    ];
+  }
+
+  return body;
+}
+
+/**
  * Generate Python code for calling the service.
  * @param {string} mode - "completion" or "chat"
- * @param {string} prompt - The prompt text (for completion mode)
- * @param {Array} messages - The messages array (for chat mode)
- * @param {object} systemMessage - The system message (for chat mode)
  * @param {object} parameters - The API parameters
  * @param {object} service - The selected service
  * @returns {string} Python code
  */
-function generatePythonCode(mode, prompt, messages, systemMessage, parameters, service) {
+function generatePythonCode(mode, parameters, service) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
-
-  // Build the request body
-  const body = { ...parameters, stream: false };
-
-  if (mode === "completion") {
-    body.prompt = prompt || "";
-  } else {
-    const allMessages = [];
-    if (systemMessage?.content) {
-      allMessages.push({ role: "system", content: systemMessage.content });
-    }
-    allMessages.push(...messages);
-    body.messages = allMessages;
-  }
+  const body = buildSampleBody(mode, parameters);
 
   const bodyJson = JSON.stringify(body, null, 4)
     .split("\n")
@@ -71,30 +76,14 @@ print(response.json())`;
 /**
  * Generate R code for calling the service.
  * @param {string} mode - "completion" or "chat"
- * @param {string} prompt - The prompt text (for completion mode)
- * @param {Array} messages - The messages array (for chat mode)
- * @param {object} systemMessage - The system message (for chat mode)
  * @param {object} parameters - The API parameters
  * @param {object} service - The selected service
  * @returns {string} R code
  */
-function generateRCode(mode, prompt, messages, systemMessage, parameters, service) {
+function generateRCode(mode, parameters, service) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
-
-  // Build the request body
-  const body = { ...parameters, stream: false };
-
-  if (mode === "completion") {
-    body.prompt = prompt || "";
-  } else {
-    const allMessages = [];
-    if (systemMessage?.content) {
-      allMessages.push({ role: "system", content: systemMessage.content });
-    }
-    allMessages.push(...messages);
-    body.messages = allMessages;
-  }
+  const body = buildSampleBody(mode, parameters);
 
   // Convert to R list syntax
   const formatRValue = (value, indent = 0) => {
@@ -131,30 +120,14 @@ content(response, "parsed")`;
 /**
  * Generate Shell/curl code for calling the service.
  * @param {string} mode - "completion" or "chat"
- * @param {string} prompt - The prompt text (for completion mode)
- * @param {Array} messages - The messages array (for chat mode)
- * @param {object} systemMessage - The system message (for chat mode)
  * @param {object} parameters - The API parameters
  * @param {object} service - The selected service
  * @returns {string} Shell code
  */
-function generateShellCode(mode, prompt, messages, systemMessage, parameters, service) {
+function generateShellCode(mode, parameters, service) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
-
-  // Build the request body
-  const body = { ...parameters, stream: false };
-
-  if (mode === "completion") {
-    body.prompt = prompt || "";
-  } else {
-    const allMessages = [];
-    if (systemMessage?.content) {
-      allMessages.push({ role: "system", content: systemMessage.content });
-    }
-    allMessages.push(...messages);
-    body.messages = allMessages;
-  }
+  const body = buildSampleBody(mode, parameters);
 
   const bodyJson = JSON.stringify(body, null, 2);
   // Escape single quotes for shell
@@ -173,13 +146,11 @@ const languages = [
 
 /**
  * Code Snippet Modal component.
+ * Shows generic API request examples for the selected service.
  * @param {object} options
  * @param {boolean} options.open - Whether the modal is open
  * @param {Function} options.onClose - Function to close the modal
  * @param {string} options.mode - "completion" or "chat"
- * @param {string} options.prompt - The prompt text (for completion mode)
- * @param {Array} options.messages - The messages array (for chat mode)
- * @param {object} options.systemMessage - The system message (for chat mode)
  * @param {object} options.parameters - The API parameters
  * @return {JSX.Element}
  */
@@ -187,9 +158,6 @@ function CodeSnippetModal({
   open,
   onClose,
   mode,
-  prompt,
-  messages,
-  systemMessage,
   parameters,
 }) {
   const serviceContext = useContext(ServiceContext);
@@ -197,7 +165,7 @@ function CodeSnippetModal({
   const [copied, setCopied] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const code = languages[selectedIndex].generate(mode, prompt, messages, systemMessage, parameters, selectedService);
+  const code = languages[selectedIndex].generate(mode, parameters, selectedService);
 
   const handleCopy = () => {
     navigator.clipboard
@@ -281,7 +249,7 @@ function CodeSnippetModal({
                           <div className="relative">
                             <Highlight
                               theme={themes.vsDark}
-                              code={lang.generate(mode, prompt, messages, systemMessage, parameters, selectedService)}
+                              code={lang.generate(mode, parameters, selectedService)}
                               language={lang.prismLang}
                             >
                               {({ style, tokens, getLineProps, getTokenProps }) => (
@@ -339,9 +307,6 @@ CodeSnippetModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   mode: PropTypes.oneOf(["completion", "chat"]).isRequired,
-  prompt: PropTypes.string,
-  messages: PropTypes.array,
-  systemMessage: PropTypes.object,
   parameters: PropTypes.object,
 };
 

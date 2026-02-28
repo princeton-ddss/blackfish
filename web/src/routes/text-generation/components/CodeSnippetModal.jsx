@@ -246,7 +246,19 @@ function CodeSnippetModal({
                     <TabPanels className="mt-3">
                       {languages.map((lang) => (
                         <TabPanel key={lang.name}>
-                          <div className="relative">
+                          <div className="relative group">
+                            <button
+                              type="button"
+                              onClick={handleCopy}
+                              className="absolute top-2 right-2 p-1.5 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/10 transition-colors z-10"
+                              title="Copy code"
+                            >
+                              {copied ? (
+                                <CheckIcon className="h-4 w-4 text-green-400" />
+                              ) : (
+                                <ClipboardDocumentIcon className="h-4 w-4" />
+                              )}
+                            </button>
                             <Highlight
                               theme={themes.vsDark}
                               code={lang.generate(mode, parameters, selectedService)}
@@ -274,26 +286,6 @@ function CodeSnippetModal({
                   </TabGroup>
                 </div>
 
-                {/* Footer */}
-                <div className="flex justify-end px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="inline-flex items-center gap-2 rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                  >
-                    {copied ? (
-                      <>
-                        <CheckIcon className="h-4 w-4" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardDocumentIcon className="h-4 w-4" />
-                        Copy
-                      </>
-                    )}
-                  </button>
-                </div>
               </DialogPanel>
             </TransitionChild>
           </div>

@@ -403,7 +403,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
               console.log("deleting user message");
               onDeleteMessage();
             }}
-            className="group relative px-1 py-0.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <XMarkIcon className="w-5 h-5" />
             <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Delete</span>
@@ -413,7 +413,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
               console.log("edit button clicked");
               setIsEditing(true);
             }}
-            className="group relative px-1 py-0.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <PencilIcon className="w-5 h-5" />
             <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Edit</span>
@@ -427,7 +427,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
                   console.error("Failed to copy content: ", err);
                 });
             }}
-            className="group relative px-1 py-0.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <ClipboardDocumentIcon className="w-5 h-5" />
             <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Copy</span>

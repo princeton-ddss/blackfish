@@ -6,6 +6,7 @@ import {
   DocumentTextIcon,
   PaperAirplaneIcon,
   PencilIcon,
+  TrashIcon,
   XMarkIcon,
   PhotoIcon,
 } from "@heroicons/react/24/outline";
@@ -39,6 +40,32 @@ const Role = {
   ASSISTANT: "assistant",
   SYSTEM: "system",
 };
+
+/**
+ * Classify a streaming API error and return a user-friendly error object.
+ * @param {Error} error
+ * @returns {{ message: string, detail: string | null, isContextLength: boolean }}
+ */
+function classifyApiError(error) {
+  const msg = error.message || "An unexpected error occurred.";
+  const isContextLength =
+    /context length|token/.test(msg) && /maximum|exceeded/.test(msg);
+
+  if (isContextLength) {
+    return {
+      message: "Context length exceeded",
+      detail:
+        "Your conversation is too long for this model. Try clearing the conversation or reducing message length.",
+      isContextLength: true,
+    };
+  }
+
+  return {
+    message: "Request failed",
+    detail: msg,
+    isContextLength: false,
+  };
+}
 
 /**
  * User Message Input component.
@@ -612,6 +639,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   const [attachedImages, setAttachedImages] = useState([]);
   const [imageBrowserOpen, setImageBrowserOpen] = useState(false);
   const [imageError, setImageError] = useState(null);
+  const [apiError, setApiError] = useState(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
 
   // File attachment state and handlers
@@ -715,52 +743,70 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       _attachedFiles: fileMetadata,
     };
 
-    const stream = streamChatCompletionInference(
-      selectedService,
-      [systemMessage, ...messages, newUserMessage],
-      {
-        ...parameters,
-        stream: true,
-      },
-      true
-    );
+    // Clear any previous error
+    setApiError(null);
 
     setMessages((messages) => [...messages, newUserMessage]);
 
-    // Clear attachments after sending
+    // Clear input and attached items after sending
+    setUserMessage({ role: Role.USER, content: "" });
+    sessionStorage.removeItem("tgcc-um");
     setAttachedImages([]);
     clearFiles();
 
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
 
-    const data = await stream.next();
-    setIsWaitingForResponse(false);
-    console.debug("data:", data);
-    let response = data.value
-      .map((x) => x.choices[0].delta.content)
-      .join("")
-      .trimStart();
-    setMessages((messages) => [
-      ...messages.slice(0, messages.length),
-      {
-        role: "assistant",
-        content: response,
-      },
-    ]);
+    try {
+      const stream = streamChatCompletionInference(
+        selectedService,
+        [systemMessage, ...messages, newUserMessage],
+        {
+          ...parameters,
+          stream: true,
+        },
+        true
+      );
 
-    for await (const data of stream) {
+      const data = await stream.next();
+      setIsWaitingForResponse(false);
       console.debug("data:", data);
-      const text = data.map((x) => x.choices[0].delta.content).join("");
-      response += text;
-      console.debug("response: ", response);
+      let response = data.value
+        .map((x) => x.choices[0].delta.content)
+        .join("")
+        .trimStart();
       setMessages((messages) => [
-        ...messages.slice(0, messages.length - 1),
+        ...messages.slice(0, messages.length),
         {
           role: "assistant",
           content: response,
         },
       ]);
+
+      for await (const data of stream) {
+        console.debug("data:", data);
+        const text = data.map((x) => x.choices[0].delta.content).join("");
+        response += text;
+        console.debug("response: ", response);
+        setMessages((messages) => [
+          ...messages.slice(0, messages.length - 1),
+          {
+            role: "assistant",
+            content: response,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Chat submission error:", error);
+      setIsWaitingForResponse(false);
+      // Roll back the optimistically-added user message if no assistant response was started
+      setMessages((prev) => {
+        if (prev.length > 0 && prev[prev.length - 1].role === Role.USER) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
+      setApiError(classifyApiError(error));
     }
   };
 
@@ -768,18 +814,10 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     event.preventDefault();
     console.log(`regenerating message at index ${index}`);
 
+    setApiError(null);
+
     // Get messages up to (but not including) the message being regenerated
     const conversationUpToIndex = messages.slice(0, index);
-
-    const stream = streamChatCompletionInference(
-      selectedService,
-      [systemMessage, ...conversationUpToIndex],
-      {
-        ...parameters,
-        stream: true,
-      },
-      true
-    );
 
     // Clear messages from the regenerated index onwards
     setMessages(conversationUpToIndex);
@@ -787,33 +825,49 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
 
-    const data = await stream.next();
-    setIsWaitingForResponse(false);
-    console.debug("data:", data);
-    let response = data.value
-      .map((x) => x.choices[0].delta.content)
-      .join("")
-      .trimStart();
-    setMessages((messages) => [
-      ...messages.slice(0, messages.length),
-      {
-        role: "assistant",
-        content: response,
-      },
-    ]);
+    try {
+      const stream = streamChatCompletionInference(
+        selectedService,
+        [systemMessage, ...conversationUpToIndex],
+        {
+          ...parameters,
+          stream: true,
+        },
+        true
+      );
 
-    for await (const data of stream) {
+      const data = await stream.next();
+      setIsWaitingForResponse(false);
       console.debug("data:", data);
-      const text = data.map((x) => x.choices[0].delta.content).join("");
-      response += text;
-      console.debug("response: ", response);
+      let response = data.value
+        .map((x) => x.choices[0].delta.content)
+        .join("")
+        .trimStart();
       setMessages((messages) => [
-        ...messages.slice(0, messages.length - 1),
+        ...messages.slice(0, messages.length),
         {
           role: "assistant",
           content: response,
         },
       ]);
+
+      for await (const data of stream) {
+        console.debug("data:", data);
+        const text = data.map((x) => x.choices[0].delta.content).join("");
+        response += text;
+        console.debug("response: ", response);
+        setMessages((messages) => [
+          ...messages.slice(0, messages.length - 1),
+          {
+            role: "assistant",
+            content: response,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Chat resubmit error:", error);
+      setIsWaitingForResponse(false);
+      setApiError(classifyApiError(error));
     }
   };
 
@@ -829,13 +883,36 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     sessionStorage.setItem("tgcc-um", value);
   }
 
+  function handleClearConversation() {
+    if (messages.length === 0) return;
+    setMessages([]);
+    setUserMessage({ role: Role.USER, content: "" });
+    setAttachedImages([]);
+    setIsWaitingForResponse(false);
+    setApiError(null);
+    sessionStorage.removeItem("tgcc-ml");
+    sessionStorage.removeItem("tgcc-um");
+  }
+
   return (
     <div className="flex flex-col grow pt-2 bg-white dark:bg-gray-800 lg:h-[calc(100vh-7rem)]">
       <div className="flex items-center justify-between mb-2">
         <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
           Chat
         </label>
-        {toolbar}
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={handleClearConversation}
+            disabled={messages.length === 0}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Clear conversation"
+            title="Clear conversation"
+          >
+            <TrashIcon className="h-5 w-5" />
+          </button>
+          {toolbar}
+        </div>
       </div>
       <MessageList
         messages={messages}
@@ -902,6 +979,14 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         message="Failed to attach file"
         detail={fileError ? `${fileError.fileName}: ${fileError.message}` : ""}
         onDismiss={() => setFileError(null)}
+      />
+
+      <Notification
+        show={!!apiError}
+        variant="error"
+        message={apiError ? apiError.message : ""}
+        detail={apiError ? apiError.detail : ""}
+        onDismiss={() => setApiError(null)}
       />
     </div>
   );

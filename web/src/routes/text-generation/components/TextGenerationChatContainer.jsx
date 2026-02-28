@@ -376,7 +376,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
         className="mt-3"
       >
         <div className="flex flex-row-reverse">
-          <div className="max-w-xl content-end bg-gray-100 dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 shadow-md">
+          <div className="max-w-xl content-end bg-gray-100 dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 shadow-sm">
             {/* Display images if any */}
             {images.length > 0 && (
               <div className="flex gap-2 flex-wrap mb-2">

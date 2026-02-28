@@ -257,6 +257,7 @@ MessageImage.propTypes = {
 function UserMessage({ message, onDeleteMessage, onEditMessage }) {
   const [hover, setHover] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Extract text and images from content
   // Use _displayText if available (when files were attached), otherwise extract from content
@@ -422,15 +423,18 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             onClick={() => {
               navigator.clipboard
                 .writeText(textContent)
-                .then(console.log("copied user message"))
+                .then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                })
                 .catch((err) => {
                   console.error("Failed to copy content: ", err);
                 });
             }}
             className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <ClipboardDocumentIcon className="w-5 h-5" />
-            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Copy</span>
+            {copied ? <CheckIcon className="w-5 h-5" /> : <ClipboardDocumentIcon className="w-5 h-5" />}
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">{copied ? "Copied" : "Copy"}</span>
           </button>
         </div>
       </div>
@@ -452,6 +456,7 @@ UserMessage.propTypes = {
  * @param {JSX.Element}
  */
 function AssisantMessage({ message, handleResubmit }) {
+  const [copied, setCopied] = useState(false);
   return (
     <div className="mt-3 max-w-xl">
       <div className="flex flex-row">
@@ -464,15 +469,18 @@ function AssisantMessage({ message, handleResubmit }) {
           onClick={() => {
             navigator.clipboard
               .writeText(message.content)
-              .then(console.log("copied assistant message"))
+              .then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              })
               .catch((err) => {
                 console.error("Failed to copy content: ", err);
               });
           }}
           className="group relative px-1 py-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
         >
-          <ClipboardDocumentIcon className="w-5 h-5" />
-          <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Copy</span>
+          {copied ? <CheckIcon className="w-5 h-5" /> : <ClipboardDocumentIcon className="w-5 h-5" />}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">{copied ? "Copied" : "Copy"}</span>
         </button>
         <button
           onClick={handleResubmit}

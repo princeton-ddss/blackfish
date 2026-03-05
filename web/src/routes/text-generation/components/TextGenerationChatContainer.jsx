@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState, useRef, useCallback } from "react";
+import Markdown from "react-markdown";
 import {
   ArrowPathIcon,
   CheckIcon,
@@ -464,8 +465,8 @@ function AssisantMessage({ message, handleResubmit }) {
   return (
     <div className="mt-3 max-w-xl">
       <div className="flex flex-row">
-        <div className="w-fit content-end bg-white dark:bg-transparent text-sm text-gray-900 dark:text-gray-100 rounded-lg ml-2">
-          {message.content}
+        <div className="w-fit content-end bg-white dark:bg-transparent text-sm text-gray-900 dark:text-gray-100 rounded-lg ml-2 prose prose-sm dark:prose-invert max-w-none">
+          <Markdown>{message.content}</Markdown>
         </div>
       </div>
       <div className="flex flex-row items-center mt-2 ml-1">

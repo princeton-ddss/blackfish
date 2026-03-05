@@ -1,4 +1,5 @@
 import { useContext, useState } from "react";
+import Markdown from "react-markdown";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
@@ -186,8 +187,8 @@ function TextGenerationResponseOutput({
       <div>
         {/* TODO: display loading in case first token is slow... */}
         <div className="mt-8">
-          <div className="block w-full max-w-4xl overflow-y-auto bg-white dark:bg-transparent text-sm/6 text-gray-900 dark:text-gray-100 rounded-lg ml-1">
-            {content}
+          <div className="block w-full max-w-4xl overflow-y-auto bg-white dark:bg-transparent text-sm/6 text-gray-900 dark:text-gray-100 rounded-lg ml-1 prose prose-sm dark:prose-invert max-w-none">
+            <Markdown>{content}</Markdown>
           </div>
         </div>
         <div className="flex flex-row h-8 mt-1">

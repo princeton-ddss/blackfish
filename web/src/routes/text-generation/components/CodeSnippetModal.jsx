@@ -1,4 +1,4 @@
-import { Fragment, useContext, useState } from "react";
+import { Fragment, useContext, useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogPanel,
@@ -18,13 +18,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import PropTypes from "prop-types";
-import { Highlight, themes } from "prism-react-renderer";
 import Prism from "prismjs";
-
-// Add languages not bundled by default
-(typeof global !== "undefined" ? global : window).Prism = Prism;
+import "prismjs/components/prism-python";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-r";
+import "prismjs/themes/prism-tomorrow.css";
 
 /**
  * Build a sample request body for the given mode and parameters.
@@ -165,7 +163,14 @@ function CodeSnippetModal({
   const [copied, setCopied] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const code = languages[selectedIndex].generate(mode, parameters, selectedService);
+  const allCode = useMemo(
+    () => languages.map((lang) => lang.generate(mode, parameters, selectedService)),
+    [mode, parameters, selectedService]
+  );
+
+  const code = allCode[selectedIndex];
+
+  useEffect(() => setCopied(false), [selectedIndex]);
 
   const handleCopy = () => {
     navigator.clipboard
@@ -244,7 +249,7 @@ function CodeSnippetModal({
                       ))}
                     </TabList>
                     <TabPanels className="mt-3">
-                      {languages.map((lang) => (
+                      {languages.map((lang, idx) => (
                         <TabPanel key={lang.name}>
                           <div className="relative group">
                             <button
@@ -259,26 +264,19 @@ function CodeSnippetModal({
                                 <ClipboardDocumentIcon className="h-4 w-4" />
                               )}
                             </button>
-                            <Highlight
-                              theme={themes.vsDark}
-                              code={lang.generate(mode, parameters, selectedService)}
-                              language={lang.prismLang}
+                            <pre
+                              className="rounded-lg p-4 max-h-96 overflow-auto text-xs font-mono bg-[#1e1e1e] text-[#d4d4d4]"
                             >
-                              {({ style, tokens, getLineProps, getTokenProps }) => (
-                                <pre
-                                  style={style}
-                                  className="rounded-lg p-4 max-h-96 overflow-auto text-xs font-mono"
-                                >
-                                  {tokens.map((line, i) => (
-                                    <div key={i} {...getLineProps({ line })}>
-                                      {line.map((token, key) => (
-                                        <span key={key} {...getTokenProps({ token })} />
-                                      ))}
-                                    </div>
-                                  ))}
-                                </pre>
-                              )}
-                            </Highlight>
+                              <code
+                                dangerouslySetInnerHTML={{
+                                  __html: Prism.highlight(
+                                    allCode[idx],
+                                    Prism.languages[lang.prismLang],
+                                    lang.prismLang
+                                  ),
+                                }}
+                              />
+                            </pre>
                           </div>
                         </TabPanel>
                       ))}

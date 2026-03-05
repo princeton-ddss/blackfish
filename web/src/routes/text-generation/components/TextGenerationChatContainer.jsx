@@ -103,6 +103,7 @@ function UserMessageInput({
   onImageRemoteSelect,
   onFileBrowserUpload,
   onFileRemoteSelect,
+  selectedService,
 }) {
   return (
     <div className="flex items-start space-x-4 mt-auto pt-4">
@@ -147,7 +148,9 @@ function UserMessageInput({
                   return;
                 } else if (event.key === "Enter") {
                   event.preventDefault();
-                  onSubmit(event);
+                  if (selectedService) {
+                    onSubmit(event);
+                  }
                 }
               }}
               className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6"
@@ -192,7 +195,7 @@ function UserMessageInput({
             <div className="shrink-0">
               <button
                 type="submit"
-                disabled={message && message.content && message.content.length === 0}
+                disabled={!selectedService || (message && message.content && message.content.length === 0)}
                 className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
               >
                 <PaperAirplaneIcon className="size-5" />
@@ -222,6 +225,7 @@ UserMessageInput.propTypes = {
   onImageRemoteSelect: PropTypes.func,
   onFileBrowserUpload: PropTypes.func,
   onFileRemoteSelect: PropTypes.func,
+  selectedService: PropTypes.object,
 };
 
 /**
@@ -953,6 +957,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         onImageRemoteSelect={() => setImageBrowserOpen(true)}
         onFileBrowserUpload={handleFileBrowserUpload}
         onFileRemoteSelect={() => setFileBrowserOpen(true)}
+        selectedService={selectedService}
       />
 
       {/* Image file browser modal */}

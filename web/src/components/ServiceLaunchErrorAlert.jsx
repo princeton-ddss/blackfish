@@ -17,9 +17,11 @@ function ServiceLaunchErrorAlert({ error, onClick }) {
       onDismiss={onClick}
       className="mb-4"
     >
-      <ul className="list-disc space-y-1 pl-5">
-        <li>{error.message}</li>
-      </ul>
+      <p>
+        {error.message.split("\n").map((part, i) => (
+          i === 0 ? <strong key={i}>{part} </strong> : part
+        ))}
+      </p>
     </Alert>
   );
 }

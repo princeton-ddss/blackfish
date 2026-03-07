@@ -33,6 +33,15 @@ from blackfish.server.config import ContainerProvider
 from blackfish.server.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
 
+def _parse_sbatch_error(output: bytes | None) -> str | None:
+    """Extract lines from sbatch error output, stripping the 'sbatch: error: ' prefix."""
+    if not output:
+        return None
+    lines = output.decode("utf-8").strip().splitlines()
+    cleaned = [line.removeprefix("sbatch: error: ").strip() for line in lines if line.strip()]
+    return ". ".join(cleaned) if cleaned else None
+
+
 class ServiceLaunchError(Exception):
     """Error raised when a service fails to launch, with user-friendly messages.
 
@@ -63,12 +72,12 @@ class ServiceLaunchError(Exception):
             "profile": "Profile configuration is missing or invalid.",
             "ssh": f"Could not connect to {self.host}. Check your SSH configuration.",
             "copy": f"Failed to copy files to {self.host}. Check permissions and disk space.",
-            "submit": f"Job submission failed on {self.host}. The scheduler may be unavailable.",
+            "submit": f"Job submission failed on {self.host}.",
             "container": "Failed to start the container. Check that Docker is running and, if using GPU, that nvidia-container-toolkit is installed.",
         }
         message = messages.get(self.error_type, "Failed to launch service.")
         if self.details:
-            message = f"{message} ({self.details})"
+            message = f"{message}\n{self.details}"
         return message
 
 
@@ -179,17 +188,23 @@ class Service(UUIDAuditBase):
 
             if self.host == "localhost":
                 logger.debug("Submitting slurm job locally.")
-                res = subprocess.check_output(
-                    [
-                        "sbatch",
-                        "--chdir",
-                        script_path.parent,
-                        script_path,
-                    ]
-                )
-                job_id = res.decode("utf-8").strip().split()[-1]
-                self.status = ServiceStatus.SUBMITTED
-                self.job_id = job_id
+                try:
+                    res = subprocess.check_output(
+                        [
+                            "sbatch",
+                            "--chdir",
+                            script_path.parent,
+                            script_path,
+                        ],
+                        stderr=subprocess.STDOUT,
+                    )
+                    job_id = res.decode("utf-8").strip().split()[-1]
+                    self.status = ServiceStatus.SUBMITTED
+                    self.job_id = job_id
+                except subprocess.CalledProcessError as e:
+                    details = _parse_sbatch_error(e.output)
+                    logger.error(f"Failed to submit Slurm job: {details}")
+                    raise ServiceLaunchError("submit", self.host, details)
             else:
                 profile = self.get_profile()
                 if profile is None:
@@ -235,14 +250,16 @@ class Service(UUIDAuditBase):
                             "--chdir",
                             remote_script_dir,
                             os.path.join(remote_script_dir, "start.sh"),
-                        ]
+                        ],
+                        stderr=subprocess.STDOUT,
                     )
                     job_id = res.decode("utf-8").strip().split()[-1]
                     self.status = ServiceStatus.SUBMITTED
                     self.job_id = job_id
-                except Exception as e:
-                    logger.error(f"Failed to submit Slurm job: {e}")
-                    raise ServiceLaunchError("submit", self.host)
+                except subprocess.CalledProcessError as e:
+                    details = _parse_sbatch_error(e.output)
+                    logger.error(f"Failed to submit Slurm job: {details}")
+                    raise ServiceLaunchError("submit", self.host, details)
         else:
             script_path = Path(
                 os.path.join(app_config.HOME_DIR, "jobs", self.id.hex, "start.sh")

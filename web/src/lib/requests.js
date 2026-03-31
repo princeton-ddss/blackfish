@@ -208,6 +208,27 @@ export async function fetchClusterStatus(profileName) {
   return res.json();
 }
 
+/** Fetch batch jobs, optionally filtered by profile. */
+export async function fetchJobs(path) {
+  const res = await fetch(`${blackfishApiURL}/api/${path}`);
+  if (!res.ok) {
+    console.debug(`from fetchJobs: failed to fetch jobs (status=${res.status})`);
+    let message = "Failed to fetch jobs.";
+    try {
+      const body = await res.json();
+      if (body.detail) {
+        message = body.detail;
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
 /** Fetch resource tiers and time constraints for a profile. */
 export async function fetchProfileResources(profileName) {
   const res = await fetch(`${blackfishApiURL}/api/profiles/${profileName}/resources`);
@@ -395,6 +416,73 @@ export async function listDownloads({ status = null, profile = null } = {}) {
   const res = await fetch(url);
   if (!res.ok) {
     const error = new Error("Failed to list downloads");
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Delete a batch job. */
+export async function deleteJob(jobId) {
+  const res = await fetch(`${blackfishApiURL}/api/jobs?id=${jobId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    let message = "Failed to delete job";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Stop a running batch job. */
+export async function stopJob(jobId) {
+  const res = await fetch(`${blackfishApiURL}/api/jobs/${jobId}/stop`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    let message = "Failed to stop job";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Create a new batch job. */
+export async function createJob(jobData) {
+  const res = await fetch(`${blackfishApiURL}/api/jobs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(jobData),
+  });
+
+  if (!res.ok) {
+    let message = "Failed to create job";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
     error.status = res.status;
     throw error;
   }

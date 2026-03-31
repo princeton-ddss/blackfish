@@ -13,6 +13,7 @@ class SlurmProfile:
     user: str
     home_dir: str
     cache_dir: str
+    python_path: str = "python3"
     schema: str = "slurm"
 
     def is_local(self) -> bool:
@@ -80,6 +81,7 @@ def deserialize_profiles(home_dir: str) -> list[BlackfishProfile]:
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
+                    python_path=profile.get("python_path", "python3"),
                 )
             )
         elif schema == "local":
@@ -117,6 +119,7 @@ def deserialize_profile(home_dir: str, name: str) -> BlackfishProfile | None:
                     user=profile["user"],
                     home_dir=profile["home_dir"],
                     cache_dir=profile["cache_dir"],
+                    python_path=profile.get("python_path", "python3"),
                 )
             elif schema == "local":
                 return LocalProfile(

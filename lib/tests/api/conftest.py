@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import (
 from collections.abc import AsyncGenerator
 from blackfish.server.models.model import Model
 
+# Import registers table with SQLAlchemy metadata for create_all
+from blackfish.server.models.download import DownloadTask  # noqa: F401
+
 
 pytestmark = pytest.mark.anyio
 

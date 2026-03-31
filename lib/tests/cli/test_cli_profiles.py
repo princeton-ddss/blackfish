@@ -155,10 +155,9 @@ class TestProfileAdd:
     """Test profile add command."""
 
     @patch("blackfish.cli.profile.input")
-    @patch("blackfish.cli.profile.create_local_home_dir")
-    @patch("blackfish.cli.profile.check_local_cache_exists")
+    @patch("blackfish.cli.profile._setup_profile")
     def test_add_local_profile_success(
-        self, mock_check_cache, mock_create_home, mock_input, cli_runner, temp_home_dir
+        self, mock_setup, mock_input, cli_runner, temp_home_dir
     ):
         """Test successful creation of a local profile."""
         # Mock user inputs
@@ -181,7 +180,7 @@ class TestProfileAdd:
             result = cli_runner.invoke(main, ["profile", "add"])
 
             assert result.exit_code == 0
-            assert "Created profile test-local" in result.output
+            assert "Created profile 'test-local'" in result.output
 
             # Check that profile was actually written
             with open(profiles_path, "r") as f:
@@ -190,10 +189,9 @@ class TestProfileAdd:
                 assert "schema = local" in content
 
     @patch("blackfish.cli.profile.input")
-    @patch("blackfish.cli.profile.create_remote_home_dir")
-    @patch("blackfish.cli.profile.check_remote_cache_exists")
+    @patch("blackfish.cli.profile._setup_profile")
     def test_add_slurm_profile_success(
-        self, mock_check_cache, mock_create_home, mock_input, cli_runner, temp_home_dir
+        self, mock_setup, mock_input, cli_runner, temp_home_dir
     ):
         """Test successful creation of a slurm profile."""
         # Mock user inputs
@@ -204,6 +202,7 @@ class TestProfileAdd:
             "testuser",  # user
             "/home/testuser/.blackfish",  # home directory
             "/scratch/cache",  # cache directory
+            "",  # python_path (use default)
         ]
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
@@ -218,7 +217,7 @@ class TestProfileAdd:
             result = cli_runner.invoke(main, ["profile", "add"])
 
             assert result.exit_code == 0
-            assert "Created profile test-slurm" in result.output
+            assert "Created profile 'test-slurm'" in result.output
 
             # Check that profile was actually written
             with open(profiles_path, "r") as f:
@@ -252,7 +251,10 @@ class TestProfileAdd:
             assert "Profile named default already exists" in result.output
 
     @patch("blackfish.cli.profile.input")
-    def test_add_profile_invalid_schema(self, mock_input, cli_runner, temp_home_dir):
+    @patch("blackfish.cli.profile._setup_profile")
+    def test_add_profile_invalid_schema(
+        self, mock_setup, mock_input, cli_runner, temp_home_dir
+    ):
         """Test adding a profile with invalid schema."""
         # Mock user inputs
         mock_input.side_effect = [
@@ -265,11 +267,7 @@ class TestProfileAdd:
 
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        with (
-            patch("blackfish.cli.__main__.config") as mock_config,
-            patch("blackfish.cli.profile.create_local_home_dir"),
-            patch("blackfish.cli.profile.check_local_cache_exists"),
-        ):
+        with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
 
             # Create empty profiles config
@@ -280,19 +278,17 @@ class TestProfileAdd:
 
             assert result.exit_code == 0
             assert "Profile schema should be one of" in result.output
-            assert "Created profile test-profile" in result.output
+            assert "Created profile 'test-profile'" in result.output
 
 
 class TestProfileUpdate:
     """Test profile update command."""
 
     @patch("blackfish.cli.profile.input")
-    @patch("blackfish.cli.profile.create_local_home_dir")
-    @patch("blackfish.cli.profile.check_local_cache_exists")
+    @patch("blackfish.cli.profile.asyncio.run")
     def test_update_local_profile_success(
         self,
-        mock_check_cache,
-        mock_create_home,
+        mock_asyncio_run,
         mock_input,
         cli_runner,
         temp_home_dir,
@@ -482,3 +478,258 @@ cache_dir = /tmp/mixed/cache
             assert (
                 "schema: local" in result.output
             )  # Should use 'schema' field, not 'type'
+
+
+class TestProfileUpgrade:
+    """Test profile upgrade command."""
+
+    @pytest.fixture
+    def mock_slurm_profiles_config(self):
+        """Mock slurm profiles.cfg content for upgrade/repair testing."""
+        return """[default]
+schema = local
+home_dir = /tmp/test/home
+cache_dir = /tmp/test/cache
+
+[slurm-test]
+schema = slurm
+host = test.cluster.edu
+user = testuser
+home_dir = /home/testuser/.blackfish
+cache_dir = /scratch/testuser/cache
+python_path = python3
+"""
+
+    @patch("blackfish.cli.profile.TigerFlowClient")
+    @patch("blackfish.cli.profile.SSHRunner")
+    def test_upgrade_slurm_profile_success(
+        self,
+        mock_ssh_runner_cls,
+        mock_tf_client_cls,
+        cli_runner,
+        temp_home_dir,
+        mock_slurm_profiles_config,
+    ):
+        """Test successful upgrade of a Slurm profile."""
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        mock_ssh_runner = mock_ssh_runner_cls.return_value
+        mock_tf_client = mock_tf_client_cls.return_value
+        mock_tf_client.upgrade = lambda **kwargs: None  # sync mock
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+
+            with open(profiles_path, "w") as f:
+                f.write(mock_slurm_profiles_config)
+
+            # Mock asyncio.run to execute the async function
+            with patch("blackfish.cli.profile.asyncio.run") as mock_asyncio_run:
+                result = cli_runner.invoke(
+                    main, ["profile", "upgrade", "--name", "slurm-test"]
+                )
+
+                assert result.exit_code == 0
+                # Spinner shows checkmark on success
+                assert "✔" in result.output or result.exit_code == 0
+                mock_asyncio_run.assert_called_once()
+
+    def test_upgrade_profile_not_found(
+        self, cli_runner, temp_home_dir, mock_slurm_profiles_config
+    ):
+        """Test upgrading a profile that doesn't exist."""
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+
+            with open(profiles_path, "w") as f:
+                f.write(mock_slurm_profiles_config)
+
+            result = cli_runner.invoke(
+                main, ["profile", "upgrade", "--name", "nonexistent"]
+            )
+
+            assert result.exit_code == 1
+            assert "Profile nonexistent not found" in result.output
+
+    def test_upgrade_local_profile_not_allowed(
+        self, cli_runner, temp_home_dir, mock_slurm_profiles_config
+    ):
+        """Test that upgrading a local profile is not allowed."""
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+
+            with open(profiles_path, "w") as f:
+                f.write(mock_slurm_profiles_config)
+
+            result = cli_runner.invoke(
+                main, ["profile", "upgrade", "--name", "default"]
+            )
+
+            assert result.exit_code == 1
+            assert "only supported on Slurm profiles" in result.output
+
+    @patch("blackfish.cli.profile.TigerFlowClient")
+    @patch("blackfish.cli.profile.SSHRunner")
+    def test_upgrade_with_custom_specs(
+        self,
+        mock_ssh_runner_cls,
+        mock_tf_client_cls,
+        cli_runner,
+        temp_home_dir,
+        mock_slurm_profiles_config,
+    ):
+        """Test upgrade with custom package specs."""
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        mock_ssh_runner = mock_ssh_runner_cls.return_value
+        mock_tf_client = mock_tf_client_cls.return_value
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+
+            with open(profiles_path, "w") as f:
+                f.write(mock_slurm_profiles_config)
+
+            with patch("blackfish.cli.profile.asyncio.run") as mock_asyncio_run:
+                result = cli_runner.invoke(
+                    main,
+                    [
+                        "profile",
+                        "upgrade",
+                        "--name",
+                        "slurm-test",
+                        "--tigerflow-spec",
+                        "git+https://github.com/org/tigerflow@branch",
+                        "--tigerflow-ml-spec",
+                        "git+https://github.com/org/tigerflow-ml@branch",
+                    ],
+                )
+
+                assert result.exit_code == 0
+                mock_asyncio_run.assert_called_once()
+
+
+class TestProfileRepair:
+    """Test profile repair command."""
+
+    @pytest.fixture
+    def mock_slurm_profiles_config(self):
+        """Mock slurm profiles.cfg content for upgrade/repair testing."""
+        return """[default]
+schema = local
+home_dir = /tmp/test/home
+cache_dir = /tmp/test/cache
+
+[slurm-test]
+schema = slurm
+host = test.cluster.edu
+user = testuser
+home_dir = /home/testuser/.blackfish
+cache_dir = /scratch/testuser/cache
+python_path = python3
+"""
+
+    def test_repair_slurm_profile_success(
+        self,
+        cli_runner,
+        temp_home_dir,
+        mock_slurm_profiles_config,
+    ):
+        """Test successful repair of a Slurm profile."""
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+
+            with open(profiles_path, "w") as f:
+                f.write(mock_slurm_profiles_config)
+
+            with patch("blackfish.cli.profile._repair_profile") as mock_repair:
+                mock_repair.return_value = True
+                result = cli_runner.invoke(
+                    main, ["profile", "repair", "--name", "slurm-test", "--force"]
+                )
+
+                assert result.exit_code == 0
+                mock_repair.assert_called_once()
+
+    def test_repair_profile_not_found(
+        self, cli_runner, temp_home_dir, mock_slurm_profiles_config
+    ):
+        """Test repairing a profile that doesn't exist."""
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+
+            with open(profiles_path, "w") as f:
+                f.write(mock_slurm_profiles_config)
+
+            result = cli_runner.invoke(
+                main, ["profile", "repair", "--name", "nonexistent"]
+            )
+
+            assert result.exit_code == 1
+            assert "Profile nonexistent not found" in result.output
+
+    def test_repair_local_profile_not_allowed(
+        self, cli_runner, temp_home_dir, mock_slurm_profiles_config
+    ):
+        """Test that repairing a local profile is not allowed."""
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+
+            with open(profiles_path, "w") as f:
+                f.write(mock_slurm_profiles_config)
+
+            result = cli_runner.invoke(
+                main, ["profile", "repair", "--name", "default"]
+            )
+
+            assert result.exit_code == 1
+            assert "only supported on Slurm profiles" in result.output
+
+    def test_repair_with_custom_specs(
+        self,
+        cli_runner,
+        temp_home_dir,
+        mock_slurm_profiles_config,
+    ):
+        """Test repair with custom package specs."""
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+
+            with open(profiles_path, "w") as f:
+                f.write(mock_slurm_profiles_config)
+
+            with patch("blackfish.cli.profile._repair_profile") as mock_repair:
+                mock_repair.return_value = True
+                result = cli_runner.invoke(
+                    main,
+                    [
+                        "profile",
+                        "repair",
+                        "--name",
+                        "slurm-test",
+                        "--force",
+                        "--tigerflow-spec",
+                        "git+https://github.com/org/tigerflow@branch",
+                        "--tigerflow-ml-spec",
+                        "git+https://github.com/org/tigerflow-ml@branch",
+                    ],
+                )
+
+                assert result.exit_code == 0
+                mock_repair.assert_called_once()
+                # Verify custom specs were passed
+                call_kwargs = mock_repair.call_args.kwargs
+                assert call_kwargs["tigerflow_spec"] == "git+https://github.com/org/tigerflow@branch"
+                assert call_kwargs["tigerflow_ml_spec"] == "git+https://github.com/org/tigerflow-ml@branch"

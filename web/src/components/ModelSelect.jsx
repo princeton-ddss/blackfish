@@ -1,11 +1,11 @@
-import { Fragment, useEffect, useState } from "react";
-import { Field,
+import { useEffect, useState } from "react";
+import {
+  Field,
   Label,
   Listbox,
   ListboxButton,
   ListboxOptions,
   ListboxOption,
-  Transition
 } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import PropTypes from "prop-types";
@@ -57,11 +57,9 @@ function ModelSelect({ models, setRepoId, setModelId, disabled }) {
   return (
     <Field disabled={disabled}>
       <Listbox value={selected} onChange={handleRepoChange}>
-        {({ open }) => (
-          <>
-            <Label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-              Model
-            </Label>
+        <Label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+          Model
+        </Label>
             <div className="relative mt-2">
               <ListboxButton
                 className={classNames(
@@ -84,14 +82,9 @@ function ModelSelect({ models, setRepoId, setModelId, disabled }) {
                 }
               </ListboxButton>
 
-              <Transition
-                show={open}
-                as={Fragment}
-                leave="transition ease-in duration-100"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none sm:text-sm">
+                <ListboxOptions
+                  anchor="bottom start"
+                  className="z-50 mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none sm:text-sm">
                   {repos.map((model) => (
                     <ListboxOption
                       key={model.revision} // revision is unique per profile
@@ -131,10 +124,7 @@ function ModelSelect({ models, setRepoId, setModelId, disabled }) {
                     </ListboxOption>
                   ))}
                 </ListboxOptions>
-              </Transition>
             </div>
-          </>
-        )}
       </Listbox>
     </Field>
   );

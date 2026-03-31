@@ -56,6 +56,7 @@ A *Slurm profile* specifies how to schedule services *on* a (possibly) remote se
 - `user`: a user name used to connect to server.
 - `home`: a location on the server to store application model, image and job data, e.g., `/home/<user>/.blackfish`. User should have read-write access to this directory.
 - `cache`: a location on the server to source additional shared model and images files from. Blackfish does *not* attempt to create this directory for you, but it does require that it can be found. User should *at least* have read access to this directory.
+- `python_path` (optional): path to Python on the cluster, e.g., `python3` (default) or `/usr/local/bin/python3.11`. This may also include module load commands like `module load python && python3`. Used for setting up the TigerFlow environment for batch jobs.
 
 ### Managing Profiles
 
@@ -102,6 +103,33 @@ blackfish profile update --name <profile>
 
 This command updates the default profile if not `--name` is specified. Note that you cannot change
 the `name` or `schema` attributes of a profile.
+
+#### upgrade - Upgrade TigerFlow
+
+Slurm profiles use [TigerFlow](https://github.com/princeton-ddss/tigerflow) for batch job processing.
+To upgrade TigerFlow to the latest version on a profile, use:
+
+```shell
+blackfish profile upgrade --name <profile>
+```
+
+You can also install from a specific git branch for testing unreleased features:
+
+```shell
+blackfish profile upgrade --name <profile> \
+    --tigerflow-spec "git+https://github.com/princeton-ddss/tigerflow@feature-branch"
+```
+
+#### repair - Repair a profile
+
+If a Slurm profile is in a broken state (missing directories, corrupted TigerFlow installation),
+you can repair it by re-running the setup process:
+
+```shell
+blackfish profile repair --name <profile>
+```
+
+This recreates the profile's directories and reinstalls TigerFlow.
 
 #### rm - Delete a profile
 

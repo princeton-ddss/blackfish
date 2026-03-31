@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import configparser
 import os
 from os import urandom
 import json
@@ -64,7 +65,7 @@ from litestar.enums import RequestEncodingType
 from litestar.params import Body
 
 from blackfish.server.logger import logger
-from blackfish.server import services, jobs
+from blackfish.server import services
 from blackfish.server.files import (
     FileUploadResponse,
     try_write_file,
@@ -78,8 +79,12 @@ from blackfish.server import sftp
 from blackfish.server.services.base import Service, ServiceLaunchError, ServiceStatus
 from blackfish.server.services.speech_recognition import SpeechRecognitionConfig
 from blackfish.server.services.text_generation import TextGenerationConfig
-from blackfish.server.jobs.base import BatchJob, BatchJobStatus
-from blackfish.server.jobs.speech_recognition import SpeechRecognitionBatchConfig
+from blackfish.server.jobs.base import (
+    BatchJob,
+    BatchJobStatus,
+    create_tigerflow_client,
+    create_tigerflow_client_for_profile,
+)
 from blackfish.server.config import config as blackfish_config
 from blackfish.server.utils import find_port
 from blackfish.server.models.profile import (
@@ -89,6 +94,13 @@ from blackfish.server.models.profile import (
     LocalProfile,
     BlackfishProfile as Profile,
 )
+from blackfish.server.jobs.client import (
+    TigerFlowClient,
+    TigerFlowError,
+    SSHRunner,
+    LocalRunner,
+)
+from blackfish.server.setup import ProfileManager, ProfileSetupError, repair_slurm_profile
 from blackfish.server.models.model import (
     Model,
     PIPELINE_IMAGES,
@@ -134,25 +146,8 @@ def load_service_classes() -> dict[str, Type[Service]]:
 service_classes = load_service_classes()
 
 
-def load_batch_job_classes() -> dict[str, Type[BatchJob]]:
-    batch_job_classes: dict[str, Type[BatchJob]] = {}
-    directory = Path(jobs.__path__[0])
-    for file in directory.glob("*.py"):
-        if not file.stem.startswith("_") and not file.stem == "base":
-            module = import_module(f"blackfish.server.{directory.stem}.{file.stem}")
-            for k, v in module.__dict__.items():
-                if isinstance(v, type) and v.__bases__[0] == BatchJob:
-                    batch_job_classes[file.stem] = v
-                    logger.debug(f"Added class {k} to batch job class dictionary.")
-
-    return batch_job_classes
-
-
-batch_job_classes = load_batch_job_classes()
-
-
 ContainerConfig = TextGenerationConfig | SpeechRecognitionConfig
-BatchContainerConfig = SpeechRecognitionBatchConfig
+
 
 # --- Auth ---
 AUTH_TOKEN: Optional[bytes] = None
@@ -531,6 +526,10 @@ COMPATIBLE_PIPELINES: dict[str, list[str]] = {
         "audio-text-to-text",
         "video-text-to-text",
         "image-to-text",
+    ],
+    "object-detection": [
+        "object-detection",
+        "zero-shot-object-detection",
     ],
 }
 
@@ -1300,51 +1299,96 @@ async def prune_services(session: AsyncSession, state: State) -> int:
 
 
 class BatchJobRequest(BaseModel):
+    """Request model for creating a batch job."""
+
     name: str
-    pipeline: str
-    repo_id: str
+    task: str  # e.g., "transcribe", "summarize"
+    repo_id: str  # Model ID (e.g., "openai/whisper-large-v3")
+    revision: Optional[str] = None  # Model revision
     profile: Profile
-    job_config: JobConfig
-    container_config: BatchContainerConfig
-    mount: str
+    input_dir: str  # Input directory on cluster
+    output_dir: str  # Output directory on cluster
+    input_ext: Optional[str] = None  # Input file extension (e.g., ".mp3")
+    output_ext: Optional[str] = None  # Output file extension (e.g., ".json")
+    cache_dir: Optional[str] = None  # Model cache directory on cluster
+    params: Optional[dict[str, Any]] = None  # Task-specific parameters
+    resources: Optional[dict[str, Any]] = None  # Resource requirements
+    max_workers: int = 1  # Max concurrent Slurm workers
 
 
-def build_batch_job(data: BatchJobRequest) -> BatchJob | None:
-    """Convert a batch job request into a batch job object based on the requested pipeline."""
+def build_batch_job(data: BatchJobRequest) -> BatchJob:
+    """Convert a batch job request into a BatchJob object."""
+    # Build batch job
+    job_data: dict[str, Any] = {
+        "name": data.name,
+        "task": data.task,
+        "repo_id": data.repo_id,
+        "revision": data.revision,
+        "profile": data.profile.name,
+        "home_dir": data.profile.home_dir,
+        "input_dir": data.input_dir,
+        "output_dir": data.output_dir,
+        "input_ext": data.input_ext,
+        "output_ext": data.output_ext,
+        "cache_dir": data.cache_dir,
+        "params": data.params,
+        "resources": data.resources,
+        "max_workers": data.max_workers,
+    }
 
-    BatchJobClass = batch_job_classes.get(data.pipeline)
-    if BatchJobClass is not None:
-        flattened = {
-            "name": data.name,
-            "repo_id": data.repo_id,
-            "profile": data.profile.name,
-            "home_dir": data.profile.home_dir,
-            "cache_dir": data.profile.cache_dir,
-            "mount": data.mount,
-        }
+    if isinstance(data.profile, LocalProfile):
+        job_data["host"] = "localhost"
+    elif isinstance(data.profile, SlurmProfile):
+        job_data["user"] = data.profile.user
+        job_data["host"] = data.profile.host
 
-        if isinstance(data.profile, LocalProfile):
-            flattened["host"] = "localhost"
-            if blackfish_config.CONTAINER_PROVIDER is None:
-                logger.error(
-                    "Failed to build batch job: blackfish config is missing a container provider"
-                )
-                return None
-            flattened["provider"] = blackfish_config.CONTAINER_PROVIDER
-        elif isinstance(data.profile, SlurmProfile):
-            flattened["user"] = data.profile.user
-            flattened["host"] = data.profile.host
-            flattened["scheduler"] = JobScheduler.Slurm
+    batch_job = BatchJob(**job_data)
+    logger.debug(f"Batch job created: {batch_job}")
+    return batch_job
 
-        batch_job = BatchJobClass(**flattened)
-        logger.debug(f"Batch job created: {batch_job}")
-        return batch_job
 
-    else:
-        logger.error(
-            f"Failed to build batch job: unrecognized pipeline {data.pipeline}"
-        )
-        return None
+@get("/api/jobs/tasks", guards=ENDPOINT_GUARDS)
+async def list_tasks(
+    state: State,
+    profile: str,
+) -> list[dict[str, Any]]:
+    """List available batch job tasks from tigerflow-ml.
+
+    Args:
+        profile: Name of the profile to query tasks from
+    """
+    try:
+        client = create_tigerflow_client_for_profile(profile, state)
+        return await client.list_tasks()
+    except FileNotFoundError:
+        raise NotFoundException(detail=f"Profile '{profile}' not found")
+    except TigerFlowError as e:
+        raise InternalServerException(detail=e.user_message())
+
+
+@get("/api/jobs/tasks/{task:str}", guards=ENDPOINT_GUARDS)
+async def get_task(
+    task: str,
+    state: State,
+    profile: str,
+) -> dict[str, Any]:
+    """Get details for a specific task from tigerflow-ml.
+
+    Args:
+        task: Name of the task to get details for
+        profile: Name of the profile to query from
+    """
+    try:
+        client = create_tigerflow_client_for_profile(profile, state)
+        return await client.get_task_info(task)
+    except FileNotFoundError:
+        raise NotFoundException(detail=f"Profile '{profile}' not found")
+    except TigerFlowError as e:
+        # Check if this is a "task not found" type error
+        details = e.details or ""
+        if "not found" in details.lower() or "unknown task" in details.lower():
+            raise NotFoundException(detail=f"Task '{task}' not found")
+        raise InternalServerException(detail=e.user_message())
 
 
 @post("/api/jobs", guards=ENDPOINT_GUARDS)
@@ -1352,29 +1396,37 @@ async def run_job(
     data: BatchJobRequest,
     session: AsyncSession,
     state: State,
-) -> BatchJob | None:
+) -> BatchJob:
+    """Create and start a batch job."""
     logger.debug(f"Received job request: {data}")
 
     logger.debug("Building batch job...")
     batch_job = build_batch_job(data)
 
-    if batch_job is not None:
-        logger.debug("Attempting to start batch job...")
-        try:
-            await batch_job.start(
-                session,
-                state,
-                job_options=data.job_config,
-                container_options=data.container_config,
-            )
-        except Exception as e:
-            detail = f"Unable to start batch job. Error: {e}"
-            logger.error(detail)
-            raise InternalServerException(detail=detail)
+    # Add to database first to get ID
+    session.add(batch_job)
+    await session.flush()
 
-        return batch_job
-    else:
-        raise ValidationException(detail="Invalid pipeline {data.pipeline}")
+    logger.debug("Attempting to start batch job...")
+    try:
+        client = create_tigerflow_client(batch_job, state)
+        await batch_job.start(client)
+    except TigerFlowError as e:
+        batch_job.status = BatchJobStatus.STOPPED
+        detail = f"Unable to start batch job: {e.user_message()}"
+        logger.error(detail)
+        raise InternalServerException(detail=detail)
+    except Exception as e:
+        batch_job.status = BatchJobStatus.STOPPED
+        detail = f"Unable to start batch job. Error: {e}"
+        logger.error(detail)
+        raise InternalServerException(detail=detail)
+
+    # Persist final state
+    session.add(batch_job)
+    await session.flush()
+
+    return batch_job
 
 
 @get("/api/jobs", guards=ENDPOINT_GUARDS)
@@ -1382,15 +1434,16 @@ async def fetch_jobs(
     session: AsyncSession,
     state: State,
     id: Optional[str] = None,
-    pipeline: Optional[str] = None,
+    task: Optional[str] = None,
     repo_id: Optional[str] = None,
     status: Optional[str] = None,
     name: Optional[str] = None,
     profile: Optional[str] = None,
 ) -> list[BatchJob]:
+    """List batch jobs with optional filtering."""
     query_params = {
         "id": id,
-        "pipeline": pipeline,
+        "task": task,
         "repo_id": repo_id,
         "status": status,
         "name": name,
@@ -1405,12 +1458,21 @@ async def fetch_jobs(
     except StatementError as e:
         raise ValidationException(detail=f"Invalid query statement: {e}")
 
-    jobs = res.scalars().all()
+    jobs = list(res.scalars().all())
     logger.debug(f"Found {len(jobs)} matching batch jobs.")
 
-    await asyncio.gather(*[s.update(session, state) for s in jobs])
+    # Update status for each job
+    for job in jobs:
+        try:
+            client = create_tigerflow_client(job, state)
+            await job.update(client)
+            session.add(job)
+        except Exception as e:
+            logger.warning(f"Failed to update job {job.id}: {e}")
 
-    return list(jobs)
+    await session.flush()
+
+    return jobs
 
 
 @get("/api/jobs/{id:str}", guards=ENDPOINT_GUARDS)
@@ -1447,14 +1509,28 @@ async def stop_job(
     if job is None:
         raise NotFoundException(detail=f"Job {job_id} not found")
 
+    client = create_tigerflow_client(job, state)
+
+    # Try to stop - may fail if output dir is missing
     try:
-        await job.stop(session, state)
+        await job.stop(client)
+    except TigerFlowError as e:
+        logger.warning(f"Stop command failed for job {job_id}: {e}")
+        job.status = BatchJobStatus.BROKEN
+        session.add(job)
+        await session.flush()
         return job
-    except Exception as e:
-        logger.error(f"Failed to stop job {job_id}: {e}")
-        raise InternalServerException(
-            detail="An error occurred while stopping the job."
-        )
+
+    # Try to get final status - may fail if metadata was never created
+    try:
+        await job.update(client)
+    except TigerFlowError as e:
+        logger.warning(f"Status check failed for job {job_id}: {e}")
+        job.status = BatchJobStatus.BROKEN
+
+    session.add(job)
+    await session.flush()
+    return job
 
 
 @dataclass
@@ -1469,8 +1545,8 @@ async def delete_job(
     session: AsyncSession,
     state: State,
     id: Optional[str] = None,
-    pipeline: Optional[str] = None,
-    model: Optional[str] = None,
+    task: Optional[str] = None,
+    repo_id: Optional[str] = None,
     status: Optional[str] = None,
     name: Optional[str] = None,
     profile: Optional[str] = None,
@@ -1479,8 +1555,8 @@ async def delete_job(
 
     query_params = {
         "id": id,
-        "pipeline": pipeline,
-        "model": model,
+        "task": task,
+        "repo_id": repo_id,
         "status": status,
         "name": name,
         "profile": profile,
@@ -1504,17 +1580,17 @@ async def delete_job(
         )
         return []
 
-    await asyncio.gather(*[s.update(session, state) for s in jobs])
+    # Update job statuses before deletion check
+    for job in jobs:
+        try:
+            client = create_tigerflow_client(job, state)
+            await job.update(client)
+        except Exception as e:
+            logger.warning(f"Failed to update job {job.id} status: {e}")
 
     res = []
     for batch_job in jobs:
-        if batch_job.status in [
-            BatchJobStatus.STOPPED,
-            BatchJobStatus.TIMEOUT,
-            BatchJobStatus.FAILED,
-            BatchJobStatus.COMPLETED,
-            None,
-        ]:
+        if batch_job.status in [BatchJobStatus.STOPPED, BatchJobStatus.BROKEN, None]:
             logger.debug(f"Queueing batch job {batch_job.id} for deletion")
             deletion = sa.delete(BatchJob).where(BatchJob.id == batch_job.id)
             try:
@@ -1531,14 +1607,6 @@ async def delete_job(
                     )
                 )
                 continue
-            try:
-                job = batch_job.get_job()
-                if job is not None:
-                    job.remove()
-            except Exception as e:
-                logger.warning(
-                    f"Unable to remove job for batch job {batch_job.id.hex}: {e}"
-                )
             res.append(DeleteBatchJobResponse(job_id=batch_job.id.hex, status="ok"))
         else:
             logger.warning(
@@ -1678,8 +1746,8 @@ async def get_models(
 
             for m in to_add:
                 token = profile_tokens.get(m.profile)
-                image, metadata_dict = fetch_model_info_from_hub(m.repo, token)
-                m.image = image
+                hub_image, metadata_dict = fetch_model_info_from_hub(m.repo, token)
+                m.image = hub_image
                 m.metadata_ = metadata_dict
 
             session.add_all(to_add)
@@ -2447,6 +2515,366 @@ async def read_profile(name: str) -> Profile | None:
         raise NotFoundException(detail="Profile not found.")
 
 
+class ProfileRequest(BaseModel):
+    """Request model for creating or updating a profile."""
+
+    name: str
+    schema_type: str  # "slurm" or "local"
+    host: Optional[str] = None  # Required for slurm
+    user: Optional[str] = None  # Required for slurm
+    home_dir: str
+    cache_dir: str
+    python_path: Optional[str] = None  # For remote TigerFlow setup
+
+
+def _profiles_config_path() -> str:
+    """Return path to profiles.cfg."""
+    return os.path.join(blackfish_config.HOME_DIR, "profiles.cfg")
+
+
+def _get_profiles_config() -> configparser.ConfigParser:
+    """Load the profiles configuration file."""
+    return ProfileManager.get_profiles_config(_profiles_config_path())
+
+
+def _save_profiles_config(config: configparser.ConfigParser) -> None:
+    """Save the profiles configuration file."""
+    ProfileManager.save_profiles_config(config, _profiles_config_path())
+
+
+@post("/api/profiles", guards=ENDPOINT_GUARDS)
+async def create_profile(data: ProfileRequest) -> Profile:
+    """Create a new profile.
+
+    For Slurm profiles, this sets up directories and TigerFlow.
+    For Local profiles, this sets up local directories.
+    """
+    config = _get_profiles_config()
+
+    if data.name in config:
+        raise ClientException(
+            status_code=HTTP_409_CONFLICT,
+            detail=f"Profile '{data.name}' already exists.",
+        )
+
+    if data.schema_type == "slurm":
+        if not data.host or not data.user:
+            raise ValidationException(
+                detail="'host' and 'user' are required for Slurm profiles."
+            )
+
+        # Choose runner based on host
+        runner: SSHRunner | LocalRunner
+        if data.host == "localhost":
+            runner = LocalRunner()
+        else:
+            runner = SSHRunner(user=data.user, host=data.host)
+
+        # Set up directories and TigerFlow
+        try:
+            profile_mgr = ProfileManager(
+                runner=runner,
+                home_dir=data.home_dir,
+                cache_dir=data.cache_dir,
+            )
+            await profile_mgr.create_directories()
+            await profile_mgr.check_cache()
+
+            tigerflow = TigerFlowClient(
+                runner=runner,
+                home_dir=data.home_dir,
+                python_path=data.python_path or "python3",
+            )
+            await tigerflow.setup()
+        except ProfileSetupError as e:
+            raise InternalServerException(detail=e.user_message())
+        except TigerFlowError as e:
+            raise InternalServerException(detail=e.user_message())
+
+        config[data.name] = {
+            "schema": "slurm",
+            "host": data.host,
+            "user": data.user,
+            "home_dir": data.home_dir,
+            "cache_dir": data.cache_dir,
+        }
+        if data.python_path:
+            config[data.name]["python_path"] = data.python_path
+
+        _save_profiles_config(config)
+
+        return SlurmProfile(
+            name=data.name,
+            host=data.host,
+            user=data.user,
+            home_dir=data.home_dir,
+            cache_dir=data.cache_dir,
+        )
+
+    elif data.schema_type == "local":
+        # Set up local directories
+        try:
+            runner = LocalRunner()
+            profile_mgr = ProfileManager(
+                runner=runner,
+                home_dir=data.home_dir,
+                cache_dir=data.cache_dir,
+            )
+            await profile_mgr.create_directories()
+            await profile_mgr.check_cache()
+        except ProfileSetupError as e:
+            raise InternalServerException(detail=e.user_message())
+
+        config[data.name] = {
+            "schema": "local",
+            "home_dir": data.home_dir,
+            "cache_dir": data.cache_dir,
+        }
+        _save_profiles_config(config)
+
+        return LocalProfile(
+            name=data.name,
+            home_dir=data.home_dir,
+            cache_dir=data.cache_dir,
+        )
+
+    else:
+        raise ValidationException(
+            detail=f"Invalid schema_type '{data.schema_type}'. Must be 'slurm' or 'local'."
+        )
+
+
+@put("/api/profiles/{name:str}", guards=ENDPOINT_GUARDS)
+async def update_profile(name: str, data: ProfileRequest) -> Profile:
+    """Update an existing profile."""
+    config = _get_profiles_config()
+
+    if name not in config:
+        raise NotFoundException(detail=f"Profile '{name}' not found.")
+
+    # Block name changes until we add default flag to profiles
+    if data.name != name:
+        raise ValidationException(
+            detail="Profile name cannot be changed. Delete and recreate the profile instead."
+        )
+
+    if data.schema_type == "slurm":
+        if not data.host or not data.user:
+            raise ValidationException(
+                detail="'host' and 'user' are required for Slurm profiles."
+            )
+
+        # Set up directories and TigerFlow if missing
+        runner: SSHRunner | LocalRunner
+        if data.host == "localhost":
+            runner = LocalRunner()
+        else:
+            runner = SSHRunner(user=data.user, host=data.host)
+
+        try:
+            profile_mgr = ProfileManager(
+                runner=runner,
+                home_dir=data.home_dir,
+                cache_dir=data.cache_dir,
+            )
+            await profile_mgr.create_directories()
+            await profile_mgr.check_cache()
+
+            # Install TigerFlow if not present
+            tigerflow = TigerFlowClient(
+                runner=runner,
+                home_dir=data.home_dir,
+                python_path=data.python_path or "python3",
+            )
+            version_ok, current_version = await tigerflow.check_version()
+            if current_version is None:
+                await tigerflow.setup()
+        except ProfileSetupError as e:
+            raise InternalServerException(detail=e.user_message())
+        except TigerFlowError as e:
+            raise InternalServerException(detail=e.user_message())
+
+        config[data.name] = {
+            "schema": "slurm",
+            "host": data.host,
+            "user": data.user,
+            "home_dir": data.home_dir,
+            "cache_dir": data.cache_dir,
+        }
+        if data.python_path:
+            config[data.name]["python_path"] = data.python_path
+
+        _save_profiles_config(config)
+
+        return SlurmProfile(
+            name=data.name,
+            host=data.host,
+            user=data.user,
+            home_dir=data.home_dir,
+            cache_dir=data.cache_dir,
+        )
+
+    elif data.schema_type == "local":
+        # Set up directories
+        try:
+            runner = LocalRunner()
+            profile_mgr = ProfileManager(
+                runner=runner,
+                home_dir=data.home_dir,
+                cache_dir=data.cache_dir,
+            )
+            await profile_mgr.create_directories()
+            await profile_mgr.check_cache()
+        except ProfileSetupError as e:
+            raise InternalServerException(detail=e.user_message())
+
+        config[data.name] = {
+            "schema": "local",
+            "home_dir": data.home_dir,
+            "cache_dir": data.cache_dir,
+        }
+        _save_profiles_config(config)
+
+        return LocalProfile(
+            name=data.name,
+            home_dir=data.home_dir,
+            cache_dir=data.cache_dir,
+        )
+
+    else:
+        raise ValidationException(
+            detail=f"Invalid schema_type '{data.schema_type}'. Must be 'slurm' or 'local'."
+        )
+
+
+@delete("/api/profiles/{name:str}", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_profile(name: str) -> dict[str, str]:
+    """Delete a profile.
+
+    This does not clean up remote resources (venv, files) as they may be shared.
+    """
+    config = _get_profiles_config()
+
+    if name not in config:
+        raise NotFoundException(detail=f"Profile '{name}' not found.")
+
+    del config[name]
+    _save_profiles_config(config)
+
+    return {"status": "ok", "message": f"Profile '{name}' deleted."}
+
+
+@put("/api/profiles/{name:str}/repair", guards=ENDPOINT_GUARDS)
+async def repair_profile(
+    name: str,
+    tigerflow_spec: str = "tigerflow",
+    tigerflow_ml_spec: str = "tigerflow-ml",
+    force: bool = False,
+) -> dict[str, str]:
+    """Repair a Slurm profile.
+
+    Checks profile health first and skips repair if everything is working.
+    Use force=true to repair anyway.
+    Use query params to specify custom package specs (e.g., git URLs).
+    """
+    config = _get_profiles_config()
+
+    if name not in config:
+        raise NotFoundException(detail=f"Profile '{name}' not found.")
+
+    profile_data = dict(config[name])
+    schema = profile_data.get("schema") or profile_data.get("type")
+
+    if schema != "slurm":
+        raise ValidationException(detail="Repair is only available for Slurm profiles.")
+
+    host = profile_data.get("host")
+    user = profile_data.get("user")
+    home_dir = profile_data.get("home_dir")
+    cache_dir = profile_data.get("cache_dir")
+    python_path = profile_data.get("python_path", "python3")
+
+    if not host or not user or not home_dir or not cache_dir:
+        raise ValidationException(
+            detail="Profile is missing required fields (host, user, home_dir, cache_dir)."
+        )
+
+    try:
+        result = await repair_slurm_profile(
+            host=host,
+            user=user,
+            home_dir=home_dir,
+            cache_dir=cache_dir,
+            python_path=python_path,
+            tigerflow_spec=tigerflow_spec,
+            tigerflow_ml_spec=tigerflow_ml_spec,
+            force=force,
+        )
+    except ProfileSetupError as e:
+        raise InternalServerException(detail=e.user_message())
+    except TigerFlowError as e:
+        raise InternalServerException(detail=e.user_message())
+
+    return {"status": "ok", "message": result.message}
+
+
+@put("/api/profiles/{name:str}/upgrade", guards=ENDPOINT_GUARDS)
+async def upgrade_profile(
+    name: str,
+    tigerflow_spec: str = "tigerflow",
+    tigerflow_ml_spec: str = "tigerflow-ml",
+) -> dict[str, str]:
+    """Upgrade TigerFlow on a Slurm profile.
+
+    Upgrades tigerflow and tigerflow-ml packages to the latest version.
+    Use query params to specify custom package specs (e.g., git URLs).
+    """
+    config = _get_profiles_config()
+
+    if name not in config:
+        raise NotFoundException(detail=f"Profile '{name}' not found.")
+
+    profile_data = dict(config[name])
+    schema = profile_data.get("schema") or profile_data.get("type")
+
+    if schema != "slurm":
+        raise ValidationException(
+            detail="Upgrade is only available for Slurm profiles."
+        )
+
+    host = profile_data.get("host")
+    user = profile_data.get("user")
+    home_dir = profile_data.get("home_dir")
+    python_path = profile_data.get("python_path", "python3")
+
+    if not host or not user or not home_dir:
+        raise ValidationException(
+            detail="Profile is missing required fields (host, user, home_dir)."
+        )
+
+    # Choose runner based on host
+    runner: SSHRunner | LocalRunner
+    if host == "localhost":
+        runner = LocalRunner()
+    else:
+        runner = SSHRunner(user=user, host=host)
+
+    try:
+        client = TigerFlowClient(
+            runner=runner,
+            home_dir=home_dir,
+            python_path=python_path,
+        )
+        await client.upgrade(
+            tigerflow_spec=tigerflow_spec,
+            tigerflow_ml_spec=tigerflow_ml_spec,
+        )
+    except TigerFlowError as e:
+        raise InternalServerException(detail=e.user_message())
+
+    return {"status": "ok", "message": f"TigerFlow upgraded on {host}."}
+
+
 # --- Cluster Status ---
 @dataclass
 class GpuAvailabilityResponse:
@@ -2613,7 +3041,7 @@ if os.getenv("PYTEST_CURRENT_TEST"):
 db_config = SQLAlchemyAsyncConfig(
     connection_string=f"sqlite+aiosqlite:///{blackfish_config.HOME_DIR}/app.sqlite",
     metadata=UUIDAuditBase.metadata,
-    create_all=True,
+    create_all=False,
     engine_config=EngineConfig(**engine_config_params),
     alembic_config=AlembicAsyncConfig(
         version_table_name="ddl_version",
@@ -2815,6 +3243,8 @@ app = Litestar(
         delete_service,
         prune_services,
         proxy_service,
+        list_tasks,
+        get_task,
         run_job,
         fetch_jobs,
         get_job,
@@ -2831,6 +3261,11 @@ app = Litestar(
         list_download_tasks,
         read_profiles,
         read_profile,
+        create_profile,
+        update_profile,
+        delete_profile,
+        repair_profile,
+        upgrade_profile,
         get_cluster_status,
         get_profile_resources,
         assets_server,

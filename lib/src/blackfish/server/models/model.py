@@ -20,6 +20,7 @@ PIPELINE_IMAGES = {
     # computer vision
     "image-classification": "image-classification",
     "object-detection": "object-detection",
+    "zero-shot-object-detection": "zero-shot-object-detection",
     "video-classification": "video-classification",
     # multimodel
     "image-text-to-text": "image-text-to-text",

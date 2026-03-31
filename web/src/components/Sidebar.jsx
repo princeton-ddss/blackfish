@@ -1,3 +1,4 @@
+import { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
     ChatBubbleLeftRightIcon,
@@ -10,10 +11,11 @@ import {
     Square3Stack3DIcon,
 } from "@heroicons/react/24/outline";
 import { assetPath } from "@/config";
+import { ProfileContext } from "@/components/ProfileSelect";
 
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
-    { name: "Jobs", href: "/jobs", icon: Square3Stack3DIcon },
+    { name: "Jobs", href: "/jobs", icon: Square3Stack3DIcon, slurmOnly: true },
     { name: "Models", href: "/models", icon: CubeIcon },
     { name: "Files", href: "/file-manager", icon: FolderIcon },
 ];
@@ -31,8 +33,11 @@ function classNames(...classes) {
 function Sidebar() {
     const location = useLocation();
     const pathname = location.pathname;
+    const { profile } = useContext(ProfileContext);
+    const isSlurm = profile?.schema === "slurm";
 
     const isCurrent = (href) => pathname === href || pathname.startsWith(href + "/");
+    const isDisabled = (item) => item.slurmOnly && !isSlurm;
 
     return (
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-blue-500 pl-6 pr-4 pt-4">
@@ -53,26 +58,39 @@ function Sidebar() {
                         <ul role="list" className="-mx-2 space-y-1">
                             {navigation.map((item) => (
                                 <li key={item.name}>
-                                    <Link
-                                        to={item.href}
-                                        className={classNames(
-                                            isCurrent(item.href)
-                                                ? "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium"
-                                                : "text-gray-700 dark:text-gray-200 font-normal hover:text-gray-400 dark:hover:text-white",
-                                            "group flex gap-x-3 rounded-md p-2 text-sm"
-                                        )}
-                                    >
-                                        <item.icon
-                                            aria-hidden="true"
+                                    {isDisabled(item) ? (
+                                        <span
+                                            className="group flex gap-x-3 rounded-md p-2 text-sm text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                                            title="Requires Slurm profile"
+                                        >
+                                            <item.icon
+                                                aria-hidden="true"
+                                                className="h-6 w-6 shrink-0 text-gray-400 dark:text-gray-500"
+                                            />
+                                            {item.name}
+                                        </span>
+                                    ) : (
+                                        <Link
+                                            to={item.href}
                                             className={classNames(
                                                 isCurrent(item.href)
-                                                    ? "text-gray-900 dark:text-white"
-                                                    : "text-gray-700 group-hover:text-gray-400 dark:text-gray-200 dark:group-hover:text-white",
-                                                "h-6 w-6 shrink-0"
+                                                    ? "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium"
+                                                    : "text-gray-700 dark:text-gray-200 font-normal hover:text-gray-400 dark:hover:text-white",
+                                                "group flex gap-x-3 rounded-md p-2 text-sm"
                                             )}
-                                        />
-                                        {item.name}
-                                    </Link>
+                                        >
+                                            <item.icon
+                                                aria-hidden="true"
+                                                className={classNames(
+                                                    isCurrent(item.href)
+                                                        ? "text-gray-900 dark:text-white"
+                                                        : "text-gray-700 group-hover:text-gray-400 dark:text-gray-200 dark:group-hover:text-white",
+                                                    "h-6 w-6 shrink-0"
+                                                )}
+                                            />
+                                            {item.name}
+                                        </Link>
+                                    )}
                                 </li>
                             ))}
                         </ul>

@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Field,
   Label,
@@ -6,7 +6,6 @@ import {
   ListboxButton,
   ListboxOptions,
   ListboxOption,
-  Transition
 } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import PropTypes from "prop-types";
@@ -60,11 +59,9 @@ function RevisionSelect({ models, repoId, setModel, disabled }) {
   return (
     <Field disabled={disabled}>
       <Listbox value={selected} onChange={handleRevisionChange}>
-        {({ open }) => (
-          <>
-            <Label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-              Revision
-            </Label>
+        <Label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+          Revision
+        </Label>
             <div className="relative mt-2">
               <ListboxButton
                 className={classNames(
@@ -88,14 +85,10 @@ function RevisionSelect({ models, repoId, setModel, disabled }) {
                 }
               </ListboxButton>
 
-              <Transition
-                show={open}
-                as={Fragment}
-                leave="transition ease-in duration-100"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <ListboxOptions key={selected.revision} className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none sm:text-sm">
+                <ListboxOptions
+                  key={selected.revision}
+                  anchor="bottom start"
+                  className="z-50 mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none sm:text-sm">
                   {revisions.map((model) => (
                     <ListboxOption
                       key={model.revision}
@@ -135,10 +128,7 @@ function RevisionSelect({ models, repoId, setModel, disabled }) {
                     </ListboxOption>
                   ))}
                 </ListboxOptions>
-              </Transition>
             </div>
-          </>
-        )}
       </Listbox>
     </Field>
   );

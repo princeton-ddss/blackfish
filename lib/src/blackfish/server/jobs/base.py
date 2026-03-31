@@ -7,14 +7,17 @@ from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from blackfish.server.jobs.tasks import build_pipeline_config
+from blackfish.server.jobs.tasks import (
+    build_pipeline_config,
+    get_default_input_ext,
+    get_default_output_ext,
+)
 from blackfish.server.logger import logger
 from blackfish.server.models.profile import SlurmProfile, deserialize_profile
 from blackfish.server.jobs.client import (
     LocalRunner,
     SSHRunner,
     TigerFlowClient,
-    TigerFlowError,
 )
 
 if TYPE_CHECKING:
@@ -26,6 +29,7 @@ if TYPE_CHECKING:
 class BatchJobStatus(StrEnum):
     RUNNING = auto()
     STOPPED = auto()
+    BROKEN = auto()  # Metadata missing - unable to determine job state
 
 
 def format_status(status: BatchJobStatus | None) -> str:
@@ -57,7 +61,9 @@ def create_tigerflow_client_for_profile(
         raise FileNotFoundError(f"Profile '{profile_name}' not found")
 
     if isinstance(profile, SlurmProfile):
-        runner: SSHRunner | LocalRunner = SSHRunner(user=profile.user, host=profile.host)
+        runner: SSHRunner | LocalRunner = SSHRunner(
+            user=profile.user, host=profile.host
+        )
         python_path = profile.python_path
     else:
         runner = LocalRunner()
@@ -131,6 +137,7 @@ class BatchJob(UUIDAuditBase):
     output_dir: Mapped[str]  # Output directory on cluster
     input_ext: Mapped[Optional[str]]  # Input file extension (e.g., ".wav")
     output_ext: Mapped[Optional[str]]  # Output file extension (e.g., ".json")
+    cache_dir: Mapped[Optional[str]]  # Model cache directory on cluster
 
     # Configuration (stored as JSON)
     params: Mapped[Optional[dict[str, Any]]] = mapped_column(
@@ -139,6 +146,7 @@ class BatchJob(UUIDAuditBase):
     resources: Mapped[Optional[dict[str, Any]]] = mapped_column(
         JSON, nullable=True, default=None
     )
+    max_workers: Mapped[int] = mapped_column(default=1)
 
     # Profile info (denormalized for convenience)
     profile: Mapped[str]
@@ -186,20 +194,27 @@ class BatchJob(UUIDAuditBase):
         # Verify required features are available
         await client.check_capabilities()
 
-        # Build params - model/revision merged with user params
+        # Build params - model/revision/cache merged with user params
         params: dict[str, Any] = {"model": self.repo_id}
         if self.revision:
             params["revision"] = self.revision
+        if self.cache_dir:
+            params["cache_dir"] = self.cache_dir
         if self.params:
             params.update(self.params)
 
         # Build pipeline config
+        input_ext = self.input_ext or get_default_input_ext(self.task)
+        output_ext = self.output_ext or get_default_output_ext(self.task)
         config = build_pipeline_config(
             task=self.task,
-            input_ext=self.input_ext,
-            output_ext=self.output_ext,
+            input_ext=input_ext,
+            venv_path=client.venv_path,
             params=params,
             resources=self.resources,
+            max_workers=self.max_workers,
+            cache_dir=self.cache_dir,
+            output_ext=output_ext,
         )
 
         # Start TigerFlow job
@@ -230,7 +245,7 @@ class BatchJob(UUIDAuditBase):
 
         await client.stop(self.output_dir)
 
-    async def update(self, client: TigerFlowClient) -> BatchJobStatus | None:
+    async def update(self, client: TigerFlowClient) -> BatchJobStatus:
         """Update job status from TigerFlow.
 
         Polls TigerFlow for current status and updates job fields.
@@ -240,7 +255,10 @@ class BatchJob(UUIDAuditBase):
             client: TigerFlowClient for remote operations
 
         Returns:
-            Current batch job status, or None if update failed
+            Current batch job status
+
+        Raises:
+            TigerFlowError: If status check fails
         """
         logger.debug(
             f"Checking status of batch job {self.id}. "
@@ -261,5 +279,10 @@ class BatchJob(UUIDAuditBase):
         else:
             self.status = BatchJobStatus.STOPPED
 
-        return self.status
+        logger.debug(
+            f"Status check complete for job {self.id}: "
+            f"status={format_status(self.status)}, "
+            f"staged={self.staged}, finished={self.finished}, errored={self.errored}"
+        )
 
+        return self.status

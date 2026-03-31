@@ -15,7 +15,7 @@ function ImageAttachmentList({ images, onRemove, onImageError, onImageLoad }) {
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto pt-3 pb-2 px-3">
+    <div className="flex gap-2 overflow-x-auto pt-3 pb-2 pr-3">
       {images.map((image, index) => (
         <ImageAttachment
           key={`${image.source}-${image.source === "browser" ? image.file.name : image.path}-${index}`}
@@ -39,7 +39,7 @@ ImageAttachmentList.propTypes = {
       profile: PropTypes.object,
     })
   ).isRequired,
-  onRemove: PropTypes.func.isRequired,
+  onRemove: PropTypes.func,
   onImageError: PropTypes.func,
   onImageLoad: PropTypes.func,
 };

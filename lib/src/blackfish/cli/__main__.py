@@ -4,7 +4,6 @@ import rich_click as click
 from rich_click import Context
 import requests
 import os
-import sys
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 from typing import Optional, cast
@@ -12,6 +11,12 @@ from dataclasses import asdict
 
 from blackfish.cli.services.text_generation import run_text_generation
 from blackfish.cli.services.speech_recognition import run_speech_recognition
+from blackfish.cli.batch import (
+    list_batch_jobs,
+    stop_batch_job,
+    remove_batch_job,
+    run_batch_job,
+)
 
 from blackfish.cli.profile import (
     create_profile,
@@ -19,6 +24,8 @@ from blackfish.cli.profile import (
     list_profiles,
     update_profile,
     delete_profile,
+    upgrade_tigerflow,
+    repair_profile,
 )
 from blackfish.server.config import config
 from blackfish.server.logger import logger
@@ -156,6 +163,8 @@ profile.add_command(show_profile, "show")
 profile.add_command(create_profile, "add")
 profile.add_command(delete_profile, "rm")
 profile.add_command(update_profile, "update")
+profile.add_command(upgrade_tigerflow, "upgrade")
+profile.add_command(repair_profile, "repair")
 
 
 @main.command()
@@ -215,6 +224,72 @@ def start(reload: bool) -> None:  # pragma: no cover
             logger.info("Database is already up-to-date. Skipping.")
         else:
             logger.error(f"Failed to upgrade database: {e}")
+
+    # Check TigerFlow versions on Slurm profiles
+    import asyncio
+    import configparser
+    from blackfish.server.jobs.client import (
+        TigerFlowClient,
+        TigerFlowError,
+        SSHRunner,
+        LocalRunner,
+        MIN_TIGERFLOW_VERSION,
+    )
+
+    async def check_tigerflow_versions() -> None:
+        profiles = configparser.ConfigParser()
+        profiles.read(os.path.join(config.HOME_DIR, "profiles.cfg"))
+
+        for name in profiles.sections():
+            profile = profiles[name]
+            schema = profile.get("schema") or profile.get("type")
+            if schema != "slurm":
+                continue
+
+            host = profile.get("host")
+            user = profile.get("user")
+            home_dir = profile.get("home_dir")
+            python_path = profile.get("python_path", "python3")
+
+            if not host or not user or not home_dir:
+                continue
+
+            try:
+                logger.info(f"Checking TigerFlow on profile '{name}' ({host})...")
+
+                runner: SSHRunner | LocalRunner
+                if host == "localhost":
+                    runner = LocalRunner()
+                else:
+                    runner = SSHRunner(user=user, host=host)
+
+                client = TigerFlowClient(
+                    runner=runner,
+                    home_dir=home_dir,
+                    python_path=python_path,
+                )
+                version_ok, current_version = await client.check_version()
+
+                if current_version is None:
+                    logger.warning(
+                        f"TigerFlow not installed on profile '{name}'. "
+                        f"Run: blackfish profile upgrade --name {name}"
+                    )
+                elif not version_ok:
+                    logger.warning(
+                        f"TigerFlow {current_version} on profile '{name}' is below "
+                        f"minimum {MIN_TIGERFLOW_VERSION}. "
+                        f"Run: blackfish profile upgrade --name {name}"
+                    )
+                else:
+                    logger.info(f"TigerFlow {current_version} on profile '{name}' is up to date.")
+            except TigerFlowError as e:
+                logger.warning(f"Could not check TigerFlow on profile '{name}': {e}")
+
+    try:
+        asyncio.run(check_tigerflow_versions())
+    except Exception as e:
+        logger.warning(f"TigerFlow version check failed: {e}")
 
     reload = True if config.DEBUG else reload
 
@@ -648,175 +723,10 @@ def batch() -> None:  # pragma: no cover
     pass
 
 
-# blackfish batch ls [OPTIONS]
-@batch.command(name="ls")
-@click.option(
-    "--filters",
-    type=str,
-    help=(
-        "A list of comma-separated filtering criteria, e.g.,"
-        " task=transcribe,status=RUNNING"
-    ),
-)
-@click.option(
-    "--all",
-    "-a",
-    is_flag=True,
-    default=False,
-    help="Include all jobs, including completed ones.",
-)
-def list_batch_jobs(
-    filters: Optional[str], all: bool = False
-) -> None:  # pragma: no cover
-    """List batch jobs"""
-
-    from typing import Any
-    from prettytable import PrettyTable, TableStyle
-    from datetime import datetime
-    from blackfish.server.utils import format_datetime
-    from blackfish.server.jobs.base import BatchJobStatus
-
-    tab = PrettyTable(
-        field_names=[
-            "JOB ID",
-            "TASK",
-            "MODEL",
-            "CREATED",
-            "UPDATED",
-            "STATUS",
-            "PROGRESS",
-            "NAME",
-            "PROFILE",
-        ]
-    )
-    tab.set_style(TableStyle.PLAIN_COLUMNS)
-    for field in tab.field_names:
-        tab.align[field] = "l"
-    tab.right_padding_width = 3
-
-    if filters is not None:
-        try:
-            params = {k: v for k, v in map(lambda x: x.split("="), filters.split(","))}
-        except Exception as e:
-            click.echo(f"Unable to parse filter: {e}")
-            return
-    else:
-        params = None
-
-    with yaspin(text="Fetching batch jobs...") as spinner:
-        res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/api/jobs", params=params
-        )
-        if not res.ok:
-            spinner.text = f"Failed to fetch jobs. Status code: {res.status_code}."
-            spinner.fail(f"{LogSymbols.ERROR.value}")
-            return
-
-    def is_active(job: Any) -> bool:
-        return job["status"] in [
-            BatchJobStatus.SUBMITTED,
-            BatchJobStatus.PENDING,
-            BatchJobStatus.RUNNING,
-        ]
-
-    jobs = res.json()
-    for job in jobs:
-        if is_active(job) or all:
-            if job["staged"] is None:
-                progress = "N/A"
-            else:
-                progress = (
-                    f"{job['finished']}/{job['staged']}" if job["staged"] else "0/0"
-                )
-            tab.add_row(
-                [
-                    job["id"][:DISPLAY_ID_LENGTH],
-                    job["task"],
-                    job["repo_id"],
-                    format_datetime(datetime.fromisoformat(job["created_at"])),
-                    format_datetime(datetime.fromisoformat(job["updated_at"])),
-                    (job["status"].upper() if job["status"] is not None else None),
-                    progress,
-                    job["name"],
-                    job["profile"],
-                ]
-            )
-    click.echo(tab)
-
-
-# blackfish stop [OPTIONS] SERVICE [SERVICE...]
-@batch.command(name="stop")
-@click.argument(
-    "job-id",
-    type=str,
-    required=True,
-)
-def stop_batch_job(job_id: str) -> None:  # pragma: no cover
-    """Stop one or more jobs"""
-
-    with yaspin(text="Stopping batch job...") as spinner:
-        res = requests.put(
-            f"http://{config.HOST}:{config.PORT}/api/jobs/{job_id}/stop",
-            json={},
-        )
-        if not res.ok:
-            spinner.text = (
-                f"Failed to stop batch job {job_id} (status={res.status_code})."
-            )
-            spinner.fail(f"{LogSymbols.ERROR.value}")
-        else:
-            spinner.text = f"Stopped batch job {job_id}."
-            spinner.ok(f"{LogSymbols.SUCCESS.value}")
-
-
-@batch.command(name="rm")
-@click.option(
-    "--filters",
-    type=str,
-    help=(
-        "A list of comma-separated filtering criteria, e.g.,"
-        " task=transcribe,status=STOPPED"
-    ),
-)
-def remove_batch_job(filters: Optional[str]) -> None:
-    """Remove one or more batch jobs"""
-
-    params: dict[str, str] | None
-    if filters is not None:
-        try:
-            params = {k: v for k, v in map(lambda x: x.split("="), filters.split(","))}
-        except Exception as e:
-            click.echo(f"Unable to parse filter: {e}")
-            sys.exit(1)
-    else:
-        params = None
-
-    with yaspin(text="Deleting batch jobs...") as spinner:
-        res = requests.delete(
-            f"http://{config.HOST}:{config.PORT}/api/jobs",
-            params=params,
-        )
-        if not res.ok:
-            spinner.text = f"An error occurred while attempting to remove batch jobs (status={res.status_code})."
-            spinner.fail(f"{LogSymbols.ERROR.value}")
-        else:
-            data = res.json()
-            if len(data) == 0:
-                spinner.text = "Query did not match any batch jobs."
-                spinner.ok(f"{LogSymbols.ERROR.value}")
-                return
-            oks = [x for x in data if x["status"] == "ok"]
-            errors = [x for x in data if x["status"] == "error"]
-            spinner.text = (
-                f"Removed {len(oks)} {'batch job' if len(oks) == 1 else 'batch jobs'}."
-            )
-            spinner.ok(f"{LogSymbols.SUCCESS.value}")
-            if len(errors) > 0:
-                click.echo(
-                    f"{LogSymbols.ERROR.value} Failed to delete {len(errors)} {'batch job' if len(errors) == 1 else 'batch jobs'}."
-                )
-                for error in errors:
-                    click.echo(f"- {error['id']} - {error['message']}")
+batch.add_command(list_batch_jobs, "ls")
+batch.add_command(stop_batch_job, "stop")
+batch.add_command(remove_batch_job, "rm")
+batch.add_command(run_batch_job, "run")
 
 
 @main.group()
@@ -965,17 +875,13 @@ def models_add(
             return
 
     try:
-        model_data = add_model(
+        model, path = add_model(
             repo_id, profile=matched, revision=revision, use_cache=use_cache
         )
-        if model_data is not None:
-            model, path = model_data
-            print(
-                f"{LogSymbols.SUCCESS.value} Successfully downloaded model {repo_id} to"
-                f" {path}."
-            )
-        else:
-            return None
+        print(
+            f"{LogSymbols.SUCCESS.value} Successfully downloaded model {repo_id} to"
+            f" {path}."
+        )
     except Exception as e:
         print(f"{LogSymbols.ERROR.value} Failed to download model {repo_id}: {e}.")
         return
@@ -990,6 +896,7 @@ def models_add(
                     "revision": model.revision,
                     "image": model.image,
                     "model_dir": path,
+                    "metadata_": model.metadata_,
                 },
             )
             if not res.ok:

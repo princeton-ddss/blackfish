@@ -32,6 +32,9 @@ vi.mock("@heroicons/react/24/outline", () => ({
   ClipboardDocumentIcon: ({ className, ...props }) => {
     return <div data-testid="clipboard-icon" className={className} {...props} />;
   },
+  DocumentTextIcon: ({ className, ...props }) => {
+    return <div data-testid="document-text-icon" className={className} {...props} />;
+  },
   PaperAirplaneIcon: ({ className, ...props }) => {
     return <div data-testid="paper-airplane-icon" className={className} {...props} />;
   },
@@ -72,8 +75,16 @@ vi.mock("./ImageAttachmentList", () => ({
   default: () => <div data-testid="image-attachment-list" />,
 }));
 
+vi.mock("./FileAttachmentList", () => ({
+  default: () => <div data-testid="file-attachment-list" />,
+}));
+
 vi.mock("@/components/FileSelectModal", () => ({
   default: () => <div data-testid="file-select-modal" />,
+}));
+
+vi.mock("@/components/Notification", () => ({
+  default: () => <div data-testid="notification" />,
 }));
 
 const mockClipboard = {

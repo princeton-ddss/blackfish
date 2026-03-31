@@ -5,9 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from collections.abc import Callable
 from typing import Any, Optional, Protocol
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 from packaging.version import Version
 from pydantic import BaseModel, ValidationError
 
@@ -16,19 +17,10 @@ from blackfish.server.logger import logger
 
 # Minimum required package versions (alpha versions accepted during development)
 MIN_TIGERFLOW_VERSION = "0.1.0a1"
-MIN_TIGERFLOW_ML_VERSION = "0.1.0a1"
+MIN_TIGERFLOW_ML_VERSION = "0.1.0a0"
 
 # Venv location on remote cluster (relative to home_dir)
-VENV_PATH = ".blackfish/.venv"
-
-
-class TigerFlowTaskStatus(BaseModel):
-    """Status of an individual task within a TigerFlow job."""
-
-    name: str
-    processed: int
-    ongoing: int
-    failed: int
+VENV_PATH = ".venv"
 
 
 class TigerFlowStatus(BaseModel):
@@ -39,7 +31,6 @@ class TigerFlowStatus(BaseModel):
     staged: int
     finished: int
     failed: int
-    tasks: list[TigerFlowTaskStatus]
 
 
 class TigerFlowVersions(BaseModel):
@@ -71,7 +62,7 @@ class TigerFlowError(Exception):
             "timeout": f"SSH connection to {self.host} timed out.",
             "command": f"Command failed on {self.host}.",
             "setup": f"Failed to set up TigerFlow environment on {self.host}.",
-            "install": f"Failed to install TigerFlow on {self.host}. Check network connectivity.",
+            "install": f"Failed to install TigerFlow on {self.host}.",
             "version": f"TigerFlow version on {self.host} is too old. Run profile setup to upgrade.",
             "missing": f"TigerFlow is not installed on {self.host}. Run profile setup to install.",
             "run": f"Failed to start TigerFlow job on {self.host}.",
@@ -81,7 +72,26 @@ class TigerFlowError(Exception):
         }
         message = messages.get(self.error_type, "TigerFlow operation failed.")
         if self.details:
-            message = f"{message} ({self.details})"
+            # Clean up details: extract the most meaningful line
+            lines = [
+                line.strip()
+                for line in self.details.strip().split("\n")
+                if line.strip()
+            ]
+            # For pip errors, prefer "No matching distribution" as it's clearest
+            detail = None
+            for line in lines:
+                if "No matching distribution" in line:
+                    detail = line.replace("ERROR: ", "")
+                    break
+            # Fall back to first non-empty line
+            if detail is None and lines:
+                detail = lines[0].replace("ERROR: ", "")
+            if detail:
+                # Remove trailing period from main message, append detail
+                message = message.rstrip(".")
+                detail = detail.rstrip(".")
+                message = f"{message}: {detail}."
         return message
 
 
@@ -114,7 +124,7 @@ class SSHRunner:
 
     SSH_ERROR_EXIT_CODE = 255
 
-    def __init__(self, user: str, host: str, timeout: float = 60):
+    def __init__(self, user: str, host: str, timeout: float = 120):
         self.user = user
         self._host = host
         self.timeout = timeout
@@ -198,6 +208,7 @@ class TigerFlowClient:
         runner: CommandRunner,
         home_dir: str,
         python_path: str = "python3",
+        on_progress: Callable[[str], None] | None = None,
     ):
         """Initialize TigerFlowClient.
 
@@ -207,6 +218,9 @@ class TigerFlowClient:
             python_path: Path to Python on the cluster (e.g., "python3" or
                 "/usr/local/bin/python3.11"). May also include module load commands
                 like "module load python && python3".
+            on_progress: Optional callback for progress updates. Called with status
+                messages during setup, upgrade, and other operations. If None, uses
+                logger.info for API compatibility.
         """
         self.runner = runner
         self.home_dir = home_dir
@@ -214,10 +228,15 @@ class TigerFlowClient:
         self._venv_path = f"{home_dir}/{VENV_PATH}"
         self._tigerflow_bin = f"{self._venv_path}/bin/tigerflow"
         self._pip_bin = f"{self._venv_path}/bin/pip"
+        self._on_progress = on_progress or logger.info
 
     @property
     def host(self) -> str:
         return self.runner.host
+
+    @property
+    def venv_path(self) -> str:
+        return self._venv_path
 
     async def _run(self, command: str) -> tuple[bytes, bytes]:
         """Run a command and check for success.
@@ -243,16 +262,26 @@ class TigerFlowClient:
     # Venv Management
     # -------------------------------------------------------------------------
 
-    async def setup(self) -> None:
+    async def setup(
+        self,
+        tigerflow_spec: str = "tigerflow",
+        tigerflow_ml_spec: str = "tigerflow-ml",
+    ) -> None:
         """Create venv and install tigerflow + tigerflow-ml.
 
         Creates the virtual environment at ~/.blackfish/.venv and installs
         the required packages.
 
+        Args:
+            tigerflow_spec: Package spec for tigerflow (default: "tigerflow").
+                Can be a git URL like "git+https://github.com/org/tigerflow@branch"
+            tigerflow_ml_spec: Package spec for tigerflow-ml (default: "tigerflow-ml").
+                Can be a git URL like "git+https://github.com/org/tigerflow-ml@branch"
+
         Raises:
             TigerFlowError: If venv creation or package installation fails
         """
-        logger.info(f"Setting up TigerFlow on {self.host}")
+        self._on_progress(f"Setting up TigerFlow on {self.host}")
 
         # Create parent directory if needed
         try:
@@ -262,7 +291,7 @@ class TigerFlowClient:
 
         # Create venv
         try:
-            logger.debug(f"Creating venv at {self._venv_path}")
+            self._on_progress("Creating virtual environment...")
             await self._run(f"{self.python_path} -m venv {self._venv_path}")
         except TigerFlowError as e:
             raise TigerFlowError(
@@ -271,14 +300,16 @@ class TigerFlowClient:
 
         # Install packages
         try:
-            logger.debug("Upgrading pip")
+            self._on_progress("Upgrading pip...")
             await self._run(f"{self._pip_bin} install --upgrade pip")
-            logger.debug("Installing tigerflow and tigerflow-ml")
-            await self._run(f"{self._pip_bin} install tigerflow tigerflow-ml")
+            self._on_progress("Installing tigerflow packages...")
+            await self._run(
+                f"{self._pip_bin} install {tigerflow_spec} {tigerflow_ml_spec}"
+            )
         except TigerFlowError as e:
             raise TigerFlowError("install", self.host, e.details)
 
-        logger.info(f"TigerFlow setup complete on {self.host}")
+        self._on_progress("TigerFlow setup complete")
 
     async def check_version(self) -> tuple[bool, str | None]:
         """Check if tigerflow meets minimum version.
@@ -296,7 +327,6 @@ class TigerFlowClient:
         )
 
         if returncode != 0:
-            logger.debug("TigerFlow not installed or --version failed")
             return (False, None)
 
         # Parse version from output (e.g., "tigerflow 0.1.0" or "tigerflow 0.1.0a1")
@@ -312,36 +342,80 @@ class TigerFlowClient:
         current_version = match.group(1)
         version_ok = Version(current_version) >= Version(MIN_TIGERFLOW_VERSION)
 
-        if not version_ok:
-            logger.warning(
-                f"TigerFlow version {current_version} is below minimum {MIN_TIGERFLOW_VERSION}"
-            )
-
         return (version_ok, current_version)
 
-    async def upgrade(self) -> None:
+    async def upgrade(
+        self,
+        tigerflow_spec: str = "tigerflow",
+        tigerflow_ml_spec: str = "tigerflow-ml",
+    ) -> str:
         """Upgrade tigerflow + tigerflow-ml to latest.
+
+        Args:
+            tigerflow_spec: Package spec for tigerflow (default: "tigerflow").
+            tigerflow_ml_spec: Package spec for tigerflow-ml (default: "tigerflow-ml").
+
+        Returns:
+            Completion message describing what happened.
 
         Raises:
             TigerFlowError: If upgrade fails
         """
-        logger.info(f"Upgrading TigerFlow on {self.host}")
+        # For git URLs, always upgrade (can't check for updates)
+        if tigerflow_spec.startswith("git+") or tigerflow_ml_spec.startswith("git+"):
+            try:
+                self._on_progress("Uninstalling existing packages...")
+                await self._run(
+                    f"{self._pip_bin} uninstall -y tigerflow tigerflow-ml"
+                )
+                self._on_progress("Installing packages...")
+                await self._run(
+                    f"{self._pip_bin} install {tigerflow_spec} {tigerflow_ml_spec}"
+                )
+            except TigerFlowError as e:
+                raise TigerFlowError("install", self.host, e.details)
+            return "TigerFlow upgraded."
+
+        # For PyPI packages, check if outdated first
+        self._on_progress(f"Checking for updates on {self.host}...")
         try:
-            await self._run(f"{self._pip_bin} install --upgrade tigerflow tigerflow-ml")
+            returncode, stdout, _ = await self.runner.run(
+                f"{self._pip_bin} list --outdated --format=json"
+            )
+            if returncode == 0:
+                outdated = json.loads(stdout.decode("utf-8"))
+                outdated_names = {pkg["name"].lower() for pkg in outdated}
+                if "tigerflow" not in outdated_names and "tigerflow-ml" not in outdated_names:
+                    return "TigerFlow up-to-date."
+
+            # Upgrade needed
+            self._on_progress("Upgrading TigerFlow...")
+            await self._run(
+                f"{self._pip_bin} install --upgrade {tigerflow_spec} {tigerflow_ml_spec}"
+            )
         except TigerFlowError as e:
             raise TigerFlowError("install", self.host, e.details)
-        logger.info("TigerFlow upgrade complete")
 
-    async def cleanup(self) -> None:
+        return "TigerFlow upgraded."
+
+    async def cleanup(
+        self,
+        tigerflow_spec: str = "tigerflow",
+        tigerflow_ml_spec: str = "tigerflow-ml",
+    ) -> None:
         """Remove and recreate venv (for broken setups).
 
         Completely removes the existing venv and creates a fresh one
         with tigerflow installed.
 
+        Args:
+            tigerflow_spec: Package spec for tigerflow (default: "tigerflow").
+            tigerflow_ml_spec: Package spec for tigerflow-ml (default: "tigerflow-ml").
+
         Raises:
             TigerFlowError: If cleanup fails
         """
-        logger.info(f"Cleaning up TigerFlow venv on {self.host}")
+        self._on_progress(f"Cleaning up TigerFlow venv on {self.host}...")
         try:
             await self._run(f"rm -rf {self._venv_path}")
         except TigerFlowError as e:
@@ -350,7 +424,7 @@ class TigerFlowClient:
             )
 
         # Recreate venv
-        await self.setup()
+        await self.setup(tigerflow_spec, tigerflow_ml_spec)
 
     async def _get_package_version(self, package: str) -> str | None:
         """Get installed version of a pip package.
@@ -361,9 +435,7 @@ class TigerFlowClient:
         Returns:
             Version string if installed, None otherwise
         """
-        returncode, stdout, _ = await self.runner.run(
-            f"{self._pip_bin} show {package}"
-        )
+        returncode, stdout, _ = await self.runner.run(f"{self._pip_bin} show {package}")
         if returncode != 0:
             return None
 
@@ -495,7 +567,9 @@ class TigerFlowClient:
             write_cmd = f"cat > {config_path} << 'TIGERFLOW_CONFIG_EOF'\n{yaml_content}TIGERFLOW_CONFIG_EOF"
             await self._run(write_cmd)
         except TigerFlowError as e:
-            raise TigerFlowError("run", self.host, f"Failed to write config: {e.details}")
+            raise TigerFlowError(
+                "run", self.host, f"Failed to write config: {e.details}"
+            )
 
         # Run tigerflow
         command = (
@@ -527,13 +601,27 @@ class TigerFlowClient:
 
         command = f"{self._tigerflow_bin} status {output_dir} --json"
 
+        # Use runner.run() directly instead of _run() because tigerflow status
+        # returns exit code 1 for stopped pipelines but still outputs valid JSON
         try:
-            stdout, _ = await self._run(command)
+            returncode, stdout, stderr = await self.runner.run(command)
             output = stdout.decode("utf-8").strip()
-            data = json.loads(output)
-            return TigerFlowStatus.model_validate(data)
-        except TigerFlowError as e:
-            raise TigerFlowError("status", self.host, e.details)
+
+            # Try to parse JSON even on non-zero exit code
+            # tigerflow returns exit code 1 for stopped pipelines with valid output
+            if output:
+                try:
+                    data = json.loads(output)
+                    return TigerFlowStatus.model_validate(data)
+                except (json.JSONDecodeError, ValidationError):
+                    pass  # Fall through to error handling
+
+            # No valid JSON output - report the error
+            if returncode != 0:
+                error_detail = stderr.decode("utf-8").strip() if stderr else f"Exit code {returncode}"
+                raise TigerFlowError("status", self.host, error_detail)
+
+            raise TigerFlowError("status", self.host, "Empty response from tigerflow status")
         except json.JSONDecodeError as e:
             raise TigerFlowError("status", self.host, f"Invalid JSON response: {e}")
         except ValidationError as e:
@@ -576,11 +664,16 @@ class TigerFlowClient:
 
         try:
             stdout, _ = await self._run(command)
-            return json.loads(stdout.decode("utf-8"))
+            result: list[dict[str, Any]] = json.loads(stdout.decode("utf-8"))
+            return result
         except TigerFlowError as e:
-            raise TigerFlowError("command", self.host, f"Failed to list tasks: {e.details}")
+            raise TigerFlowError(
+                "command", self.host, f"Failed to list tasks: {e.details}"
+            )
         except json.JSONDecodeError as e:
-            raise TigerFlowError("command", self.host, f"Invalid JSON from tasks list: {e}")
+            raise TigerFlowError(
+                "command", self.host, f"Invalid JSON from tasks list: {e}"
+            )
 
     async def get_task_info(self, task: str) -> dict[str, Any]:
         """Get details for a specific task.
@@ -598,8 +691,13 @@ class TigerFlowClient:
 
         try:
             stdout, _ = await self._run(command)
-            return json.loads(stdout.decode("utf-8"))
+            result: dict[str, Any] = json.loads(stdout.decode("utf-8"))
+            return result
         except TigerFlowError as e:
-            raise TigerFlowError("command", self.host, f"Failed to get task info: {e.details}")
+            raise TigerFlowError(
+                "command", self.host, f"Failed to get task info: {e.details}"
+            )
         except json.JSONDecodeError as e:
-            raise TigerFlowError("command", self.host, f"Invalid JSON from task info: {e}")
+            raise TigerFlowError(
+                "command", self.host, f"Invalid JSON from task info: {e}"
+            )

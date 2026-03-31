@@ -77,6 +77,7 @@ function FileManagerTable({
     showPagination = true,
     selectedFilePath = null,
     compact = false,
+    directorySelectionMode = false,
 }) {
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -249,27 +250,33 @@ function FileManagerTable({
                                             >
                                                 {compact ? (
                                                     <>
-                                                        <td className="relative whitespace-nowrap w-8 py-2 pl-3 pr-1 text-gray-700 dark:text-gray-300 text-left text-xs font-medium">
-                                                            <FolderIcon className="h-4 w-4 text-gray-400" />
+                                                        <td className="relative whitespace-nowrap w-8 py-2 pl-3 pr-1 text-left text-xs font-medium">
+                                                            {item.is_dir ? (
+                                                                <FolderIcon className="h-4 w-4 text-gray-400" />
+                                                            ) : (
+                                                                <DocumentIcon className={`h-4 w-4 ${directorySelectionMode ? "text-gray-300 dark:text-gray-600" : "text-gray-400"}`} />
+                                                            )}
                                                         </td>
-                                                        <td className="whitespace-nowrap py-2 pl-1 pr-2 text-left text-xs text-gray-900 dark:text-gray-100">
+                                                        <td className={`whitespace-nowrap py-2 pl-1 pr-2 text-left text-xs ${item.is_dir || !directorySelectionMode ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"}`}>
                                                             <div className="overflow-x-scroll">{item.name}</div>
                                                         </td>
                                                         <td className="whitespace-nowrap w-28 py-2 px-2 text-left text-xs text-gray-500 dark:text-gray-400">
                                                             {lastModified(item.modified_at)}
                                                         </td>
                                                         <td className="whitespace-nowrap w-8 py-2 px-2 text-right">
-                                                            <button
-                                                                onClick={() => {
-                                                                    if (!isDisabled) {
-                                                                        setPath(item.path);
-                                                                    }
-                                                                }}
-                                                                disabled={isDisabled}
-                                                                className={`${isDisabled ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100"}`}
-                                                            >
-                                                                <ChevronRightIcon className="h-3 w-3 hover:text-gray-400" />
-                                                            </button>
+                                                            {item.is_dir ? (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (!isDisabled) {
+                                                                            setPath(item.path);
+                                                                        }
+                                                                    }}
+                                                                    disabled={isDisabled}
+                                                                    className={`${isDisabled ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100"}`}
+                                                                >
+                                                                    <ChevronRightIcon className="h-3 w-3 hover:text-gray-400" />
+                                                                </button>
+                                                            ) : null}
                                                         </td>
                                                     </>
                                                 ) : (
@@ -380,6 +387,7 @@ FileManagerTable.propTypes = {
     showPagination: PropTypes.bool,
     selectedFilePath: PropTypes.string,
     compact: PropTypes.bool,
+    directorySelectionMode: PropTypes.bool,
 };
 
 export default FileManagerTable;

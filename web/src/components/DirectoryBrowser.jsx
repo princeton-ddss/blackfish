@@ -40,8 +40,8 @@ function DirectoryBrowser({
     onChange(newPath);
   };
 
-  // Filter to show only directories in the file list
-  const directoriesOnly = files?.filter(file => file.is_dir) || null;
+  // Pass all files - FileManagerTable will handle graying out non-directories
+  const allFiles = files || null;
 
   // Status object required by FileManagerTable
   // Show disabled state with message when remote but not connected
@@ -82,7 +82,7 @@ function DirectoryBrowser({
       {/* Directory listing */}
       <div className="mt-2 flex-1 min-h-0">
         <FileManagerTable
-          content={directoriesOnly}
+          content={allFiles}
           path={value}
           root={null}
           filesPerPage={8}
@@ -99,6 +99,7 @@ function DirectoryBrowser({
           showBottomSpacer={false}
           showPagination={false}
           compact
+          directorySelectionMode
         />
       </div>
 

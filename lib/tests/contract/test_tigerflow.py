@@ -22,7 +22,6 @@ from packaging.version import Version
 
 from blackfish.server.jobs.client import (
     MIN_TIGERFLOW_VERSION,
-    MIN_TIGERFLOW_ML_VERSION,
 )
 
 # Skip all tests in this module unless explicitly enabled
@@ -33,6 +32,8 @@ pytestmark = pytest.mark.skipif(
 
 # Tasks we expect to be available in tigerflow-ml
 EXPECTED_TASKS = [
+    "detect",
+    "ocr",
     "transcribe",
     "translate",
 ]
@@ -138,9 +139,7 @@ class TestTigerflowTasksInfo:
 
     def test_returns_valid_json(self, task_name: str) -> None:
         """tigerflow tasks info <task> --json should return valid JSON object."""
-        returncode, stdout, stderr = run_tigerflow(
-            "tasks", "info", task_name, "--json"
-        )
+        returncode, stdout, stderr = run_tigerflow("tasks", "info", task_name, "--json")
 
         assert returncode == 0, f"Command failed: {stderr}"
 

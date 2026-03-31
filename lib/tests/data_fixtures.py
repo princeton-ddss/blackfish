@@ -158,4 +158,12 @@ def models_fixture() -> list[Model | dict[str, Any]]:
             "image": "text_generation",
             "model_dir": "/home/test/.blackfish/models/models--meta-llama/Llama-3.1-70B",
         },
+        {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "repo": "llava-hf/llava-1.5-7b-hf",
+            "profile": "default",
+            "revision": "main",
+            "image": "image-text-to-text",
+            "model_dir": "/home/test/.blackfish/models/models--llava-hf/llava-1.5-7b-hf",
+        },
     ]

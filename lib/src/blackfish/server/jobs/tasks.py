@@ -3,10 +3,35 @@
 from typing import Any
 
 
-# Maps task name to tigerflow-ml library module
+# Maps task name to tigerflow-ml module (as used with python -m)
 SUPPORTED_TASKS: dict[str, str] = {
-    "transcribe": "tigerflow_ml.transcribe",
-    "translate": "tigerflow_ml.translate",
+    "detect": "tigerflow_ml.image.detect.slurm",
+    "ocr": "tigerflow_ml.text.ocr.slurm",
+    "transcribe": "tigerflow_ml.audio.transcribe.slurm",
+    "translate": "tigerflow_ml.text.translate.slurm",
+}
+
+# Default input file extensions for each task
+DEFAULT_INPUT_EXT: dict[str, str] = {
+    "detect": ".jpg",
+    "ocr": ".jpg",
+    "transcribe": ".wav",
+    "translate": ".txt",
+}
+
+# Default output file extensions for each task
+# Tasks not listed here have user-configurable output formats
+DEFAULT_OUTPUT_EXT: dict[str, str] = {
+    "detect": ".json",  # Object detection always outputs JSON
+    "translate": ".txt",  # Translation outputs text files
+}
+
+# Default Slurm worker resources for batch jobs
+DEFAULT_WORKER_RESOURCES: dict[str, Any] = {
+    "cpus": 4,
+    "memory": "32GB",
+    "gpus": 1,
+    "time": "01:00:00",
 }
 
 
@@ -28,43 +53,77 @@ def get_task_library(task: str) -> str:
     return SUPPORTED_TASKS[task]
 
 
+def get_default_input_ext(task: str) -> str:
+    """Get the default input file extension for a task.
+
+    Raises:
+        ValueError: If task is not supported
+    """
+    if task not in DEFAULT_INPUT_EXT:
+        raise ValueError(
+            f"Unsupported task: {task}. Supported tasks: {list(SUPPORTED_TASKS.keys())}"
+        )
+    return DEFAULT_INPUT_EXT[task]
+
+
+def get_default_output_ext(task: str) -> str | None:
+    """Get the default output file extension for a task.
+
+    Returns None if the task doesn't have a fixed output format.
+    """
+    return DEFAULT_OUTPUT_EXT.get(task)
+
+
 def build_pipeline_config(
     task: str,
-    input_ext: str | None = None,
-    output_ext: str | None = None,
+    input_ext: str,
+    venv_path: str,
     params: dict[str, Any] | None = None,
     resources: dict[str, Any] | None = None,
+    max_workers: int = 1,
+    cache_dir: str | None = None,
+    output_ext: str | None = None,
 ) -> dict[str, Any]:
     """Build a TigerFlow pipeline configuration.
 
     Args:
         task: Task name (e.g., "transcribe")
-        input_ext: Input file extension (e.g., ".wav"), optional
-        output_ext: Output file extension (e.g., ".json"), optional
+        input_ext: Input file extension (e.g., ".wav")
+        venv_path: Path to venv on cluster (for setup_commands)
         params: Task-specific parameters (e.g., model, language)
-        resources: Slurm resources (e.g., cpus, memory, gpus)
+        resources: Slurm worker resources (e.g., cpus, memory, gpus)
+        max_workers: Maximum number of concurrent Slurm workers
+        cache_dir: Model cache directory for HF_HOME
+        output_ext: Output file extension (e.g., ".json")
 
     Returns:
         Pipeline configuration dict ready to be written as YAML
     """
-    library = get_task_library(task)
+    module = get_task_library(task)
+
+    # Merge user resources with defaults
+    worker_resources = {**DEFAULT_WORKER_RESOURCES, **(resources or {})}
+
+    # Build setup commands
+    setup_commands = [f"source {venv_path}/bin/activate"]
+    if cache_dir:
+        setup_commands.append(f"export HF_HOME={cache_dir}")
+        setup_commands.append("export HF_HUB_OFFLINE=1")
 
     task_config: dict[str, Any] = {
         "name": task,
         "kind": "slurm",
-        "library": library,
+        "module": module,
+        "input_ext": input_ext,
+        "max_workers": max_workers,
+        "worker_resources": worker_resources,
+        "setup_commands": setup_commands,
     }
-
-    if input_ext:
-        task_config["input_ext"] = input_ext
 
     if output_ext:
         task_config["output_ext"] = output_ext
 
     if params:
         task_config["params"] = params
-
-    if resources:
-        task_config["resources"] = resources
 
     return {"tasks": [task_config]}

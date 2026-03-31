@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Transition } from "@headlessui/react";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { XMarkIcon } from "@heroicons/react/20/solid";
@@ -12,8 +13,18 @@ import PropTypes from "prop-types";
  * @param {string} props.message - Main message text
  * @param {string} props.detail - Optional detail text
  * @param {function} props.onDismiss - Callback when dismissed
+ * @param {number} props.autoClose - Auto-close after ms (default: 5000 for success, null for error)
  */
-function Notification({ show, variant = "success", message, detail, onDismiss }) {
+function Notification({ show, variant = "success", message, detail, onDismiss, autoClose }) {
+  // Auto-close success notifications by default
+  const timeout = autoClose ?? (variant === "success" ? 5000 : null);
+
+  useEffect(() => {
+    if (show && timeout && onDismiss) {
+      const timer = setTimeout(onDismiss, timeout);
+      return () => clearTimeout(timer);
+    }
+  }, [show, timeout, onDismiss]);
   const config = {
     success: {
       Icon: CheckCircleIcon,
@@ -73,6 +84,7 @@ Notification.propTypes = {
   message: PropTypes.string.isRequired,
   detail: PropTypes.string,
   onDismiss: PropTypes.func,
+  autoClose: PropTypes.number,
 };
 
 export default Notification;

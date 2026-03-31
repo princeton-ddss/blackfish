@@ -5,11 +5,33 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import TextGenerationCompletionContainer from "./TextGenerationCompletionContainer";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
 import { ServiceStatus } from "@/lib/util";
 
 vi.mock("../lib/requests", () => ({
   streamCompletionInference: vi.fn(),
+}));
+
+vi.mock("./AttachmentMenu", () => ({
+  default: ({ onBrowserUpload, onRemoteSelect }) => (
+    <div data-testid="attachment-menu">
+      <button data-testid="upload-button" onClick={() => onBrowserUpload([])}>Upload</button>
+      <button data-testid="remote-button" onClick={onRemoteSelect}>Remote</button>
+    </div>
+  ),
+}));
+
+vi.mock("./FileAttachmentList", () => ({
+  default: () => <div data-testid="file-attachment-list" />,
+}));
+
+vi.mock("@/components/FileSelectModal", () => ({
+  default: () => <div data-testid="file-select-modal" />,
+}));
+
+vi.mock("@/components/Notification", () => ({
+  default: () => <div data-testid="notification" />,
 }));
 
 vi.mock("@heroicons/react/24/outline", () => ({
@@ -19,8 +41,14 @@ vi.mock("@heroicons/react/24/outline", () => ({
   ClipboardDocumentIcon: ({ className, ...props }) => {
     return <div data-testid="clipboard-icon" className={className} {...props} />;
   },
+  DocumentTextIcon: ({ className, ...props }) => {
+    return <div data-testid="document-text-icon" className={className} {...props} />;
+  },
   PaperAirplaneIcon: ({ className, ...props }) => {
     return <div data-testid="paper-airplane-icon" className={className} {...props} />;
+  },
+  PaperClipIcon: ({ className, ...props }) => {
+    return <div data-testid="paper-clip-icon" className={className} {...props} />;
   },
 }));
 
@@ -39,10 +67,17 @@ const mockSelectedService = {
   id: "test-service-1",
 };
 
-const MockProviders = ({ children, selectedService = mockSelectedService }) => (
-  <ServiceContext.Provider value={{ selectedService }}>
-    {children}
-  </ServiceContext.Provider>
+const mockProfile = {
+  name: "test-profile",
+  schema: "local",
+};
+
+const MockProviders = ({ children, selectedService = mockSelectedService, profile = mockProfile }) => (
+  <ProfileContext.Provider value={{ profile }}>
+    <ServiceContext.Provider value={{ selectedService }}>
+      {children}
+    </ServiceContext.Provider>
+  </ProfileContext.Provider>
 );
 
 describe("TextGenerationCompletionContainer", () => {

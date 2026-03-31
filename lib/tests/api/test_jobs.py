@@ -372,9 +372,11 @@ class TestStopBatchJobAPI:
         # Set up mock TigerFlowClient
         mock_tigerflow = AsyncMock()
         mock_tigerflow.stop = AsyncMock()
-        mock_tigerflow.status = AsyncMock(return_value=TigerFlowStatus(
-            pid=None, running=False, staged=10, finished=10, failed=0, tasks=[]
-        ))
+        mock_tigerflow.status = AsyncMock(
+            return_value=TigerFlowStatus(
+                pid=None, running=False, staged=10, finished=10, failed=0, tasks=[]
+            )
+        )
         mock_create_client.return_value = mock_tigerflow
 
         # Set the job to running status so it can be stopped
@@ -413,9 +415,11 @@ class TestStopBatchJobAPI:
         # Set up mock TigerFlowClient
         mock_tigerflow = AsyncMock()
         mock_tigerflow.stop = AsyncMock()
-        mock_tigerflow.status = AsyncMock(return_value=TigerFlowStatus(
-            pid=None, running=False, staged=5, finished=5, failed=0, tasks=[]
-        ))
+        mock_tigerflow.status = AsyncMock(
+            return_value=TigerFlowStatus(
+                pid=None, running=False, staged=5, finished=5, failed=0, tasks=[]
+            )
+        )
         mock_create_client.return_value = mock_tigerflow
 
         # Set the job to stopped status
@@ -576,18 +580,20 @@ class TestTasksAPI:
         """Test listing all available tasks."""
         # Set up mock TigerFlowClient
         mock_tigerflow = AsyncMock()
-        mock_tigerflow.list_tasks = AsyncMock(return_value=[
-            {
-                "name": "transcribe",
-                "description": "Transcribe audio files",
-                "version": "0.2.0",
-            },
-            {
-                "name": "summarize",
-                "description": "Summarize text documents",
-                "version": "0.2.0",
-            },
-        ])
+        mock_tigerflow.list_tasks = AsyncMock(
+            return_value=[
+                {
+                    "name": "transcribe",
+                    "description": "Transcribe audio files",
+                    "version": "0.2.0",
+                },
+                {
+                    "name": "summarize",
+                    "description": "Summarize text documents",
+                    "version": "0.2.0",
+                },
+            ]
+        )
         mock_create_client.return_value = mock_tigerflow
 
         response = await client.get("/api/jobs/tasks", params={"profile": "test"})
@@ -635,15 +641,17 @@ class TestTasksAPI:
         """Test getting details for a specific task."""
         # Set up mock TigerFlowClient
         mock_tigerflow = AsyncMock()
-        mock_tigerflow.get_task_info = AsyncMock(return_value={
-            "name": "transcribe",
-            "description": "Transcribe audio files to text",
-            "version": "0.2.0",
-            "params": {
-                "language": {"type": "string", "default": "en"},
-                "model": {"type": "string", "required": True},
-            },
-        })
+        mock_tigerflow.get_task_info = AsyncMock(
+            return_value={
+                "name": "transcribe",
+                "description": "Transcribe audio files to text",
+                "version": "0.2.0",
+                "params": {
+                    "language": {"type": "string", "default": "en"},
+                    "model": {"type": "string", "required": True},
+                },
+            }
+        )
         mock_create_client.return_value = mock_tigerflow
 
         response = await client.get(
@@ -669,14 +677,18 @@ class TestTasksAPI:
         assert response.status_code == 400
 
     @patch("blackfish.server.asgi.create_tigerflow_client_for_profile")
-    async def test_get_task_not_found(self, mock_create_client, client: AsyncTestClient):
+    async def test_get_task_not_found(
+        self, mock_create_client, client: AsyncTestClient
+    ):
         """Test getting details for a non-existent task."""
         from blackfish.server.jobs.client import TigerFlowError
 
         # Set up mock to raise TigerFlowError for unknown task
         mock_tigerflow = AsyncMock()
         mock_tigerflow.get_task_info = AsyncMock(
-            side_effect=TigerFlowError("command", "localhost", "Unknown task: nonexistent")
+            side_effect=TigerFlowError(
+                "command", "localhost", "Unknown task: nonexistent"
+            )
         )
         mock_create_client.return_value = mock_tigerflow
 

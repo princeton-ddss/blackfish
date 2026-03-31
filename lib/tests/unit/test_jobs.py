@@ -304,9 +304,7 @@ class TestCreateTigerflowClientForProfile:
             create_tigerflow_client_for_profile("nonexistent", MockAppConfig())
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
-    def test_creates_ssh_runner_for_slurm_profile(
-        self, mock_deserialize: Mock
-    ) -> None:
+    def test_creates_ssh_runner_for_slurm_profile(self, mock_deserialize: Mock) -> None:
         """Should create SSHRunner for SlurmProfile."""
         from blackfish.server.models.profile import SlurmProfile
         from blackfish.server.jobs.client import SSHRunner
@@ -376,6 +374,8 @@ class TestTasks:
 
     def test_is_supported_task_returns_true_for_valid_task(self) -> None:
         """is_supported_task should return True for supported tasks."""
+        assert is_supported_task("detect") is True
+        assert is_supported_task("ocr") is True
         assert is_supported_task("transcribe") is True
         assert is_supported_task("translate") is True
 
@@ -385,7 +385,7 @@ class TestTasks:
 
     def test_get_task_library_returns_library_for_valid_task(self) -> None:
         """get_task_library should return the library module for a task."""
-        assert get_task_library("transcribe") == "tigerflow_ml.transcribe"
+        assert get_task_library("transcribe") == "tigerflow_ml.audio.slurm:Transcribe"
 
     def test_get_task_library_raises_for_invalid_task(self) -> None:
         """get_task_library should raise ValueError for unsupported tasks."""
@@ -398,7 +398,12 @@ class TestTasks:
 
         config = build_pipeline_config(
             task="transcribe",
+            input_ext=".wav",
+            venv_path="/home/user/.blackfish/.venv",
             resources=resources,
         )
 
-        assert config["tasks"][0]["resources"] == resources
+        assert config["tasks"][0]["worker_resources"] == resources
+        assert config["tasks"][0]["setup_commands"] == [
+            "source /home/user/.blackfish/.venv/bin/activate"
+        ]

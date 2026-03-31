@@ -1,16 +1,55 @@
 import { useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
-import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus } from "./requests";
+import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs } from "./requests";
 import { ServiceStatus } from "./util";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 
 
-export const useModels = (profile, image) => {
-  const { data, error, isLoading } = useSWR(`models?profile=${profile ? profile.name : "default"}&image=${image}`, fetchModels);
+export const useModels = (profile, image = null) => {
+  // Support single service string or array of services
+  const images = Array.isArray(image) ? image : (image ? [image] : []);
+
+  // Create stable key for SWR
+  const key = profile
+    ? `models?profile=${profile.name}${images.length > 0 ? `&images=${images.join(",")}` : ""}&refresh=true`
+    : null;
+
+  // Fetch function that handles multiple service types
+  const fetcher = async () => {
+    if (images.length === 0) {
+      return fetchModels(`models?profile=${profile.name}&refresh=true`);
+    }
+    if (images.length === 1) {
+      return fetchModels(`models?profile=${profile.name}&image=${images[0]}&refresh=true`);
+    }
+    // Fetch from multiple services and merge results
+    const results = await Promise.all(
+      images.map(img => fetchModels(`models?profile=${profile.name}&image=${img}&refresh=true`))
+    );
+    return results.flat();
+  };
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR(key, fetcher);
   return {
     models: data,
     error: error,
     isLoading: isLoading,
+    isRefreshing: isValidating,
+    mutate: mutate,
+  };
+};
+
+export const useJobs = (profile) => {
+  const key = profile ? `jobs?profile=${profile.name}` : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR(key, fetchJobs, {
+    refreshInterval: 30_000,
+  });
+  return {
+    jobs: data || [],
+    error: error,
+    isLoading: isLoading,
+    isRefreshing: isValidating,
+    mutate: mutate,
   };
 };
 

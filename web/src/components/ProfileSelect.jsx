@@ -95,37 +95,56 @@ function ProfileSelect({
           Profile is missing.
         </div>
       }
-      <MenuButton className="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-gray-700 hover:bg-gray-50 focus:outline-none dark:text-gray-300 dark:hover:text-gray-200 dark:bg-gray-900">
+      <MenuButton className="flex items-center gap-2 rounded-md bg-white pl-4 pr-3 py-2.5 text-sm font-light text-gray-700 focus:outline-none dark:text-gray-300 dark:hover:text-gray-200 dark:bg-gray-900">
         {!selectedProfile && (
           <ExclamationTriangleIcon className="h-4 w-4 text-yellow-400" aria-hidden="true" />
         )}
-        <span>Profile</span>
+        <span>{selectedProfile ? (selectedProfile.host ? `${selectedProfile.user}@${selectedProfile.host}` : "localhost") : "Profile"}</span>
         <ChevronDownIcon className="h-4 w-4 text-gray-400" aria-hidden="true" />
       </MenuButton>
 
       <MenuItems
         anchor="bottom end"
-        className="absolute right-0 z-50 mt-1 w-72 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700"
+        className="absolute right-0 z-50 mt-0.5 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700"
       >
-        <div className="py-1">
-          {profiles.map((profile) => (
-            <MenuItem key={profile.name}>
+        <div>
+          {profiles.map((profile, index) => {
+            const isFirst = index === 0;
+            const isLast = index === profiles.length - 1;
+            return (
+            <MenuItem key={profile.name} className="w-full">
               <button
                 onClick={() => setSelectedProfile(profile)}
-                className="group flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 dark:text-gray-300 data-[focus]:dark:bg-gray-800"
+                className={`group flex w-full items-center justify-between px-3 py-2 text-left transition-colors hover:!bg-blue-500 ${
+                  isFirst ? "rounded-t-md" : ""
+                } ${isLast ? "rounded-b-md" : ""} ${
+                  isSelected(profile) ? "bg-gray-50 dark:bg-gray-600" : ""
+                }`}
               >
-                <span className={isSelected(profile) ? "font-semibold" : "font-normal"}>
-                  {profile.name}
-                </span>
-                <span className="text-gray-400 font-light">
-                  @{profile.host || "localhost"}
-                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-white">
+                      {profile.name}
+                    </span>
+                    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${
+                      profile.schema === "slurm"
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                        : "bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+                    } group-hover:bg-blue-400 group-hover:text-white`}>
+                      {profile.schema}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-blue-100">
+                    {profile.host ? `${profile.user}@${profile.host}` : "localhost"}
+                  </div>
+                </div>
                 {isSelected(profile) && (
-                  <CheckIcon className="ml-auto h-4 w-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 group-hover:text-white" aria-hidden="true" />
                 )}
               </button>
             </MenuItem>
-          ))}
+          );
+          })}
         </div>
       </MenuItems>
     </Menu>

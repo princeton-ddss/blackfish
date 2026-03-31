@@ -64,6 +64,9 @@ from litestar.response import File
 from litestar.enums import RequestEncodingType
 from litestar.params import Body
 
+from huggingface_hub import login as hf_login, HfApi, model_info as hf_model_info
+from huggingface_hub.errors import GatedRepoError, HfHubHTTPError, RepositoryNotFoundError
+
 from blackfish.server.logger import logger
 from blackfish.server import services
 from blackfish.server.files import (
@@ -112,8 +115,6 @@ from blackfish.server.models.download import DownloadTask, DownloadStatus
 from blackfish.server.models.metadata import (
     fetch_model_metadata,
 )
-from huggingface_hub import model_info as hf_model_info
-from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from blackfish.server.models.tiers import (
     ResourceSpecs,
     load_resource_specs,
@@ -424,6 +425,7 @@ async def info(state: State) -> dict[str, Any]:
         "HOME_DIR": state.HOME_DIR,
         "DEBUG": state.DEBUG,
         "CONTAINER_PROVIDER": state.CONTAINER_PROVIDER,
+        "VERSION": importlib.metadata.version("blackfish-ai"),
     }
 
 
@@ -2985,6 +2987,113 @@ async def get_cluster_status(profile_name: str) -> ClusterStatusResponse:
     )
 
 
+# --- Hugging Face Token ---
+@dataclass
+class HfTokenStatusResponse:
+    configured: bool
+    username: Optional[str] = None
+    fullname: Optional[str] = None
+    email: Optional[str] = None
+    avatar_url: Optional[str] = None
+    token_name: Optional[str] = None
+    token_role: Optional[str] = None
+    token_created_at: Optional[str] = None
+
+
+@get("/api/settings/hf_token", guards=ENDPOINT_GUARDS)
+async def get_hf_token_status() -> HfTokenStatusResponse:
+    """Check if a Hugging Face token is configured.
+
+    Returns whether a token is available (via env var or cached login)
+    and the associated user/token information if authenticated.
+    """
+    try:
+        api = HfApi()
+        user_info = api.whoami()
+        if not isinstance(user_info, dict):
+            return HfTokenStatusResponse(configured=False)
+
+        # Extract token info from auth.accessToken
+        auth = user_info.get("auth", {})
+        access_token = auth.get("accessToken", {}) if isinstance(auth, dict) else {}
+
+        return HfTokenStatusResponse(
+            configured=True,
+            username=user_info.get("name"),
+            fullname=user_info.get("fullname"),
+            email=user_info.get("email"),
+            avatar_url=_hf_avatar_url(user_info.get("avatarUrl")),
+            token_name=access_token.get("displayName") if isinstance(access_token, dict) else None,
+            token_role=access_token.get("role") if isinstance(access_token, dict) else None,
+            token_created_at=access_token.get("createdAt") if isinstance(access_token, dict) else None,
+        )
+    except Exception:
+        return HfTokenStatusResponse(configured=False)
+
+
+def _hf_avatar_url(url: Optional[str]) -> Optional[str]:
+    if url and url.startswith("/"):
+        return f"https://huggingface.co{url}"
+    return url
+
+
+@dataclass
+class HfTokenRequest:
+    token: str
+
+
+@put("/api/settings/hf_token", guards=ENDPOINT_GUARDS)
+async def set_hf_token(data: HfTokenRequest) -> HfTokenStatusResponse:
+    """Set the Hugging Face token.
+
+    Stores the token using huggingface_hub's standard token storage
+    (~/.cache/huggingface/token). The token is validated before saving.
+    """
+    try:
+        # Login stores token and validates it
+        hf_login(token=data.token, add_to_git_credential=False)
+
+        # Verify it worked and return full info
+        api = HfApi()
+        user_info = api.whoami()
+        if not isinstance(user_info, dict):
+            raise ValueError("Unexpected response from HF API")
+
+        auth = user_info.get("auth", {})
+        access_token = auth.get("accessToken", {}) if isinstance(auth, dict) else {}
+
+        return HfTokenStatusResponse(
+            configured=True,
+            username=user_info.get("name"),
+            fullname=user_info.get("fullname"),
+            email=user_info.get("email"),
+            avatar_url=_hf_avatar_url(user_info.get("avatarUrl")),
+            token_name=access_token.get("displayName") if isinstance(access_token, dict) else None,
+            token_role=access_token.get("role") if isinstance(access_token, dict) else None,
+            token_created_at=access_token.get("createdAt") if isinstance(access_token, dict) else None,
+        )
+    except Exception as e:
+        logger.error(f"Failed to set HF token: {e}")
+        raise ValidationException(
+            detail="Invalid Hugging Face token. Please check the token and try again."
+        )
+
+
+@delete("/api/settings/hf_token", guards=ENDPOINT_GUARDS, status_code=200)
+async def delete_hf_token() -> dict[str, str]:
+    """Remove the stored Hugging Face token."""
+    try:
+        # huggingface_hub stores token at ~/.cache/huggingface/token
+        token_path = Path.home() / ".cache" / "huggingface" / "token"
+        if token_path.exists():
+            token_path.unlink()
+            logger.info("HF token removed successfully")
+        return {"status": "ok", "message": "Token removed"}
+    except Exception as e:
+        logger.error(f"Failed to remove HF token: {e}")
+        raise InternalServerException(detail="Failed to remove token")
+
+
 @get("/api/profiles/{name: str}/resources", guards=ENDPOINT_GUARDS)
 async def get_profile_resources(name: str) -> dict[str, Any]:
     """Get resource tiers and time constraints for a profile.
@@ -3267,6 +3376,9 @@ app = Litestar(
         repair_profile,
         upgrade_profile,
         get_cluster_status,
+        get_hf_token_status,
+        set_hf_token,
+        delete_hf_token,
         get_profile_resources,
         assets_server,
         img_server,

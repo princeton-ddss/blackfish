@@ -1,10 +1,11 @@
 import { useContext } from "react";
 import { Link } from "react-router-dom";
-import { Bars3Icon, SunIcon, MoonIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, SunIcon, MoonIcon, Cog6ToothIcon, ComputerDesktopIcon } from "@heroicons/react/24/outline";
 import { ProfileContext } from "@/components/ProfileSelect";
 import ProfileSelect from "@/components/ProfileSelect";
 import ClusterStatusDropdown from "@/components/ClusterStatusDropdown";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useSettings } from "@/providers/SettingsProvider";
 import { assetPath } from "@/config";
 import PropTypes from "prop-types";
 
@@ -17,7 +18,12 @@ import PropTypes from "prop-types";
  */
 function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
   const { profile, setProfile } = useContext(ProfileContext);
-  const { isDark, toggleTheme } = useTheme();
+  const { theme, isDark, toggleTheme } = useTheme();
+  const { openSettings } = useSettings();
+
+  // Show icon for the NEXT state (what clicking will activate)
+  // Cycle: light -> dark -> system -> light
+  const ThemeIcon = theme === "light" ? MoonIcon : theme === "dark" ? ComputerDesktopIcon : SunIcon;
 
   const isDashboard = variant === "dashboard";
 
@@ -39,20 +45,16 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
             className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Toggle theme"
           >
-            {isDark ? (
-              <SunIcon className="h-5 w-5" />
-            ) : (
-              <MoonIcon className="h-5 w-5" />
-            )}
+            <ThemeIcon className="h-5 w-5" />
           </button>
           <ClusterStatusDropdown />
-          <Link
-            to="/settings"
+          <button
+            onClick={openSettings}
             className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Settings"
           >
             <Cog6ToothIcon className="h-5 w-5" />
-          </Link>
+          </button>
           <a
             href="https://princeton-ddss.github.io/blackfish/latest"
             target="_blank"
@@ -89,20 +91,16 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
             className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Toggle theme"
           >
-            {isDark ? (
-              <SunIcon className="h-5 w-5" />
-            ) : (
-              <MoonIcon className="h-5 w-5" />
-            )}
+            <ThemeIcon className="h-5 w-5" />
           </button>
           <ClusterStatusDropdown />
-          <Link
-            to="/settings"
+          <button
+            onClick={openSettings}
             className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Settings"
           >
             <Cog6ToothIcon className="h-5 w-5" />
-          </Link>
+          </button>
           <a
             href="https://princeton-ddss.github.io/blackfish/latest"
             target="_blank"
@@ -138,20 +136,16 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
             className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Toggle theme"
           >
-            {isDark ? (
-              <SunIcon className="h-5 w-5" />
-            ) : (
-              <MoonIcon className="h-5 w-5" />
-            )}
+            <ThemeIcon className="h-5 w-5" />
           </button>
           <ClusterStatusDropdown />
-          <Link
-            to="/settings"
+          <button
+            onClick={openSettings}
             className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Settings"
           >
             <Cog6ToothIcon className="h-5 w-5" />
-          </Link>
+          </button>
           <a
             href="https://princeton-ddss.github.io/blackfish/latest"
             target="_blank"

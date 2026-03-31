@@ -3084,9 +3084,6 @@ async def delete_hf_token() -> dict[str, str]:
     """Remove the stored Hugging Face token."""
     try:
         # huggingface_hub stores token at ~/.cache/huggingface/token
-        import os
-        from pathlib import Path
-
         token_path = Path.home() / ".cache" / "huggingface" / "token"
         if token_path.exists():
             token_path.unlink()

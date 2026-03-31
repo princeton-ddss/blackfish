@@ -74,8 +74,8 @@ The easiest way to configure your Hugging Face token is through the Blackfish Se
 
 1. Click the gear icon in the navigation bar to open Settings
 2. Find the "Hugging Face" section
-3. Click "Set Token" and enter your [Hugging Face access token](https://huggingface.co/settings/tokens)
-4. Click "Save" to store the token
+3. Click "Sign In" and enter your [Hugging Face access token](https://huggingface.co/settings/tokens)
+4. Click "Sign In" to store the token
 
 The token is validated and stored securely using `huggingface_hub`'s standard token storage. Once configured, all Hugging Face operations (model downloads, API calls) will automatically use this token.
 

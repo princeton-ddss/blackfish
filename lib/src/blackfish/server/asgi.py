@@ -3022,13 +3022,19 @@ async def get_hf_token_status() -> HfTokenStatusResponse:
             username=user_info.get("name"),
             fullname=user_info.get("fullname"),
             email=user_info.get("email"),
-            avatar_url=user_info.get("avatarUrl"),
+            avatar_url=_hf_avatar_url(user_info.get("avatarUrl")),
             token_name=access_token.get("displayName") if isinstance(access_token, dict) else None,
             token_role=access_token.get("role") if isinstance(access_token, dict) else None,
             token_created_at=access_token.get("createdAt") if isinstance(access_token, dict) else None,
         )
     except Exception:
         return HfTokenStatusResponse(configured=False)
+
+
+def _hf_avatar_url(url: Optional[str]) -> Optional[str]:
+    if url and url.startswith("/"):
+        return f"https://huggingface.co{url}"
+    return url
 
 
 @dataclass
@@ -3061,7 +3067,7 @@ async def set_hf_token(data: HfTokenRequest) -> HfTokenStatusResponse:
             username=user_info.get("name"),
             fullname=user_info.get("fullname"),
             email=user_info.get("email"),
-            avatar_url=user_info.get("avatarUrl"),
+            avatar_url=_hf_avatar_url(user_info.get("avatarUrl")),
             token_name=access_token.get("displayName") if isinstance(access_token, dict) else None,
             token_role=access_token.get("role") if isinstance(access_token, dict) else None,
             token_created_at=access_token.get("createdAt") if isinstance(access_token, dict) else None,

@@ -7,8 +7,7 @@ import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { classNames } from "@/lib/util";
-import { selectTierByModelSize } from "@/lib/util";
+import { classNames, selectTierByModelSize } from "@/lib/util";
 import { fetchModelSizeFromHub } from "@/lib/requests";
 import PropTypes from "prop-types";
 
@@ -352,6 +351,7 @@ function ServiceModalForm({
                   type="text"
                   id="partition"
                   name="partition"
+                  placeholder="Default"
                   value={selectedPartition}
                   onChange={(e) => {
                     setSelectedPartition(e.target.value);

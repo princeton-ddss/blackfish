@@ -3,10 +3,11 @@ import Info from "./Info";
 import Alert from "@/components/Alert";
 import ModelSelect from "@/components/ModelSelect"
 import RevisionSelect from "@/components/RevisionSelect"
-import PartitionSelect from "@/components/PartitionSelect";
 import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { classNames } from "@/lib/util";
 import { selectTierByModelSize } from "@/lib/util";
 import { fetchModelSizeFromHub } from "@/lib/requests";
 import PropTypes from "prop-types";
@@ -33,6 +34,7 @@ function ServiceModalForm({
   profile,
   task,
   resources,
+  clusterPartitions,
   children
 }) {
 
@@ -40,9 +42,10 @@ function ServiceModalForm({
   const [modelId, setModelId] = React.useState(null);
 
   // Tier-based resource selection state
-  const [selectedPartition, setSelectedPartition] = React.useState(null);
+  const [selectedPartition, setSelectedPartition] = React.useState("");
   const [selectedTier, setSelectedTier] = React.useState(null);
   const [recommendedTier, setRecommendedTier] = React.useState(null);
+  const [partitionWarning, setPartitionWarning] = React.useState(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
   const [account, setAccount] = React.useState("");
 
@@ -82,31 +85,25 @@ function ServiceModalForm({
     },
   ], []);
 
-  const defaultPartitions = React.useMemo(() => [
-    { name: "default", default: true, tiers: defaultTiers }
-  ], [defaultTiers]);
 
-  // Memoize partitions and tiers to avoid re-renders
-  const partitions = React.useMemo(() =>
-    resources?.partitions?.length > 0 ? resources.partitions : defaultPartitions,
-    [resources?.partitions, defaultPartitions]
+  // Resource spec partitions (for tier matching)
+  const specPartitions = React.useMemo(() =>
+    resources?.partitions?.length > 0 ? resources.partitions : [],
+    [resources?.partitions]
   );
-  const currentPartition = React.useMemo(() =>
-    partitions.find(p => p.name === selectedPartition) ||
-    partitions.find(p => p.default) ||
-    partitions[0],
-    [partitions, selectedPartition]
-  );
-  const tiers = React.useMemo(() => currentPartition?.tiers || [], [currentPartition?.tiers]);
-  const timeConfig = resources?.time || { default: 30, max: 180 };
 
-  // Initialize selected partition when resources load
-  React.useEffect(() => {
-    if (partitions.length > 0 && !selectedPartition) {
-      const defaultPartition = partitions.find(p => p.default) || partitions[0];
-      setSelectedPartition(defaultPartition.name);
+  // Resolve tiers: match typed partition against spec, else use default tiers
+  const tiers = React.useMemo(() => {
+    if (selectedPartition) {
+      const match = specPartitions.find(p => p.name === selectedPartition);
+      if (match) return match.tiers;
     }
-  }, [partitions, selectedPartition]);
+    // Fall back: use default spec partition's tiers if available, else default tiers
+    const defaultSpec = specPartitions.find(p => p.default) || specPartitions[0];
+    return defaultSpec?.tiers || defaultTiers;
+  }, [selectedPartition, specPartitions, defaultTiers]);
+
+  const timeConfig = resources?.time || { default: 30, max: 180 };
 
   // Select recommended tier based on model size
   // Priority: 1. model override, 2. client-side data, 3. HuggingFace Hub, 4. no auto-selection
@@ -177,7 +174,7 @@ function ServiceModalForm({
     } else {
       console.debug(`[TierSelect] No repo_id for model ${modelId}, skipping tier selection`);
     }
-  }, [modelId, tiers, models, resources?.models]);
+  }, [modelId, tiers, selectedPartition, models, resources?.models]);
 
   // Update jobOptions when tier selection changes
   React.useEffect(() => {
@@ -189,7 +186,7 @@ function ServiceModalForm({
           ntasks_per_node: tier.cpu_cores,
           mem: tier.memory_gb,
           gres: tier.gpu_count,
-          partition: selectedPartition,
+          partition: selectedPartition || null,
           constraint: tier.slurm?.constraint || null,
           account: account || null,
         }));
@@ -345,25 +342,58 @@ function ServiceModalForm({
       {profile.schema === "slurm"
         ? (
           <>
-            {/* Partition selector - only show if multiple partitions */}
-            {partitions.length > 1 && (
-              <fieldset>
-                <label className="block text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 mb-2">
-                  Partition
-                </label>
-                <PartitionSelect
-                  partitions={partitions}
-                  selectedPartition={selectedPartition}
-                  setSelectedPartition={(name) => {
-                    setSelectedPartition(name);
+            {/* Partition input */}
+            <fieldset>
+              <label htmlFor="partition" className="block text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100 mb-2">
+                Partition
+              </label>
+              <div className="relative mt-2 rounded-md shadow-sm">
+                <input
+                  type="text"
+                  id="partition"
+                  name="partition"
+                  value={selectedPartition}
+                  onChange={(e) => {
+                    setSelectedPartition(e.target.value);
+                    setPartitionWarning(null);
                     // Reset tier selection when partition changes
                     setSelectedTier(null);
                     setRecommendedTier(null);
                   }}
+                  onBlur={() => {
+                    if (selectedPartition && clusterPartitions && !clusterPartitions.includes(selectedPartition)) {
+                      setPartitionWarning(`Partition "${selectedPartition}" was not found on the cluster.`);
+                    } else {
+                      setPartitionWarning(null);
+                    }
+                  }}
                   disabled={disabled}
+                  className={classNames(
+                    partitionWarning
+                      ? "ring-yellow-400 dark:ring-yellow-500 focus:ring-yellow-500"
+                      : "ring-gray-300 dark:ring-gray-600 focus:ring-blue-500",
+                    "block w-full rounded-md border-0 py-1.5 pr-10 ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:ring-1 disabled:ring-gray-300 dark:disabled:ring-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  )}
                 />
-              </fieldset>
-            )}
+                {partitionWarning && (
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <ExclamationTriangleIcon
+                      className="h-5 w-5 text-yellow-500"
+                      aria-hidden="true"
+                    />
+                  </div>
+                )}
+              </div>
+              {partitionWarning ? (
+                <p className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                  {partitionWarning}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Specify a SLURM partition, or leave empty to use the cluster default.
+                </p>
+              )}
+            </fieldset>
 
             {/* Resources selector */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 -mx-1 space-y-4">
@@ -530,6 +560,7 @@ ServiceModalForm.propTypes = {
     ),
     models: PropTypes.objectOf(PropTypes.string),
   }),
+  clusterPartitions: PropTypes.arrayOf(PropTypes.string),
   children: PropTypes.node,
 };
 

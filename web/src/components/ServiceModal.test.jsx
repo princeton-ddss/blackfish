@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import ServiceModal from "@/components/ServiceModal";
 import { ServiceContext } from "@/providers/ServiceProvider";
-import { useModels, useServices } from "@/lib/loaders";
+import { useModels, useServices, useClusterStatus } from "@/lib/loaders";
 import { runService, fetchProfileResources } from "@/lib/requests";
 import { sleep, randomInt, isDeepEmpty } from "@/lib/util";
 
@@ -119,6 +119,14 @@ describe("ServiceModal", () => {
         { repo_id: "model-1" },
         { repo_id: "model-2" }
       ]
+    });
+
+    useClusterStatus.mockReturnValue({
+      status: null,
+      error: null,
+      isLoading: false,
+      isRefreshing: false,
+      refresh: vi.fn(),
     });
 
     randomInt.mockReturnValue(12345);

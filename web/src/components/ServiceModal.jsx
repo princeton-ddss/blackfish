@@ -11,7 +11,7 @@ import ServiceModalForm from "@/components/ServiceModalForm";
 import ServiceLaunchErrorAlert from "@/components/ServiceLaunchErrorAlert";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { runService, fetchProfileResources } from "@/lib/requests";
-import { useModels, useServices } from "@/lib/loaders";
+import { useModels, useServices, useClusterStatus } from "@/lib/loaders";
 import { sleep, randomInt, isDeepEmpty } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -105,6 +105,9 @@ function ServiceModal({
   const {
     models,
   } = useModels(profile, task);
+  const {
+    status: clusterStatus,
+  } = useClusterStatus(profile);
 
   const { setSelectedServiceId } = useContext(ServiceContext);
 
@@ -112,6 +115,9 @@ function ServiceModal({
   const [jobOptions, setJobOptions] = React.useState(() => getDefaultJobOptions(profile));
   const [model, setModel] = useState(null);
   const [resources, setResources] = useState(null);
+  const clusterPartitions = clusterStatus?.partitions
+    ? Object.keys(clusterStatus.partitions)
+    : null;
 
   // Fetch resources when profile changes
   useEffect(() => {
@@ -277,6 +283,7 @@ function ServiceModal({
                         profile={profile}
                         task={task}
                         resources={resources}
+                        clusterPartitions={clusterPartitions}
                       >
                         { children }
                       </ServiceModalForm>

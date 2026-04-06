@@ -38,6 +38,12 @@ npm run build:lib  # Build and copy to Python package
 - **Services**: Text Generation, Speech Recognition (extensible base classes)
 - **CLI**: Rich-click powered, profile/service/job management
 
+## Commits
+
+Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+
+Scopes: `lib`, `web`, `ci`, `docs` (optional — omit for cross-cutting changes)
+
 ## Key Conventions
 
 - Python 3.12+, strict MyPy type checking enabled

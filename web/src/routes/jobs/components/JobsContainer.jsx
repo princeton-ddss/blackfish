@@ -170,7 +170,7 @@ function JobsContainer() {
 
     // Fetch real results when viewing results for a job (not in mock mode)
     const fetchResultsForJobId = (!useMockData && viewingResults) ? selectedJobId : null;
-    const { results: apiResults, isLoading: isResultsLoading, mutate: mutateResults } = useJobResults(fetchResultsForJobId);
+    const { results: apiResults, error: resultsError, isLoading: isResultsLoading, isRefreshing: isResultsRefreshing, mutate: mutateResults } = useJobResults(fetchResultsForJobId);
 
     // Derive selectedJob from jobs list - always stays in sync
     const selectedJob = selectedJobId && jobs ? jobs.find(j => j.id === selectedJobId) : null;
@@ -277,6 +277,8 @@ function JobsContainer() {
                         onResultSelect={handleResultSelect}
                         selectedResult={selectedResult}
                         isLoading={!useMockData && isResultsLoading}
+                        isRefreshing={!useMockData && isResultsRefreshing}
+                        error={!useMockData ? resultsError : null}
                         onRefresh={mutateResults}
                     />
                 ) : (

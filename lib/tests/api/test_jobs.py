@@ -585,6 +585,29 @@ class TestGetJobResultsAPI:
         assert error["output_file"] is None
         assert error["error"] == "Decoding failed"
 
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_tigerflow_error(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+    ):
+        """Test that TigerFlow errors return 500 with detail message."""
+        from blackfish.server.jobs.client import TigerFlowError
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            side_effect=TigerFlowError("report", "cluster.example.com", "Connection refused")
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 500
+        body = response.json()
+        assert "Failed to fetch job results" in body["detail"]
+
     async def test_get_results_not_found(self, client: AsyncTestClient):
         """Test fetching results for a nonexistent job."""
         nonexistent_id = "550e8400-e29b-41d4-a716-446655440000"

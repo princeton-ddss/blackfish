@@ -6,6 +6,7 @@ import {
     XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { lastModified } from "@/lib/util";
+import { assetPath } from "@/config";
 import Pagination from "@/components/Pagination";
 import PropTypes from "prop-types";
 
@@ -45,6 +46,8 @@ function JobResultsTable({
     onResultSelect,
     selectedResult,
     isLoading = false,
+    isRefreshing = false,
+    error = null,
     onRefresh = null,
 }) {
     const [currentPage, setCurrentPage] = useState(1);
@@ -121,7 +124,7 @@ function JobResultsTable({
                                                     title="Refresh"
                                                 >
                                                     <ArrowPathIcon
-                                                        className={`h-5 w-5 text-gray-900 dark:text-gray-100 hover:text-gray-400 ${isLoading ? "animate-spin" : ""}`}
+                                                        className={`h-5 w-5 text-gray-900 dark:text-gray-100 hover:text-gray-400 ${isLoading || isRefreshing ? "animate-spin" : ""}`}
                                                     />
                                                 </button>
                                             </div>
@@ -139,6 +142,19 @@ function JobResultsTable({
                                                 </tr>
                                             ))}
                                         </>
+                                    ) : error ? (
+                                        <tr>
+                                            <td colSpan={6} className="h-64">
+                                                <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
+                                                    <img
+                                                        className="h-16 mb-5 w-auto ml-auto mr-auto opacity-80 dark:invert"
+                                                        src={assetPath("/img/dead-fish.png")}
+                                                        alt="Loading error."
+                                                    />
+                                                    {error?.message || "Failed to load results."}
+                                                </div>
+                                            </td>
+                                        </tr>
                                     ) : results.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="h-64">
@@ -212,6 +228,8 @@ JobResultsTable.propTypes = {
     onResultSelect: PropTypes.func.isRequired,
     selectedResult: PropTypes.object,
     isLoading: PropTypes.bool,
+    isRefreshing: PropTypes.bool,
+    error: PropTypes.object,
     onRefresh: PropTypes.func,
 };
 

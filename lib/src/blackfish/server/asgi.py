@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Optional, Tuple, Any, Type, Annotated, Callable
 import asyncio
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import bcrypt
 from importlib import import_module
 from uuid import UUID
@@ -1545,7 +1545,7 @@ async def get_job_results(
         task_errors = error_lookup.get(task_name, {})
         for file_metric in task_metrics.files:
             # Construct output file path: {output_dir}/{task}/{stem}{output_ext}
-            stem = file_metric.file.rsplit(".", 1)[0] if "." in file_metric.file else file_metric.file
+            stem = PurePosixPath(file_metric.file).stem
             output_ext = job.output_ext or ""
             output_file = f"{job.output_dir}/{task_name}/{stem}{output_ext}"
 

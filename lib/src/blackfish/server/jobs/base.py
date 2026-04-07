@@ -269,8 +269,9 @@ class BatchJob(UUIDAuditBase):
 
         # Update progress from report
         # staged = items waiting + items actively processing (both are "not yet finished")
+        # pipeline.staged is None when pipeline is stopped (no items waiting)
         pipeline = report.progress.pipeline
-        self.staged = pipeline.staged + pipeline.in_progress
+        self.staged = (pipeline.staged or 0) + pipeline.in_progress
         self.finished = pipeline.finished
         self.errored = pipeline.errored
         self.pid = str(report.status.pid) if report.status.pid else None

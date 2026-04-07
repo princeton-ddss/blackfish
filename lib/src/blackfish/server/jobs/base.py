@@ -258,23 +258,24 @@ class BatchJob(UUIDAuditBase):
             Current batch job status
 
         Raises:
-            TigerFlowError: If status check fails
+            TigerFlowError: If report command fails
         """
         logger.debug(
             f"Checking status of batch job {self.id}. "
             f"Current status is {format_status(self.status)}."
         )
 
-        tf_status = await client.status(self.output_dir)
+        report = await client.report(self.output_dir)
 
-        # Update progress
-        self.staged = tf_status.staged
-        self.finished = tf_status.finished
-        self.errored = tf_status.failed
-        self.pid = str(tf_status.pid) if tf_status.pid else None
+        # Update progress from report
+        pipeline = report.progress.pipeline
+        self.staged = pipeline.staged + pipeline.in_progress
+        self.finished = pipeline.finished
+        self.errored = pipeline.errored
+        self.pid = str(report.status.pid) if report.status.pid else None
 
         # Map TigerFlow running state to BatchJobStatus
-        if tf_status.running:
+        if report.status.running:
             self.status = BatchJobStatus.RUNNING
         else:
             self.status = BatchJobStatus.STOPPED

@@ -12,7 +12,10 @@ from blackfish.server.jobs.base import (
 )
 from blackfish.server.jobs.client import (
     TigerFlowClient,
-    TigerFlowStatus,
+    TigerFlowReport,
+    TigerFlowReportStatus,
+    TigerFlowProgress,
+    TigerFlowPipelineProgress,
     TigerFlowError,
     TigerFlowVersions,
 )
@@ -147,6 +150,31 @@ class TestBatchJobStart:
             await job.start(client)
 
 
+def make_mock_report(
+    running: bool = True,
+    pid: int | None = 12345,
+    finished: int = 5,
+    in_progress: int = 3,
+    staged: int = 2,
+    errored: int = 0,
+) -> TigerFlowReport:
+    """Create a TigerFlowReport for testing."""
+    return TigerFlowReport(
+        status=TigerFlowReportStatus(running=running, pid=pid),
+        progress=TigerFlowProgress(
+            pipeline=TigerFlowPipelineProgress(
+                finished=finished,
+                in_progress=in_progress,
+                staged=staged,
+                errored=errored,
+            ),
+            tasks=[],
+        ),
+        metrics={},
+        errors={},
+    )
+
+
 class TestBatchJobUpdate:
     """Tests for BatchJob.update()."""
 
@@ -154,19 +182,14 @@ class TestBatchJobUpdate:
         """update should set status to RUNNING when tigerflow reports running."""
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
-        client.status.return_value = TigerFlowStatus(
-            pid=12345,
-            running=True,
-            staged=10,
-            finished=5,
-            failed=0,
-            tasks=[],
+        client.report.return_value = make_mock_report(
+            running=True, pid=12345, finished=5, in_progress=3, staged=2, errored=0
         )
 
         result = await job.update(client)
 
         assert result == BatchJobStatus.RUNNING
-        assert job.staged == 10
+        assert job.staged == 5  # in_progress + staged
         assert job.finished == 5
         assert job.errored == 0
         assert job.pid == "12345"
@@ -175,19 +198,14 @@ class TestBatchJobUpdate:
         """update should set status to STOPPED when tigerflow reports not running."""
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
-        client.status.return_value = TigerFlowStatus(
-            pid=None,
-            running=False,
-            staged=10,
-            finished=5,
-            failed=5,
-            tasks=[],
+        client.report.return_value = make_mock_report(
+            running=False, pid=None, finished=5, in_progress=0, staged=0, errored=5
         )
 
         result = await job.update(client)
 
         assert result == BatchJobStatus.STOPPED
-        assert job.staged == 10
+        assert job.staged == 0
         assert job.finished == 5
         assert job.errored == 5
 
@@ -195,7 +213,7 @@ class TestBatchJobUpdate:
         """update should propagate TigerFlowError from client."""
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
-        client.status.side_effect = TigerFlowError("status", "host", "failed")
+        client.report.side_effect = TigerFlowError("status", "host", "failed")
 
         with pytest.raises(TigerFlowError):
             await job.update(client)

@@ -364,7 +364,12 @@ class TestStopBatchJobAPI:
         session: AsyncSession,
     ):
         """Test successfully stopping a job."""
-        from blackfish.server.jobs.client import TigerFlowStatus
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+        )
 
         job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
         output_dir = "/data/output"  # From fixture
@@ -372,9 +377,17 @@ class TestStopBatchJobAPI:
         # Set up mock TigerFlowClient
         mock_tigerflow = AsyncMock()
         mock_tigerflow.stop = AsyncMock()
-        mock_tigerflow.status = AsyncMock(
-            return_value=TigerFlowStatus(
-                pid=None, running=False, staged=10, finished=10, failed=0, tasks=[]
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=10, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={},
+                errors={},
             )
         )
         mock_create_client.return_value = mock_tigerflow
@@ -395,9 +408,9 @@ class TestStopBatchJobAPI:
         assert result["id"] == job_id
         assert result["status"] == "stopped"
 
-        # Verify stop and status were called to update the job
+        # Verify stop and report were called to update the job
         mock_tigerflow.stop.assert_called_once_with(output_dir)
-        mock_tigerflow.status.assert_called_once_with(output_dir)
+        mock_tigerflow.report.assert_called_once_with(output_dir)
 
     @patch("blackfish.server.asgi.create_tigerflow_client")
     async def test_stop_job_already_stopped(
@@ -407,7 +420,12 @@ class TestStopBatchJobAPI:
         session: AsyncSession,
     ):
         """Test stopping a job that's already stopped."""
-        from blackfish.server.jobs.client import TigerFlowStatus
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+        )
 
         job_id = "391769fc-5a40-43db-bbfa-cec80a8c3710"
         output_dir = "/data/output2"  # From fixture
@@ -415,9 +433,17 @@ class TestStopBatchJobAPI:
         # Set up mock TigerFlowClient
         mock_tigerflow = AsyncMock()
         mock_tigerflow.stop = AsyncMock()
-        mock_tigerflow.status = AsyncMock(
-            return_value=TigerFlowStatus(
-                pid=None, running=False, staged=5, finished=5, failed=0, tasks=[]
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=5, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={},
+                errors={},
             )
         )
         mock_create_client.return_value = mock_tigerflow
@@ -438,8 +464,8 @@ class TestStopBatchJobAPI:
 
         # stop() should not have been called since job was already stopped
         mock_tigerflow.stop.assert_not_called()
-        # status() should still be called to get final state
-        mock_tigerflow.status.assert_called_once_with(output_dir)
+        # report() should still be called to get final state
+        mock_tigerflow.report.assert_called_once_with(output_dir)
 
     async def test_stop_job_not_found(self, client: AsyncTestClient):
         """Test stopping a job that doesn't exist."""

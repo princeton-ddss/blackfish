@@ -1,4 +1,4 @@
-import { Fragment, useContext, useState } from "react";
+import { Fragment, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogPanel,
@@ -18,41 +18,44 @@ import {
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import PropTypes from "prop-types";
-import { Highlight, themes } from "prism-react-renderer";
 import Prism from "prismjs";
-
-// Add languages not bundled by default
-(typeof global !== "undefined" ? global : window).Prism = Prism;
+import "prismjs/components/prism-python";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-r";
+import "prismjs/themes/prism-tomorrow.css";
+
+/**
+ * Build a sample request body for the given mode and parameters.
+ * @param {string} mode - "completion" or "chat"
+ * @param {object} parameters - The API parameters
+ * @returns {object} Sample request body
+ */
+function buildSampleBody(mode, parameters) {
+  const body = { ...parameters, stream: false };
+
+  if (mode === "completion") {
+    body.prompt = "Your prompt here";
+  } else {
+    body.messages = [
+      { role: "system", content: "You are a helpful assistant." },
+      { role: "user", content: "Your message here" },
+    ];
+  }
+
+  return body;
+}
 
 /**
  * Generate Python code for calling the service.
  * @param {string} mode - "completion" or "chat"
- * @param {string} prompt - The prompt text (for completion mode)
- * @param {Array} messages - The messages array (for chat mode)
- * @param {object} systemMessage - The system message (for chat mode)
  * @param {object} parameters - The API parameters
  * @param {object} service - The selected service
  * @returns {string} Python code
  */
-function generatePythonCode(mode, prompt, messages, systemMessage, parameters, service) {
+function generatePythonCode(mode, parameters, service) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
-
-  // Build the request body
-  const body = { ...parameters, stream: false };
-
-  if (mode === "completion") {
-    body.prompt = prompt || "";
-  } else {
-    const allMessages = [];
-    if (systemMessage?.content) {
-      allMessages.push({ role: "system", content: systemMessage.content });
-    }
-    allMessages.push(...messages);
-    body.messages = allMessages;
-  }
+  const body = buildSampleBody(mode, parameters);
 
   const bodyJson = JSON.stringify(body, null, 4)
     .split("\n")
@@ -71,30 +74,14 @@ print(response.json())`;
 /**
  * Generate R code for calling the service.
  * @param {string} mode - "completion" or "chat"
- * @param {string} prompt - The prompt text (for completion mode)
- * @param {Array} messages - The messages array (for chat mode)
- * @param {object} systemMessage - The system message (for chat mode)
  * @param {object} parameters - The API parameters
  * @param {object} service - The selected service
  * @returns {string} R code
  */
-function generateRCode(mode, prompt, messages, systemMessage, parameters, service) {
+function generateRCode(mode, parameters, service) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
-
-  // Build the request body
-  const body = { ...parameters, stream: false };
-
-  if (mode === "completion") {
-    body.prompt = prompt || "";
-  } else {
-    const allMessages = [];
-    if (systemMessage?.content) {
-      allMessages.push({ role: "system", content: systemMessage.content });
-    }
-    allMessages.push(...messages);
-    body.messages = allMessages;
-  }
+  const body = buildSampleBody(mode, parameters);
 
   // Convert to R list syntax
   const formatRValue = (value, indent = 0) => {
@@ -131,30 +118,14 @@ content(response, "parsed")`;
 /**
  * Generate Shell/curl code for calling the service.
  * @param {string} mode - "completion" or "chat"
- * @param {string} prompt - The prompt text (for completion mode)
- * @param {Array} messages - The messages array (for chat mode)
- * @param {object} systemMessage - The system message (for chat mode)
  * @param {object} parameters - The API parameters
  * @param {object} service - The selected service
  * @returns {string} Shell code
  */
-function generateShellCode(mode, prompt, messages, systemMessage, parameters, service) {
+function generateShellCode(mode, parameters, service) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
-
-  // Build the request body
-  const body = { ...parameters, stream: false };
-
-  if (mode === "completion") {
-    body.prompt = prompt || "";
-  } else {
-    const allMessages = [];
-    if (systemMessage?.content) {
-      allMessages.push({ role: "system", content: systemMessage.content });
-    }
-    allMessages.push(...messages);
-    body.messages = allMessages;
-  }
+  const body = buildSampleBody(mode, parameters);
 
   const bodyJson = JSON.stringify(body, null, 2);
   // Escape single quotes for shell
@@ -173,13 +144,11 @@ const languages = [
 
 /**
  * Code Snippet Modal component.
+ * Shows generic API request examples for the selected service.
  * @param {object} options
  * @param {boolean} options.open - Whether the modal is open
  * @param {Function} options.onClose - Function to close the modal
  * @param {string} options.mode - "completion" or "chat"
- * @param {string} options.prompt - The prompt text (for completion mode)
- * @param {Array} options.messages - The messages array (for chat mode)
- * @param {object} options.systemMessage - The system message (for chat mode)
  * @param {object} options.parameters - The API parameters
  * @return {JSX.Element}
  */
@@ -187,24 +156,32 @@ function CodeSnippetModal({
   open,
   onClose,
   mode,
-  prompt,
-  messages,
-  systemMessage,
   parameters,
 }) {
   const serviceContext = useContext(ServiceContext);
   const selectedService = serviceContext?.selectedService;
   const [copied, setCopied] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const timeoutRef = useRef(null);
 
-  const code = languages[selectedIndex].generate(mode, prompt, messages, systemMessage, parameters, selectedService);
+  const allCode = useMemo(
+    () => languages.map((lang) => lang.generate(mode, parameters, selectedService)),
+    [mode, parameters, selectedService]
+  );
+
+  const code = allCode[selectedIndex];
+
+  useEffect(() => {
+    setCopied(false);
+    clearTimeout(timeoutRef.current);
+  }, [selectedIndex]);
 
   const handleCopy = () => {
     navigator.clipboard
       .writeText(code)
       .then(() => {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        timeoutRef.current = setTimeout(() => setCopied(false), 2000);
       })
       .catch((err) => {
         console.error("Failed to copy code:", err);
@@ -276,29 +253,34 @@ function CodeSnippetModal({
                       ))}
                     </TabList>
                     <TabPanels className="mt-3">
-                      {languages.map((lang) => (
+                      {languages.map((lang, idx) => (
                         <TabPanel key={lang.name}>
-                          <div className="relative">
-                            <Highlight
-                              theme={themes.vsDark}
-                              code={lang.generate(mode, prompt, messages, systemMessage, parameters, selectedService)}
-                              language={lang.prismLang}
+                          <div className="relative group">
+                            <button
+                              type="button"
+                              onClick={handleCopy}
+                              className="absolute top-2 right-2 p-1.5 rounded-md text-gray-400 hover:text-gray-200 hover:bg-white/10 transition-colors z-10"
+                              title="Copy code"
                             >
-                              {({ style, tokens, getLineProps, getTokenProps }) => (
-                                <pre
-                                  style={style}
-                                  className="rounded-lg p-4 max-h-96 overflow-auto text-xs font-mono"
-                                >
-                                  {tokens.map((line, i) => (
-                                    <div key={i} {...getLineProps({ line })}>
-                                      {line.map((token, key) => (
-                                        <span key={key} {...getTokenProps({ token })} />
-                                      ))}
-                                    </div>
-                                  ))}
-                                </pre>
+                              {copied ? (
+                                <CheckIcon className="h-4 w-4 text-green-400" />
+                              ) : (
+                                <ClipboardDocumentIcon className="h-4 w-4" />
                               )}
-                            </Highlight>
+                            </button>
+                            <pre
+                              className="rounded-lg p-4 max-h-96 overflow-auto text-xs font-mono bg-[#1e1e1e] text-[#d4d4d4]"
+                            >
+                              <code
+                                dangerouslySetInnerHTML={{
+                                  __html: Prism.highlight(
+                                    allCode[idx],
+                                    Prism.languages[lang.prismLang],
+                                    lang.prismLang
+                                  ),
+                                }}
+                              />
+                            </pre>
                           </div>
                         </TabPanel>
                       ))}
@@ -306,26 +288,6 @@ function CodeSnippetModal({
                   </TabGroup>
                 </div>
 
-                {/* Footer */}
-                <div className="flex justify-end px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="inline-flex items-center gap-2 rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                  >
-                    {copied ? (
-                      <>
-                        <CheckIcon className="h-4 w-4" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardDocumentIcon className="h-4 w-4" />
-                        Copy
-                      </>
-                    )}
-                  </button>
-                </div>
               </DialogPanel>
             </TransitionChild>
           </div>
@@ -339,9 +301,6 @@ CodeSnippetModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   mode: PropTypes.oneOf(["completion", "chat"]).isRequired,
-  prompt: PropTypes.string,
-  messages: PropTypes.array,
-  systemMessage: PropTypes.object,
   parameters: PropTypes.object,
 };
 

@@ -1,4 +1,4 @@
-import { Fragment, useContext, useEffect, useMemo, useState } from "react";
+import { Fragment, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogPanel,
@@ -162,6 +162,7 @@ function CodeSnippetModal({
   const selectedService = serviceContext?.selectedService;
   const [copied, setCopied] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const timeoutRef = useRef(null);
 
   const allCode = useMemo(
     () => languages.map((lang) => lang.generate(mode, parameters, selectedService)),
@@ -170,14 +171,17 @@ function CodeSnippetModal({
 
   const code = allCode[selectedIndex];
 
-  useEffect(() => setCopied(false), [selectedIndex]);
+  useEffect(() => {
+    setCopied(false);
+    clearTimeout(timeoutRef.current);
+  }, [selectedIndex]);
 
   const handleCopy = () => {
     navigator.clipboard
       .writeText(code)
       .then(() => {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        timeoutRef.current = setTimeout(() => setCopied(false), 2000);
       })
       .catch((err) => {
         console.error("Failed to copy code:", err);

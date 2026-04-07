@@ -1539,18 +1539,19 @@ async def get_job_results(
     for task_name, error_list in report.errors.items():
         error_lookup[task_name] = {err.file: err.message for err in error_list}
 
-    # Flatten metrics across tasks into file results
-    results: list[JobFileResult] = []
+    # Flatten metrics across tasks, deduplicating by (task, file) — keep latest
+    latest: dict[tuple[str, str], JobFileResult] = {}
     for task_name, task_metrics in report.metrics.items():
         task_errors = error_lookup.get(task_name, {})
+        output_ext = job.output_ext or ""
         for file_metric in task_metrics.files:
-            # Construct output file path: {output_dir}/{task}/{stem}{output_ext}
             stem = PurePosixPath(file_metric.file).stem
-            output_ext = job.output_ext or ""
             output_file = f"{job.output_dir}/{task_name}/{stem}{output_ext}"
 
-            results.append(
-                JobFileResult(
+            key = (task_name, file_metric.file)
+            prev = latest.get(key)
+            if prev is None or file_metric.finished_at > prev.finished_at:
+                latest[key] = JobFileResult(
                     file=file_metric.file,
                     task=task_name,
                     output_file=output_file if file_metric.status == "success" else None,
@@ -1560,9 +1561,8 @@ async def get_job_results(
                     status=file_metric.status,
                     error=task_errors.get(file_metric.file),
                 )
-            )
 
-    return results
+    return list(latest.values())
 
 
 @put("/api/jobs/{job_id:str}/stop", guards=ENDPOINT_GUARDS)

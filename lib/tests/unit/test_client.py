@@ -469,10 +469,12 @@ class TestTigerFlowClientUpgrade:
         runner = MockRunner()
         # First: pip list --outdated returns tigerflow as outdated
         # Second: pip install --upgrade
-        runner.set_responses([
-            (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),
-            (0, b"Successfully installed", b""),
-        ])
+        runner.set_responses(
+            [
+                (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),
+                (0, b"Successfully installed", b""),
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.upgrade()
@@ -484,10 +486,12 @@ class TestTigerFlowClientUpgrade:
     async def test_upgrade_uses_venv_pip(self) -> None:
         """upgrade should use pip from the venv."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),
-            (0, b"Successfully installed", b""),
-        ])
+        runner.set_responses(
+            [
+                (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),
+                (0, b"Successfully installed", b""),
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.upgrade()
@@ -499,10 +503,16 @@ class TestTigerFlowClientUpgrade:
     async def test_upgrade_raises_install_error_on_failure(self) -> None:
         """upgrade should raise install error if pip upgrade fails."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),  # outdated check
-            (1, b"", b"Network error"),  # install fails
-        ])
+        runner.set_responses(
+            [
+                (
+                    0,
+                    b'[{"name": "tigerflow", "version": "0.1.0"}]',
+                    b"",
+                ),  # outdated check
+                (1, b"", b"Network error"),  # install fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -526,10 +536,12 @@ class TestTigerFlowClientUpgrade:
     async def test_upgrade_uninstalls_first_for_git_tigerflow_spec(self) -> None:
         """upgrade should uninstall then install when tigerflow_spec is a git URL."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # uninstall
-            (0, b"Successfully installed", b""),  # install
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # uninstall
+                (0, b"Successfully installed", b""),  # install
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.upgrade(tigerflow_spec="git+https://github.com/org/tigerflow@main")
@@ -541,10 +553,12 @@ class TestTigerFlowClientUpgrade:
     async def test_upgrade_uninstalls_first_for_git_tigerflow_ml_spec(self) -> None:
         """upgrade should uninstall then install when tigerflow_ml_spec is a git URL."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b"", b""),  # uninstall
-            (0, b"Successfully installed", b""),  # install
-        ])
+        runner.set_responses(
+            [
+                (0, b"", b""),  # uninstall
+                (0, b"Successfully installed", b""),  # install
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.upgrade(
@@ -558,10 +572,12 @@ class TestTigerFlowClientUpgrade:
     async def test_upgrade_no_uninstall_for_pypi_packages(self) -> None:
         """upgrade should use --upgrade without uninstall for regular PyPI packages."""
         runner = MockRunner()
-        runner.set_responses([
-            (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),  # outdated
-            (0, b"Successfully installed", b""),  # install
-        ])
+        runner.set_responses(
+            [
+                (0, b'[{"name": "tigerflow", "version": "0.1.0"}]', b""),  # outdated
+                (0, b"Successfully installed", b""),  # install
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         await client.upgrade()
@@ -734,12 +750,12 @@ class TestTigerFlowClientCheckCapabilities:
     """Tests for TigerFlowClient.check_capabilities()."""
 
     async def test_check_capabilities_passes_when_all_features_available(self) -> None:
-        """check_capabilities should pass when tasks and status commands work."""
+        """check_capabilities should pass when tasks and report commands work."""
         runner = MockRunner()
         runner.set_responses(
             [
                 (0, b'[{"name": "transcribe"}]', b""),  # tasks list
-                (0, b"Usage: tigerflow status", b""),  # status --help
+                (0, b"Usage: tigerflow report", b""),  # report --help
             ]
         )
         client = TigerFlowClient(runner, "/home/user")
@@ -763,13 +779,13 @@ class TestTigerFlowClientCheckCapabilities:
         assert exc_info.value.error_type == "unsupported"
         assert "tasks" in str(exc_info.value.details).lower()
 
-    async def test_check_capabilities_raises_when_status_command_unknown(self) -> None:
-        """check_capabilities should raise when status command not available."""
+    async def test_check_capabilities_raises_when_report_command_unknown(self) -> None:
+        """check_capabilities should raise when report command not available."""
         runner = MockRunner()
         runner.set_responses(
             [
                 (0, b'[{"name": "transcribe"}]', b""),  # tasks list succeeds
-                (1, b"", b"Error: no such command 'status'"),  # status --help fails
+                (1, b"", b"Error: no such command 'report'"),  # report --help fails
             ]
         )
         client = TigerFlowClient(runner, "/home/user")
@@ -778,7 +794,7 @@ class TestTigerFlowClientCheckCapabilities:
             await client.check_capabilities()
 
         assert exc_info.value.error_type == "unsupported"
-        assert "status" in str(exc_info.value.details).lower()
+        assert "report" in str(exc_info.value.details).lower()
 
     async def test_check_capabilities_ignores_other_errors(self) -> None:
         """check_capabilities should not raise for non-'unknown command' errors."""
@@ -901,108 +917,144 @@ class TestTigerFlowClientRun:
         assert exc_info.value.error_type == "run"
 
 
-class TestTigerFlowClientStatus:
-    """Tests for TigerFlowClient.status()."""
+class TestTigerFlowClientReport:
+    """Tests for TigerFlowClient.report()."""
 
-    async def test_status_parses_valid_response(self) -> None:
-        """status should parse valid tigerflow JSON response."""
-        runner = MockRunner()
-        runner.set_response(
-            0,
-            json.dumps(
-                {
-                    "pid": 12345,
-                    "running": True,
-                    "staged": 100,
-                    "finished": 50,
-                    "failed": 5,
-                    "tasks": [
+    @staticmethod
+    def _make_report_json(
+        running: bool = True,
+        pid: int | None = 12345,
+        finished: int = 50,
+        in_progress: int = 10,
+        staged: int = 40,
+        errored: int = 5,
+    ) -> dict:
+        """Build a valid tigerflow report JSON dict."""
+        return {
+            "status": {"running": running, "pid": pid},
+            "progress": {
+                "pipeline": {
+                    "finished": finished,
+                    "in_progress": in_progress,
+                    "staged": staged,
+                    "errored": errored,
+                },
+                "tasks": [
+                    {
+                        "name": "transcribe",
+                        "processed": finished,
+                        "staged": staged,
+                        "failed": errored,
+                    },
+                ],
+            },
+            "metrics": {
+                "transcribe": {
+                    "count": finished,
+                    "avg_ms": 1000.0,
+                    "min_ms": 500.0,
+                    "max_ms": 1500.0,
+                    "durations": [1000.0],
+                    "files": [
                         {
-                            "name": "transcribe",
-                            "processed": 50,
-                            "ongoing": 10,
-                            "failed": 5,
+                            "file": "audio_001.mp3",
+                            "started_at": "2026-04-03T10:00:00+00:00",
+                            "finished_at": "2026-04-03T10:00:01+00:00",
+                            "duration_ms": 1000.0,
+                            "status": "success",
                         },
                     ],
-                }
-            ).encode(),
-        )
+                },
+            },
+            "errors": {},
+        }
+
+    async def test_report_parses_valid_response(self) -> None:
+        """report should parse valid tigerflow JSON response."""
+        runner = MockRunner()
+        report_data = self._make_report_json()
+        runner.set_response(0, json.dumps(report_data).encode())
         client = TigerFlowClient(runner, "/home/user")
 
-        status = await client.status("/data/out")
+        report = await client.report("/data/out")
 
-        assert status.pid == 12345
-        assert status.running is True
-        assert status.staged == 100
-        assert status.finished == 50
-        assert status.failed == 5
-        assert len(status.tasks) == 1
-        assert status.tasks[0].name == "transcribe"
+        assert report.status.pid == 12345
+        assert report.status.running is True
+        assert report.progress.pipeline.finished == 50
+        assert report.progress.pipeline.in_progress == 10
+        assert report.progress.pipeline.staged == 40
+        assert report.progress.pipeline.errored == 5
+        assert len(report.progress.tasks) == 1
+        assert report.progress.tasks[0].name == "transcribe"
+        assert "transcribe" in report.metrics
+        assert len(report.metrics["transcribe"].files) == 1
 
-    async def test_status_raises_error_when_format_changes(self) -> None:
-        """status should raise error if tigerflow changes its response format."""
+    async def test_report_raises_error_when_format_changes(self) -> None:
+        """report should raise error if tigerflow changes its response format."""
         runner = MockRunner()
         runner.set_response(
             0,
-            json.dumps(
-                {
-                    "unexpected": "format",
-                }
-            ).encode(),
+            json.dumps({"unexpected": "format"}).encode(),
         )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
-            await client.status("/data/out")
+            await client.report("/data/out")
 
-        assert exc_info.value.error_type == "status"
+        assert exc_info.value.error_type == "report"
 
-    async def test_status_raises_error_on_invalid_json(self) -> None:
-        """status should raise error when response is not valid JSON."""
+    async def test_report_raises_error_on_invalid_json(self) -> None:
+        """report should raise error when response is not valid JSON."""
         runner = MockRunner()
         runner.set_response(0, b"not json")
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
-            await client.status("/data/out")
+            await client.report("/data/out")
 
-        assert exc_info.value.error_type == "status"
+        assert exc_info.value.error_type == "report"
 
-    async def test_status_builds_command_with_output_dir_and_json_flag(self) -> None:
-        """status should build command with output_dir and --json flag."""
+    async def test_report_builds_command_with_output_dir_and_json_flag(self) -> None:
+        """report should build command with output_dir and --json flag."""
         runner = MockRunner()
-        runner.set_response(
-            0,
-            json.dumps(
-                {
-                    "pid": None,
-                    "running": False,
-                    "staged": 0,
-                    "finished": 0,
-                    "failed": 0,
-                    "tasks": [],
-                }
-            ).encode(),
+        report_data = self._make_report_json(
+            running=False, pid=None, finished=0, in_progress=0, staged=0, errored=0
         )
+        runner.set_response(0, json.dumps(report_data).encode())
         client = TigerFlowClient(runner, "/home/user")
 
-        await client.status("/data/output")
+        await client.report("/data/output")
 
         cmd = runner.commands[0]
-        assert "status" in cmd
+        assert "report" in cmd
         assert "/data/output" in cmd
         assert "--json" in cmd
 
-    async def test_status_raises_error_on_command_failure(self) -> None:
-        """status should raise error when tigerflow command fails."""
+    async def test_report_raises_error_on_command_failure(self) -> None:
+        """report should raise error when tigerflow command fails (e.g. invalid directory)."""
         runner = MockRunner()
         runner.set_response(1, b"", b"Failed to read progress")
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
-            await client.status("/data/out")
+            await client.report("/data/out")
 
-        assert exc_info.value.error_type == "status"
+        assert exc_info.value.error_type == "command"
+
+    async def test_report_returns_stopped_pipeline(self) -> None:
+        """report should return stopped pipeline data (exit code 0)."""
+        runner = MockRunner()
+        report_data = self._make_report_json(
+            running=False, pid=None, finished=10, in_progress=0, staged=0, errored=2
+        )
+        runner.set_response(0, json.dumps(report_data).encode())
+        client = TigerFlowClient(runner, "/home/user")
+
+        report = await client.report("/data/out")
+
+        assert report.status.running is False
+        assert report.progress.pipeline.finished == 10
+        assert report.progress.pipeline.errored == 2
 
 
 class TestTigerFlowClientStop:

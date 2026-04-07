@@ -23,14 +23,77 @@ MIN_TIGERFLOW_ML_VERSION = "0.1.0a0"
 VENV_PATH = ".venv"
 
 
-class TigerFlowStatus(BaseModel):
-    """Status returned by tigerflow status command."""
+class TigerFlowReportStatus(BaseModel):
+    """Status section from tigerflow report."""
 
-    pid: Optional[int]
     running: bool
-    staged: int
+    pid: Optional[int]
+
+
+class TigerFlowPipelineProgress(BaseModel):
+    """Pipeline progress from tigerflow report."""
+
     finished: int
+    in_progress: int
+    staged: int
+    errored: int
+
+
+class TigerFlowTaskProgress(BaseModel):
+    """Per-task progress from tigerflow report."""
+
+    name: str
+    processed: int
+    staged: int
     failed: int
+
+
+class TigerFlowProgress(BaseModel):
+    """Progress section from tigerflow report."""
+
+    pipeline: TigerFlowPipelineProgress
+    tasks: list[TigerFlowTaskProgress]
+
+
+class TigerFlowFileMetric(BaseModel):
+    """Per-file metric from tigerflow report."""
+
+    file: str
+    started_at: str
+    finished_at: str
+    duration_ms: float
+    status: str  # "success" | "error"
+
+
+class TigerFlowTaskMetrics(BaseModel):
+    """Per-task metrics summary from tigerflow report."""
+
+    count: int
+    avg_ms: float
+    min_ms: float
+    max_ms: float
+    durations: list[float]
+    files: list[TigerFlowFileMetric]
+
+
+class TigerFlowErrorDetail(BaseModel):
+    """Error detail for a single file from tigerflow report."""
+
+    file: str
+    path: str
+    timestamp: Optional[str]
+    exception_type: str
+    message: str
+    traceback: str
+
+
+class TigerFlowReport(BaseModel):
+    """Full report from tigerflow report --json."""
+
+    status: TigerFlowReportStatus
+    progress: TigerFlowProgress
+    metrics: dict[str, TigerFlowTaskMetrics]
+    errors: dict[str, list[TigerFlowErrorDetail]]
 
 
 class TigerFlowVersions(BaseModel):
@@ -44,7 +107,7 @@ class TigerFlowError(Exception):
     """Error raised when TigerFlow operations fail.
 
     Args:
-        error_type: Type of error (ssh, command, setup, install, version, missing, run, status, stop)
+        error_type: Type of error (ssh, command, setup, install, version, missing, run, report, stop)
         host: The target host where the error occurred
         details: Optional additional context
     """
@@ -66,7 +129,7 @@ class TigerFlowError(Exception):
             "version": f"TigerFlow version on {self.host} is too old. Run profile setup to upgrade.",
             "missing": f"TigerFlow is not installed on {self.host}. Run profile setup to install.",
             "run": f"Failed to start TigerFlow job on {self.host}.",
-            "status": f"Failed to get TigerFlow job status on {self.host}.",
+            "report": f"Failed to get TigerFlow job report on {self.host}.",
             "stop": f"Failed to stop TigerFlow job on {self.host}.",
             "unsupported": f"Required tigerflow features not available on {self.host}. Upgrade tigerflow.",
         }
@@ -365,9 +428,7 @@ class TigerFlowClient:
         if tigerflow_spec.startswith("git+") or tigerflow_ml_spec.startswith("git+"):
             try:
                 self._on_progress("Uninstalling existing packages...")
-                await self._run(
-                    f"{self._pip_bin} uninstall -y tigerflow tigerflow-ml"
-                )
+                await self._run(f"{self._pip_bin} uninstall -y tigerflow tigerflow-ml")
                 self._on_progress("Installing packages...")
                 await self._run(
                     f"{self._pip_bin} install {tigerflow_spec} {tigerflow_ml_spec}"
@@ -385,7 +446,10 @@ class TigerFlowClient:
             if returncode == 0:
                 outdated = json.loads(stdout.decode("utf-8"))
                 outdated_names = {pkg["name"].lower() for pkg in outdated}
-                if "tigerflow" not in outdated_names and "tigerflow-ml" not in outdated_names:
+                if (
+                    "tigerflow" not in outdated_names
+                    and "tigerflow-ml" not in outdated_names
+                ):
                     return "TigerFlow up-to-date."
 
             # Upgrade needed
@@ -517,9 +581,9 @@ class TigerFlowClient:
                     "tigerflow tasks command not available",
                 )
 
-        # Check pipeline support by trying 'tigerflow status --help'
+        # Check pipeline support by trying 'tigerflow report --help'
         returncode, _, stderr = await self.runner.run(
-            f"{self._tigerflow_bin} status --help"
+            f"{self._tigerflow_bin} report --help"
         )
         if returncode != 0:
             stderr_str = stderr.decode("utf-8", errors="replace").lower()
@@ -527,7 +591,7 @@ class TigerFlowClient:
                 raise TigerFlowError(
                     "unsupported",
                     self.host,
-                    "tigerflow status command not available",
+                    "tigerflow report command not available",
                 )
 
     # -------------------------------------------------------------------------
@@ -585,47 +649,41 @@ class TigerFlowClient:
 
         logger.info("TigerFlow job started successfully")
 
-    async def status(self, output_dir: str) -> TigerFlowStatus:
-        """Get job status.
+    async def report(self, output_dir: str) -> TigerFlowReport:
+        """Get full job report including status, progress, metrics, and errors.
 
         Args:
             output_dir: Path to output directory on cluster
 
         Returns:
-            TigerFlowStatus with current job state and progress
+            TigerFlowReport with current job state, progress, and file-level metrics
 
         Raises:
-            TigerFlowError: If status check fails
+            TigerFlowError: If report command fails
         """
-        logger.debug(f"Checking TigerFlow status for {output_dir}")
+        logger.debug(f"Fetching TigerFlow report for {output_dir}")
 
-        command = f"{self._tigerflow_bin} status {output_dir} --json"
+        command = f"{self._tigerflow_bin} report {output_dir} --json"
 
-        # Use runner.run() directly instead of _run() because tigerflow status
-        # returns exit code 1 for stopped pipelines but still outputs valid JSON
         try:
-            returncode, stdout, stderr = await self.runner.run(command)
+            stdout, _ = await self._run(command)
             output = stdout.decode("utf-8").strip()
 
-            # Try to parse JSON even on non-zero exit code
-            # tigerflow returns exit code 1 for stopped pipelines with valid output
-            if output:
-                try:
-                    data = json.loads(output)
-                    return TigerFlowStatus.model_validate(data)
-                except (json.JSONDecodeError, ValidationError):
-                    pass  # Fall through to error handling
+            if not output:
+                raise TigerFlowError(
+                    "report", self.host, "Empty response from tigerflow report"
+                )
 
-            # No valid JSON output - report the error
-            if returncode != 0:
-                error_detail = stderr.decode("utf-8").strip() if stderr else f"Exit code {returncode}"
-                raise TigerFlowError("status", self.host, error_detail)
-
-            raise TigerFlowError("status", self.host, "Empty response from tigerflow status")
+            data = json.loads(output)
+            return TigerFlowReport.model_validate(data)
+        except TigerFlowError:
+            raise
         except json.JSONDecodeError as e:
-            raise TigerFlowError("status", self.host, f"Invalid JSON response: {e}")
+            raise TigerFlowError("report", self.host, f"Invalid JSON response: {e}")
         except ValidationError as e:
-            raise TigerFlowError("status", self.host, f"Invalid status format: {e}")
+            raise TigerFlowError(
+                "report", self.host, f"Invalid report format: {e}"
+            )
 
     async def stop(self, output_dir: str) -> None:
         """Stop a running job.

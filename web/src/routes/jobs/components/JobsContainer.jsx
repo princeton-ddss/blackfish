@@ -1,6 +1,6 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useMemo } from "react";
 import { ProfileContext } from "@/components/ProfileSelect";
-import { useJobs } from "@/lib/loaders";
+import { useJobs, useJobResults } from "@/lib/loaders";
 import { stopJob, deleteJob } from "@/lib/requests";
 import JobsTable from "./JobsTable";
 import JobResultsTable from "./JobResultsTable";
@@ -168,6 +168,10 @@ function JobsContainer() {
 
     const jobs = useMockData ? MOCK_JOBS : apiJobs;
 
+    // Fetch real results when viewing results for a job (not in mock mode)
+    const fetchResultsForJobId = (!useMockData && viewingResults) ? selectedJobId : null;
+    const { results: apiResults, isLoading: isResultsLoading, mutate: mutateResults } = useJobResults(fetchResultsForJobId);
+
     // Derive selectedJob from jobs list - always stays in sync
     const selectedJob = selectedJobId && jobs ? jobs.find(j => j.id === selectedJobId) : null;
 
@@ -243,7 +247,21 @@ function JobsContainer() {
         }
     };
 
-    const jobResults = selectedJob ? MOCK_RESULTS[selectedJob.id] || [] : [];
+    // Map API results to the shape expected by JobResultsTable/ResultPreview
+    const jobResults = useMemo(() => {
+        if (useMockData) {
+            return selectedJob ? MOCK_RESULTS[selectedJob.id] || [] : [];
+        }
+        return apiResults.map((r) => ({
+            id: `${r.task}/${r.file}`,
+            input_file: r.file,
+            output_file: r.output_file,
+            started_at: r.started_at,
+            finished_at: r.finished_at,
+            success: r.status === "success",
+            error: r.error || null,
+        }));
+    }, [useMockData, selectedJob, apiResults]);
 
     // Determine what to show in right column
     const showResultPreview = selectedResult !== null;
@@ -258,6 +276,8 @@ function JobsContainer() {
                         onBack={handleBackToJobs}
                         onResultSelect={handleResultSelect}
                         selectedResult={selectedResult}
+                        isLoading={!useMockData && isResultsLoading}
+                        onRefresh={mutateResults}
                     />
                 ) : (
                     <JobsTable

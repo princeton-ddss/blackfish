@@ -45,6 +45,7 @@ function JobResultsTable({
     onResultSelect,
     selectedResult,
     isLoading = false,
+    onRefresh = null,
 }) {
     const [currentPage, setCurrentPage] = useState(1);
     const resultsPerPage = 20;
@@ -116,7 +117,7 @@ function JobResultsTable({
                                         >
                                             <div className="flex gap-2 justify-end">
                                                 <button
-                                                    onClick={() => {}}
+                                                    onClick={() => onRefresh?.()}
                                                     title="Refresh"
                                                 >
                                                     <ArrowPathIcon
@@ -211,6 +212,7 @@ JobResultsTable.propTypes = {
     onResultSelect: PropTypes.func.isRequired,
     selectedResult: PropTypes.object,
     isLoading: PropTypes.bool,
+    onRefresh: PropTypes.func,
 };
 
 export default JobResultsTable;

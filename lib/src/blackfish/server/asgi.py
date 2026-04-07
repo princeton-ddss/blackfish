@@ -65,7 +65,7 @@ from litestar.enums import RequestEncodingType
 from litestar.params import Body
 
 from huggingface_hub import login as hf_login, HfApi, model_info as hf_model_info
-from huggingface_hub.errors import GatedRepoError, HfHubHTTPError, RepositoryNotFoundError
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 
 from blackfish.server.logger import logger
 from blackfish.server import services
@@ -103,7 +103,11 @@ from blackfish.server.jobs.client import (
     SSHRunner,
     LocalRunner,
 )
-from blackfish.server.setup import ProfileManager, ProfileSetupError, repair_slurm_profile
+from blackfish.server.setup import (
+    ProfileManager,
+    ProfileSetupError,
+    repair_slurm_profile,
+)
 from blackfish.server.models.model import (
     Model,
     PIPELINE_IMAGES,
@@ -1498,6 +1502,67 @@ async def get_job(
         return res.scalar_one()
     except NoResultFound:
         raise NotFoundException(detail=f"Job {id} not found")
+
+
+@dataclass
+class JobFileResult:
+    file: str
+    task: str
+    output_file: str | None
+    started_at: str
+    finished_at: str
+    duration_ms: float
+    status: str
+    error: str | None
+
+
+@get("/api/jobs/{job_id:str}/results", guards=ENDPOINT_GUARDS)
+async def get_job_results(
+    job_id: str,
+    session: AsyncSession,
+    state: State,
+) -> list[JobFileResult]:
+    """Get file-level results for a batch job."""
+    job = await get_batch_job(job_id, session)
+    if job is None:
+        raise NotFoundException(detail=f"Job {job_id} not found")
+
+    client = create_tigerflow_client(job, state)
+
+    try:
+        report = await client.report(job.output_dir)
+    except TigerFlowError as e:
+        raise InternalServerException(detail=f"Failed to fetch job results: {e}")
+
+    # Build error lookup: {task: {filename: error_message}}
+    error_lookup: dict[str, dict[str, str]] = {}
+    for task_name, error_list in report.errors.items():
+        error_lookup[task_name] = {err.file: err.message for err in error_list}
+
+    # Flatten metrics across tasks into file results
+    results: list[JobFileResult] = []
+    for task_name, task_metrics in report.metrics.items():
+        task_errors = error_lookup.get(task_name, {})
+        for file_metric in task_metrics.files:
+            # Construct output file path: {output_dir}/{task}/{stem}{output_ext}
+            stem = file_metric.file.rsplit(".", 1)[0] if "." in file_metric.file else file_metric.file
+            output_ext = job.output_ext or ""
+            output_file = f"{job.output_dir}/{task_name}/{stem}{output_ext}"
+
+            results.append(
+                JobFileResult(
+                    file=file_metric.file,
+                    task=task_name,
+                    output_file=output_file if file_metric.status == "success" else None,
+                    started_at=file_metric.started_at,
+                    finished_at=file_metric.finished_at,
+                    duration_ms=file_metric.duration_ms,
+                    status=file_metric.status,
+                    error=task_errors.get(file_metric.file),
+                )
+            )
+
+    return results
 
 
 @put("/api/jobs/{job_id:str}/stop", guards=ENDPOINT_GUARDS)
@@ -3023,9 +3088,15 @@ async def get_hf_token_status() -> HfTokenStatusResponse:
             fullname=user_info.get("fullname"),
             email=user_info.get("email"),
             avatar_url=_hf_avatar_url(user_info.get("avatarUrl")),
-            token_name=access_token.get("displayName") if isinstance(access_token, dict) else None,
-            token_role=access_token.get("role") if isinstance(access_token, dict) else None,
-            token_created_at=access_token.get("createdAt") if isinstance(access_token, dict) else None,
+            token_name=access_token.get("displayName")
+            if isinstance(access_token, dict)
+            else None,
+            token_role=access_token.get("role")
+            if isinstance(access_token, dict)
+            else None,
+            token_created_at=access_token.get("createdAt")
+            if isinstance(access_token, dict)
+            else None,
         )
     except Exception:
         return HfTokenStatusResponse(configured=False)
@@ -3068,9 +3139,15 @@ async def set_hf_token(data: HfTokenRequest) -> HfTokenStatusResponse:
             fullname=user_info.get("fullname"),
             email=user_info.get("email"),
             avatar_url=_hf_avatar_url(user_info.get("avatarUrl")),
-            token_name=access_token.get("displayName") if isinstance(access_token, dict) else None,
-            token_role=access_token.get("role") if isinstance(access_token, dict) else None,
-            token_created_at=access_token.get("createdAt") if isinstance(access_token, dict) else None,
+            token_name=access_token.get("displayName")
+            if isinstance(access_token, dict)
+            else None,
+            token_role=access_token.get("role")
+            if isinstance(access_token, dict)
+            else None,
+            token_created_at=access_token.get("createdAt")
+            if isinstance(access_token, dict)
+            else None,
         )
     except Exception as e:
         logger.error(f"Failed to set HF token: {e}")
@@ -3357,6 +3434,7 @@ app = Litestar(
         run_job,
         fetch_jobs,
         get_job,
+        get_job_results,
         stop_job,
         delete_job,
         get_model,

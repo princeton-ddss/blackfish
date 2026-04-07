@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
-import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs } from "./requests";
+import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults } from "./requests";
 import { ServiceStatus } from "./util";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 
@@ -46,6 +46,21 @@ export const useJobs = (profile) => {
   });
   return {
     jobs: data || [],
+    error: error,
+    isLoading: isLoading,
+    isRefreshing: isValidating,
+    mutate: mutate,
+  };
+};
+
+export const useJobResults = (jobId) => {
+  const key = jobId ? `jobs/${jobId}/results` : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    key,
+    () => fetchJobResults(jobId),
+  );
+  return {
+    results: data || [],
     error: error,
     isLoading: isLoading,
     isRefreshing: isValidating,

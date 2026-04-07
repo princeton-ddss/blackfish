@@ -493,6 +493,113 @@ class TestStopBatchJobAPI:
         assert response.status_code == 401
 
 
+class TestGetJobResultsAPI:
+    """Test cases for the GET /api/jobs/{id}/results endpoint."""
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_success(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+    ):
+        """Test fetching file-level results for a job."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+            TigerFlowErrorDetail,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=2, in_progress=0, staged=0, errored=1
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "transcribe": TigerFlowTaskMetrics(
+                        count=2,
+                        avg_ms=1000.0,
+                        min_ms=500.0,
+                        max_ms=1500.0,
+                        durations=[500.0, 1500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=1000.0,
+                                status="success",
+                            ),
+                            TigerFlowFileMetric(
+                                file="audio_002.wav",
+                                started_at="2026-04-03T10:00:01+00:00",
+                                finished_at="2026-04-03T10:00:02+00:00",
+                                duration_ms=1000.0,
+                                status="error",
+                            ),
+                        ],
+                    ),
+                },
+                errors={
+                    "transcribe": [
+                        TigerFlowErrorDetail(
+                            file="audio_002.wav",
+                            path="/data/output/.tigerflow/transcribe/audio_002.err",
+                            timestamp="2026-04-03T10:00:02+00:00",
+                            exception_type="RuntimeError",
+                            message="Decoding failed",
+                            traceback="Traceback ...",
+                        ),
+                    ],
+                },
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 2
+
+        # Check success result
+        success = next(r for r in results if r["file"] == "audio_001.wav")
+        assert success["status"] == "success"
+        assert success["task"] == "transcribe"
+        assert success["output_file"] == "/data/output/transcribe/audio_001.json"
+        assert success["error"] is None
+
+        # Check error result
+        error = next(r for r in results if r["file"] == "audio_002.wav")
+        assert error["status"] == "error"
+        assert error["output_file"] is None
+        assert error["error"] == "Decoding failed"
+
+    async def test_get_results_not_found(self, client: AsyncTestClient):
+        """Test fetching results for a nonexistent job."""
+        nonexistent_id = "550e8400-e29b-41d4-a716-446655440000"
+        response = await client.get(f"/api/jobs/{nonexistent_id}/results")
+        assert response.status_code == 404
+
+    async def test_get_results_authentication_required(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that authentication is required for fetching results."""
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+        response = await no_auth_client.get(f"/api/jobs/{job_id}/results")
+        assert response.status_code == 401
+
+
 class TestCreateBatchJobAPI:
     """Test cases for the POST /api/jobs endpoint."""
 

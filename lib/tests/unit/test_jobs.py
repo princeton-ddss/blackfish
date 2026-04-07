@@ -213,7 +213,7 @@ class TestBatchJobUpdate:
         """update should propagate TigerFlowError from client."""
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
-        client.report.side_effect = TigerFlowError("status", "host", "failed")
+        client.report.side_effect = TigerFlowError("report", "host", "failed")
 
         with pytest.raises(TigerFlowError):
             await job.update(client)

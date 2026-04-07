@@ -107,7 +107,7 @@ class TigerFlowError(Exception):
     """Error raised when TigerFlow operations fail.
 
     Args:
-        error_type: Type of error (ssh, command, setup, install, version, missing, run, status, stop)
+        error_type: Type of error (ssh, command, setup, install, version, missing, run, report, stop)
         host: The target host where the error occurred
         details: Optional additional context
     """
@@ -129,7 +129,7 @@ class TigerFlowError(Exception):
             "version": f"TigerFlow version on {self.host} is too old. Run profile setup to upgrade.",
             "missing": f"TigerFlow is not installed on {self.host}. Run profile setup to install.",
             "run": f"Failed to start TigerFlow job on {self.host}.",
-            "status": f"Failed to get TigerFlow job status on {self.host}.",
+            "report": f"Failed to get TigerFlow job report on {self.host}.",
             "stop": f"Failed to stop TigerFlow job on {self.host}.",
             "unsupported": f"Required tigerflow features not available on {self.host}. Upgrade tigerflow.",
         }
@@ -687,15 +687,17 @@ class TigerFlowClient:
                     if stderr
                     else f"Exit code {returncode}"
                 )
-                raise TigerFlowError("status", self.host, error_detail)
+                raise TigerFlowError("report", self.host, error_detail)
 
             raise TigerFlowError(
-                "status", self.host, "Empty response from tigerflow report"
+                "report", self.host, "Empty response from tigerflow report"
             )
         except json.JSONDecodeError as e:
-            raise TigerFlowError("status", self.host, f"Invalid JSON response: {e}")
+            raise TigerFlowError("report", self.host, f"Invalid JSON response: {e}")
         except ValidationError as e:
-            raise TigerFlowError("status", self.host, f"Invalid status format: {e}")
+            raise TigerFlowError(
+                "report", self.host, f"Invalid report format: {e}"
+            )
 
     async def stop(self, output_dir: str) -> None:
         """Stop a running job.

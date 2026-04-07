@@ -268,6 +268,7 @@ class BatchJob(UUIDAuditBase):
         report = await client.report(self.output_dir)
 
         # Update progress from report
+        # staged = items waiting + items actively processing (both are "not yet finished")
         pipeline = report.progress.pipeline
         self.staged = pipeline.staged + pipeline.in_progress
         self.finished = pipeline.finished

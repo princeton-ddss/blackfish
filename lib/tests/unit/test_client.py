@@ -1001,7 +1001,7 @@ class TestTigerFlowClientReport:
         with pytest.raises(TigerFlowError) as exc_info:
             await client.report("/data/out")
 
-        assert exc_info.value.error_type == "status"
+        assert exc_info.value.error_type == "report"
 
     async def test_report_raises_error_on_invalid_json(self) -> None:
         """report should raise error when response is not valid JSON."""
@@ -1012,7 +1012,7 @@ class TestTigerFlowClientReport:
         with pytest.raises(TigerFlowError) as exc_info:
             await client.report("/data/out")
 
-        assert exc_info.value.error_type == "status"
+        assert exc_info.value.error_type == "report"
 
     async def test_report_builds_command_with_output_dir_and_json_flag(self) -> None:
         """report should build command with output_dir and --json flag."""
@@ -1039,7 +1039,7 @@ class TestTigerFlowClientReport:
         with pytest.raises(TigerFlowError) as exc_info:
             await client.report("/data/out")
 
-        assert exc_info.value.error_type == "status"
+        assert exc_info.value.error_type == "report"
 
     async def test_report_parses_stopped_pipeline_with_exit_code_1(self) -> None:
         """report should parse valid JSON even when tigerflow returns exit code 1 for stopped pipelines."""

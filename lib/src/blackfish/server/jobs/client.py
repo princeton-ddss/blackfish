@@ -665,33 +665,19 @@ class TigerFlowClient:
 
         command = f"{self._tigerflow_bin} report {output_dir} --json"
 
-        # Use runner.run() directly instead of _run() because tigerflow report
-        # returns exit code 1 for stopped pipelines but still outputs valid JSON
         try:
-            returncode, stdout, stderr = await self.runner.run(command)
+            stdout, _ = await self._run(command)
             output = stdout.decode("utf-8").strip()
 
-            # Try to parse JSON even on non-zero exit code
-            # tigerflow returns exit code 1 for stopped pipelines with valid output
-            if output:
-                try:
-                    data = json.loads(output)
-                    return TigerFlowReport.model_validate(data)
-                except (json.JSONDecodeError, ValidationError):
-                    pass  # Fall through to error handling
-
-            # No valid JSON output - report the error
-            if returncode != 0:
-                error_detail = (
-                    stderr.decode("utf-8").strip()
-                    if stderr
-                    else f"Exit code {returncode}"
+            if not output:
+                raise TigerFlowError(
+                    "report", self.host, "Empty response from tigerflow report"
                 )
-                raise TigerFlowError("report", self.host, error_detail)
 
-            raise TigerFlowError(
-                "report", self.host, "Empty response from tigerflow report"
-            )
+            data = json.loads(output)
+            return TigerFlowReport.model_validate(data)
+        except TigerFlowError:
+            raise
         except json.JSONDecodeError as e:
             raise TigerFlowError("report", self.host, f"Invalid JSON response: {e}")
         except ValidationError as e:

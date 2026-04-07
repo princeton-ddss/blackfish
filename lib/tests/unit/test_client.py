@@ -1031,7 +1031,7 @@ class TestTigerFlowClientReport:
         assert "--json" in cmd
 
     async def test_report_raises_error_on_command_failure(self) -> None:
-        """report should raise error when tigerflow command fails."""
+        """report should raise error when tigerflow command fails (e.g. invalid directory)."""
         runner = MockRunner()
         runner.set_response(1, b"", b"Failed to read progress")
         client = TigerFlowClient(runner, "/home/user")
@@ -1039,15 +1039,15 @@ class TestTigerFlowClientReport:
         with pytest.raises(TigerFlowError) as exc_info:
             await client.report("/data/out")
 
-        assert exc_info.value.error_type == "report"
+        assert exc_info.value.error_type == "command"
 
-    async def test_report_parses_stopped_pipeline_with_exit_code_1(self) -> None:
-        """report should parse valid JSON even when tigerflow returns exit code 1 for stopped pipelines."""
+    async def test_report_returns_stopped_pipeline(self) -> None:
+        """report should return stopped pipeline data (exit code 0)."""
         runner = MockRunner()
         report_data = self._make_report_json(
             running=False, pid=None, finished=10, in_progress=0, staged=0, errored=2
         )
-        runner.set_response(1, json.dumps(report_data).encode())
+        runner.set_response(0, json.dumps(report_data).encode())
         client = TigerFlowClient(runner, "/home/user")
 
         report = await client.report("/data/out")

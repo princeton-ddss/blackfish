@@ -8,14 +8,19 @@ import {
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, errored = 0 }) {
     const getStatusConfig = () => {
         switch (status) {
             case "running":
-                return {
+                return errored > 0 ? {
                     bg: "bg-yellow-50 dark:bg-yellow-900/30",
                     text: "text-yellow-700 dark:text-yellow-400",
                     ring: "ring-yellow-600/20 dark:ring-yellow-500/30",
+                    label: "Running",
+                } : {
+                    bg: "bg-green-50 dark:bg-green-900/30",
+                    text: "text-green-700 dark:text-green-400",
+                    ring: "ring-green-600/20 dark:ring-green-500/30",
                     label: "Running",
                 };
             case "broken":
@@ -47,6 +52,7 @@ function StatusBadge({ status }) {
 
 StatusBadge.propTypes = {
     status: PropTypes.string.isRequired,
+    errored: PropTypes.number,
 };
 
 function ProgressBar({ finished, staged, errored }) {
@@ -116,7 +122,7 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <StatusBadge status={job.status} />
+                    <StatusBadge status={job.status} errored={job.errored} />
                     {job.status === "running" && onStopJob && (
                         <button
                             type="button"

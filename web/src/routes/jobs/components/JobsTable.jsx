@@ -11,14 +11,19 @@ import { TASKS } from "./NewJobModal";
 import PropTypes from "prop-types";
 
 // Derive display status from API status and progress fields
-function StatusBadge({ status }) {
+function StatusBadge({ status, errored = 0 }) {
     const getStatusConfig = () => {
         switch (status) {
             case "running":
-                return {
+                return errored > 0 ? {
                     bg: "bg-yellow-50 dark:bg-yellow-900/30",
                     text: "text-yellow-700 dark:text-yellow-400",
                     ring: "ring-yellow-600/20 dark:ring-yellow-500/30",
+                    label: "Running",
+                } : {
+                    bg: "bg-green-50 dark:bg-green-900/30",
+                    text: "text-green-700 dark:text-green-400",
+                    ring: "ring-green-600/20 dark:ring-green-500/30",
                     label: "Running",
                 };
             case "broken":
@@ -50,6 +55,7 @@ function StatusBadge({ status }) {
 
 StatusBadge.propTypes = {
     status: PropTypes.string.isRequired,
+    errored: PropTypes.number,
 };
 
 function ProgressDisplay({ finished, staged, errored }) {
@@ -237,7 +243,7 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                                     {lastModified(job.created_at)}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm">
-                                                    <StatusBadge status={job.status} />
+                                                    <StatusBadge status={job.status} errored={job.errored} />
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     <ProgressDisplay

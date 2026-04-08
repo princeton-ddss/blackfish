@@ -293,6 +293,27 @@ export async function fetchJobs(path) {
   return res.json();
 }
 
+/** Fetch file-level results for a batch job. */
+export async function fetchJobResults(jobId) {
+  const res = await fetch(`${blackfishApiURL}/api/jobs/${jobId}/results`);
+  if (!res.ok) {
+    console.debug(`from fetchJobResults: failed to fetch results (status=${res.status})`);
+    let message = "Failed to fetch job results.";
+    try {
+      const body = await res.json();
+      if (body.detail) {
+        message = body.detail;
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
 /** Fetch resource tiers and time constraints for a profile. */
 export async function fetchProfileResources(profileName) {
   const res = await fetch(`${blackfishApiURL}/api/profiles/${profileName}/resources`);

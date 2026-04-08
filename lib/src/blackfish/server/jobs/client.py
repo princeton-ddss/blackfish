@@ -35,7 +35,7 @@ class TigerFlowPipelineProgress(BaseModel):
 
     finished: int
     in_progress: int
-    staged: int
+    staged: Optional[int]  # None when pipeline is stopped
     errored: int
 
 

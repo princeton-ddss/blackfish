@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
-import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs } from "./requests";
+import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults } from "./requests";
 import { ServiceStatus } from "./util";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 
@@ -42,10 +42,28 @@ export const useModels = (profile, image = null) => {
 export const useJobs = (profile) => {
   const key = profile ? `jobs?profile=${profile.name}` : null;
   const { data, error, isLoading, isValidating, mutate } = useSWR(key, fetchJobs, {
-    refreshInterval: 30_000,
+    refreshInterval: 60_000,
   });
   return {
     jobs: data || [],
+    error: error,
+    isLoading: isLoading,
+    isRefreshing: isValidating,
+    mutate: mutate,
+  };
+};
+
+export const useJobResults = (jobId) => {
+  const key = jobId ? `jobs/${jobId}/results` : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    key,
+    () => fetchJobResults(jobId),
+    {
+      refreshInterval: 60_000,
+    },
+  );
+  return {
+    results: data || [],
     error: error,
     isLoading: isLoading,
     isRefreshing: isValidating,

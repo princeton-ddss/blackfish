@@ -155,7 +155,7 @@ def make_mock_report(
     pid: int | None = 12345,
     finished: int = 5,
     in_progress: int = 3,
-    staged: int = 2,
+    staged: int | None = 2,
     errored: int = 0,
 ) -> TigerFlowReport:
     """Create a TigerFlowReport for testing."""
@@ -199,13 +199,13 @@ class TestBatchJobUpdate:
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
         client.report.return_value = make_mock_report(
-            running=False, pid=None, finished=5, in_progress=0, staged=0, errored=5
+            running=False, pid=None, finished=5, in_progress=0, staged=None, errored=5
         )
 
         result = await job.update(client)
 
         assert result == BatchJobStatus.STOPPED
-        assert job.staged == 0
+        assert job.staged == 0  # staged=None maps to 0 for stopped pipelines
         assert job.finished == 5
         assert job.errored == 5
 

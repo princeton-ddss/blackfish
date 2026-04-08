@@ -6,72 +6,8 @@ import {
     StopIcon,
     TrashIcon,
 } from "@heroicons/react/24/outline";
+import StatusBadge from "./StatusBadge";
 import PropTypes from "prop-types";
-
-// Derive display status from API status and progress fields
-function deriveDisplayStatus(job) {
-    if (job.status === "running") return "running";
-    if (job.status === "broken") return "broken";
-    // status === "stopped"
-    if ((job.staged ?? 0) === 0 && (job.errored ?? 0) === 0) return "done";
-    if ((job.errored ?? 0) > 0) return "error";
-    return "stopped";
-}
-
-function StatusBadge({ displayStatus }) {
-    const getStatusConfig = () => {
-        switch (displayStatus) {
-            case "done":
-                return {
-                    bg: "bg-green-50 dark:bg-green-900/30",
-                    text: "text-green-700 dark:text-green-400",
-                    ring: "ring-green-600/20 dark:ring-green-500/30",
-                    label: "Done",
-                };
-            case "running":
-                return {
-                    bg: "bg-yellow-50 dark:bg-yellow-900/30",
-                    text: "text-yellow-700 dark:text-yellow-400",
-                    ring: "ring-yellow-600/20 dark:ring-yellow-500/30",
-                    label: "Running",
-                };
-            case "error":
-                return {
-                    bg: "bg-red-50 dark:bg-red-900/30",
-                    text: "text-red-700 dark:text-red-400",
-                    ring: "ring-red-600/20 dark:ring-red-500/30",
-                    label: "Error",
-                };
-            case "broken":
-                return {
-                    bg: "bg-orange-50 dark:bg-orange-900/30",
-                    text: "text-orange-700 dark:text-orange-400",
-                    ring: "ring-orange-600/20 dark:ring-orange-500/30",
-                    label: "Broken",
-                };
-            case "stopped":
-            default:
-                return {
-                    bg: "bg-gray-50 dark:bg-gray-700",
-                    text: "text-gray-600 dark:text-gray-400",
-                    ring: "ring-gray-500/10 dark:ring-gray-600",
-                    label: "Stopped",
-                };
-        }
-    };
-
-    const config = getStatusConfig();
-
-    return (
-        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.bg} ${config.text} ${config.ring}`}>
-            {config.label}
-        </span>
-    );
-}
-
-StatusBadge.propTypes = {
-    displayStatus: PropTypes.string.isRequired,
-};
 
 function ProgressBar({ finished, staged, errored }) {
     const done = Number(finished) || 0;
@@ -140,7 +76,7 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <StatusBadge displayStatus={deriveDisplayStatus(job)} />
+                    <StatusBadge status={job.status} errored={job.errored} />
                     {job.status === "running" && onStopJob && (
                         <button
                             type="button"
@@ -172,7 +108,9 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                     <span className="text-gray-500 dark:text-gray-400">Progress</span>
                     <div className="flex items-center gap-3 text-xs">
                         <span className="text-green-600 dark:text-green-400">{done} done</span>
-                        <span className="text-gray-500 dark:text-gray-400">{pending} staged</span>
+                        {job.status === "running" && pending > 0 && (
+                            <span className="text-gray-500 dark:text-gray-400">{pending} staged</span>
+                        )}
                         {failed > 0 && (
                             <span className="text-red-600 dark:text-red-400">{failed} failed</span>
                         )}
@@ -199,17 +137,17 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                     </div>
                     <div className="space-y-2 text-sm">
                         {job.input_dir && (
-                            <div>
+                            <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Input:</span>
-                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono ml-2 break-all">
+                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono ml-2 truncate" title={job.input_dir}>
                                     {job.input_dir}
                                 </span>
                             </div>
                         )}
                         {job.output_dir && (
-                            <div>
+                            <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Output:</span>
-                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono ml-2 break-all">
+                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono ml-2 truncate" title={job.output_dir}>
                                     {job.output_dir}
                                 </span>
                             </div>
@@ -227,7 +165,7 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                             Resource Config
                         </h4>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="space-y-2 text-sm">
                         {job.resources?.memory && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Memory:</span>

@@ -1,12 +1,48 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
     DocumentIcon,
     CheckCircleIcon,
+    CheckIcon,
     XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { blackfishApiURL } from "@/config";
 import { getFileType, truncateTextPreview } from "@/lib/fileApi";
 import PropTypes from "prop-types";
+
+function TruncatedPath({ path, maxWidth = "max-w-[14rem]" }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleClick = useCallback(() => {
+        navigator.clipboard.writeText(path).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        }).catch(() => {});
+    }, [path]);
+
+    if (!path) return "-";
+
+    return (
+        <span
+            className="cursor-pointer inline-flex items-center gap-1"
+            title={path}
+            onClick={handleClick}
+        >
+            {copied ? (
+                <>
+                    <span className="text-green-600 dark:text-green-400">Copied</span>
+                    <CheckIcon className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                </>
+            ) : (
+                <span className={`truncate ${maxWidth} text-xs font-mono`}>{path}</span>
+            )}
+        </span>
+    );
+}
+
+TruncatedPath.propTypes = {
+    path: PropTypes.string,
+    maxWidth: PropTypes.string,
+};
 
 function formatDateTime(isoString) {
     if (!isoString) return "-";
@@ -96,9 +132,9 @@ function OutputFilePreview({ file, profile = null }) {
                         <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
                             <p className="text-sm text-red-700 dark:text-red-400">{textError}</p>
                         </div>
-                    ) : (
+                    ) : textContent ? (
                         <>
-                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-48 overflow-y-auto">
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-y-auto">
                                 <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
                                     {textContent.text}
                                 </pre>
@@ -109,7 +145,7 @@ function OutputFilePreview({ file, profile = null }) {
                                 </p>
                             )}
                         </>
-                    )}
+                    ) : null}
                 </div>
             )}
 
@@ -158,7 +194,7 @@ function ResultPreview({ result, job, profile = null }) {
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6">
+        <div className="bg-white dark:bg-gray-800 p-6 h-full flex flex-col">
             {/* Status Header */}
             <div className="flex items-center gap-3 mb-4">
                 {result.success ? (
@@ -175,27 +211,17 @@ function ResultPreview({ result, job, profile = null }) {
             <div className="mb-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Input File:</span>
-                    <span className="text-gray-900 dark:text-gray-100 truncate ml-2" title={result.input_file}>
-                        {result.input_file}
+                    <span className="text-gray-900 dark:text-gray-100 ml-2">
+                        <TruncatedPath path={result.input_file} />
                     </span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Output File:</span>
-                    <span className="text-gray-900 dark:text-gray-100 truncate ml-2" title={result.output_file || "-"}>
-                        {result.output_file || "-"}
+                    <span className="text-gray-900 dark:text-gray-100 ml-2">
+                        <TruncatedPath path={result.output_file} maxWidth="max-w-[22rem]" />
                     </span>
                 </div>
             </div>
-
-            {/* Output File Preview */}
-            {result.output_file && (
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        Output Preview
-                    </h4>
-                    <OutputFilePreview file={result.output_file} profile={profile} />
-                </div>
-            )}
 
             {/* Timing Information */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
@@ -228,11 +254,11 @@ function ResultPreview({ result, job, profile = null }) {
             {job && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        Job Context
+                        Job
                     </h4>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Job:</span>
+                            <span className="text-gray-500 dark:text-gray-400">Name:</span>
                             <span className="text-gray-900 dark:text-gray-100 truncate ml-2" title={job.name}>
                                 {job.name}
                             </span>
@@ -253,7 +279,7 @@ function ResultPreview({ result, job, profile = null }) {
 
             {/* Error Message */}
             {!result.success && result.error && (
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
                     <h4 className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
                         Error
                     </h4>
@@ -261,6 +287,18 @@ function ResultPreview({ result, job, profile = null }) {
                         <p className="text-sm text-red-700 dark:text-red-400">
                             {result.error}
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Output File Preview — at bottom, fills remaining space */}
+            {result.output_file && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex-1 min-h-0 flex flex-col">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        Output Preview
+                    </h4>
+                    <div className="flex-1 min-h-0 overflow-y-auto">
+                        <OutputFilePreview file={result.output_file} profile={profile} />
                     </div>
                 </div>
             )}

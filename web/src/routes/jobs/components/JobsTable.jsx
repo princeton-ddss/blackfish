@@ -8,72 +8,8 @@ import {
 import { lastModified } from "@/lib/util";
 import Pagination from "@/components/Pagination";
 import { TASKS } from "./NewJobModal";
+import StatusBadge from "./StatusBadge";
 import PropTypes from "prop-types";
-
-// Derive display status from API status and progress fields
-function deriveDisplayStatus(job) {
-    if (job.status === "running") return "running";
-    if (job.status === "broken") return "broken";
-    // status === "stopped"
-    if ((job.staged ?? 0) === 0 && (job.errored ?? 0) === 0) return "done";
-    if ((job.errored ?? 0) > 0) return "error";
-    return "stopped";
-}
-
-function StatusBadge({ displayStatus }) {
-    const getStatusConfig = () => {
-        switch (displayStatus) {
-            case "done":
-                return {
-                    bg: "bg-green-50 dark:bg-green-900/30",
-                    text: "text-green-700 dark:text-green-400",
-                    ring: "ring-green-600/20 dark:ring-green-500/30",
-                    label: "Done",
-                };
-            case "running":
-                return {
-                    bg: "bg-yellow-50 dark:bg-yellow-900/30",
-                    text: "text-yellow-700 dark:text-yellow-400",
-                    ring: "ring-yellow-600/20 dark:ring-yellow-500/30",
-                    label: "Running",
-                };
-            case "error":
-                return {
-                    bg: "bg-red-50 dark:bg-red-900/30",
-                    text: "text-red-700 dark:text-red-400",
-                    ring: "ring-red-600/20 dark:ring-red-500/30",
-                    label: "Error",
-                };
-            case "broken":
-                return {
-                    bg: "bg-orange-50 dark:bg-orange-900/30",
-                    text: "text-orange-700 dark:text-orange-400",
-                    ring: "ring-orange-600/20 dark:ring-orange-500/30",
-                    label: "Broken",
-                };
-            case "stopped":
-            default:
-                return {
-                    bg: "bg-gray-50 dark:bg-gray-700",
-                    text: "text-gray-600 dark:text-gray-400",
-                    ring: "ring-gray-500/10 dark:ring-gray-600",
-                    label: "Stopped",
-                };
-        }
-    };
-
-    const config = getStatusConfig();
-
-    return (
-        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.bg} ${config.text} ${config.ring}`}>
-            {config.label}
-        </span>
-    );
-}
-
-StatusBadge.propTypes = {
-    displayStatus: PropTypes.string.isRequired,
-};
 
 function ProgressDisplay({ finished, staged, errored }) {
     const done = Number(finished) || 0;
@@ -260,7 +196,7 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                                     {lastModified(job.created_at)}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm">
-                                                    <StatusBadge displayStatus={deriveDisplayStatus(job)} />
+                                                    <StatusBadge status={job.status} errored={job.errored} />
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     <ProgressDisplay

@@ -8,39 +8,15 @@ import {
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
-// Derive display status from API status and progress fields
-function deriveDisplayStatus(job) {
-    if (job.status === "running") return "running";
-    if (job.status === "broken") return "broken";
-    // status === "stopped"
-    if ((job.staged ?? 0) === 0 && (job.errored ?? 0) === 0) return "done";
-    if ((job.errored ?? 0) > 0) return "error";
-    return "stopped";
-}
-
-function StatusBadge({ displayStatus }) {
+function StatusBadge({ status }) {
     const getStatusConfig = () => {
-        switch (displayStatus) {
-            case "done":
-                return {
-                    bg: "bg-green-50 dark:bg-green-900/30",
-                    text: "text-green-700 dark:text-green-400",
-                    ring: "ring-green-600/20 dark:ring-green-500/30",
-                    label: "Done",
-                };
+        switch (status) {
             case "running":
                 return {
                     bg: "bg-yellow-50 dark:bg-yellow-900/30",
                     text: "text-yellow-700 dark:text-yellow-400",
                     ring: "ring-yellow-600/20 dark:ring-yellow-500/30",
                     label: "Running",
-                };
-            case "error":
-                return {
-                    bg: "bg-red-50 dark:bg-red-900/30",
-                    text: "text-red-700 dark:text-red-400",
-                    ring: "ring-red-600/20 dark:ring-red-500/30",
-                    label: "Error",
                 };
             case "broken":
                 return {
@@ -70,7 +46,7 @@ function StatusBadge({ displayStatus }) {
 }
 
 StatusBadge.propTypes = {
-    displayStatus: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
 };
 
 function ProgressBar({ finished, staged, errored }) {
@@ -140,7 +116,7 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <StatusBadge displayStatus={deriveDisplayStatus(job)} />
+                    <StatusBadge status={job.status} />
                     {job.status === "running" && onStopJob && (
                         <button
                             type="button"

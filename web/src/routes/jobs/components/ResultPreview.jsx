@@ -1,9 +1,39 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
     DocumentIcon,
     CheckCircleIcon,
+    CheckIcon,
     XCircleIcon,
 } from "@heroicons/react/24/outline";
+
+function TruncatedPath({ path, maxWidth = "max-w-[14rem]" }) {
+    const [copied, setCopied] = useState(false);
+
+    if (!path) return "-";
+
+    const handleClick = useCallback(() => {
+        navigator.clipboard.writeText(path);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    }, [path]);
+
+    return (
+        <span
+            className="cursor-pointer inline-flex items-center gap-1"
+            title={path}
+            onClick={handleClick}
+        >
+            {copied ? (
+                <>
+                    <span className="text-green-600 dark:text-green-400">Copied</span>
+                    <CheckIcon className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                </>
+            ) : (
+                <span className={`truncate ${maxWidth}`}>{path}</span>
+            )}
+        </span>
+    );
+}
 import { blackfishApiURL } from "@/config";
 import { getFileType, truncateTextPreview } from "@/lib/fileApi";
 import PropTypes from "prop-types";
@@ -175,14 +205,14 @@ function ResultPreview({ result, job, profile = null }) {
             <div className="mb-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Input File:</span>
-                    <span className="text-gray-900 dark:text-gray-100 truncate ml-2" title={result.input_file}>
-                        {result.input_file}
+                    <span className="text-gray-900 dark:text-gray-100 ml-2">
+                        <TruncatedPath path={result.input_file} />
                     </span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Output File:</span>
-                    <span className="text-gray-900 dark:text-gray-100 truncate ml-2" title={result.output_file || "-"}>
-                        {result.output_file || "-"}
+                    <span className="text-gray-900 dark:text-gray-100 ml-2">
+                        <TruncatedPath path={result.output_file} maxWidth="max-w-[22rem]" />
                     </span>
                 </div>
             </div>

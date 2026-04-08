@@ -183,8 +183,10 @@ function JobResultsTable({
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-500 dark:text-gray-400">
                                                     {result.started_at && result.finished_at ? formatElapsedTime(result.started_at, result.finished_at) : "-"}
                                                 </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-center">
-                                                    <StatusIcon success={result.success} />
+                                                <td className="whitespace-nowrap py-3 px-3">
+                                                    <div className="flex justify-center">
+                                                        <StatusIcon success={result.success} />
+                                                    </div>
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     <div className="overflow-x-scroll">

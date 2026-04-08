@@ -177,17 +177,17 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                     </div>
                     <div className="space-y-2 text-sm">
                         {job.input_dir && (
-                            <div>
+                            <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Input:</span>
-                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono ml-2 break-all">
+                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono ml-2 truncate" title={job.input_dir}>
                                     {job.input_dir}
                                 </span>
                             </div>
                         )}
                         {job.output_dir && (
-                            <div>
+                            <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Output:</span>
-                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono ml-2 break-all">
+                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono ml-2 truncate" title={job.output_dir}>
                                     {job.output_dir}
                                 </span>
                             </div>

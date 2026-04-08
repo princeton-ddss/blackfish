@@ -148,7 +148,9 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                     <span className="text-gray-500 dark:text-gray-400">Progress</span>
                     <div className="flex items-center gap-3 text-xs">
                         <span className="text-green-600 dark:text-green-400">{done} done</span>
-                        <span className="text-gray-500 dark:text-gray-400">{pending} staged</span>
+                        {job.status === "running" && pending > 0 && (
+                            <span className="text-gray-500 dark:text-gray-400">{pending} staged</span>
+                        )}
                         {failed > 0 && (
                             <span className="text-red-600 dark:text-red-400">{failed} failed</span>
                         )}

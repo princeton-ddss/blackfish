@@ -205,7 +205,7 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                             Resource Config
                         </h4>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="space-y-2 text-sm">
                         {job.resources?.memory && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Memory:</span>

@@ -29,7 +29,7 @@ function TruncatedPath({ path, maxWidth = "max-w-[14rem]" }) {
                     <CheckIcon className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
                 </>
             ) : (
-                <span className={`truncate ${maxWidth}`}>{path}</span>
+                <span className={`truncate ${maxWidth} text-xs font-mono`}>{path}</span>
             )}
         </span>
     );

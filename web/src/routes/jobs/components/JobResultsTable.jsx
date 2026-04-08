@@ -174,7 +174,7 @@ function JobResultsTable({
                                                         : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                 }`}
                                             >
-                                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-sm text-gray-900 dark:text-gray-100 sm:pl-6">
+                                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-xs font-mono text-gray-900 dark:text-gray-100 sm:pl-6">
                                                     <div className="overflow-x-scroll">{result.input_file}</div>
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
@@ -188,7 +188,7 @@ function JobResultsTable({
                                                         <StatusIcon success={result.success} />
                                                     </div>
                                                 </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
+                                                <td className="whitespace-nowrap py-3 px-3 text-left text-xs font-mono text-gray-900 dark:text-gray-100">
                                                     <div className="overflow-x-scroll">
                                                         {result.output_file ? result.output_file.split("/").pop() : "-"}
                                                     </div>

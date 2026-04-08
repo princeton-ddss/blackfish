@@ -586,6 +586,267 @@ class TestGetJobResultsAPI:
         assert error["error"] == "Decoding failed"
 
     @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_no_output_ext(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Test output path has no extension when output_ext and default are both None."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        # Clear output_ext on the fixture job (task="transcribe" has no default either)
+        job = await session.get(BatchJob, UUID(job_id))
+        job.output_ext = None
+        await session.commit()
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=1, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "transcribe": TigerFlowTaskMetrics(
+                        count=1,
+                        avg_ms=500.0,
+                        min_ms=500.0,
+                        max_ms=500.0,
+                        durations=[500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=500.0,
+                                status="success",
+                            ),
+                        ],
+                    ),
+                },
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 1
+        assert results[0]["output_file"] == "/data/output/transcribe/audio_001"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_falls_back_to_default_output_ext(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Test output path uses task default ext when output_ext is None."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        # Set task to "detect" (default ext = ".json") and clear output_ext
+        job = await session.get(BatchJob, UUID(job_id))
+        job.output_ext = None
+        job.task = "detect"
+        await session.commit()
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=1, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "detect": TigerFlowTaskMetrics(
+                        count=1,
+                        avg_ms=500.0,
+                        min_ms=500.0,
+                        max_ms=500.0,
+                        durations=[500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="image_001.png",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=500.0,
+                                status="success",
+                            ),
+                        ],
+                    ),
+                },
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 1
+        assert results[0]["output_file"] == "/data/output/detect/image_001.json"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_dedup_keeps_latest(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+    ):
+        """Test that duplicate (task, file) entries keep the latest by finished_at."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=1, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "transcribe": TigerFlowTaskMetrics(
+                        count=2,
+                        avg_ms=500.0,
+                        min_ms=500.0,
+                        max_ms=500.0,
+                        durations=[500.0, 500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=500.0,
+                                status="error",
+                            ),
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:01:00+00:00",
+                                finished_at="2026-04-03T10:01:01+00:00",
+                                duration_ms=500.0,
+                                status="success",
+                            ),
+                        ],
+                    ),
+                },
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 1
+        assert results[0]["status"] == "success"
+        assert results[0]["finished_at"] == "2026-04-03T10:01:01+00:00"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_dedup_keeps_latest_reverse_order(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+    ):
+        """Test dedup keeps latest even when it appears first in the list."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=1, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "transcribe": TigerFlowTaskMetrics(
+                        count=2,
+                        avg_ms=500.0,
+                        min_ms=500.0,
+                        max_ms=500.0,
+                        durations=[500.0, 500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:01:00+00:00",
+                                finished_at="2026-04-03T10:01:01+00:00",
+                                duration_ms=500.0,
+                                status="success",
+                            ),
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=500.0,
+                                status="error",
+                            ),
+                        ],
+                    ),
+                },
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 1
+        assert results[0]["status"] == "success"
+        assert results[0]["finished_at"] == "2026-04-03T10:01:01+00:00"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
     async def test_get_results_tigerflow_error(
         self,
         mock_create_client,
@@ -598,7 +859,9 @@ class TestGetJobResultsAPI:
 
         mock_tigerflow = AsyncMock()
         mock_tigerflow.report = AsyncMock(
-            side_effect=TigerFlowError("report", "cluster.example.com", "Connection refused")
+            side_effect=TigerFlowError(
+                "report", "cluster.example.com", "Connection refused"
+            )
         )
         mock_create_client.return_value = mock_tigerflow
 

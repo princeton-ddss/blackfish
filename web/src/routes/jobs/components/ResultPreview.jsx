@@ -5,17 +5,21 @@ import {
     CheckIcon,
     XCircleIcon,
 } from "@heroicons/react/24/outline";
+import { blackfishApiURL } from "@/config";
+import { getFileType, truncateTextPreview } from "@/lib/fileApi";
+import PropTypes from "prop-types";
 
 function TruncatedPath({ path, maxWidth = "max-w-[14rem]" }) {
     const [copied, setCopied] = useState(false);
 
-    if (!path) return "-";
-
     const handleClick = useCallback(() => {
-        navigator.clipboard.writeText(path);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
+        navigator.clipboard.writeText(path).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        }).catch(() => {});
     }, [path]);
+
+    if (!path) return "-";
 
     return (
         <span
@@ -34,9 +38,11 @@ function TruncatedPath({ path, maxWidth = "max-w-[14rem]" }) {
         </span>
     );
 }
-import { blackfishApiURL } from "@/config";
-import { getFileType, truncateTextPreview } from "@/lib/fileApi";
-import PropTypes from "prop-types";
+
+TruncatedPath.propTypes = {
+    path: PropTypes.string,
+    maxWidth: PropTypes.string,
+};
 
 function formatDateTime(isoString) {
     if (!isoString) return "-";

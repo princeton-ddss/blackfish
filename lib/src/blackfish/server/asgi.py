@@ -1553,11 +1553,15 @@ async def get_job_results(
 
             key = (task_name, file_metric.file)
             prev = latest.get(key)
-            if prev is None or file_metric.finished_at > prev.finished_at:
+            if prev is None or datetime.fromisoformat(
+                file_metric.finished_at
+            ) > datetime.fromisoformat(prev.finished_at):
                 latest[key] = JobFileResult(
                     file=file_metric.file,
                     task=task_name,
-                    output_file=output_file if file_metric.status == "success" else None,
+                    output_file=output_file
+                    if file_metric.status == "success"
+                    else None,
                     started_at=file_metric.started_at,
                     finished_at=file_metric.finished_at,
                     duration_ms=file_metric.duration_ms,

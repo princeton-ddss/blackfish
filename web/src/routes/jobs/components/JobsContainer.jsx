@@ -1,4 +1,4 @@
-import { useContext, useState, useMemo } from "react";
+import { useContext, useState } from "react";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useJobs, useJobResults } from "@/lib/loaders";
 import { stopJob, deleteJob } from "@/lib/requests";
@@ -248,11 +248,9 @@ function JobsContainer() {
     };
 
     // Map API results to the shape expected by JobResultsTable/ResultPreview
-    const jobResults = useMemo(() => {
-        if (useMockData) {
-            return selectedJob ? MOCK_RESULTS[selectedJob.id] || [] : [];
-        }
-        return apiResults.map((r) => ({
+    const jobResults = useMockData
+        ? (selectedJob ? MOCK_RESULTS[selectedJob.id] || [] : [])
+        : apiResults.map((r) => ({
             id: `${r.task}/${r.file}`,
             input_file: r.file,
             output_file: r.output_file,
@@ -261,7 +259,6 @@ function JobsContainer() {
             success: r.status === "success",
             error: r.error || null,
         }));
-    }, [useMockData, selectedJob, apiResults]);
 
     // Determine what to show in right column
     const showResultPreview = selectedResult !== null;

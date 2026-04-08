@@ -188,7 +188,7 @@ function JobResultsTable({
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     <div className="overflow-x-scroll">
-                                                        {result.output_file || "-"}
+                                                        {result.output_file ? result.output_file.split("/").pop() : "-"}
                                                     </div>
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-right">

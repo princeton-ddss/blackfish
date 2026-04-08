@@ -88,6 +88,9 @@ from blackfish.server.jobs.base import (
     create_tigerflow_client,
     create_tigerflow_client_for_profile,
 )
+from blackfish.server.jobs.tasks import (
+    get_default_output_ext,
+)
 from blackfish.server.config import config as blackfish_config
 from blackfish.server.utils import find_port
 from blackfish.server.models.profile import (
@@ -1543,7 +1546,7 @@ async def get_job_results(
     latest: dict[tuple[str, str], JobFileResult] = {}
     for task_name, task_metrics in report.metrics.items():
         task_errors = error_lookup.get(task_name, {})
-        output_ext = job.output_ext or ""
+        output_ext = job.output_ext or get_default_output_ext(job.task) or ""
         for file_metric in task_metrics.files:
             stem = PurePosixPath(file_metric.file).stem
             output_file = f"{job.output_dir}/{task_name}/{stem}{output_ext}"

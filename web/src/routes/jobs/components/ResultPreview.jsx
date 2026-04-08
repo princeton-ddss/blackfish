@@ -128,7 +128,7 @@ function OutputFilePreview({ file, profile = null }) {
                         </div>
                     ) : textContent ? (
                         <>
-                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-48 overflow-y-auto">
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-y-auto">
                                 <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
                                     {textContent.text}
                                 </pre>
@@ -188,7 +188,7 @@ function ResultPreview({ result, job, profile = null }) {
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6">
+        <div className="bg-white dark:bg-gray-800 p-6 h-full flex flex-col">
             {/* Status Header */}
             <div className="flex items-center gap-3 mb-4">
                 {result.success ? (
@@ -216,16 +216,6 @@ function ResultPreview({ result, job, profile = null }) {
                     </span>
                 </div>
             </div>
-
-            {/* Output File Preview */}
-            {result.output_file && (
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        Output Preview
-                    </h4>
-                    <OutputFilePreview file={result.output_file} profile={profile} />
-                </div>
-            )}
 
             {/* Timing Information */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
@@ -258,11 +248,11 @@ function ResultPreview({ result, job, profile = null }) {
             {job && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        Job Context
+                        Job
                     </h4>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Job:</span>
+                            <span className="text-gray-500 dark:text-gray-400">Name:</span>
                             <span className="text-gray-900 dark:text-gray-100 truncate ml-2" title={job.name}>
                                 {job.name}
                             </span>
@@ -283,7 +273,7 @@ function ResultPreview({ result, job, profile = null }) {
 
             {/* Error Message */}
             {!result.success && result.error && (
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
                     <h4 className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
                         Error
                     </h4>
@@ -291,6 +281,18 @@ function ResultPreview({ result, job, profile = null }) {
                         <p className="text-sm text-red-700 dark:text-red-400">
                             {result.error}
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Output File Preview — at bottom, fills remaining space */}
+            {result.output_file && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex-1 min-h-0 flex flex-col">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        Output Preview
+                    </h4>
+                    <div className="flex-1 min-h-0 overflow-y-auto">
+                        <OutputFilePreview file={result.output_file} profile={profile} />
                     </div>
                 </div>
             )}

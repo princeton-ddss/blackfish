@@ -96,7 +96,7 @@ function OutputFilePreview({ file, profile = null }) {
                         <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
                             <p className="text-sm text-red-700 dark:text-red-400">{textError}</p>
                         </div>
-                    ) : (
+                    ) : textContent ? (
                         <>
                             <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-48 overflow-y-auto">
                                 <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
@@ -109,7 +109,7 @@ function OutputFilePreview({ file, profile = null }) {
                                 </p>
                             )}
                         </>
-                    )}
+                    ) : null}
                 </div>
             )}
 

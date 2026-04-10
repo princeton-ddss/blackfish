@@ -59,6 +59,9 @@ vi.mock("@heroicons/react/24/outline", () => ({
   PhotoIcon: ({ className, ...props }) => {
     return <div data-testid="photo-icon" className={className} {...props} />;
   },
+  TrashIcon: ({ className, ...props }) => {
+    return <div data-testid="trash-icon" className={className} {...props} />;
+  },
 }));
 
 // Mock the attachment components to simplify testing
@@ -243,9 +246,9 @@ describe("TextGenerationChatContainer", () => {
       await waitFor(() => {
         expect(getByText("Original message")).toBeInTheDocument();
       });
-      const userMessage = getByText("Original message").closest(".mt-5");
+      const userMessage = getByText("Original message").closest(".mt-3");
       await user.hover(userMessage);
-      const editButton = getByRole("button", { name: 'Edit message: "Original message"' });
+      const editButton = getByRole("button", { name: "Edit" });
       await user.click(editButton);
       await waitFor(() => {
         const editTextarea = userMessage.querySelector("textarea[name='edit-message']");
@@ -286,9 +289,9 @@ describe("TextGenerationChatContainer", () => {
       await waitFor(() => {
         expect(getByText("Original message")).toBeInTheDocument();
       });
-      const userMessage = getByText("Original message").closest(".mt-5");
+      const userMessage = getByText("Original message").closest(".mt-3");
       await user.hover(userMessage);
-      const editButton = getByRole("button", { name: 'Edit message: "Original message"' });
+      const editButton = getByRole("button", { name: "Edit" });
       await user.click(editButton);
       await waitFor(() => {
         const editTextarea = userMessage.querySelector("textarea[name='edit-message']");
@@ -329,9 +332,9 @@ describe("TextGenerationChatContainer", () => {
       await waitFor(() => {
         expect(getByText("Original message")).toBeInTheDocument();
       });
-      const userMessage = getByText("Original message").closest(".mt-5");
+      const userMessage = getByText("Original message").closest(".mt-3");
       await user.hover(userMessage);
-      const editButton = getByRole("button", { name: 'Edit message: "Original message"' });
+      const editButton = getByRole("button", { name: "Edit" });
       await user.click(editButton);
       await waitFor(() => {
         const editTextarea = userMessage.querySelector("textarea[name='edit-message']");
@@ -371,9 +374,9 @@ describe("TextGenerationChatContainer", () => {
         expect(getByText("Test message")).toBeInTheDocument();
         expect(getByText("Assistant response")).toBeInTheDocument();
       });
-      const userMessage = getByText("Test message").closest(".mt-5");
+      const userMessage = getByText("Test message").closest(".mt-3");
       await user.hover(userMessage);
-      const deleteButton = getByRole("button", { name: 'Delete message: "Test message"' });
+      const deleteButton = getByRole("button", { name: "Delete" });
       await user.click(deleteButton);
       expect(queryByText("Test message")).not.toBeInTheDocument();
       expect(queryByText("Assistant response")).not.toBeInTheDocument();

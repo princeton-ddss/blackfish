@@ -76,11 +76,9 @@ contract = [
   "tigerflow-ml @ git+https://github.com/princeton-ddss/tigerflow-ml.git",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = [ "src/blackfish" ]
-
-[tool.hatch.build]
-artifacts = [ "src/blackfish/build/**" ]
+[tool.hatch]
+build.artifacts = [ "src/blackfish/build/**" ]
+build.targets.wheel.packages = [ "src/blackfish" ]
 
 [tool.pyproject-fmt]
 max_supported_python = "3.13"

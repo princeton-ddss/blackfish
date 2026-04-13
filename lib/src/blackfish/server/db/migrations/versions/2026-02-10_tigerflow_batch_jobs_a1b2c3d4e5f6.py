@@ -1,12 +1,12 @@
 # type: ignore
 """TigerFlow batch jobs schema
 
-Replace batch job schema for TigerFlow-based execution.
-
-- Add: task, revision, input_dir, output_dir, params, resources, pid, max_workers
-- Rename: ntotal->staged, nsuccess->finished, nfail->errored
-- Remove: pipeline, job_id, scheduler, provider, mount
-- Keep: cache_dir (exists in both old and new schema)
+Replaces the v0.5 `jobs` table (which tracked speech_recognition jobs) with a
+fresh table for TigerFlow-based batch jobs. The two schemas represent
+semantically different entities, so we drop and recreate rather than juggling
+columns: v0.5 rows have no meaningful interpretation as v1.0 TigerFlow jobs,
+and preserving row continuity would leave zombie records with NULL in fields
+that v1.0 treats as required (task, input_dir, output_dir).
 
 Revision ID: a1b2c3d4e5f6
 Revises: 27b628a63d4e
@@ -71,63 +71,75 @@ def downgrade() -> None:
 def schema_upgrades() -> None:
     """schema upgrade migrations go here."""
 
-    with op.batch_alter_table("jobs", schema=None) as batch_op:
-        # Add new columns for TigerFlow
-        batch_op.add_column(sa.Column("task", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("revision", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("input_dir", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("output_dir", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("params", sa.JSON(), nullable=True))
-        batch_op.add_column(sa.Column("resources", sa.JSON(), nullable=True))
-        batch_op.add_column(sa.Column("pid", sa.String(), nullable=True))
-        batch_op.add_column(
-            sa.Column("max_workers", sa.Integer(), nullable=False, server_default="1")
-        )
-        batch_op.add_column(sa.Column("tigerflow_version", sa.String(), nullable=True))
-        batch_op.add_column(
-            sa.Column("tigerflow_ml_version", sa.String(), nullable=True)
-        )
-
-        # Rename progress columns
-        batch_op.alter_column("ntotal", new_column_name="staged")
-        batch_op.alter_column("nsuccess", new_column_name="finished")
-        batch_op.alter_column("nfail", new_column_name="errored")
-
-        # Remove old columns
-        batch_op.drop_column("pipeline")
-        batch_op.drop_column("job_id")
-        batch_op.drop_column("scheduler")
-        batch_op.drop_column("provider")
-        batch_op.drop_column("mount")
+    # Drop the v0.5 table (speech_recognition job shape) and create a fresh
+    # one with the v1.0 TigerFlow batch job shape. Any existing v0.5 rows are
+    # discarded by design — they were tied to ephemeral services and have no
+    # meaningful representation under the new schema. Required columns
+    # (task, input_dir, output_dir, etc.) are declared NOT NULL to match the
+    # BatchJob ORM in lib/src/blackfish/server/jobs/base.py.
+    op.drop_table("jobs")
+    op.create_table(
+        "jobs",
+        sa.Column("id", sa.GUID(length=16), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("task", sa.String(), nullable=False),
+        sa.Column("repo_id", sa.String(), nullable=False),
+        sa.Column("revision", sa.String(), nullable=True),
+        sa.Column("input_dir", sa.String(), nullable=False),
+        sa.Column("output_dir", sa.String(), nullable=False),
+        sa.Column("cache_dir", sa.String(), nullable=True),
+        sa.Column("params", sa.JSON(), nullable=True),
+        sa.Column("resources", sa.JSON(), nullable=True),
+        sa.Column("max_workers", sa.Integer(), nullable=False, server_default="1"),
+        sa.Column("profile", sa.String(), nullable=False),
+        sa.Column("user", sa.String(), nullable=True),
+        sa.Column("host", sa.String(), nullable=True),
+        sa.Column("home_dir", sa.String(), nullable=True),
+        sa.Column("status", sa.String(), nullable=True),
+        sa.Column("pid", sa.String(), nullable=True),
+        sa.Column("staged", sa.Integer(), nullable=True),
+        sa.Column("finished", sa.Integer(), nullable=True),
+        sa.Column("errored", sa.Integer(), nullable=True),
+        sa.Column("tigerflow_version", sa.String(), nullable=True),
+        sa.Column("tigerflow_ml_version", sa.String(), nullable=True),
+        sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
+        sa.Column("created_at", sa.DateTimeUTC(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTimeUTC(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_jobs")),
+    )
 
 
 def schema_downgrades() -> None:
     """schema downgrade migrations go here."""
 
-    with op.batch_alter_table("jobs", schema=None) as batch_op:
-        # Restore old columns
-        batch_op.add_column(sa.Column("pipeline", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("job_id", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("scheduler", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("provider", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("mount", sa.String(), nullable=True))
-
-        # Rename progress columns back
-        batch_op.alter_column("staged", new_column_name="ntotal")
-        batch_op.alter_column("finished", new_column_name="nsuccess")
-        batch_op.alter_column("errored", new_column_name="nfail")
-
-        # Remove new columns
-        batch_op.drop_column("task")
-        batch_op.drop_column("revision")
-        batch_op.drop_column("input_dir")
-        batch_op.drop_column("output_dir")
-        batch_op.drop_column("params")
-        batch_op.drop_column("resources")
-        batch_op.drop_column("pid")
-        batch_op.drop_column("max_workers")
-        batch_op.drop_column("tigerflow_version")
-        batch_op.drop_column("tigerflow_ml_version")
+    # Symmetric with schema_upgrades: drop the v1.0 table and recreate the
+    # v0.5 shape (as originally defined in 4dfd6eed368a_create_batch_jobs).
+    # Any v1.0 rows are discarded by design.
+    op.drop_table("jobs")
+    op.create_table(
+        "jobs",
+        sa.Column("id", sa.GUID(length=16), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("pipeline", sa.String(), nullable=False),
+        sa.Column("repo_id", sa.String(), nullable=False),
+        sa.Column("profile", sa.String(), nullable=False),
+        sa.Column("user", sa.String(), nullable=True),
+        sa.Column("host", sa.String(), nullable=True),
+        sa.Column("home_dir", sa.String(), nullable=True),
+        sa.Column("cache_dir", sa.String(), nullable=True),
+        sa.Column("job_id", sa.String(), nullable=True),
+        sa.Column("status", sa.String(), nullable=True),
+        sa.Column("ntotal", sa.String(), nullable=True),
+        sa.Column("nsuccess", sa.String(), nullable=True),
+        sa.Column("nfail", sa.String(), nullable=True),
+        sa.Column("scheduler", sa.String(), nullable=True),
+        sa.Column("provider", sa.String(), nullable=True),
+        sa.Column("mount", sa.String(), nullable=True),
+        sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
+        sa.Column("created_at", sa.DateTimeUTC(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTimeUTC(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_service")),
+    )
 
 
 def data_upgrades() -> None:

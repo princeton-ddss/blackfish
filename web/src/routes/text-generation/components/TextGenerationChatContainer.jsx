@@ -347,7 +347,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
                 <button
                   type="button"
                   onClick={() => {
-                    console.log("cancel button clicked");
+                    console.debug("cancel button clicked");
                     setIsEditing(false);
                     setContent(textContent);
                   }}
@@ -406,7 +406,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
         <div className={`flex flex-row-reverse items-center mt-2 transition-opacity duration-150 ${hover ? "opacity-100" : "opacity-0"}`}>
           <button
             onClick={() => {
-              console.log("deleting user message");
+              console.debug("deleting user message");
               onDeleteMessage();
             }}
             className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -416,7 +416,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
           </button>
           <button
             onClick={() => {
-              console.log("edit button clicked");
+              console.debug("edit button clicked");
               setIsEditing(true);
             }}
             className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -567,7 +567,7 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef, isWait
           key={index}
           message={message}
           onEditMessage={(newContent) => {
-            console.log("editing message:", message);
+            console.debug("editing message:", message);
             setMessages((messages) =>
               messages.map((m, i) => {
                 if (i === index) {
@@ -602,7 +602,7 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef, isWait
             // TODO: recursively submit this and all subsequent user messages
           }}
           onDeleteMessage={() => {
-            console.log("delete message:", message);
+            console.debug("delete message:", message);
             setMessages((messages) =>
               messages.filter((_, i) => i !== index && i !== index + 1)
             );
@@ -717,7 +717,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log("user message submitted");
+    console.debug("user message submitted");
 
     // Prepend file context to the message text (for LLM)
     const textWithFileContext = prependFileContext(userMessage.content, attachedFiles);
@@ -829,7 +829,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
   const handleResubmit = async (event, index) => {
     event.preventDefault();
-    console.log(`regenerating message at index ${index}`);
+    console.debug(`regenerating message at index ${index}`);
 
     setApiError(null);
 

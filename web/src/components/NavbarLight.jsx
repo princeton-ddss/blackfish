@@ -1,9 +1,10 @@
 import { Disclosure } from "@headlessui/react";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Dialog, DialogTitle, DialogPanel, Description } from "@headlessui/react";
 import { LifebuoyIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useLocation, Link } from "react-router-dom";
 import { assetPath } from "@/config";
+import ProfileSelect, { ProfileContext } from "@/components/ProfileSelect";
 import PropTypes from "prop-types";
 
 /**
@@ -17,6 +18,7 @@ function NavbarLight({ task }) {
   const pathname = location.pathname;
   const isLoginPage = pathname.endsWith("login");
 
+  const { profile, setProfile } = useContext(ProfileContext);
   const [isHelpModalOpen, setHelpModalOpen] = useState(false);
 
   const openHelpModal = () => setHelpModalOpen(true);
@@ -39,7 +41,7 @@ function NavbarLight({ task }) {
                     />
                   </Link>
                   <Link to="/dashboard">
-                    <div className="pl-4 text-4xl text-gray-900 font-bold">blackfish</div>
+                    <div className="pl-4 text-4xl text-gray-900 font-bold font-logo">blackfish</div>
                   </Link>
                   <div className="pl-4 text-4xl font-extralight text-slate-300 italic">
                     {task}
@@ -48,7 +50,27 @@ function NavbarLight({ task }) {
               </div>
 
               {!isLoginPage && (
-                <div className="flex items-center">
+                <div className="flex items-center gap-6">
+                  <Link
+                    to="/dashboard"
+                    className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    Dashboard
+                  </Link>
+                  <a
+                    href="https://princeton-ddss.github.io/blackfish/latest"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    Docs
+                  </a>
+                  <div className="w-72">
+                    <ProfileSelect
+                      selectedProfile={profile}
+                      setSelectedProfile={setProfile}
+                    />
+                  </div>
                   <button
                     onClick={openHelpModal}
                     className="text-black hover:text-blue-600 focus:outline-none transition-transform transform hover:scale-110"

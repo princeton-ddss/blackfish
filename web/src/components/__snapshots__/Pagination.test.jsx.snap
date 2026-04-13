@@ -4,10 +4,10 @@ exports[`Disabled Pagination 1`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
         disabled=""
       >
         <svg
@@ -28,67 +28,67 @@ exports[`Disabled Pagination 1`] = `
         </svg>
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         1
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-semibold"
         disabled=""
       >
         2
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         3
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         4
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         5
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         6
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         7
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         8
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         9
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         10
       </button>
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
       >
         <svg
           aria-hidden="true"
@@ -116,10 +116,10 @@ exports[`Disabled Pagination 2`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
         disabled=""
       >
         <svg
@@ -140,67 +140,67 @@ exports[`Disabled Pagination 2`] = `
         </svg>
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         1
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-semibold"
         disabled=""
       >
         2
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         3
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         4
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         5
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         6
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         7
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         8
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         9
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
         disabled=""
       >
         10
       </button>
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
       >
         <svg
           aria-hidden="true"
@@ -228,10 +228,10 @@ exports[`Enabled Pagination 1`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
       >
         <svg
           aria-hidden="true"
@@ -251,58 +251,58 @@ exports[`Enabled Pagination 1`] = `
         </svg>
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         1
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-semibold"
         disabled=""
       >
         2
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         3
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         4
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         5
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         6
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         7
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         8
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         9
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         10
       </button>
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
       >
         <svg
           aria-hidden="true"
@@ -330,10 +330,10 @@ exports[`Enabled Pagination 2`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
       >
         <svg
           aria-hidden="true"
@@ -353,58 +353,58 @@ exports[`Enabled Pagination 2`] = `
         </svg>
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         1
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-semibold"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-semibold"
         disabled=""
       >
         2
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         3
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         4
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         5
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         6
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         7
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         8
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         9
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white hover:bg-slate-100"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
       >
         10
       </button>
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
       >
         <svg
           aria-hidden="true"
@@ -432,10 +432,10 @@ exports[`Pagination with no files 1`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
         disabled=""
       >
         <svg
@@ -456,13 +456,13 @@ exports[`Pagination with no files 1`] = `
         </svg>
       </button>
       <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white text-gray-300"
+        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white dark:bg-gray-800 text-gray-300 dark:text-gray-600"
         disabled=""
       >
         1
       </button>
       <button
-        class="disabled:text-gray-300"
+        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
         disabled=""
       >
         <svg

@@ -4,45 +4,44 @@ exports[`TextGenerationCompletionContainer > Component rendering > renders the m
 <body>
   <div>
     <div
-      class="flex flex-col grow pt-2 bg-white"
+      class="flex flex-col grow pt-2 bg-white dark:bg-gray-800"
     >
       <div>
-        <label
-          class="block text-sm font-medium leading-6 text-gray-900"
-        >
-          Prompt
-        </label>
         <div
-          class="flex items-start space-x-4 mt-2"
+          class="flex items-center justify-between mb-2"
+        >
+          <label
+            class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
+          >
+            Prompt
+          </label>
+        </div>
+        <div
+          class="flex items-start space-x-4"
         >
           <div
             class="min-w-0 flex-1"
           >
             bound HTMLFormElement {
               "0": <textarea
-                class="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6 overflow-visible"
+                class="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6 overflow-visible"
                 id="text-generation-text-input"
                 name="text-generation-text-input"
                 placeholder="Orcas are awesome because..."
                 rows="10"
               />,
               "1": <button
-                class="-m-2.5 flex size-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-                type="button"
+                data-testid="upload-button"
               >
-                <div
-                  aria-hidden="true"
-                  class="size-5"
-                  data-testid="paper-clip-icon"
-                />
-                <span
-                  class="sr-only"
-                >
-                  Attach a file
-                </span>
+                Upload
               </button>,
               "2": <button
-                class="inline-flex items-center rounded-full bg-white p-2 text-sm font-semibold text-gray-900 border border-gray-300 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white disabled:border-gray-200 disabled:shadow-none"
+                data-testid="remote-button"
+              >
+                Remote
+              </button>,
+              "3": <button
+                class="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
                 type="submit"
               >
                 <div
@@ -54,6 +53,12 @@ exports[`TextGenerationCompletionContainer > Component rendering > renders the m
           </div>
         </div>
       </div>
+      <div
+        data-testid="file-select-modal"
+      />
+      <div
+        data-testid="notification"
+      />
     </div>
   </div>
 </body>

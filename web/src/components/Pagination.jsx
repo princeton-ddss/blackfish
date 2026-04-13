@@ -22,13 +22,13 @@ function Pagination({ filesPerPage, totalFiles, currentPage, setCurrentPage, dis
   }
 
   return (
-    <div className="flex justify-center mt-2">
+    <div className="flex justify-center py-1">
       <button
         disabled={currentPage === 1 || pageNumbers.length === 0 || disabled}
         onClick={() => {
           if (!disabled) setCurrentPage((prevPage) => prevPage - 1);
         }}
-        className="disabled:text-gray-300"
+        className="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
       >
         <ArrowLeftIcon className="w-4 h-4" />
       </button>
@@ -37,9 +37,7 @@ function Pagination({ filesPerPage, totalFiles, currentPage, setCurrentPage, dis
         <button
           key={1}
           disabled
-          className={
-            "h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white text-gray-300"
-          }
+          className="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white dark:bg-gray-800 text-gray-300 dark:text-gray-600"
         >
           1
         </button>
@@ -52,9 +50,9 @@ function Pagination({ filesPerPage, totalFiles, currentPage, setCurrentPage, dis
           onClick={() => {
             if (!disabled) setCurrentPage(number);
           }}
-          className={`h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm ${currentPage === number
+          className={`h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm text-gray-900 dark:text-gray-100 ${currentPage === number
             ? "font-semibold"
-            : "font-light bg-white hover:bg-slate-100"
+            : "font-light bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700"
             }`}
         >
           {number}
@@ -63,7 +61,7 @@ function Pagination({ filesPerPage, totalFiles, currentPage, setCurrentPage, dis
 
       <button
         disabled={currentPage == pageNumbers.length || pageNumbers.length === 0}
-        className="disabled:text-gray-300"
+        className="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
         onClick={() => setCurrentPage((prevPage) => prevPage + 1)}
       >
         <ArrowRightIcon className="w-4 h-4" />

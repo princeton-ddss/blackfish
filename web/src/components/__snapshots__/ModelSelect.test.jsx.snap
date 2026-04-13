@@ -10,11 +10,11 @@ exports[`ModelSelect > applies disabled styling when disabled prop is true 1`] =
       disabled=""
     >
       <label
-        class="block text-sm font-medium leading-6 text-gray-900"
+        class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
         data-disabled=""
         data-headlessui-state="disabled"
-        for="headlessui-control-:r10:"
-        id="headlessui-label-:r13:"
+        for="headlessui-control-:r16:"
+        id="headlessui-label-:r19:"
       >
         Model
       </label>
@@ -24,12 +24,12 @@ exports[`ModelSelect > applies disabled styling when disabled prop is true 1`] =
         <button
           aria-expanded="false"
           aria-haspopup="listbox"
-          aria-labelledby="headlessui-label-:r13: headlessui-control-:r10:"
-          class="bg-gray-100 ring-gray-300 ring-1 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          aria-labelledby="headlessui-label-:r19: headlessui-control-:r16:"
+          class="bg-gray-100 dark:bg-gray-800 ring-gray-300 dark:ring-gray-600 ring-1 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 sm:text-sm sm:leading-6"
           data-disabled=""
           data-headlessui-state="disabled"
           disabled=""
-          id="headlessui-control-:r10:"
+          id="headlessui-control-:r16:"
           type="button"
         >
           <span
@@ -59,7 +59,7 @@ exports[`ModelSelect > renders model select with first model selected by default
       data-headlessui-state=""
     >
       <label
-        class="block text-sm font-medium leading-6 text-gray-900"
+        class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
         data-headlessui-state=""
         for="headlessui-control-:r0:"
         id="headlessui-label-:r3:"
@@ -73,7 +73,7 @@ exports[`ModelSelect > renders model select with first model selected by default
           aria-expanded="false"
           aria-haspopup="listbox"
           aria-labelledby="headlessui-label-:r3: headlessui-control-:r0:"
-          class="bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          class="bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 sm:text-sm sm:leading-6"
           data-headlessui-state=""
           id="headlessui-control-:r0:"
           type="button"

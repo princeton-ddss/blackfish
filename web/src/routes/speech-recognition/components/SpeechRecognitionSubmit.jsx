@@ -34,7 +34,7 @@ function SpeechRecognitionSubmit({
       <button
         type="submit"
         disabled={audioPath === "" || !selectedService || selectedService.status !== ServiceStatus.HEALTHY}
-        className="inline-flex items-center rounded-full bg-white p-2 text-sm font-semibold text-gray-900 border border-gray-300 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white disabled:border-gray-200 disabled:shadow-none"
+        className="inline-flex items-center rounded-full bg-white dark:bg-gray-700 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-700 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
         aria-label={selectedService ? `Submit to ${selectedService.name}` : "Submit"}
       >
         <PaperAirplaneIcon className="size-5" aria-hidden="true" />

@@ -33,7 +33,7 @@ exports[`NavbarLight > Login 1`] = `
                 href="/dashboard"
               >
                 <div
-                  class="pl-4 text-4xl text-gray-900 font-bold"
+                  class="pl-4 text-4xl text-gray-900 font-bold font-logo"
                 >
                   blackfish
                 </div>
@@ -88,7 +88,7 @@ exports[`NavbarLight > Standard 1`] = `
                 href="/dashboard"
               >
                 <div
-                  class="pl-4 text-4xl text-gray-900 font-bold"
+                  class="pl-4 text-4xl text-gray-900 font-bold font-logo"
                 >
                   blackfish
                 </div>
@@ -101,8 +101,33 @@ exports[`NavbarLight > Standard 1`] = `
             </div>
           </div>
           <div
-            class="flex items-center"
+            class="flex items-center gap-6"
           >
+            <a
+              class="text-sm font-medium text-gray-700 hover:text-gray-900"
+              href="/dashboard"
+            >
+              Dashboard
+            </a>
+            <a
+              class="text-sm font-medium text-gray-700 hover:text-gray-900"
+              href="https://princeton-ddss.github.io/blackfish/latest"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Docs
+            </a>
+            <div
+              class="w-72"
+            >
+              <div
+                class="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-gray-500 dark:text-gray-400 dark:bg-gray-900"
+              >
+                <span>
+                  No profiles
+                </span>
+              </div>
+            </div>
             <button
               aria-label="Help"
               class="text-black hover:text-blue-600 focus:outline-none transition-transform transform hover:scale-110"
@@ -256,7 +281,7 @@ exports[`NavbarLight > Standard 2`] = `
                 href="/dashboard"
               >
                 <div
-                  class="pl-4 text-4xl text-gray-900 font-bold"
+                  class="pl-4 text-4xl text-gray-900 font-bold font-logo"
                 >
                   blackfish
                 </div>
@@ -269,8 +294,33 @@ exports[`NavbarLight > Standard 2`] = `
             </div>
           </div>
           <div
-            class="flex items-center"
+            class="flex items-center gap-6"
           >
+            <a
+              class="text-sm font-medium text-gray-700 hover:text-gray-900"
+              href="/dashboard"
+            >
+              Dashboard
+            </a>
+            <a
+              class="text-sm font-medium text-gray-700 hover:text-gray-900"
+              href="https://princeton-ddss.github.io/blackfish/latest"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Docs
+            </a>
+            <div
+              class="w-72"
+            >
+              <div
+                class="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-gray-500 dark:text-gray-400 dark:bg-gray-900"
+              >
+                <span>
+                  No profiles
+                </span>
+              </div>
+            </div>
             <button
               aria-label="Help"
               class="text-black hover:text-blue-600 focus:outline-none transition-transform transform hover:scale-110"

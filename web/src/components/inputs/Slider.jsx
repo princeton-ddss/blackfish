@@ -77,7 +77,7 @@ function Slider({
             }}
             onChange={onTextChange}
             disabled={isDisabled}
-            className="block w-20 border border-gray-300 rounded-md shadow-sm h-7 text-right sm:text-sm font-light text-gray-900 focus:ring-inset focus:ring-2 focus:ring-blue-500 focus:border-white"
+            className="block w-20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm h-7 text-right sm:text-sm font-light text-gray-900 dark:text-gray-100 focus:ring-inset focus:ring-2 focus:ring-blue-500 focus:border-white dark:focus:border-gray-500"
           />
         </div>
       </div>

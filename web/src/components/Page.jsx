@@ -6,7 +6,7 @@ import ServiceProvider from "@/providers/ServiceProvider";
 import { assetPath } from "../config";
 import PropTypes from "prop-types";
 
-function Page({ task, children }) {
+function Page({ task, fullWidth = false, children }) {
   const { profile } = useContext(ProfileContext);
   const { services, error, isLoading } = useServices(profile, task);
   const { selectedService, setSelectedServiceId } = useSelectedService(services);
@@ -16,7 +16,7 @@ function Page({ task, children }) {
       <div className="flex flex-col flex-shrink-0 justify-center h-[calc(100vh-64px)]">
         <div className="flex flex-row justify-center items-center">
           <img
-            className="h-16 w-auto mb-8"
+            className="h-16 w-auto mb-8 dark:invert"
             src={assetPath("/img/dead-fish.png")}
             alt="blackfish-error"
           />
@@ -45,8 +45,12 @@ function Page({ task, children }) {
     );
   }
 
+  const gridClass = fullWidth
+    ? ""
+    : "grid lg:grid-cols-[1fr_24rem] gap-12";
+
   return (
-    <div className="grid lg:grid-cols-[1fr_24rem] gap-12">
+    <div className={gridClass}>
       <ServiceProvider
         selectedService={selectedService}
         setSelectedServiceId={setSelectedServiceId}
@@ -59,6 +63,7 @@ function Page({ task, children }) {
 
 Page.propTypes = {
   task: PropTypes.string,
+  fullWidth: PropTypes.bool,
   children: PropTypes.node,
 };
 

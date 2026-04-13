@@ -160,7 +160,7 @@ describe("ModelSelect", () => {
 
   it("displays check icon for selected option in dropdown", async () => {
     const user = userEvent.setup();
-    const {container, getByRole} = render(
+    const {baseElement, getByRole} = render(
       <ModelSelect
         models={mockModels}
         setRepoId={mockSetRepoId}
@@ -168,8 +168,10 @@ describe("ModelSelect", () => {
       />
     );
     await user.click(getByRole("button"));
+    // The Listbox options are rendered in a floating portal outside
+    // `container`, so query from baseElement (the entire document body).
     await waitFor(() => {
-      expect(container.querySelector('.check-icon')).toBeInTheDocument();
+      expect(baseElement.querySelector('.check-icon')).toBeInTheDocument();
     });
   });
 

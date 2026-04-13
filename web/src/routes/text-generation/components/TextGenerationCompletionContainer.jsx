@@ -1,14 +1,25 @@
-import React, { useContext } from "react";
+import { useContext, useState } from "react";
+import Markdown from "react-markdown";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
 import {
   ArrowPathIcon,
   ClipboardDocumentIcon,
+  DocumentTextIcon,
   PaperAirplaneIcon,
-  PaperClipIcon,
-}
-from "@heroicons/react/24/outline";
-
+} from "@heroicons/react/24/outline";
+import {
+  prependFileContext,
+  getTextFileAcceptString,
+  MAX_TEXT_FILE_SIZE,
+  TEXT_FILE_EXTENSIONS,
+} from "../lib/fileUtils";
+import { useFileAttachments } from "../lib/useFileAttachments";
+import AttachmentMenu from "./AttachmentMenu";
+import FileAttachmentList from "./FileAttachmentList";
+import FileSelectModal from "@/components/FileSelectModal";
+import Notification from "@/components/Notification";
 import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -20,7 +31,13 @@ import PropTypes from "prop-types";
  * @param {Function} options.setPrompt
  * @param {Function} options.handleSubmit
  * @param {object} options.selectedService
- * @param {boolean} options.isLoading
+ * @param {JSX.Element} options.toolbar
+ * @param {Array} options.attachedFiles
+ * @param {Function} options.onRemoveFile
+ * @param {Function} options.onFileError
+ * @param {object} options.profile
+ * @param {Function} options.onFileBrowserUpload
+ * @param {Function} options.onFileRemoteSelect
  * @return {JSX.Element}
  */
 function TextGenerationPromptInput({
@@ -28,6 +45,13 @@ function TextGenerationPromptInput({
   setPrompt,
   handleSubmit,
   selectedService,
+  toolbar,
+  attachedFiles,
+  onRemoveFile,
+  onFileError,
+  profile,
+  onFileBrowserUpload,
+  onFileRemoteSelect,
 }) {
   /**
    * Set input value in React state and session storage.
@@ -40,16 +64,27 @@ function TextGenerationPromptInput({
 
   return (
     <div>
-      <label className="block text-sm font-medium leading-6 text-gray-900">
-        Prompt
-      </label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+          Prompt
+        </label>
+        {toolbar}
+      </div>
 
-      {/* TODO: disable while isLoading... */}
-
-      <div className="flex items-start space-x-4 mt-2">
+      <div className="flex items-start space-x-4">
         <div className="min-w-0 flex-1">
           <form action="#" onSubmit={handleSubmit} className="relative">
-            <div className="rounded-lg bg-white outline outline-1 -outline-offset-1 outline-gray-300 shadow-md">
+            <div className="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md">
+              {/* File attachments preview */}
+              {attachedFiles.length > 0 && (
+                <div className="px-4 pt-2 border-b border-gray-200 dark:border-gray-600">
+                  <FileAttachmentList
+                    files={attachedFiles}
+                    onRemove={onRemoveFile}
+                  />
+                </div>
+              )}
+
               <label htmlFor="text-generation-text-input" className="sr-only">
                 Prompt anything
               </label>
@@ -69,7 +104,7 @@ function TextGenerationPromptInput({
                     handleSubmit(event);
                   }
                 }}
-                className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6 overflow-visible"
+                className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6 overflow-visible"
               />
 
               {/* Spacer element to match the height of the toolbar */}
@@ -82,38 +117,30 @@ function TextGenerationPromptInput({
             </div>
 
             <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
-              <div className="flex items-center space-x-5">
-                <div className="flex items-center">
-                  <button
-                    type="button"
-                    className="-m-2.5 flex size-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-                  >
-                    <PaperClipIcon aria-hidden="true" className="size-5" />
-                    <span className="sr-only">Attach a file</span>
-                  </button>
-                </div>
+              <div className="flex items-center">
+                {/* File attachment menu */}
+                <AttachmentMenu
+                  accept={getTextFileAcceptString()}
+                  maxFileSize={MAX_TEXT_FILE_SIZE}
+                  icon={DocumentTextIcon}
+                  label="Attach file"
+                  profile={profile}
+                  onBrowserUpload={onFileBrowserUpload}
+                  onRemoteSelect={onFileRemoteSelect}
+                  onError={onFileError}
+                />
               </div>
               <div className="shrink-0">
                 <button
                   type="submit"
                   disabled={!selectedService || selectedService.status !== ServiceStatus.HEALTHY}
                   onClick={() => {
-                    console.log("Submit button clicked:", prompt);
+                    console.debug("Submit button clicked:", prompt);
                   }}
-                  className="inline-flex items-center rounded-full bg-white p-2 text-sm font-semibold text-gray-900 border border-gray-300 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white disabled:border-gray-200 disabled:shadow-none"
+                  className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
                 >
                   <PaperAirplaneIcon className="size-5" />
                 </button>
-
-
-                {/* <button
-                    type="submit"
-                    disabled={!selectedService || selectedService.status !== ServiceStatus.HEALTHY}
-                    className="relative disabled:text-gray-400 -ml-px inline-flex items-center gap-x-1.5 rounded-md px-3 py-2 text-sm font-medium text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                  >
-                    <PaperAirplaneIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
-                    {selectedService ? `Submit to ${selectedService.name}` : "Submit"}
-                  </button> */}
               </div>
             </div>
           </form>
@@ -128,7 +155,13 @@ TextGenerationPromptInput.propTypes = {
   setPrompt: PropTypes.func,
   handleSubmit: PropTypes.func,
   selectedService: PropTypes.object,
-  isLoading: PropTypes.bool
+  toolbar: PropTypes.node,
+  attachedFiles: PropTypes.array,
+  onRemoveFile: PropTypes.func,
+  onFileError: PropTypes.func,
+  profile: PropTypes.object,
+  onFileBrowserUpload: PropTypes.func,
+  onFileRemoteSelect: PropTypes.func,
 };
 
 /**
@@ -137,7 +170,6 @@ TextGenerationPromptInput.propTypes = {
  * @param {string} options.content
  * @param {Function} options.handleSubmit
  * @param {object} options.selectedService
- * @param {boolean} options.isLoading
  * @return {JSX.Element}
  */
 function TextGenerationResponseOutput({
@@ -155,8 +187,8 @@ function TextGenerationResponseOutput({
       <div>
         {/* TODO: display loading in case first token is slow... */}
         <div className="mt-8">
-          <div className="block w-full max-w-4xl overflow-y-auto bg-white text-sm/6 text-gray-900 rounded-lg ml-1">
-            {content}
+          <div className="block w-full max-w-4xl overflow-y-auto bg-white dark:bg-transparent text-sm/6 text-gray-900 dark:text-gray-100 rounded-lg ml-1 prose prose-sm dark:prose-invert max-w-none">
+            <Markdown>{content}</Markdown>
           </div>
         </div>
         <div className="flex flex-row h-8 mt-1">
@@ -164,19 +196,19 @@ function TextGenerationResponseOutput({
             onClick={() => {
               navigator.clipboard
                 .writeText(content)
-                .then(console.log("copied assistant message"))
+                .then(console.debug("copied assistant message"))
                 .catch((err) => {
                   console.error("Failed to copy content: ", err);
                 });
             }}
           >
-            <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5" />
+            <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
           </button>
           <button
             disabled={!selectedService || selectedService.status !== ServiceStatus.HEALTHY}
             onClick={handleSubmit}
           >
-            <ArrowPathIcon className="w-5 h-5 text-gray-600 hover:text-gray-400 m-0.5" />
+            <ArrowPathIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
           </button>
         </div>
       </div>
@@ -188,29 +220,45 @@ TextGenerationResponseOutput.propTypes = {
   content: PropTypes.string,
   handleSubmit: PropTypes.func,
   selectedService: PropTypes.object,
-  isLoading: PropTypes.bool
 };
 
 /**
  * Text generation completion container component.
  * @param {object} options
  * @param {object} options.parameters
+ * @param {JSX.Element} options.toolbar
  * @return {JSX.Element}
  */
-function TextGenerationCompletionContainer({ parameters }) {
+function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
-  const [prompt, setPrompt] = React.useState(
+  const { profile } = useContext(ProfileContext);
+  const [prompt, setPrompt] = useState(
     sessionStorage.getItem("tgci") || ""
   );
-  const [response, setResponse] = React.useState(
+  const [response, setResponse] = useState(
     sessionStorage.getItem("tgco") || ""
   );
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // File attachment state and handlers
+  const {
+    attachedFiles,
+    fileBrowserOpen,
+    setFileBrowserOpen,
+    fileError,
+    setFileError,
+    handleFileBrowserUpload,
+    handleFileRemoteSelect,
+    handleRemoveFile,
+    handleFileError,
+  } = useFileAttachments();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const inputs = prompt === "" ? "Write me a haiku about orcas." : prompt;
+    // Prepend file context to the prompt
+    const promptWithFileContext = prependFileContext(prompt, attachedFiles);
+    const textInput = promptWithFileContext === "" ? "Write me a haiku about orcas." : promptWithFileContext;
 
     setIsLoading(true);
     setResponse("");
@@ -218,14 +266,13 @@ function TextGenerationCompletionContainer({ parameters }) {
 
     const stream = streamCompletionInference(
       selectedService,
-      inputs,
+      textInput,
       {
         ...parameters,
         stream: true,
       },
       true
     );
-
 
     const data = await stream.next();
     setIsLoading(false);
@@ -242,13 +289,20 @@ function TextGenerationCompletionContainer({ parameters }) {
   };
 
   return (
-    <div className="flex flex-col grow pt-2 bg-white">
+    <div className="flex flex-col grow pt-2 bg-white dark:bg-gray-800">
       <TextGenerationPromptInput
         prompt={prompt || ""}
         setPrompt={setPrompt}
         handleSubmit={handleSubmit}
         selectedService={selectedService}
         isLoading={isLoading}
+        toolbar={toolbar}
+        attachedFiles={attachedFiles}
+        onRemoveFile={handleRemoveFile}
+        onFileError={handleFileError}
+        profile={profile}
+        onFileBrowserUpload={handleFileBrowserUpload}
+        onFileRemoteSelect={() => setFileBrowserOpen(true)}
       />
       <TextGenerationResponseOutput
         content={response || ""}
@@ -256,12 +310,32 @@ function TextGenerationCompletionContainer({ parameters }) {
         selectedService={selectedService}
         isLoading={isLoading}
       />
+
+      {/* Text file browser modal */}
+      <FileSelectModal
+        open={fileBrowserOpen}
+        setOpen={setFileBrowserOpen}
+        profile={profile}
+        onSelect={(file) => handleFileRemoteSelect({ path: file.path, profile: file.profile })}
+        title="Select a file"
+        acceptedExtensions={TEXT_FILE_EXTENSIONS}
+        extensionErrorMessage="Please select a text file (txt, md, json, py, js, etc.)"
+      />
+
+      <Notification
+        show={!!fileError}
+        variant="error"
+        message="Failed to attach file"
+        detail={fileError ? `${fileError.fileName}: ${fileError.message}` : ""}
+        onDismiss={() => setFileError(null)}
+      />
     </div>
   );
 }
 
 TextGenerationCompletionContainer.propTypes = {
   parameters: PropTypes.object,
+  toolbar: PropTypes.node,
 };
 
 export default TextGenerationCompletionContainer;

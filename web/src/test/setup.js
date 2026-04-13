@@ -20,3 +20,30 @@ const sessionStorageMock = {
 Object.defineProperty(window, 'sessionStorage', {
   value: sessionStorageMock,
 });
+
+// Mock localStorage with an in-memory store so get/set/clear round-trip works.
+// happy-dom's default localStorage doesn't reliably expose `clear` as a
+// callable method across versions, so we install a simple Map-backed replacement.
+const createStorageMock = () => {
+  const store = new Map();
+  return {
+    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => {
+      store.set(key, String(value));
+    },
+    removeItem: (key) => {
+      store.delete(key);
+    },
+    clear: () => {
+      store.clear();
+    },
+    key: (index) => Array.from(store.keys())[index] ?? null,
+    get length() {
+      return store.size;
+    },
+  };
+};
+Object.defineProperty(window, 'localStorage', {
+  value: createStorageMock(),
+  writable: true,
+});

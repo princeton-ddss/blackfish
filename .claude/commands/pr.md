@@ -52,4 +52,23 @@ Use this PR body format:
 - ## Test plan (verification steps)
 - Footer with Claude Code attribution
 
+If there's a linked issue, include "Closes #N" in the PR body.
+
+## Step 5: Update project status (if linked issue exists)
+
+If the branch name starts with an issue number (e.g., `123-feature-name`) or the PR body contains "Closes #N":
+
+1. Check if `.claude/projects.json` exists. If not, skip this step.
+2. Read the projects array. If multiple projects, ask user which one (or try to find the issue in each).
+3. Find the issue's item ID in the project:
+   ```bash
+   gh project item-list <project_number> --owner <owner> --format json | jq -r '.items[] | select(.content.number == <issue-number>) | .id'
+   ```
+4. Move the issue to "In review" status using IDs from the config:
+   ```bash
+   gh project item-edit --id "<item-id>" --project-id "<project_id>" --field-id "<fields.status.id>" --single-select-option-id "<fields.status.options['In review']>"
+   ```
+
+If the issue is not in any project, no linked issue exists, or no projects config exists, skip this step.
+
 Report the PR URL when complete.

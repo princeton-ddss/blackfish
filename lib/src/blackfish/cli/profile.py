@@ -1,18 +1,191 @@
 from typing import Optional
+import asyncio
 import rich_click as click
 from rich_click import Context
 import configparser
 import os
 from enum import StrEnum
 from log_symbols.symbols import LogSymbols
+from yaspin import yaspin
 
-from blackfish.server.setup import (
-    create_remote_home_dir,
-    check_remote_cache_exists,
-    create_local_home_dir,
-    check_local_cache_exists,
-)
+from blackfish.server.setup import ProfileManager, ProfileSetupError
 from blackfish.server.models.profile import SlurmProfile, LocalProfile
+from blackfish.server.jobs.client import (
+    TigerFlowClient,
+    TigerFlowError,
+    SSHRunner,
+    LocalRunner,
+    CommandRunner,
+)
+
+
+def _setup_profile(
+    runner: CommandRunner,
+    home_dir: str,
+    cache_dir: str,
+    setup_tigerflow: bool = False,
+    python_path: str = "python3",
+) -> None:
+    """Set up profile directories and optionally TigerFlow.
+
+    Shows spinner progress for each step, resolving to checkmark on completion.
+
+    Args:
+        runner: CommandRunner (SSHRunner or LocalRunner)
+        home_dir: Profile home directory
+        cache_dir: Profile cache directory
+        setup_tigerflow: Whether to install TigerFlow (Slurm profiles only)
+        python_path: Python interpreter path for TigerFlow venv
+
+    Raises:
+        ProfileSetupError: If directory setup fails
+        TigerFlowError: If TigerFlow setup fails
+    """
+
+    async def setup_directories() -> None:
+        profile_mgr = ProfileManager(
+            runner=runner,
+            home_dir=home_dir,
+            cache_dir=cache_dir,
+            on_progress=lambda msg: setattr(spinner, "text", msg),
+        )
+        await profile_mgr.create_directories()
+        await profile_mgr.check_cache()
+
+    # Set up directories
+    with yaspin(text=f"Setting up directories on {runner.host}...") as spinner:
+        asyncio.run(setup_directories())
+        spinner.text = "Directories ready."
+        spinner.ok(f"{LogSymbols.SUCCESS.value}")
+
+    # Set up TigerFlow if requested
+    if setup_tigerflow:
+
+        async def check_and_setup_tigerflow() -> str:
+            """Returns completion message."""
+            tigerflow = TigerFlowClient(
+                runner=runner,
+                home_dir=home_dir,
+                python_path=python_path,
+                on_progress=lambda msg: setattr(spinner, "text", msg),
+            )
+            # Check if already healthy
+            try:
+                versions = await tigerflow.check_health()
+                await tigerflow.check_capabilities()
+                return (
+                    f"TigerFlow ready "
+                    f"(tigerflow {versions.tigerflow}, tigerflow-ml {versions.tigerflow_ml})."
+                )
+            except TigerFlowError:
+                # Not healthy, install
+                await tigerflow.setup()
+                return "TigerFlow installed."
+
+        with yaspin(text="Checking TigerFlow...") as spinner:
+            message = asyncio.run(check_and_setup_tigerflow())
+            spinner.text = message
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
+
+
+def _repair_profile(
+    runner: CommandRunner,
+    home_dir: str,
+    cache_dir: str,
+    python_path: str = "python3",
+    tigerflow_spec: str = "tigerflow",
+    tigerflow_ml_spec: str = "tigerflow-ml",
+    force: bool = False,
+) -> bool:
+    """Repair a Slurm profile with step-by-step progress.
+
+    Shows spinner progress for each step, resolving to checkmark on completion.
+
+    Args:
+        runner: CommandRunner (SSHRunner or LocalRunner)
+        home_dir: Profile home directory
+        cache_dir: Profile cache directory
+        python_path: Python interpreter path for TigerFlow venv
+        tigerflow_spec: Package spec for tigerflow
+        tigerflow_ml_spec: Package spec for tigerflow-ml
+        force: Force repair even if healthy
+
+    Returns:
+        True if repair was performed, False if profile was already healthy.
+
+    Raises:
+        ProfileSetupError: If directory setup fails
+        TigerFlowError: If TigerFlow operations fail
+    """
+
+    # Step 1: Directory check
+    async def setup_directories() -> None:
+        profile_mgr = ProfileManager(
+            runner=runner,
+            home_dir=home_dir,
+            cache_dir=cache_dir,
+            on_progress=lambda msg: setattr(spinner, "text", msg),
+        )
+        await profile_mgr.create_directories()
+        await profile_mgr.check_cache()
+
+    with yaspin(text=f"Checking directories on {runner.host}...") as spinner:
+        asyncio.run(setup_directories())
+        spinner.text = "Directories ready."
+        spinner.ok(f"{LogSymbols.SUCCESS.value}")
+
+    # Step 2: TigerFlow health check
+    async def check_tigerflow_health() -> tuple[bool, str]:
+        """Returns (is_healthy, message)."""
+        tigerflow = TigerFlowClient(
+            runner=runner,
+            home_dir=home_dir,
+            python_path=python_path,
+            on_progress=lambda msg: setattr(spinner, "text", msg),
+        )
+        try:
+            versions = await tigerflow.check_health()
+            await tigerflow.check_capabilities()
+            return (
+                True,
+                f"TigerFlow installed "
+                f"(tigerflow {versions.tigerflow}, tigerflow-ml {versions.tigerflow_ml}).",
+            )
+        except TigerFlowError as e:
+            return (False, f"TigerFlow check failed: {e.user_message()}")
+
+    with yaspin(text="Checking TigerFlow...") as spinner:
+        is_healthy, message = asyncio.run(check_tigerflow_health())
+        spinner.text = message
+        if is_healthy:
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
+        else:
+            spinner.ok(f"{LogSymbols.WARNING.value}")
+
+    # If healthy and not forcing, we're done
+    if is_healthy and not force:
+        print(f"{LogSymbols.SUCCESS.value} Profile healthy.")
+        return False
+
+    # Step 3: TigerFlow cleanup (reinstall)
+    async def cleanup_tigerflow() -> None:
+        tigerflow = TigerFlowClient(
+            runner=runner,
+            home_dir=home_dir,
+            python_path=python_path,
+            on_progress=lambda msg: setattr(spinner, "text", msg),
+        )
+        await tigerflow.cleanup(
+            tigerflow_spec=tigerflow_spec,
+            tigerflow_ml_spec=tigerflow_ml_spec,
+        )
+
+    with yaspin(text="Reinstalling TigerFlow...") as spinner:
+        asyncio.run(cleanup_tigerflow())
+        spinner.text = "TigerFlow reinstalled."
+        spinner.ok(f"{LogSymbols.SUCCESS.value}")
+
+    return True
 
 
 class ProfileType(StrEnum):
@@ -54,20 +227,30 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
         while cache_dir == "":
             print("Cache directory is required.")
             cache_dir = input("> cache: ")
+        python_path = input("> python_path [python3]: ")
+        python_path = "python3" if python_path == "" else python_path
+
+        # Set up directories and TigerFlow
+        runner: SSHRunner | LocalRunner
         if host == "localhost":
-            try:
-                create_local_home_dir(home_dir)
-                check_local_cache_exists(cache_dir)
-            except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
-                return False
+            runner = LocalRunner()
         else:
-            try:
-                create_remote_home_dir(host=host, user=user, home_dir=home_dir)
-                check_remote_cache_exists(host=host, user=user, cache_dir=cache_dir)
-            except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
-                return False
+            runner = SSHRunner(user=user, host=host)
+
+        try:
+            _setup_profile(
+                runner=runner,
+                home_dir=home_dir,
+                cache_dir=cache_dir,
+                setup_tigerflow=True,
+                python_path=python_path,
+            )
+        except ProfileSetupError as e:
+            print(f"{LogSymbols.ERROR.value} {e.user_message()}")
+            return False
+        except TigerFlowError as e:
+            print(f"{LogSymbols.ERROR.value} {e.user_message()}")
+            return False
 
         profiles[name] = {
             "schema": "slurm",
@@ -76,6 +259,8 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
+        if python_path != "python3":
+            profiles[name]["python_path"] = python_path
 
     elif schema == ProfileType.Local:
         home_dir = input(f"> home [{app_dir}]: ")
@@ -84,11 +269,18 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
         while cache_dir == "":
             print("Cache directory is required.")
             cache_dir = input("> cache: ")
+
+        # Set up directories (no TigerFlow for local profiles)
+        runner = LocalRunner()
         try:
-            create_local_home_dir(home_dir)
-            check_local_cache_exists(cache_dir)
-        except Exception:
-            print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
+            _setup_profile(
+                runner=runner,
+                home_dir=home_dir,
+                cache_dir=cache_dir,
+                setup_tigerflow=False,
+            )
+        except ProfileSetupError as e:
+            print(f"{LogSymbols.ERROR.value} {e.user_message()}")
             return False
 
         profiles[name] = {
@@ -99,7 +291,7 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
 
     with open(os.path.join(app_dir, "profiles.cfg"), "w") as f:
         profiles.write(f)
-        print(f"{LogSymbols.SUCCESS.value} Created profile {name}.")
+        print(f"{LogSymbols.SUCCESS.value} Created profile '{name}'.")
         return True
 
 
@@ -150,28 +342,26 @@ def _auto_profile_(
             print(f"{LogSymbols.ERROR.value} Failed to construct profile: {e}")
             return False
 
-        if host == "localhost":
-            try:
-                create_local_home_dir(profile.home_dir)
-                check_local_cache_exists(profile.cache_dir)
-            except Exception as e:
-                print(
-                    f"{LogSymbols.ERROR.value} Failed to set up local Slurm profile: {e}"
-                )
-                return False
+        # Set up directories and TigerFlow
+        runner: SSHRunner | LocalRunner
+        if profile.host == "localhost":
+            runner = LocalRunner()
         else:
-            try:
-                create_remote_home_dir(
-                    host=profile.host, user=profile.user, home_dir=profile.home_dir
-                )
-                check_remote_cache_exists(
-                    host=profile.host, user=profile.user, cache_dir=profile.cache_dir
-                )
-            except Exception as e:
-                print(
-                    f"{LogSymbols.ERROR.value} Failed to set up remote Slurm profile: {e}"
-                )
-                return False
+            runner = SSHRunner(user=profile.user, host=profile.host)
+
+        try:
+            _setup_profile(
+                runner=runner,
+                home_dir=profile.home_dir,
+                cache_dir=profile.cache_dir,
+                setup_tigerflow=True,
+            )
+        except ProfileSetupError as e:
+            print(f"{LogSymbols.ERROR.value} {e.user_message()}")
+            return False
+        except TigerFlowError as e:
+            print(f"{LogSymbols.ERROR.value} {e.user_message()}")
+            return False
 
         profiles[profile.name] = {
             "schema": "slurm",
@@ -194,11 +384,17 @@ def _auto_profile_(
             print(f"{LogSymbols.ERROR.value} Failed to construct profile: {e}")
             return False
 
+        # Set up directories (no TigerFlow for local profiles)
+        runner = LocalRunner()
         try:
-            create_local_home_dir(profile.home_dir)
-            check_local_cache_exists(profile.cache_dir)
-        except Exception as e:
-            print(f"{LogSymbols.ERROR.value} Failed to set up local profile: {e}")
+            _setup_profile(
+                runner=runner,
+                home_dir=profile.home_dir,
+                cache_dir=profile.cache_dir,
+                setup_tigerflow=False,
+            )
+        except ProfileSetupError as e:
+            print(f"{LogSymbols.ERROR.value} {e.user_message()}")
             return False
 
         profiles[name] = {
@@ -209,7 +405,7 @@ def _auto_profile_(
 
     with open(os.path.join(app_dir, "profiles.cfg"), "w") as f:
         profiles.write(f)
-        print(f"{LogSymbols.SUCCESS.value} Created profile {profile.name}.")
+        print(f"{LogSymbols.SUCCESS.value} Created profile '{profile.name}'.")
         return True
 
 
@@ -241,22 +437,48 @@ def _update_profile_(
             home_dir = profile["home_dir"] if home_dir == "" else home_dir
             cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
             cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
+            existing_python_path = profile.get("python_path", "python3")
+            python_path = input(f"> python_path [{existing_python_path}]: ")
+            python_path = existing_python_path if python_path == "" else python_path
+
+            # Set up directories and install TigerFlow if missing
+            runner: SSHRunner | LocalRunner
+            if host == "localhost":
+                runner = LocalRunner()
+            else:
+                runner = SSHRunner(user=user, host=host)
+
             try:
-                create_remote_home_dir(host=host, user=user, home_dir=home_dir)
-                check_remote_cache_exists(host=host, user=user, cache_dir=cache_dir)
-            except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to set up remote profile.")
+                _setup_profile(
+                    runner=runner,
+                    home_dir=home_dir,
+                    cache_dir=cache_dir,
+                    setup_tigerflow=True,
+                    python_path=python_path,
+                )
+            except ProfileSetupError as e:
+                print(f"{LogSymbols.ERROR.value} {e.user_message()}")
+                return False
+            except TigerFlowError as e:
+                print(f"{LogSymbols.ERROR.value} {e.user_message()}")
                 return False
         elif schema == "local":
             home_dir = input(f"> home [{profile['home_dir']}]: ")
             home_dir = profile["home_dir"] if home_dir == "" else home_dir
             cache_dir = input(f"> cache [{profile['cache_dir']}]: ")
             cache_dir = profile["cache_dir"] if cache_dir == "" else cache_dir
+
+            # Set up directories
+            runner = LocalRunner()
             try:
-                create_local_home_dir(home_dir)
-                check_local_cache_exists(cache_dir)
-            except Exception:
-                print(f"{LogSymbols.ERROR.value} Failed to set up local profile.")
+                _setup_profile(
+                    runner=runner,
+                    home_dir=home_dir,
+                    cache_dir=cache_dir,
+                    setup_tigerflow=False,
+                )
+            except ProfileSetupError as e:
+                print(f"{LogSymbols.ERROR.value} {e.user_message()}")
                 return False
         else:
             raise NotImplementedError
@@ -269,6 +491,8 @@ def _update_profile_(
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
+        if python_path != "python3":
+            profiles[name]["python_path"] = python_path
     elif schema == "local":
         profiles[name] = {
             "schema": "local",
@@ -317,6 +541,8 @@ def show_profile(ctx: Context, name: str) -> None:  # pragma: no cover
             print(f"user: {profile['user']}")
             print(f"home: {profile['home_dir']}")
             print(f"cache: {profile['cache_dir']}")
+            python_path = profile.get("python_path", "python3")
+            print(f"python_path: {python_path}")
         elif schema == "local":
             print(f"[{name}]")
             print("schema: local")
@@ -351,6 +577,8 @@ def list_profiles(ctx: Context) -> None:  # pragma: no cover
             print(f"user: {profile['user']}")
             print(f"home: {profile['home_dir']}")
             print(f"cache: {profile['cache_dir']}")
+            python_path = profile.get("python_path", "python3")
+            print(f"python_path: {python_path}")
         elif schema == "local":
             print(f"[{name}]")
             print("schema: local")
@@ -403,4 +631,184 @@ def delete_profile(ctx: Context, name: str) -> None:  # pragma: no cover
         # Note: User canceling deletion is not an error, so no exit(1)
     else:
         print(f"{LogSymbols.ERROR.value} Profile {name} not found.")
+        ctx.exit(1)
+
+
+@click.command()
+@click.option(
+    "--name", type=str, default="default", help="The name of the profile to upgrade."
+)
+@click.option(
+    "--tigerflow-spec",
+    type=str,
+    default="tigerflow",
+    help="Package spec for tigerflow (e.g., 'tigerflow' or 'git+https://github.com/org/tigerflow@branch').",
+)
+@click.option(
+    "--tigerflow-ml-spec",
+    type=str,
+    default="tigerflow-ml",
+    help="Package spec for tigerflow-ml (e.g., 'tigerflow-ml' or 'git+https://github.com/org/tigerflow-ml@branch').",
+)
+@click.pass_context
+def upgrade_tigerflow(
+    ctx: Context,
+    name: str,
+    tigerflow_spec: str,
+    tigerflow_ml_spec: str,
+) -> None:  # pragma: no cover
+    """Upgrade TigerFlow on a profile.
+
+    This command upgrades tigerflow and tigerflow-ml packages on the
+    remote cluster. Use custom package specs to install from git branches
+    for testing unreleased features.
+
+    Examples:
+
+        # Upgrade to latest release
+        blackfish profile upgrade --name default
+
+        # Install from git branches
+        blackfish profile upgrade --name default \\
+            --tigerflow-spec "git+https://github.com/princeton-ddss/tigerflow@feature-branch" \\
+            --tigerflow-ml-spec "git+https://github.com/princeton-ddss/tigerflow-ml@feature-branch"
+    """
+    home_dir = ctx.obj.get("home_dir")
+    profiles = configparser.ConfigParser()
+    profiles.read(f"{home_dir}/profiles.cfg")
+
+    if name not in profiles:
+        print(f"{LogSymbols.ERROR.value} Profile {name} not found.")
+        ctx.exit(1)
+
+    profile = profiles[name]
+    schema = profile.get("schema") or profile.get("type")
+
+    if schema != "slurm":
+        print(
+            f"{LogSymbols.ERROR.value} TigerFlow is only supported on Slurm profiles."
+        )
+        ctx.exit(1)
+
+    host = profile["host"]
+    user = profile["user"]
+    profile_home_dir = profile["home_dir"]
+    python_path = profile.get("python_path", "python3")
+
+    runner: SSHRunner | LocalRunner
+    if host == "localhost":
+        runner = LocalRunner()
+    else:
+        runner = SSHRunner(user=user, host=host)
+
+    with yaspin() as spinner:
+        try:
+            tigerflow = TigerFlowClient(
+                runner=runner,
+                home_dir=profile_home_dir,
+                python_path=python_path,
+                on_progress=lambda msg: setattr(spinner, "text", msg),
+            )
+            message = asyncio.run(
+                tigerflow.upgrade(
+                    tigerflow_spec=tigerflow_spec,
+                    tigerflow_ml_spec=tigerflow_ml_spec,
+                )
+            )
+            spinner.text = message
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
+        except TigerFlowError as e:
+            spinner.text = e.user_message()
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+            ctx.exit(1)
+
+
+@click.command()
+@click.option(
+    "--name", type=str, default="default", help="The name of the profile to repair."
+)
+@click.option(
+    "--tigerflow-spec",
+    type=str,
+    default="tigerflow",
+    help="Package spec for tigerflow (e.g., 'tigerflow' or 'git+https://github.com/org/tigerflow@branch').",
+)
+@click.option(
+    "--tigerflow-ml-spec",
+    type=str,
+    default="tigerflow-ml",
+    help="Package spec for tigerflow-ml (e.g., 'tigerflow-ml' or 'git+https://github.com/org/tigerflow-ml@branch').",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Force repair even if profile is healthy.",
+)
+@click.pass_context
+def repair_profile(
+    ctx: Context,
+    name: str,
+    tigerflow_spec: str,
+    tigerflow_ml_spec: str,
+    force: bool,
+) -> None:  # pragma: no cover
+    """Repair a Slurm profile.
+
+    Checks profile health first and skips repair if everything is working.
+    Use --force to repair anyway.
+
+    Examples:
+
+        blackfish profile repair --name default
+
+        # Force repair even if healthy
+        blackfish profile repair --name default --force
+
+        # Repair with specific TigerFlow version
+        blackfish profile repair --name default \\
+            --tigerflow-spec "git+https://github.com/princeton-ddss/tigerflow@branch"
+    """
+    home_dir = ctx.obj.get("home_dir")
+    profiles = configparser.ConfigParser()
+    profiles.read(f"{home_dir}/profiles.cfg")
+
+    if name not in profiles:
+        print(f"{LogSymbols.ERROR.value} Profile {name} not found.")
+        ctx.exit(1)
+
+    profile = profiles[name]
+    schema = profile.get("schema") or profile.get("type")
+
+    if schema != "slurm":
+        print(f"{LogSymbols.ERROR.value} Repair is only supported on Slurm profiles.")
+        ctx.exit(1)
+
+    host = profile["host"]
+    user = profile["user"]
+    profile_home_dir = profile["home_dir"]
+    cache_dir = profile["cache_dir"]
+    python_path = profile.get("python_path", "python3")
+
+    runner: SSHRunner | LocalRunner
+    if host == "localhost":
+        runner = LocalRunner()
+    else:
+        runner = SSHRunner(user=user, host=host)
+
+    try:
+        _repair_profile(
+            runner=runner,
+            home_dir=profile_home_dir,
+            cache_dir=cache_dir,
+            python_path=python_path,
+            tigerflow_spec=tigerflow_spec,
+            tigerflow_ml_spec=tigerflow_ml_spec,
+            force=force,
+        )
+    except ProfileSetupError as e:
+        print(f"{LogSymbols.ERROR.value} {e.user_message()}")
+        ctx.exit(1)
+    except TigerFlowError as e:
+        print(f"{LogSymbols.ERROR.value} {e.user_message()}")
         ctx.exit(1)

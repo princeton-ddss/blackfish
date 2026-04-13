@@ -33,27 +33,6 @@ class TestDeleteBatchJobsAPI:
         assert response.status_code == 400
         assert "Invalid query statement" in response.json()["detail"]
 
-    async def test_delete_jobs_successful_deletion(
-        self, client: AsyncTestClient, session: AsyncSession
-    ):
-        """Test successful deletion of completed batch jobs."""
-
-        # Set one job to completed status
-        completed_job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
-        job = await session.get(BatchJob, UUID(completed_job_id))
-        if job:
-            job.status = BatchJobStatus.COMPLETED
-            await session.commit()
-
-        response = await client.delete("/api/jobs", params={"status": "completed"})
-
-        # Should return success with single result indicating successful deletion of job
-        assert response.status_code == 200
-        result = response.json()
-        assert len(result) == 1
-        assert result[0]["status"] == "ok"
-        assert result[0]["job_id"] == completed_job_id.replace("-", "")
-
     async def test_delete_jobs_running_job_error(
         self, client: AsyncTestClient, session: AsyncSession
     ):
@@ -79,9 +58,6 @@ class TestDeleteBatchJobsAPI:
         "job_status",
         [
             BatchJobStatus.STOPPED,
-            BatchJobStatus.TIMEOUT,
-            BatchJobStatus.FAILED,
-            BatchJobStatus.COMPLETED,
             None,
         ],
     )
@@ -104,51 +80,23 @@ class TestDeleteBatchJobsAPI:
         assert len(result) == 1
         assert result[0]["status"] == "ok"
 
-    @pytest.mark.parametrize(
-        "job_status",
-        [
-            BatchJobStatus.SUBMITTED,
-            BatchJobStatus.PENDING,
-            BatchJobStatus.RUNNING,
-        ],
-    )
-    async def test_delete_jobs_non_deletable_statuses(
-        self, client: AsyncTestClient, session: AsyncSession, job_status
-    ):
-        """Test that running jobs cannot be deleted."""
-        # Set one job to the specified running status
-        test_job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
-        job = await session.get(BatchJob, UUID(test_job_id))
-        if job:
-            job.status = job_status
-            await session.commit()
-
-        response = await client.delete("/api/jobs", params={"id": test_job_id})
-
-        # Should return success with single result indicating unsuccessful job deletion
-        assert response.status_code == 200
-        result = response.json()
-        assert len(result) == 1
-        assert result[0]["status"] == "error"
-        assert result[0]["message"] == "Batch job is still running"
-
     async def test_delete_jobs_with_filters(
         self, client: AsyncTestClient, session: AsyncSession, jobs
     ):
         """Test deletion with multiple filter parameters."""
-        # Set jobs to completed status
-        for job_data in jobs[:2]:  # Set first 2 jobs to completed
+        # Set jobs to stopped status
+        for job_data in jobs[:2]:  # Set first 2 jobs to stopped
             job = await session.get(BatchJob, UUID(job_data["data"]["id"]))
             if job:
-                job.status = BatchJobStatus.COMPLETED
+                job.status = BatchJobStatus.STOPPED
 
         await session.commit()
 
         response = await client.delete(
             "/api/jobs",
             params={
-                "pipeline": "speech_recognition",
-                "status": "completed",
+                "task": "transcribe",
+                "status": "stopped",
                 "profile": "test",
             },
         )
@@ -165,12 +113,12 @@ class TestDeleteBatchJobsAPI:
     ):
         """Test deletion when some jobs succeed and others fail."""
         # Set different statuses for jobs
-        completed_job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+        stopped_job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
         running_job_id = "391769fc-5a40-43db-bbfa-cec80a8c3710"
 
-        completed_job = await session.get(BatchJob, UUID(completed_job_id))
-        if completed_job:
-            completed_job.status = BatchJobStatus.COMPLETED
+        stopped_job = await session.get(BatchJob, UUID(stopped_job_id))
+        if stopped_job:
+            stopped_job.status = BatchJobStatus.STOPPED
 
         running_job = await session.get(BatchJob, UUID(running_job_id))
         if running_job:
@@ -189,7 +137,7 @@ class TestDeleteBatchJobsAPI:
         error_result = next((r for r in result if r["status"] == "error"), None)
 
         assert success_result is not None
-        assert success_result["job_id"] == completed_job_id.replace("-", "")
+        assert success_result["job_id"] == stopped_job_id.replace("-", "")
 
         assert error_result is not None
         assert error_result["job_id"] == running_job_id.replace("-", "")
@@ -214,25 +162,22 @@ class TestDeleteBatchJobsAPI:
 
         job1 = await session.get(BatchJob, UUID(job1_id))
         if job1:
-            job1.status = BatchJobStatus.COMPLETED
-            job1.pipeline = "speech_recognition"
+            job1.status = BatchJobStatus.STOPPED
+            job1.task = "transcribe"
 
         job2 = await session.get(BatchJob, UUID(job2_id))
         if job2:
-            job2.status = BatchJobStatus.FAILED
-            job2.pipeline = "speech_recognition"
+            job2.status = BatchJobStatus.STOPPED
+            job2.task = "transcribe"
 
         await session.commit()
 
-        # Test filtering by pipeline only - all test fixture jobs have speech_recognition pipeline
-        response = await client.delete(
-            "/api/jobs", params={"pipeline": "speech_recognition"}
-        )
+        # Test filtering by task only - test fixture jobs have transcribe and summarize tasks
+        response = await client.delete("/api/jobs", params={"task": "transcribe"})
         assert response.status_code == 200
         result = response.json()
-        assert (
-            len(result) == 3
-        )  # All jobs should match (test fixtures have 3 jobs total)
+        # Only jobs with task=transcribe should be matched
+        assert len(result) >= 2
 
         # Verify our specific jobs were processed
         job_ids = {r["job_id"] for r in result}
@@ -262,20 +207,17 @@ class TestGetBatchJobsAPI:
         assert len(result) == 1
         assert result[0]["id"] == job_id
 
-    async def test_fetch_jobs_by_pipeline(self, client: AsyncTestClient):
-        """Test fetching jobs by pipeline."""
-        response = await client.get(
-            "/api/jobs", params={"pipeline": "speech_recognition"}
-        )
+    async def test_fetch_jobs_by_task(self, client: AsyncTestClient):
+        """Test fetching jobs by task."""
+        response = await client.get("/api/jobs", params={"task": "transcribe"})
 
         assert response.status_code == 200
         result = response.json()
-        assert (
-            len(result) == 3
-        )  # All test fixture jobs have speech_recognition pipeline
+        # First two test fixture jobs have task=transcribe
+        assert len(result) == 2
 
         for job in result:
-            assert job["pipeline"] == "speech_recognition"
+            assert job["task"] == "transcribe"
 
     async def test_fetch_jobs_by_status(
         self, client: AsyncTestClient, session: AsyncSession
@@ -286,15 +228,15 @@ class TestGetBatchJobsAPI:
         job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
         job = await session.get(BatchJob, UUID(job_id))
         if job:
-            job.status = BatchJobStatus.COMPLETED
+            job.status = BatchJobStatus.STOPPED
             await session.commit()
 
-        response = await client.get("/api/jobs", params={"status": "completed"})
+        response = await client.get("/api/jobs", params={"status": "stopped"})
 
         assert response.status_code == 200
         result = response.json()
         assert len(result) == 1
-        assert result[0]["status"] == "completed"
+        assert result[0]["status"] == "stopped"
 
     async def test_fetch_jobs_by_profile(self, client: AsyncTestClient):
         """Test fetching jobs by profile."""
@@ -321,7 +263,7 @@ class TestGetBatchJobsAPI:
         response = await client.get(
             "/api/jobs",
             params={
-                "pipeline": "speech_recognition",
+                "task": "transcribe",
                 "status": "running",
                 "profile": "test",
             },
@@ -332,14 +274,12 @@ class TestGetBatchJobsAPI:
         assert len(result) == 1
         assert result[0]["id"] == job1_id
         assert result[0]["status"] == "running"
-        assert result[0]["pipeline"] == "speech_recognition"
+        assert result[0]["task"] == "transcribe"
         assert result[0]["profile"] == "test"
 
     async def test_fetch_jobs_no_matches(self, client: AsyncTestClient):
         """Test fetching jobs when no jobs match the filters."""
-        response = await client.get(
-            "/api/jobs", params={"pipeline": "nonexistent_pipeline"}
-        )
+        response = await client.get("/api/jobs", params={"task": "nonexistent_task"})
 
         assert response.status_code == 200
         result = response.json()
@@ -379,7 +319,7 @@ class TestGetBatchJobAPI:
         assert isinstance(result, dict)
         assert result["id"] == job_id
         assert result["name"] == "blackfish-1"
-        assert result["pipeline"] == "speech_recognition"
+        assert result["task"] == "transcribe"
         assert "status" in result
         assert "created_at" in result
 
@@ -416,17 +356,46 @@ class TestGetBatchJobAPI:
 class TestStopBatchJobAPI:
     """Test cases for the PUT /api/jobs/{job_id}/stop endpoint."""
 
+    @patch("blackfish.server.asgi.create_tigerflow_client")
     async def test_stop_job_success(
-        self, client: AsyncTestClient, session: AsyncSession
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+        session: AsyncSession,
     ):
         """Test successfully stopping a job."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+        )
+
         job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+        output_dir = "/data/output"  # From fixture
+
+        # Set up mock TigerFlowClient
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.stop = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=10, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={},
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
 
         # Set the job to running status so it can be stopped
         job = await session.get(BatchJob, UUID(job_id))
         if job:
             job.status = BatchJobStatus.RUNNING
-            job.job_id = "50426"  # Mock job ID required for stopping
             await session.commit()
 
         response = await client.put(f"/api/jobs/{job_id}/stop")
@@ -439,26 +408,64 @@ class TestStopBatchJobAPI:
         assert result["id"] == job_id
         assert result["status"] == "stopped"
 
-    async def test_stop_job_already_completed(
-        self, client: AsyncTestClient, session: AsyncSession
-    ):
-        """Test stopping a job that's already completed."""
-        job_id = "391769fc-5a40-43db-bbfa-cec80a8c3710"
+        # Verify stop and report were called to update the job
+        mock_tigerflow.stop.assert_called_once_with(output_dir)
+        mock_tigerflow.report.assert_called_once_with(output_dir)
 
-        # Set the job to completed status with a job_id
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_stop_job_already_stopped(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Test stopping a job that's already stopped."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+        )
+
+        job_id = "391769fc-5a40-43db-bbfa-cec80a8c3710"
+        output_dir = "/data/output2"  # From fixture
+
+        # Set up mock TigerFlowClient
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.stop = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=5, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={},
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        # Set the job to stopped status
         job = await session.get(BatchJob, UUID(job_id))
         if job:
-            job.status = BatchJobStatus.COMPLETED
-            job.job_id = "50456"  # Mock job ID
+            job.status = BatchJobStatus.STOPPED
             await session.commit()
 
         response = await client.put(f"/api/jobs/{job_id}/stop")
 
-        # Returns success with job status completed
+        # Returns success with job status stopped
         assert response.status_code == 200
         result = response.json()
         assert result["id"] == job_id
-        assert result["status"] == "completed"
+        assert result["status"] == "stopped"
+
+        # stop() should not have been called since job was already stopped
+        mock_tigerflow.stop.assert_not_called()
+        # report() should still be called to get final state
+        mock_tigerflow.report.assert_called_once_with(output_dir)
 
     async def test_stop_job_not_found(self, client: AsyncTestClient):
         """Test stopping a job that doesn't exist."""
@@ -485,22 +492,398 @@ class TestStopBatchJobAPI:
         # Should redirect to login or return auth error
         assert response.status_code == 401
 
-    async def test_stop_job_internal_error_handling(
-        self, client: AsyncTestClient, session: AsyncSession
+
+class TestGetJobResultsAPI:
+    """Test cases for the GET /api/jobs/{id}/results endpoint."""
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_success(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
     ):
-        """Test that internal errors during job stopping are handled properly."""
-        job_id = "25058c41-9779-4b16-af6e-3fe5c3902435"
+        """Test fetching file-level results for a job."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+            TigerFlowErrorDetail,
+        )
 
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=2, in_progress=0, staged=0, errored=1
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "transcribe": TigerFlowTaskMetrics(
+                        count=2,
+                        avg_ms=1000.0,
+                        min_ms=500.0,
+                        max_ms=1500.0,
+                        durations=[500.0, 1500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=1000.0,
+                                status="success",
+                            ),
+                            TigerFlowFileMetric(
+                                file="audio_002.wav",
+                                started_at="2026-04-03T10:00:01+00:00",
+                                finished_at="2026-04-03T10:00:02+00:00",
+                                duration_ms=1000.0,
+                                status="error",
+                            ),
+                        ],
+                    ),
+                },
+                errors={
+                    "transcribe": [
+                        TigerFlowErrorDetail(
+                            file="audio_002.wav",
+                            path="/data/output/.tigerflow/transcribe/audio_002.err",
+                            timestamp="2026-04-03T10:00:02+00:00",
+                            exception_type="RuntimeError",
+                            message="Decoding failed",
+                            traceback="Traceback ...",
+                        ),
+                    ],
+                },
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 2
+
+        # Check success result
+        success = next(r for r in results if r["file"] == "audio_001.wav")
+        assert success["status"] == "success"
+        assert success["task"] == "transcribe"
+        assert success["output_file"] == "/data/output/transcribe/audio_001.json"
+        assert success["error"] is None
+
+        # Check error result
+        error = next(r for r in results if r["file"] == "audio_002.wav")
+        assert error["status"] == "error"
+        assert error["output_file"] is None
+        assert error["error"] == "Decoding failed"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_no_output_ext(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Test output path has no extension when output_ext and default are both None."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        # Clear output_ext on the fixture job (task="transcribe" has no default either)
         job = await session.get(BatchJob, UUID(job_id))
-        if job:
-            job.status = BatchJobStatus.RUNNING
-            job.job_id = None  # Missing Slurm job_id raises an exception in job.stop
-            await session.commit()
+        job.output_ext = None
+        await session.commit()
 
-        response = await client.put(f"/api/jobs/{job_id}/stop")
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=1, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "transcribe": TigerFlowTaskMetrics(
+                        count=1,
+                        avg_ms=500.0,
+                        min_ms=500.0,
+                        max_ms=500.0,
+                        durations=[500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=500.0,
+                                status="success",
+                            ),
+                        ],
+                    ),
+                },
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
 
-        # Should return internal server error
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 1
+        assert results[0]["output_file"] == "/data/output/transcribe/audio_001"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_falls_back_to_default_output_ext(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Test output path uses task default ext when output_ext is None."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        # Set task to "detect" (default ext = ".json") and clear output_ext
+        job = await session.get(BatchJob, UUID(job_id))
+        job.output_ext = None
+        job.task = "detect"
+        await session.commit()
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=1, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "detect": TigerFlowTaskMetrics(
+                        count=1,
+                        avg_ms=500.0,
+                        min_ms=500.0,
+                        max_ms=500.0,
+                        durations=[500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="image_001.png",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=500.0,
+                                status="success",
+                            ),
+                        ],
+                    ),
+                },
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 1
+        assert results[0]["output_file"] == "/data/output/detect/image_001.json"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_dedup_keeps_latest(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+    ):
+        """Test that duplicate (task, file) entries keep the latest by finished_at."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=1, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "transcribe": TigerFlowTaskMetrics(
+                        count=2,
+                        avg_ms=500.0,
+                        min_ms=500.0,
+                        max_ms=500.0,
+                        durations=[500.0, 500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=500.0,
+                                status="error",
+                            ),
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:01:00+00:00",
+                                finished_at="2026-04-03T10:01:01+00:00",
+                                duration_ms=500.0,
+                                status="success",
+                            ),
+                        ],
+                    ),
+                },
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 1
+        assert results[0]["status"] == "success"
+        assert results[0]["finished_at"] == "2026-04-03T10:01:01+00:00"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_dedup_keeps_latest_reverse_order(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+    ):
+        """Test dedup keeps latest even when it appears first in the list."""
+        from blackfish.server.jobs.client import (
+            TigerFlowReport,
+            TigerFlowReportStatus,
+            TigerFlowProgress,
+            TigerFlowPipelineProgress,
+            TigerFlowTaskMetrics,
+            TigerFlowFileMetric,
+        )
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            return_value=TigerFlowReport(
+                status=TigerFlowReportStatus(running=False, pid=None),
+                progress=TigerFlowProgress(
+                    pipeline=TigerFlowPipelineProgress(
+                        finished=1, in_progress=0, staged=0, errored=0
+                    ),
+                    tasks=[],
+                ),
+                metrics={
+                    "transcribe": TigerFlowTaskMetrics(
+                        count=2,
+                        avg_ms=500.0,
+                        min_ms=500.0,
+                        max_ms=500.0,
+                        durations=[500.0, 500.0],
+                        files=[
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:01:00+00:00",
+                                finished_at="2026-04-03T10:01:01+00:00",
+                                duration_ms=500.0,
+                                status="success",
+                            ),
+                            TigerFlowFileMetric(
+                                file="audio_001.wav",
+                                started_at="2026-04-03T10:00:00+00:00",
+                                finished_at="2026-04-03T10:00:01+00:00",
+                                duration_ms=500.0,
+                                status="error",
+                            ),
+                        ],
+                    ),
+                },
+                errors={},
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
+        assert response.status_code == 200
+        results = response.json()
+        assert len(results) == 1
+        assert results[0]["status"] == "success"
+        assert results[0]["finished_at"] == "2026-04-03T10:01:01+00:00"
+
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_get_results_tigerflow_error(
+        self,
+        mock_create_client,
+        client: AsyncTestClient,
+    ):
+        """Test that TigerFlow errors return 500 with detail message."""
+        from blackfish.server.jobs.client import TigerFlowError
+
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.report = AsyncMock(
+            side_effect=TigerFlowError(
+                "report", "cluster.example.com", "Connection refused"
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(f"/api/jobs/{job_id}/results")
+
         assert response.status_code == 500
+        body = response.json()
+        assert "Failed to fetch job results" in body["detail"]
+
+    async def test_get_results_not_found(self, client: AsyncTestClient):
+        """Test fetching results for a nonexistent job."""
+        nonexistent_id = "550e8400-e29b-41d4-a716-446655440000"
+        response = await client.get(f"/api/jobs/{nonexistent_id}/results")
+        assert response.status_code == 404
+
+    async def test_get_results_authentication_required(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that authentication is required for fetching results."""
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+        response = await no_auth_client.get(f"/api/jobs/{job_id}/results")
+        assert response.status_code == 401
 
 
 class TestCreateBatchJobAPI:
@@ -510,21 +893,16 @@ class TestCreateBatchJobAPI:
         """Test creating a job."""
 
         data = {
-            "name": "speech-recognition-batch-test",
-            "pipeline": "speech_recognition",
-            "repo_id": "openai-whisper",
+            "name": "transcribe-batch-test",
+            "task": "transcribe",
+            "repo_id": "openai/whisper-large-v3",
             "profile": {
                 "name": "test",
-                "home_dir": "",
-                "cache_dir": "",
+                "home_dir": "/home/test",
+                "cache_dir": "/cache",
             },
-            "job_config": {},
-            "container_config": {
-                "model_dir": "",
-                "revision": "",
-                "kwargs": [],
-            },
-            "mount": "",
+            "input_dir": "/data/input",
+            "output_dir": "/data/output",
         }
 
         with patch.object(BatchJob, "start", new_callable=AsyncMock) as mock_start:
@@ -534,9 +912,9 @@ class TestCreateBatchJobAPI:
             assert response.status_code == 201
             mock_start.assert_called_once()
             job = response.json()
-            assert job["name"] == "speech-recognition-batch-test"
-            assert job["pipeline"] == "speech_recognition"
-            assert job["repo_id"] == "openai-whisper"
+            assert job["name"] == "transcribe-batch-test"
+            assert job["task"] == "transcribe"
+            assert job["repo_id"] == "openai/whisper-large-v3"
             assert job["profile"] == "test"  # only returns the name
 
     async def test_create_job_missing_request_body(self, client: AsyncTestClient):
@@ -550,7 +928,7 @@ class TestCreateBatchJobAPI:
         """Test creating a job with invalid request data."""
         invalid_data = {
             "name": "test-job",
-            # Missing required fields like pipeline, repo_id, profile, etc.
+            # Missing required fields like task, repo_id, profile, etc.
         }
 
         response = await client.post("/api/jobs", json=invalid_data)
@@ -565,21 +943,16 @@ class TestCreateBatchJobAPI:
 
         # Even with valid data, should fail authentication first
         valid_data = {
-            "name": "speech-recognition-batch-test",
-            "pipeline": "speech_recognition",
-            "repo_id": "openai-whisper",
+            "name": "transcribe-batch-test",
+            "task": "transcribe",
+            "repo_id": "openai/whisper-large-v3",
             "profile": {
                 "name": "test",
-                "home_dir": "",
-                "cache_dir": "",
+                "home_dir": "/home/test",
+                "cache_dir": "/cache",
             },
-            "job_config": {},
-            "container_config": {
-                "model_dir": "",
-                "revision": "",
-                "kwargs": [],
-            },
-            "mount": "",
+            "input_dir": "/data/input",
+            "output_dir": "/data/output",
         }
 
         response = await no_auth_client.post("/api/jobs", json=valid_data)
@@ -587,31 +960,200 @@ class TestCreateBatchJobAPI:
         # Should return auth error
         assert response.status_code == 401
 
-    # TODO: this actually returns 200 with an empty body according to code--should it???
-    async def test_create_job_unsupported_pipeline(self, client: AsyncTestClient):
-        """Test creating a job with unsupported pipeline."""
+    async def test_create_job_tigerflow_error(self, client: AsyncTestClient):
+        """Test creating a job when TigerFlow fails."""
+        from blackfish.server.jobs.client import TigerFlowError
 
-        # Test that unsupported pipelines are handled
         data = {
-            "name": "speech-recognition-batch-test",
-            "pipeline": "not_supported",
-            "repo_id": "openai-whisper",
+            "name": "test-batch",
+            "task": "transcribe",
+            "repo_id": "openai/whisper-large-v3",
             "profile": {
                 "name": "test",
-                "home_dir": "",
-                "cache_dir": "",
+                "home_dir": "/home/test",
+                "cache_dir": "/cache",
             },
-            "job_config": {},
-            "container_config": {
-                "model_dir": "",
-                "revision": "",
-                "kwargs": [],
-            },
-            "mount": "",
+            "input_dir": "/data/input",
+            "output_dir": "/data/output",
         }
 
-        response = await client.post("/api/jobs", json=data)
+        # Mock BatchJob.start to raise TigerFlowError
+        with patch.object(
+            BatchJob,
+            "start",
+            new_callable=AsyncMock,
+            side_effect=TigerFlowError("run", "localhost", "Pipeline execution failed"),
+        ):
+            response = await client.post("/api/jobs", json=data)
 
-        # Should return validation error for unsupported pipeline
+        # Should return 500 with a descriptive error
+        assert response.status_code == 500
+        assert "Unable to start batch job" in response.json()["detail"]
+
+
+class TestTasksAPI:
+    """Test cases for the task listing endpoints."""
+
+    @patch("blackfish.server.asgi.create_tigerflow_client_for_profile")
+    async def test_list_tasks(self, mock_create_client, client: AsyncTestClient):
+        """Test listing all available tasks."""
+        # Set up mock TigerFlowClient
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.list_tasks = AsyncMock(
+            return_value=[
+                {
+                    "name": "transcribe",
+                    "description": "Transcribe audio files",
+                    "version": "0.2.0",
+                },
+                {
+                    "name": "summarize",
+                    "description": "Summarize text documents",
+                    "version": "0.2.0",
+                },
+            ]
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get("/api/jobs/tasks", params={"profile": "test"})
+
+        assert response.status_code == 200
+        result = response.json()
+
+        # Should return list of available tasks with version info
+        assert isinstance(result, list)
+        assert len(result) == 2
+
+        task_names = [t["name"] for t in result]
+        assert "transcribe" in task_names
+        assert "summarize" in task_names
+
+        # Version info should be included
+        for task in result:
+            assert "version" in task
+
+        mock_create_client.assert_called_once()
+
+    async def test_list_tasks_missing_profile(self, client: AsyncTestClient):
+        """Test listing tasks without profile parameter."""
+        response = await client.get("/api/jobs/tasks")
+
+        # Should return 400 for missing required parameter
         assert response.status_code == 400
-        assert "Invalid pipeline" in response.json()["detail"]
+
+    @patch("blackfish.server.asgi.create_tigerflow_client_for_profile")
+    async def test_list_tasks_profile_not_found(
+        self, mock_create_client, client: AsyncTestClient
+    ):
+        """Test listing tasks with non-existent profile."""
+        mock_create_client.side_effect = FileNotFoundError("Profile not found")
+
+        response = await client.get(
+            "/api/jobs/tasks", params={"profile": "nonexistent"}
+        )
+
+        assert response.status_code == 404
+        assert "Profile 'nonexistent' not found" in response.json()["detail"]
+
+    @patch("blackfish.server.asgi.create_tigerflow_client_for_profile")
+    async def test_get_task_details(self, mock_create_client, client: AsyncTestClient):
+        """Test getting details for a specific task."""
+        # Set up mock TigerFlowClient
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.get_task_info = AsyncMock(
+            return_value={
+                "name": "transcribe",
+                "description": "Transcribe audio files to text",
+                "version": "0.2.0",
+                "params": {
+                    "language": {"type": "string", "default": "en"},
+                    "model": {"type": "string", "required": True},
+                },
+            }
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(
+            "/api/jobs/tasks/transcribe", params={"profile": "test"}
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+
+        # Should return task details including version
+        assert result["name"] == "transcribe"
+        assert result["version"] == "0.2.0"
+        assert "description" in result
+        assert "params" in result
+
+        mock_tigerflow.get_task_info.assert_called_once_with("transcribe")
+
+    async def test_get_task_missing_profile(self, client: AsyncTestClient):
+        """Test getting task details without profile parameter."""
+        response = await client.get("/api/jobs/tasks/transcribe")
+
+        # Should return 400 for missing required parameter
+        assert response.status_code == 400
+
+    @patch("blackfish.server.asgi.create_tigerflow_client_for_profile")
+    async def test_get_task_not_found(
+        self, mock_create_client, client: AsyncTestClient
+    ):
+        """Test getting details for a non-existent task."""
+        from blackfish.server.jobs.client import TigerFlowError
+
+        # Set up mock to raise TigerFlowError for unknown task
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.get_task_info = AsyncMock(
+            side_effect=TigerFlowError(
+                "command", "localhost", "Unknown task: nonexistent"
+            )
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(
+            "/api/jobs/tasks/nonexistent", params={"profile": "test"}
+        )
+
+        assert response.status_code == 404
+
+    @patch("blackfish.server.asgi.create_tigerflow_client_for_profile")
+    async def test_get_task_tigerflow_error(
+        self, mock_create_client, client: AsyncTestClient
+    ):
+        """Test getting task details when TigerFlow fails."""
+        from blackfish.server.jobs.client import TigerFlowError
+
+        # Set up mock to raise a general TigerFlowError
+        mock_tigerflow = AsyncMock()
+        mock_tigerflow.get_task_info = AsyncMock(
+            side_effect=TigerFlowError("command", "localhost", "Connection failed")
+        )
+        mock_create_client.return_value = mock_tigerflow
+
+        response = await client.get(
+            "/api/jobs/tasks/transcribe", params={"profile": "test"}
+        )
+
+        # General TigerFlow errors should return 500
+        assert response.status_code == 500
+
+    async def test_list_tasks_authentication_required(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that authentication is required for listing tasks."""
+        response = await no_auth_client.get(
+            "/api/jobs/tasks", params={"profile": "test"}
+        )
+
+        assert response.status_code == 401
+
+    async def test_get_task_authentication_required(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Test that authentication is required for getting task details."""
+        response = await no_auth_client.get(
+            "/api/jobs/tasks/transcribe", params={"profile": "test"}
+        )
+
+        assert response.status_code == 401

@@ -1,14 +1,73 @@
+import { useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
-import { fetchModels, fetchServices, fetchProfiles, fetchFiles } from "./requests";
+import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults } from "./requests";
 import { ServiceStatus } from "./util";
+import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 
 
-export const useModels = (profile, image) => {
-  const { data, error, isLoading } = useSWR(`models?profile=${profile ? profile.name : "default"}&image=${image}`, fetchModels);
+export const useModels = (profile, image = null) => {
+  // Support single service string or array of services
+  const images = Array.isArray(image) ? image : (image ? [image] : []);
+
+  // Create stable key for SWR
+  const key = profile
+    ? `models?profile=${profile.name}${images.length > 0 ? `&images=${images.join(",")}` : ""}&refresh=true`
+    : null;
+
+  // Fetch function that handles multiple service types
+  const fetcher = async () => {
+    if (images.length === 0) {
+      return fetchModels(`models?profile=${profile.name}&refresh=true`);
+    }
+    if (images.length === 1) {
+      return fetchModels(`models?profile=${profile.name}&image=${images[0]}&refresh=true`);
+    }
+    // Fetch from multiple services and merge results
+    const results = await Promise.all(
+      images.map(img => fetchModels(`models?profile=${profile.name}&image=${img}&refresh=true`))
+    );
+    return results.flat();
+  };
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR(key, fetcher);
   return {
     models: data,
     error: error,
     isLoading: isLoading,
+    isRefreshing: isValidating,
+    mutate: mutate,
+  };
+};
+
+export const useJobs = (profile) => {
+  const key = profile ? `jobs?profile=${profile.name}` : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR(key, fetchJobs, {
+    refreshInterval: 60_000,
+  });
+  return {
+    jobs: data || [],
+    error: error,
+    isLoading: isLoading,
+    isRefreshing: isValidating,
+    mutate: mutate,
+  };
+};
+
+export const useJobResults = (jobId) => {
+  const key = jobId ? `jobs/${jobId}/results` : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    key,
+    () => fetchJobResults(jobId),
+    {
+      refreshInterval: 60_000,
+    },
+  );
+  return {
+    results: data || [],
+    error: error,
+    isLoading: isLoading,
+    isRefreshing: isValidating,
+    mutate: mutate,
   };
 };
 
@@ -63,12 +122,123 @@ export const useProfiles = () => {
   };
 };
 
-export const useFileSystem = (path) => {
-  const { data, error, isLoading, mutate } = useSWR(path ? `files?path=${path}` : null, fetchFiles);
+export const useFileSystem = (path, profile = null) => {
+  // Determine if this is a remote profile
+  const isRemote = profile && profile.schema !== "local";
+
+  // Get remote file system from context
+  const remoteFs = useRemoteFileSystem();
+
+  // Local state for remote file listings
+  const [remoteFiles, setRemoteFiles] = useState(null);
+  const [remoteError, setRemoteError] = useState(null);
+  const [remoteLoading, setRemoteLoading] = useState(false);
+
+  // Clear state when profile changes
+  useEffect(() => {
+    setRemoteFiles(null);
+    setRemoteError(null);
+    setRemoteLoading(false);
+  }, [profile?.name]);
+
+  // Also clear when connection drops
+  useEffect(() => {
+    if (!isRemote || !remoteFs.isConnected) {
+      setRemoteFiles(null);
+      setRemoteError(null);
+      setRemoteLoading(false);
+    }
+  }, [isRemote, remoteFs.isConnected]);
+
+  // Fetch remote directory when path or connection changes
+  const { isConnected, listDir } = remoteFs;
+  useEffect(() => {
+    if (!isRemote || !isConnected || path === null) {
+      return;
+    }
+
+    setRemoteLoading(true);
+    setRemoteError(null);
+
+    listDir(path)
+      .then((entries) => {
+        setRemoteFiles(entries);
+        setRemoteError(null);
+      })
+      .catch((err) => {
+        setRemoteError(err);
+        setRemoteFiles(null);
+      })
+      .finally(() => {
+        setRemoteLoading(false);
+      });
+  }, [isRemote, path, isConnected, listDir]);
+
+  // Refresh function for remote
+  const refreshRemote = useCallback(() => {
+    if (!isRemote || !isConnected || path === null) {
+      return Promise.resolve(null);
+    }
+
+    setRemoteLoading(true);
+    return listDir(path)
+      .then((entries) => {
+        setRemoteFiles(entries);
+        setRemoteError(null);
+        return entries;
+      })
+      .catch((err) => {
+        setRemoteError(err);
+        throw err;
+      })
+      .finally(() => {
+        setRemoteLoading(false);
+      });
+  }, [isRemote, path, isConnected, listDir]);
+
+  // SWR hook for local profiles (only runs when not remote)
+  // Uses ~ as default to fetch home directory when path is null
+  const localKey = !isRemote ? `files?path=${path ?? "~"}` : null;
+  const localFs = useSWR(localKey, fetchFiles);
+
+  // Return appropriate source based on profile type
+  if (isRemote) {
+    return {
+      files: remoteFiles,
+      error: remoteError || remoteFs.error,
+      isLoading: remoteLoading || remoteFs.isConnecting,
+      refresh: refreshRemote,
+      isConnected: remoteFs.isConnected,
+      homeDir: remoteFs.homeDir,
+    };
+  }
+
   return {
-    files: data,
+    files: localFs.data?.files ?? null,
+    error: localFs.error,
+    isLoading: localFs.isLoading,
+    refresh: localFs.mutate,
+    isConnected: true, // Local is always "connected"
+    homeDir: localFs.data?.path ?? null,
+  };
+}
+
+export const useClusterStatus = (profile) => {
+  // Only fetch for Slurm profiles
+  const key = profile?.schema === "slurm" ? `cluster/${profile.name}` : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    key,
+    () => fetchClusterStatus(profile.name),
+    {
+      refreshInterval: 300_000, // refresh every 5 minutes
+      revalidateOnFocus: false,
+    }
+  );
+  return {
+    status: data,
     error: error,
     isLoading: isLoading,
+    isRefreshing: isValidating,
     refresh: mutate,
-  }
-}
+  };
+};

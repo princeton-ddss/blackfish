@@ -41,6 +41,92 @@ export const ServiceStatus = Object.freeze({
 });
 
 /**
+ * Status color scheme:
+ * - green: operational (healthy)
+ * - yellow: transitional (starting, pending, submitted) or degraded (unhealthy)
+ * - red: error (timeout, failed)
+ * - gray: inactive (stopped, expired)
+ */
+
+/**
+ * Get CSS classes for a status indicator dot.
+ * @param {string} status - Service status value.
+ * @param {object} options - Optional configuration.
+ * @param {boolean} options.pulse - Whether to add pulse animation for transitional states.
+ * @return {string} Tailwind CSS classes for the dot.
+ */
+export function getStatusDotClasses(status, { pulse = true } = {}) {
+  switch (status) {
+    case ServiceStatus.HEALTHY:
+      return "bg-green-500";
+    case ServiceStatus.UNHEALTHY:
+      return "bg-yellow-500";
+    case ServiceStatus.STARTING:
+    case ServiceStatus.PENDING:
+    case ServiceStatus.SUBMITTED:
+      return pulse ? "animate-pulse bg-yellow-500" : "bg-yellow-500";
+    case ServiceStatus.TIMEOUT:
+    case ServiceStatus.FAILED:
+      return "bg-red-500";
+    case ServiceStatus.STOPPED:
+    case ServiceStatus.EXPIRED:
+      return "bg-gray-400";
+    default:
+      return "bg-gray-300";
+  }
+}
+
+/**
+ * Get CSS classes for a status badge.
+ * @param {string} status - Service status value.
+ * @return {object} Object with fillColor, bgColor, and textColor classes.
+ */
+export function getStatusBadgeClasses(status) {
+  switch (status) {
+    case ServiceStatus.HEALTHY:
+      return {
+        fillColor: "fill-green-400",
+        bgColor: "bg-green-100 dark:bg-green-900/30",
+        textColor: "text-green-700 dark:text-green-400",
+      };
+    case ServiceStatus.UNHEALTHY:
+      return {
+        fillColor: "fill-yellow-400",
+        bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
+        textColor: "text-yellow-700 dark:text-yellow-400",
+      };
+    case ServiceStatus.STARTING:
+    case ServiceStatus.PENDING:
+    case ServiceStatus.SUBMITTED:
+      return {
+        fillColor: "fill-yellow-400",
+        bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
+        textColor: "text-yellow-700 dark:text-yellow-400",
+      };
+    case ServiceStatus.TIMEOUT:
+    case ServiceStatus.FAILED:
+      return {
+        fillColor: "fill-red-400",
+        bgColor: "bg-red-100 dark:bg-red-900/30",
+        textColor: "text-red-700 dark:text-red-400",
+      };
+    case ServiceStatus.STOPPED:
+    case ServiceStatus.EXPIRED:
+      return {
+        fillColor: "fill-gray-400",
+        bgColor: "bg-gray-100 dark:bg-gray-700",
+        textColor: "text-gray-600 dark:text-gray-400",
+      };
+    default:
+      return {
+        fillColor: "fill-gray-400",
+        bgColor: "bg-gray-100 dark:bg-gray-700",
+        textColor: "text-gray-600 dark:text-gray-400",
+      };
+  }
+}
+
+/**
  * A random integer.
  * @param {number} [min=0] - The lowest possible number to return. Default 0.
  * @param {number} [max=100] - The highest possible number to return. Default 100.
@@ -188,4 +274,38 @@ export function isDeepEmpty(item) {
   }
   // If non of these checks catch, the item must not be empty.
   return false;
+}
+
+/**
+ * Select the appropriate resource tier based on model size.
+ *
+ * Tiers are assumed to be ordered by increasing capacity. Each tier has a
+ * `max_model_size_gb` property indicating the maximum model size it can handle.
+ * Returns the smallest tier that can accommodate the model size.
+ *
+ * @param {Array<object>} tiers - Available resource tiers, ordered by capacity.
+ * @param {number|null} modelSizeGb - Model size in GB, or null if unknown.
+ * @return {string|null} The name of the recommended tier, or null if no match.
+ */
+export function selectTierByModelSize(tiers, modelSizeGb) {
+  if (!tiers || tiers.length === 0) {
+    return null;
+  }
+
+  // If no model size info, default to first tier
+  if (modelSizeGb === null || modelSizeGb === undefined) {
+    return tiers[0]?.name ?? null;
+  }
+
+  // Find the smallest tier that can fit the model
+  for (const tier of tiers) {
+    const maxSize = tier.max_model_size_gb;
+    // Tier has no size limit or model fits within limit
+    if (maxSize === null || maxSize === undefined || modelSizeGb <= maxSize) {
+      return tier.name;
+    }
+  }
+
+  // Model is larger than all tiers, return the largest one
+  return tiers[tiers.length - 1]?.name ?? null;
 }

@@ -1,12 +1,11 @@
 import { createContext, useState, useEffect } from "react";
 import {
-  Label,
-  Listbox,
-  ListboxButton,
-  ListboxOption,
-  ListboxOptions
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems
 } from "@headlessui/react";
-import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+import { CheckIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
 import { useProfiles } from "@/lib/loaders";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
 import PropTypes from "prop-types";
@@ -60,22 +59,35 @@ function ProfileSelect({
   const { profiles, error, isLoading } = useProfiles();
 
   if (isLoading) {
-    return <div>Loading profiles...</div>;
+    return (
+      <div className="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-gray-400 dark:text-gray-500 dark:bg-gray-900">
+        <span className="animate-pulse">Profile</span>
+        <ChevronDownIcon className="h-4 w-4 text-gray-300 dark:text-gray-600" aria-hidden="true" />
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error!</div>;
+    return (
+      <div className="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-red-500 dark:bg-gray-900">
+        <ExclamationTriangleIcon className="h-4 w-4" aria-hidden="true" />
+        <span>Error</span>
+      </div>
+    );
   }
 
   if (profiles.length === 0) {
-    return <div>No profiles found.</div>;
+    return (
+      <div className="flex items-center gap-1.5 rounded-md bg-white pl-3 pr-1 py-1.5 text-sm font-light text-gray-500 dark:text-gray-400 dark:bg-gray-900">
+        <span>No profiles</span>
+      </div>
+    );
   }
 
+  const isSelected = (profile) => selectedProfile?.name === profile.name;
+
   return (
-    <Listbox value={selectedProfile} onChange={setSelectedProfile}>
-      <Label className="mt-2 block text-sm font-medium leading-6 text-gray-900">
-        Profile
-      </Label>
+    <Menu as="div" className="relative">
       {
         selectedProfile && !profiles.map(x => x.name).includes(selectedProfile.name) &&
         <div>
@@ -83,76 +95,59 @@ function ProfileSelect({
           Profile is missing.
         </div>
       }
-      <div className="relative mt-2 mb-2">
-        {
-          selectedProfile
-            ? <ListboxButton
-                className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
-              >
-              <span className="flex items-center">
-                <span className="ml-3 block truncate">
-                  {selectedProfile.name ? selectedProfile.name : ""}
-                </span>
-                <span className="ml-2 text-slate-400 text-sm font-light">
-                  @{selectedProfile.host ? selectedProfile.host : "localhost"}
-                </span>
-                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                  <ChevronUpDownIcon
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
-                  />
-                </span>
-              </span>
-            </ListboxButton>
-            : <ListboxButton
-                className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-1 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6"
-              >
-              <span className="flex items-center">
-                <span className="pointer-events-none flex-shrink-0 pl-3">
-                  <ExclamationTriangleIcon
-                    className="h-5 w-5 text-yellow-400"
-                    aria-hidden="true"
-                  />
-                </span>
-                <span className="ml-3 block truncate">
-                  {"No profile selected"}
-                </span>
-                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                  <ChevronUpDownIcon
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
-                  />
-                </span>
-              </span>
-            </ListboxButton>
-        }
+      <MenuButton className="flex items-center gap-2 rounded-md bg-white pl-4 pr-3 py-2.5 text-sm font-light text-gray-700 focus:outline-none dark:text-gray-300 dark:hover:text-gray-200 dark:bg-gray-900">
+        {!selectedProfile && (
+          <ExclamationTriangleIcon className="h-4 w-4 text-yellow-400" aria-hidden="true" />
+        )}
+        <span>{selectedProfile ? (selectedProfile.host ? `${selectedProfile.user}@${selectedProfile.host}` : "localhost") : "Profile"}</span>
+        <ChevronDownIcon className="h-4 w-4 text-gray-400" aria-hidden="true" />
+      </MenuButton>
 
-        <ListboxOptions
-          className="absolute z-10 mt-1 max-h-60 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm w-[var(--button-width)]"
-          anchor="bottom"
-        >
-          {profiles.map((profile) => (
-            <ListboxOption
-              key={profile.name}
-              value={profile}
-              className="group flex gap-2 bg-white data-[focus]:bg-blue-500 data-[focus]:text-white relative cursor-default select-none py-2 pl-1 pr-9 text-gray-900"
-            >
-              <div className="flex">
-                <span className="ml-3 block truncate font-normal data-[selected]:font-semibold">
-                  {profile.name}
-                </span>
-              </div>
-              <span className="ml-1 text-slate-400 text-sm font-light data-[selected]:text-gray-100">
-                @{profile.host ? profile.host : "localhost"}
-              </span>
-              <span className="invisible group-data-[selected]:visible absolute inset-y-0 right-0 flex items-center pr-4 group-data-[focus]:text-white text-blue-600">
-                <CheckIcon className="size-5" />
-              </span>
-            </ListboxOption>
-          ))}
-        </ListboxOptions>
-      </div>
-    </Listbox>
+      <MenuItems
+        anchor="bottom end"
+        className="absolute right-0 z-50 mt-0.5 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700"
+      >
+        <div>
+          {profiles.map((profile, index) => {
+            const isFirst = index === 0;
+            const isLast = index === profiles.length - 1;
+            return (
+            <MenuItem key={profile.name} className="w-full">
+              <button
+                onClick={() => setSelectedProfile(profile)}
+                className={`group flex w-full items-center justify-between px-3 py-2 text-left transition-colors hover:!bg-blue-500 ${
+                  isFirst ? "rounded-t-md" : ""
+                } ${isLast ? "rounded-b-md" : ""} ${
+                  isSelected(profile) ? "bg-gray-50 dark:bg-gray-600" : ""
+                }`}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-white">
+                      {profile.name}
+                    </span>
+                    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${
+                      profile.schema === "slurm"
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                        : "bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+                    } group-hover:bg-blue-400 group-hover:text-white`}>
+                      {profile.schema}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-blue-100">
+                    {profile.host ? `${profile.user}@${profile.host}` : "localhost"}
+                  </div>
+                </div>
+                {isSelected(profile) && (
+                  <CheckIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 group-hover:text-white" aria-hidden="true" />
+                )}
+              </button>
+            </MenuItem>
+          );
+          })}
+        </div>
+      </MenuItems>
+    </Menu>
   )
 }
 

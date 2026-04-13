@@ -10,7 +10,7 @@ import { XCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
  * @return {JSX.Element}
  */
 function DirectoryInputAlert({ root, isVisible = false }) {
-  const [ isDismissed, setIsDismissed ] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
 
   if (!isVisible) {
     return <></>;
@@ -28,7 +28,7 @@ function DirectoryInputAlert({ root, isVisible = false }) {
         </div>
         <div className="ml-3">
           <p className="text-sm font-normal text-red-700">
-            Only audio files in the mounted directory {root} are accessible.
+            Only files in the mounted directory {root} are accessible.
           </p>
         </div>
         <div className="ml-auto pl-3">

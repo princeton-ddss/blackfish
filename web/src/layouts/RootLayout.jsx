@@ -1,26 +1,103 @@
+import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ProfileProvider } from "@/components/ProfileSelect";
-import NavbarLight from "@/components/NavbarLight";
+import { RemoteFileSystemProvider } from "@/providers/RemoteFileSystemProvider";
+import Navbar from "@/components/Navbar";
+import Sidebar from "@/components/Sidebar";
+import SettingsSlideOver from "@/components/SettingsSlideOver";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+import { SettingsProvider } from "@/providers/SettingsProvider";
 
-function RootLayout() {
+function RootLayoutContent() {
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const task = location.pathname.split('/')[1] || 'dashboard';
-  const isLoginPage = location.pathname.endsWith('login');
+  const pathname = location.pathname;
+  const isLoginPage = pathname.endsWith("login");
+  const isDashboard = pathname === "/dashboard" || pathname === "/";
+
+  let content;
+
+  if (isLoginPage) {
+    content = (
+      <div className="font-sans">
+        <Outlet />
+      </div>
+    );
+  } else if (isDashboard) {
+    content = (
+      <div className="font-sans min-h-screen bg-white dark:bg-gray-900 transition-colors">
+        <Navbar variant="dashboard" />
+        <section className="mb-4 mt-6 mx-8">
+          <Outlet />
+        </section>
+      </div>
+    );
+  } else {
+    content = (
+      <div className="font-sans min-h-screen bg-white dark:bg-gray-800 transition-colors">
+        {/* Mobile sidebar drawer */}
+        <Dialog open={sidebarOpen} onClose={setSidebarOpen} className="relative z-50 lg:hidden">
+          <DialogBackdrop
+            transition
+            className="fixed inset-0 bg-gray-800/80 transition-opacity duration-300 ease-linear data-[closed]:opacity-0"
+          />
+          <div className="fixed inset-0 flex">
+            <DialogPanel
+              transition
+              className="relative mr-16 flex w-full max-w-xs flex-1 transform transition duration-300 ease-in-out data-[closed]:-translate-x-full"
+            >
+              <TransitionChild>
+                <div className="absolute top-0 left-full flex w-16 justify-center pt-5 duration-300 ease-in-out data-[closed]:opacity-0">
+                  <button type="button" onClick={() => setSidebarOpen(false)} className="-m-2.5 p-2.5">
+                    <span className="sr-only">Close sidebar</span>
+                    <XMarkIcon aria-hidden="true" className="h-6 w-6 text-white" />
+                  </button>
+                </div>
+              </TransitionChild>
+              <Sidebar />
+            </DialogPanel>
+          </div>
+        </Dialog>
+
+        <Navbar showSidebar onOpenSidebar={() => setSidebarOpen(true)} />
+
+        {/* Static sidebar for desktop - positioned below header */}
+        <div className="hidden lg:fixed lg:top-12 lg:bottom-0 lg:left-0 lg:z-40 lg:flex lg:w-72 lg:flex-col">
+          <Sidebar />
+        </div>
+
+        {/* Main content */}
+        <main className="lg:pl-72">
+          <div className="px-4 py-6 sm:px-6 lg:px-8 lg:pt-16">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <ProfileProvider>
-      <div className="font-sans">
-        <NavbarLight task={task} />
-        {isLoginPage ? (
-          <Outlet />
-        ) : (
-          <section className="mb-4 mt-6 ml-8 mr-8">
-            <Outlet />
-          </section>
-        )}
-      </div>
-    </ProfileProvider>
+    <>
+      {content}
+      <SettingsSlideOver />
+    </>
+  );
+}
+
+function RootLayout() {
+  return (
+    <ThemeProvider>
+      <SettingsProvider>
+        <ProfileProvider>
+          <RemoteFileSystemProvider>
+            <RootLayoutContent />
+          </RemoteFileSystemProvider>
+        </ProfileProvider>
+      </SettingsProvider>
+    </ThemeProvider>
   );
 }
 

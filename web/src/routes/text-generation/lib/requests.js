@@ -1,6 +1,52 @@
 import { blackfishApiURL } from "@/config";
 
 /**
+ * Parse an error response from a streaming request.
+ * @param {Response} res - The fetch response object.
+ * @returns {Promise<Error>} An error with the parsed message and status code.
+ */
+async function parseErrorResponse(res) {
+  let errorMessage = "Stream request failed.";
+  try {
+    const errorBody = await res.json();
+    errorMessage = errorBody.detail || errorBody.message || errorMessage;
+  } catch {
+    // Response body may not be JSON
+  }
+  const error = new Error(errorMessage);
+  error.status = res.status;
+  return error;
+}
+
+/**
+ * Parse a single SSE chunk from a streaming response.
+ * @param {string} chunk - A raw SSE chunk (without the trailing blank line).
+ * @returns {object|null} Parsed chunk, or null if the chunk should be skipped.
+ * @throws {Error} If the parsed chunk represents a service error.
+ */
+function parseStreamChunk(chunk) {
+  if (chunk === 'data: [DONE]') {
+    return { choices: [{ delta: { content: "" } }] };
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(chunk.replace('data: {', '{'));
+  } catch {
+    console.warn("Failed to parse SSE chunk:", chunk);
+    return null;
+  }
+
+  if (parsed.object === "error" || parsed.type === "BadRequestError") {
+    const error = new Error(parsed.message || "Service returned an error.");
+    error.status = parsed.code || 500;
+    throw error;
+  }
+
+  return parsed;
+}
+
+/**
  * Call a completion service with given ID using streaming inference.
  * @param {object} service - The service object to call.
  * @param {string} prompt - The prompt to send.
@@ -16,7 +62,7 @@ export async function* streamCompletionInference(service, prompt, params, use_pr
     do_sample: true,
   });
 
-  console.log("Starting completion stream with request:", JSON.parse(body));
+  console.debug("Starting completion stream with request:", JSON.parse(body));
 
   const url = use_proxy
     ? `${blackfishApiURL}/proxy/${service.port}/v1/completions?streaming=${params.stream}`
@@ -29,11 +75,8 @@ export async function* streamCompletionInference(service, prompt, params, use_pr
     body: body,
   });
 
-
   if (!res.ok) {
-    const error = new Error("Stream request failed.");
-    error.status = res.status;
-    throw error;
+    throw await parseErrorResponse(res);
   }
 
   const reader = res.body?.getReader();
@@ -49,22 +92,13 @@ export async function* streamCompletionInference(service, prompt, params, use_pr
 
     const chunks = decoder.decode(value, { stream: true }).split('\n\n');
     console.debug("Received chunks:", chunks);
-    const data = chunks.filter(x => x !== '').map((x) => {
-      if (x === 'data: [DONE]') {
-        // stream is done
-        return {
-          choices: [
-            {
-              delta: {
-                content: "",
-              }
-            }
-          ]
-        }
-      } else {
-        return JSON.parse(x.replace('data: {', '{'));
+    const data = [];
+    for (const x of chunks.filter(c => c !== '')) {
+      const parsed = parseStreamChunk(x);
+      if (parsed !== null) {
+        data.push(parsed);
       }
-    });
+    }
 
     yield data;
   }
@@ -87,7 +121,7 @@ export async function* streamTextGenerationInference(service, inputs, params, us
     parameters: params,
   });
 
-  console.log("Starting text generation stream with request:", JSON.parse(body));
+  console.debug("Starting text generation stream with request:", JSON.parse(body));
 
   const url = use_proxy
     ? `${blackfishApiURL}/proxy/${service.port}/generate_stream?streaming=true`
@@ -101,9 +135,7 @@ export async function* streamTextGenerationInference(service, inputs, params, us
   });
 
   if (!res.ok) {
-    const error = new Error("Stream request failed.");
-    error.status = res.status;
-    throw error;
+    throw await parseErrorResponse(res);
   }
 
   const reader = res.body?.getReader();
@@ -140,7 +172,7 @@ export async function* streamChatCompletionInference(service, messages, params, 
     ...params,
   });
 
-  console.log("Starting chat completion stream with request:", JSON.parse(body));
+  console.debug("Starting chat completion stream with request:", JSON.parse(body));
 
   const url = use_proxy
     ? `${blackfishApiURL}/proxy/${service.port}/v1/chat/completions?streaming=${params.stream}`
@@ -155,9 +187,7 @@ export async function* streamChatCompletionInference(service, messages, params, 
   });
 
   if (!res.ok) {
-    const error = new Error("Stream request failed.");
-    error.status = res.status;
-    throw error;
+    throw await parseErrorResponse(res);
   }
 
   const reader = res.body?.getReader();
@@ -173,22 +203,13 @@ export async function* streamChatCompletionInference(service, messages, params, 
 
     const chunks = decoder.decode(value, { stream: true }).split('\n\n');
     console.debug("Received chunks:", chunks);
-    const data = chunks.filter(x => x !== '').map((x) => {
-      if (x === 'data: [DONE]') {
-        // stream is done
-        return {
-          choices: [
-            {
-              delta: {
-                content: "",
-              }
-            }
-          ]
-        }
-      } else {
-        return JSON.parse(x.replace('data: {', '{'));
+    const data = [];
+    for (const x of chunks.filter(c => c !== '')) {
+      const parsed = parseStreamChunk(x);
+      if (parsed !== null) {
+        data.push(parsed);
       }
-    });
+    }
 
     yield data;
   }

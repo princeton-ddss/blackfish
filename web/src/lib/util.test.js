@@ -10,7 +10,8 @@ import {
   fileSize,
   lastModified,
   formattedTimeInterval,
-  isServiceRunning
+  isServiceRunning,
+  selectTierByModelSize
 } from "@/lib/util";
 
 describe("Utils", () => {
@@ -287,6 +288,46 @@ describe("Utils", () => {
           nothing: false
         }
       })).toBe(false);
+    });
+  });
+
+  describe("selectTierByModelSize", () => {
+    const tiers = [
+      { name: "Small", max_model_size_gb: 10 },
+      { name: "Medium", max_model_size_gb: 30 },
+      { name: "Large", max_model_size_gb: 100 },
+    ];
+
+    it("returns null for empty tiers array", () => {
+      expect(selectTierByModelSize([], 5)).toBe(null);
+      expect(selectTierByModelSize(null, 5)).toBe(null);
+      expect(selectTierByModelSize(undefined, 5)).toBe(null);
+    });
+
+    it("returns first tier when model size is null", () => {
+      expect(selectTierByModelSize(tiers, null)).toBe("Small");
+      expect(selectTierByModelSize(tiers, undefined)).toBe("Small");
+    });
+
+    it("selects smallest tier that fits the model", () => {
+      expect(selectTierByModelSize(tiers, 5)).toBe("Small");
+      expect(selectTierByModelSize(tiers, 10)).toBe("Small");
+      expect(selectTierByModelSize(tiers, 11)).toBe("Medium");
+      expect(selectTierByModelSize(tiers, 30)).toBe("Medium");
+      expect(selectTierByModelSize(tiers, 50)).toBe("Large");
+    });
+
+    it("returns largest tier when model exceeds all limits", () => {
+      expect(selectTierByModelSize(tiers, 200)).toBe("Large");
+    });
+
+    it("handles tiers with no size limit", () => {
+      const tiersWithUnlimited = [
+        { name: "Small", max_model_size_gb: 10 },
+        { name: "Unlimited", max_model_size_gb: null },
+      ];
+      expect(selectTierByModelSize(tiersWithUnlimited, 5)).toBe("Small");
+      expect(selectTierByModelSize(tiersWithUnlimited, 15)).toBe("Unlimited");
     });
   });
 

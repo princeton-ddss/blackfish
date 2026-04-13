@@ -6,7 +6,6 @@ from blackfish.server.services.base import Service
 from blackfish.server.services.speech_recognition import SpeechRecognition
 from blackfish.server.services.text_generation import TextGeneration
 from blackfish.server.jobs.base import BatchJob
-from blackfish.server.jobs.speech_recognition import SpeechRecognitionBatch
 from blackfish.server.models.model import Model
 
 pytestmark = pytest.mark.anyio
@@ -74,36 +73,48 @@ def services_fixture() -> list[Service | dict[str, Any]]:
 def batch_jobs_fixture() -> list[BatchJob | dict[str, Any]]:
     return [
         {
-            "class": SpeechRecognitionBatch,
+            "class": BatchJob,
             "data": {
                 "id": "2a7a8e62-40cc-4240-a825-463e5b11a81f",
                 "name": "blackfish-1",
-                "pipeline": "speech_recognition",
+                "task": "transcribe",
                 "repo_id": "openai/whisper-large-v3",
+                "input_dir": "/data/input",
+                "output_dir": "/data/output",
+                "input_ext": ".wav",
+                "output_ext": ".json",
                 "profile": "test",
                 "user": "test",
                 "host": "localhost",
             },
         },
         {
-            "class": SpeechRecognitionBatch,
+            "class": BatchJob,
             "data": {
                 "id": "391769fc-5a40-43db-bbfa-cec80a8c3710",
                 "name": "blackfish-2",
-                "pipeline": "speech_recognition",
+                "task": "transcribe",
                 "repo_id": "openai/whisper-tiny",
+                "input_dir": "/data/input2",
+                "output_dir": "/data/output2",
+                "input_ext": ".mp3",
+                "output_ext": ".json",
                 "profile": "test",
                 "user": "test",
                 "host": "localhost",
             },
         },
         {
-            "class": SpeechRecognitionBatch,
+            "class": BatchJob,
             "data": {
                 "id": "25058c41-9779-4b16-af6e-3fe5c3902435",
                 "name": "blackfish-3",
-                "pipeline": "speech_recognition",
+                "task": "summarize",
                 "repo_id": "openai/whisper-large-v3",
+                "input_dir": "/data/input3",
+                "output_dir": "/data/output3",
+                "input_ext": ".txt",
+                "output_ext": ".txt",
                 "profile": "test-slurm",
                 "user": "test",
                 "host": "test-server",
@@ -146,5 +157,13 @@ def models_fixture() -> list[Model | dict[str, Any]]:
             "revision": "4",
             "image": "text_generation",
             "model_dir": "/home/test/.blackfish/models/models--meta-llama/Llama-3.1-70B",
+        },
+        {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "repo": "llava-hf/llava-1.5-7b-hf",
+            "profile": "default",
+            "revision": "main",
+            "image": "image-text-to-text",
+            "model_dir": "/home/test/.blackfish/models/models--llava-hf/llava-1.5-7b-hf",
         },
     ]

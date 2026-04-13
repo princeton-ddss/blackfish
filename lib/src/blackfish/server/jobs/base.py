@@ -1,42 +1,35 @@
-import os
-import subprocess
-import uuid
-from pathlib import Path
-from typing import Optional
+from __future__ import annotations
+
 from enum import StrEnum, auto
-from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Optional
 
-from sqlalchemy.orm import Mapped
-from sqlalchemy.ext.asyncio import AsyncSession
 from advanced_alchemy.base import UUIDAuditBase
-from litestar.datastructures import State
-from jinja2 import Environment, PackageLoader
+from sqlalchemy import JSON
+from sqlalchemy.orm import Mapped, mapped_column
 
-from blackfish.server.config import BlackfishConfig, ContainerProvider
-from blackfish.server.job import (
-    JobScheduler,
-    JobConfig,
-    LocalJob,
-    SlurmJob,
-    Job,
-    JobState,
+from blackfish.server.jobs.tasks import (
+    build_pipeline_config,
+    get_default_input_ext,
+    get_default_output_ext,
 )
 from blackfish.server.logger import logger
-from blackfish.server.models.profile import BlackfishProfile, deserialize_profile
+from blackfish.server.models.profile import SlurmProfile, deserialize_profile
+from blackfish.server.jobs.client import (
+    LocalRunner,
+    SSHRunner,
+    TigerFlowClient,
+)
 
+if TYPE_CHECKING:
+    from litestar.datastructures import State
 
-@dataclass
-class BaseConfig: ...
+    from blackfish.server.config import BlackfishConfig
 
 
 class BatchJobStatus(StrEnum):
-    SUBMITTED = auto()
-    PENDING = auto()
     RUNNING = auto()
-    COMPLETED = auto()
     STOPPED = auto()
-    FAILED = auto()
-    TIMEOUT = auto()
+    BROKEN = auto()  # Metadata missing - unable to determine job state
 
 
 def format_status(status: BatchJobStatus | None) -> str:
@@ -44,416 +37,255 @@ def format_status(status: BatchJobStatus | None) -> str:
     return status.upper() if status else "NONE"
 
 
-@dataclass
-class BatchJobProgress:
-    ntotal: int = 0
-    nsuccess: int = 0
-    nfail: int = 0
+def create_tigerflow_client_for_profile(
+    profile_name: str,
+    app_config: "State | BlackfishConfig",
+) -> TigerFlowClient:
+    """Create a TigerFlowClient for a profile.
+
+    Factory function that creates the appropriate runner (SSH or local)
+    based on the profile configuration.
+
+    Args:
+        profile_name: Name of the profile to use
+        app_config: Application configuration with HOME_DIR
+
+    Returns:
+        Configured TigerFlowClient
+
+    Raises:
+        FileNotFoundError: If profile does not exist
+    """
+    profile = deserialize_profile(app_config.HOME_DIR, profile_name)
+    if profile is None:
+        raise FileNotFoundError(f"Profile '{profile_name}' not found")
+
+    if isinstance(profile, SlurmProfile):
+        runner: SSHRunner | LocalRunner = SSHRunner(
+            user=profile.user, host=profile.host
+        )
+        python_path = profile.python_path
+    else:
+        runner = LocalRunner()
+        python_path = "python3"
+
+    return TigerFlowClient(
+        runner=runner,
+        home_dir=profile.home_dir,
+        python_path=python_path,
+    )
+
+
+def create_tigerflow_client(
+    job: "BatchJob",
+    app_config: "State | BlackfishConfig",
+) -> TigerFlowClient:
+    """Create a TigerFlowClient for a batch job.
+
+    Factory function that creates the appropriate runner (SSH or local)
+    based on the job's profile configuration.
+
+    Args:
+        job: The batch job to create a client for
+        app_config: Application configuration with HOME_DIR
+
+    Returns:
+        Configured TigerFlowClient
+    """
+    profile = deserialize_profile(app_config.HOME_DIR, job.profile)
+
+    if job.host == "localhost":
+        runner: SSHRunner | LocalRunner = LocalRunner()
+    else:
+        if not job.user or not job.host:
+            raise ValueError("Missing user or host for remote profile")
+        runner = SSHRunner(user=job.user, host=job.host)
+
+    home_dir = job.home_dir or (profile.home_dir if profile else "~/.blackfish")
+
+    # Get python_path from SlurmProfile, default to python3
+    python_path = "python3"
+    if profile and isinstance(profile, SlurmProfile):
+        python_path = profile.python_path
+
+    return TigerFlowClient(
+        runner=runner,
+        home_dir=home_dir,
+        python_path=python_path,
+    )
 
 
 class BatchJob(UUIDAuditBase):
+    """Batch job for TigerFlow-based ML task execution.
+
+    TigerFlow manages Slurm jobs internally, so we only need to track:
+    - What task to run and its configuration
+    - Where the input/output data lives
+    - Current status and progress
+    """
+
     __tablename__ = "jobs"
+
+    # Job identity
     name: Mapped[str]
-    pipeline: Mapped[str]
-    repo_id: Mapped[str]
+    task: Mapped[str]  # e.g., "transcribe", "summarize"
+    repo_id: Mapped[str]  # Model ID (e.g., "openai/whisper-large-v3")
+    revision: Mapped[Optional[str]]  # Model revision/version
+
+    # Data paths and file types
+    input_dir: Mapped[str]  # Input directory on cluster
+    output_dir: Mapped[str]  # Output directory on cluster
+    input_ext: Mapped[Optional[str]]  # Input file extension (e.g., ".wav")
+    output_ext: Mapped[Optional[str]]  # Output file extension (e.g., ".json")
+    cache_dir: Mapped[Optional[str]]  # Model cache directory on cluster
+
+    # Configuration (stored as JSON)
+    params: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSON, nullable=True, default=None
+    )
+    resources: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSON, nullable=True, default=None
+    )
+    max_workers: Mapped[int] = mapped_column(default=1)
+
+    # Profile info (denormalized for convenience)
     profile: Mapped[str]
     user: Mapped[Optional[str]]
     host: Mapped[Optional[str]]
     home_dir: Mapped[Optional[str]]
-    cache_dir: Mapped[Optional[str]]
-    job_id: Mapped[Optional[str]]
+
+    # Job state
     status: Mapped[Optional[BatchJobStatus]]
-    ntotal: Mapped[Optional[int]]
-    nsuccess: Mapped[Optional[int]]
-    nfail: Mapped[Optional[int]]
-    scheduler: Mapped[Optional[str]]
-    provider: Mapped[Optional[ContainerProvider]]
-    mount: Mapped[Optional[str]]
-    __mapper_args__ = {
-        "polymorphic_on": "pipeline",
-        "polymorphic_identity": "base",
-    }
+    pid: Mapped[Optional[str]]  # TigerFlow process ID
+
+    # Progress tracking
+    staged: Mapped[Optional[int]]  # Total items to process
+    finished: Mapped[Optional[int]]  # Successfully processed
+    errored: Mapped[Optional[int]]  # Failed items
+
+    # TigerFlow versions (for reproducibility)
+    tigerflow_version: Mapped[Optional[str]]
+    tigerflow_ml_version: Mapped[Optional[str]]
 
     def __repr__(self) -> str:
-        return (
-            f"<BatchJob(name={self.name}, status={self.status}, job_id={self.job_id})>"
+        return f"<BatchJob(name={self.name}, task={self.task}, status={self.status})>"
+
+    async def start(self, client: TigerFlowClient) -> None:
+        """Start the batch job using TigerFlow.
+
+        Builds pipeline config and starts TigerFlow execution.
+        Caller is responsible for persistence.
+
+        Args:
+            client: TigerFlowClient for remote operations
+
+        Raises:
+            TigerFlowError: If job fails to start
+        """
+        logger.info(
+            f"Starting batch job {self.id}: task={self.task}, model={self.repo_id}"
         )
 
-    def get_profile(
-        self, app_config: State | BlackfishConfig
-    ) -> BlackfishProfile | None:
-        logger.debug(f"Fetching profile for batch job {self.id}")
-        return deserialize_profile(app_config.HOME_DIR, self.profile)
+        # Check TigerFlow environment and record versions for reproducibility
+        versions = await client.check_health()
+        self.tigerflow_version = versions.tigerflow
+        self.tigerflow_ml_version = versions.tigerflow_ml
 
-    async def start(
-        self,
-        session: AsyncSession,
-        app_config: State,
-        job_options: JobConfig,
-        container_options: BaseConfig,
-    ) -> None:
-        logger.debug("Adding job to database")
-        session.add(self)
-        await session.flush()  # set self.id
+        # Verify required features are available
+        await client.check_capabilities()
 
-        profile = self.get_profile(app_config)
-        if self.scheduler == JobScheduler.Slurm:
-            script_path = Path(
-                os.path.join(app_config.HOME_DIR, "jobs", self.id.hex, "start.sh")
-            )
-            logger.debug(f"Generating job script and writing to {script_path}.")
-            os.makedirs(script_path.parent)
-            with open(script_path, "w") as f:
-                try:
-                    script = self.render_job_script(
-                        app_config, job_options, container_options
-                    )
-                    f.write(script)
-                except Exception as e:
-                    logger.error(f"Failed to render job script: {e}")
-                    return None
+        # Build params - model/revision/cache merged with user params
+        params: dict[str, Any] = {"model": self.repo_id}
+        if self.revision:
+            params["revision"] = self.revision
+        if self.cache_dir:
+            params["cache_dir"] = self.cache_dir
+        if self.params:
+            params.update(self.params)
 
-            logger.info("Starting batch job")
+        # Build pipeline config
+        input_ext = self.input_ext or get_default_input_ext(self.task)
+        output_ext = self.output_ext or get_default_output_ext(self.task)
+        config = build_pipeline_config(
+            task=self.task,
+            input_ext=input_ext,
+            venv_path=client.venv_path,
+            params=params,
+            resources=self.resources,
+            max_workers=self.max_workers,
+            cache_dir=self.cache_dir,
+            output_ext=output_ext,
+        )
 
-            if self.host == "localhost":
-                logger.debug("Submitting slurm job locally.")
-                res = subprocess.check_output(
-                    [
-                        "sbatch",
-                        "--chdir",
-                        script_path.parent,
-                        script_path,
-                    ]
-                )
-                job_id = res.decode("utf-8").strip().split()[-1]
-                self.status = BatchJobStatus.SUBMITTED
-                self.job_id = job_id
-            else:
-                profile = self.get_profile(app_config)
-                if profile is None:
-                    logger.error("Failed to start batch job: profile is missing.")
-                    return None
+        # Start TigerFlow job
+        await client.run(
+            config=config,
+            input_dir=self.input_dir,
+            output_dir=self.output_dir,
+            config_name=f"pipeline-{self.id}.yaml",
+        )
 
-                logger.debug(f"Copying job script to {self.host}:{profile.home_dir}.")
-                remote_script_dir = os.path.join(profile.home_dir, "jobs", self.id.hex)
+        self.status = BatchJobStatus.RUNNING
+        logger.info(f"Batch job {self.id} started successfully")
 
-                try:
-                    _ = subprocess.check_output(
-                        [
-                            "ssh",
-                            f"{self.user}@{self.host}",
-                            "mkdir",
-                            "-p",
-                            remote_script_dir,
-                        ]
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to copy job script to remote host: {e}.")
-                    return
+    async def stop(self, client: TigerFlowClient) -> None:
+        """Stop the batch job.
 
-                try:
-                    _ = subprocess.check_output(
-                        [
-                            "scp",
-                            script_path,
-                            (f"{self.user}@{self.host}:{remote_script_dir}"),
-                        ]
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to copy job script to remote host: {e}")
-                    return
+        Sends stop command to TigerFlow. Call update() separately to
+        get final status and progress.
 
-                logger.debug(f"Submitting batch job to {self.host}.")
-                try:
-                    res = subprocess.check_output(
-                        [
-                            "ssh",
-                            f"{self.user}@{self.host}",
-                            "sbatch",
-                            "--chdir",
-                            remote_script_dir,
-                            os.path.join(remote_script_dir, "start.sh"),
-                        ]
-                    )
-                    job_id = res.decode("utf-8").strip().split()[-1]
-                    self.status = BatchJobStatus.SUBMITTED
-                    self.job_id = job_id
-                except Exception as e:
-                    logger.error(f"Failed to submit Slurm job: {e}")
-                    return
-        else:
-            script_path = Path(
-                os.path.join(app_config.HOME_DIR, "jobs", self.id.hex, "start.sh")
-            )
-            logger.debug(f"Generating job script and writing to {script_path}.")
-            os.makedirs(script_path.parent)
-
-            self.provider = app_config.CONTAINER_PROVIDER
-            with open(script_path, "w") as f:
-                try:
-                    match self.provider:
-                        case ContainerProvider.Apptainer:
-                            logger.debug("The container provider is Apptainer.")
-                            job_id = str(uuid.uuid4())
-                            script = self.render_job_script(
-                                app_config, job_options, container_options
-                            )
-                        case ContainerProvider.Docker:
-                            logger.debug("The container provider is Docker.")
-                            script = self.render_job_script(
-                                app_config, job_options, container_options
-                            )
-                    f.write(script)
-                except Exception as e:
-                    logger.error(f"Failed to render job script: {e}")
-                    return
-            logger.info("Attempting to start batch job locally...")
-            try:
-                res = subprocess.check_output(["bash", script_path.as_posix()])
-            except Exception as e:
-                logger.error(f"Failed to start batch job: {e}")
-            if self.provider == ContainerProvider.Docker:
-                job_id = res.decode("utf-8").strip().split()[-1][:12]
-            self.status = BatchJobStatus.SUBMITTED
-            self.job_id = job_id
-
-        logger.debug("Updating database entry")
-        session.add(self)
-        await session.flush()
-
-    async def stop(
-        self,
-        session: AsyncSession,
-        app_config: State,
-        timeout: bool = False,
-        failed: bool = False,
-        completed: bool = False,
-    ) -> None:
+        Args:
+            client: TigerFlowClient for remote operations
+        """
         logger.debug(f"Stopping batch job {self.id}")
 
-        if self.status in [
-            BatchJobStatus.STOPPED,
-            BatchJobStatus.TIMEOUT,
-            BatchJobStatus.FAILED,
-            BatchJobStatus.COMPLETED,
-        ]:
-            logger.warning(
-                f"Batch job is already stopped (status={self.status}). Aborting stop."
-            )
+        if self.status == BatchJobStatus.STOPPED:
+            logger.debug("Batch job is already stopped. Skipping stop command.")
             return
 
-        if self.job_id is None:
-            raise Exception(
-                f"Unable to stop batch job {self.id} because `job_id` is missing."
-            )
+        await client.stop(self.output_dir)
 
-        job = self.get_job(verbose=True)
-        if job is not None:
-            job.cancel()
+    async def update(self, client: TigerFlowClient) -> BatchJobStatus:
+        """Update job status from TigerFlow.
 
-        progress = self.get_progress(app_config)
-        if progress is not None:
-            self.ntotal = progress.ntotal
-            self.nsuccess = progress.nsuccess
-            self.nfail = progress.nfail
+        Polls TigerFlow for current status and updates job fields.
+        Caller is responsible for persistence.
 
-        if timeout:
-            self.status = BatchJobStatus.TIMEOUT
-        elif failed:
-            self.status = BatchJobStatus.FAILED
-        elif completed:
-            self.status = BatchJobStatus.COMPLETED
+        Args:
+            client: TigerFlowClient for remote operations
+
+        Returns:
+            Current batch job status
+
+        Raises:
+            TigerFlowError: If report command fails
+        """
+        logger.debug(
+            f"Checking status of batch job {self.id}. "
+            f"Current status is {format_status(self.status)}."
+        )
+
+        report = await client.report(self.output_dir)
+
+        # Update progress from report
+        # staged = items waiting + items actively processing (both are "not yet finished")
+        # pipeline.staged is None when pipeline is stopped (no items waiting)
+        pipeline = report.progress.pipeline
+        self.staged = (pipeline.staged or 0) + pipeline.in_progress
+        self.finished = pipeline.finished
+        self.errored = pipeline.errored
+        self.pid = str(report.status.pid) if report.status.pid else None
+
+        # Map TigerFlow running state to BatchJobStatus
+        if report.status.running:
+            self.status = BatchJobStatus.RUNNING
         else:
             self.status = BatchJobStatus.STOPPED
 
-    async def update(
-        self, session: AsyncSession, app_config: State
-    ) -> BatchJobStatus | None:
         logger.debug(
-            f"Checking status of batch job {self.id}. Current status is {format_status(self.status)}."
-        )
-        if self.status in [
-            BatchJobStatus.STOPPED,
-            BatchJobStatus.TIMEOUT,
-            BatchJobStatus.FAILED,
-            BatchJobStatus.COMPLETED,
-        ]:
-            logger.debug(
-                f"Batch job {self.id} is no longer running. Aborting status update."
-            )
-            return self.status
-
-        if self.job_id is None:
-            logger.debug(
-                f"Batch job {self.id} has no associated job. Aborting status update."
-            )
-            return self.status
-
-        job = self.get_job(verbose=True)
-        if isinstance(job, SlurmJob):
-            return await self.update_from_slurm(session, app_config, job)
-        elif isinstance(job, LocalJob):
-            return await self.update_from_local(session, app_config, job)
-        return None
-
-    async def update_from_slurm(
-        self, session: AsyncSession, app_config: State, job: SlurmJob
-    ) -> BatchJobStatus | None:
-        if job.state == JobState.PENDING:
-            logger.debug(
-                f"Batch job {self.id} has not started. Setting status to PENDING."
-            )
-            self.status = BatchJobStatus.PENDING
-            return BatchJobStatus.PENDING
-        elif job.state == JobState.MISSING:
-            logger.warning(
-                f"Batch job {self.id} has no job state (this batch job is likely"
-                " new or has expired). Aborting status update."
-            )
-            return self.status
-        elif job.state == JobState.CANCELLED:
-            logger.debug(
-                f"Batch job {self.id} has a cancelled job. Setting status to"
-                " STOPPED and stopping the batch job."
-            )
-            await self.stop(session, app_config)
-            return BatchJobStatus.STOPPED
-        elif job.state == JobState.TIMEOUT:
-            logger.debug(
-                f"Batch job {self.id} has a timed out job. Setting status to"
-                " TIMEOUT and stopping the batch job."
-            )
-            await self.stop(session, app_config, timeout=True)
-            return BatchJobStatus.TIMEOUT
-        elif job.state == JobState.COMPLETED:
-            logger.debug(
-                f"Batch job {self.id} has completed. Setting status to"
-                " COMPLETED and stopping the batch job."
-            )
-            await self.stop(session, app_config, completed=True)
-            return BatchJobStatus.COMPLETED
-        elif job.state == JobState.RUNNING:
-            logger.debug(
-                f"Batch job {self.id} is running. Setting status to"
-                " RUNNING and checking progress."
-            )
-            self.status = BatchJobStatus.RUNNING
-            progress = self.get_progress(app_config)
-            if progress is not None:
-                self.ntotal = progress.ntotal
-                self.nsuccess = progress.nsuccess
-                self.nfail = progress.nfail
-            return BatchJobStatus.RUNNING
-        else:
-            logger.debug(
-                f"Batch job {self.id} has a failed job"
-                f" (job.state={job.state}). Setting status to FAILED."
-            )
-            await self.stop(session, app_config, failed=True)
-            return BatchJobStatus.FAILED
-
-    async def update_from_local(
-        self, session: AsyncSession, app_config: State, job: LocalJob
-    ) -> BatchJobStatus | None:
-        if job.state == JobState.CREATED:
-            logger.debug(
-                f"Batch job {self.id} has not started. Setting status to PENDING."
-            )
-            self.status = BatchJobStatus.PENDING
-            return BatchJobStatus.PENDING
-        elif job.state == JobState.MISSING:
-            logger.warning(
-                f"Batch job {self.id} has a missing job state (this batch job is likely"
-                " new or has expired). Aborting status update."
-            )
-            return self.status
-        elif job.state == JobState.EXITED:
-            logger.debug(
-                f"Batch job {self.id} has exited. Setting status to"
-                " STOPPED and stopping the batch job."
-            )
-            await self.stop(session, app_config)
-            return BatchJobStatus.STOPPED
-        elif job.state == JobState.RUNNING:
-            logger.debug(
-                f"Batch job {self.id} is running. Setting status to"
-                " RUNNING and checking progress."
-            )
-            self.status = BatchJobStatus.RUNNING
-            progress = self.get_progress(app_config)
-            if progress is not None:
-                self.ntotal = progress.ntotal
-                self.nsuccess = progress.nsuccess
-                self.nfail = progress.nfail
-            return BatchJobStatus.RUNNING
-        elif job.state in [JobState.RESTARTING, JobState.PAUSED]:
-            raise NotImplementedError
-        else:
-            logger.debug(
-                f"Batch job {self.id} has a failed job"
-                f" (job.state={job.state}). Setting status to FAILED."
-            )
-            await self.stop(session, app_config, failed=True)
-            return BatchJobStatus.FAILED
-
-    def get_progress(self, app_config: State) -> BatchJobProgress | None:
-        raise NotImplementedError(
-            "BatchJob.get_progress() must be implemented in subclasses."
+            f"Status check complete for job {self.id}: "
+            f"status={format_status(self.status)}, "
+            f"staged={self.staged}, finished={self.finished}, errored={self.errored}"
         )
 
-    def get_job(self, verbose: bool = False) -> Job | None:
-        """Fetch the job backing the batch job."""
-
-        job: Job
-
-        if not self.job_id:
-            logger.warning("Unable to fetch job: `self.job_id` missing.")
-            return None
-
-        if self.scheduler == JobScheduler.Slurm:
-            if self.user and self.host and self.home_dir:
-                job = SlurmJob(
-                    job_id=int(self.job_id),
-                    user=self.user,
-                    host=self.host,
-                    name=self.name,
-                    data_dir=os.path.join(self.home_dir, "jobs", self.id.hex),
-                )
-            else:
-                return None
-        elif self.provider is not None:
-            job = LocalJob(self.job_id, self.provider, self.name)
-        else:
-            logger.warning("Unable to fetch job: `self.provider` missing.")
-            return None
-
-        job.update(verbose=verbose)
-        return job
-
-    def render_job_script(
-        self,
-        app_config: State | BlackfishConfig,
-        job_config: JobConfig,
-        container_config: BaseConfig,
-    ) -> str:
-        env = Environment(
-            loader=PackageLoader(
-                "blackfish.server",
-                "templates",
-            )
-        )
-        template = env.get_template(
-            f"jobs/{self.pipeline}_{self.scheduler or 'local'}.sh"
-        )
-        job_script = template.render(
-            uuid=self.id.hex,
-            name=self.name,
-            model=self.repo_id,
-            provider=self.provider,
-            profile=self.get_profile(app_config),
-            container_config=container_config,
-            job_config=job_config,
-            mount=self.mount,
-        )
-
-        return job_script
+        return self.status

@@ -4,7 +4,7 @@ exports[`Disabled Pagination 1`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
         class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -116,7 +116,7 @@ exports[`Disabled Pagination 2`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
         class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -228,7 +228,7 @@ exports[`Enabled Pagination 1`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
         class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -330,7 +330,7 @@ exports[`Enabled Pagination 2`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
         class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -432,7 +432,7 @@ exports[`Pagination with no files 1`] = `
 <body>
   <div>
     <div
-      class="flex justify-center mt-2"
+      class="flex justify-center py-1"
     >
       <button
         class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"

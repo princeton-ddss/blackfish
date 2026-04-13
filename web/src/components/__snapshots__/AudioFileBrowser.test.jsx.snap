@@ -271,7 +271,7 @@ exports[`AudioFileBrowser back navigation 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -505,7 +505,7 @@ exports[`AudioFileBrowser disabled interactions 1`] = `
                         >
                           <img
                             alt="File browser disabled"
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/dead-fish.png"
                             width="56"
@@ -540,7 +540,7 @@ exports[`AudioFileBrowser disabled interactions 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -935,7 +935,7 @@ exports[`AudioFileBrowser folder navigation 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -1230,7 +1230,7 @@ exports[`AudioFileBrowser loading state with files 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -1687,7 +1687,7 @@ exports[`AudioFileBrowser with directories and interactions 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -1916,7 +1916,7 @@ exports[`AudioFileBrowser with empty files 1`] = `
                         >
                           <img
                             alt="No files found."
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/question-mark.png"
                             width="56"
@@ -1951,7 +1951,7 @@ exports[`AudioFileBrowser with empty files 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -2180,7 +2180,7 @@ exports[`AudioFileBrowser with error 1`] = `
                         >
                           <img
                             alt="Loading error."
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/dead-fish.png"
                             width="56"
@@ -2215,7 +2215,7 @@ exports[`AudioFileBrowser with error 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -2444,7 +2444,7 @@ exports[`AudioFileBrowser with no service selected 1`] = `
                         >
                           <img
                             alt="No files found."
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/question-mark.png"
                             width="56"
@@ -2479,7 +2479,7 @@ exports[`AudioFileBrowser with no service selected 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -2713,7 +2713,7 @@ exports[`Disabled AudioFileBrowser 1`] = `
                         >
                           <img
                             alt="File browser disabled"
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/dead-fish.png"
                             width="56"
@@ -2748,7 +2748,7 @@ exports[`Disabled AudioFileBrowser 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -3663,7 +3663,7 @@ exports[`Enabled AudioFileBrowser 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -3897,7 +3897,7 @@ exports[`Loading AudioFileBrowser 1`] = `
                         >
                           <img
                             alt="File browser disabled"
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/dead-fish.png"
                             width="56"
@@ -3932,7 +3932,7 @@ exports[`Loading AudioFileBrowser 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"

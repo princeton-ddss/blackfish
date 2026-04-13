@@ -177,7 +177,7 @@ exports[`Disabled RemoteFileBrowser 1`] = `
                         >
                           <img
                             alt="File browser disabled"
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/dead-fish.png"
                             width="56"
@@ -212,7 +212,7 @@ exports[`Disabled RemoteFileBrowser 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -1127,7 +1127,7 @@ exports[`Enabled RemoteFileBrowser 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -1361,7 +1361,7 @@ exports[`Loading RemoteFileBrowser 1`] = `
                         >
                           <img
                             alt="File browser disabled"
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/dead-fish.png"
                             width="56"
@@ -1396,7 +1396,7 @@ exports[`Loading RemoteFileBrowser 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -1724,7 +1724,7 @@ exports[`RemoteFileBrowser back navigation 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -1958,7 +1958,7 @@ exports[`RemoteFileBrowser disabled interactions 1`] = `
                         >
                           <img
                             alt="File browser disabled"
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/dead-fish.png"
                             width="56"
@@ -1993,7 +1993,7 @@ exports[`RemoteFileBrowser disabled interactions 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -2388,7 +2388,7 @@ exports[`RemoteFileBrowser folder navigation 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -2683,7 +2683,7 @@ exports[`RemoteFileBrowser loading state with files 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -3140,7 +3140,7 @@ exports[`RemoteFileBrowser with directories and interactions 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -3369,7 +3369,7 @@ exports[`RemoteFileBrowser with empty files 1`] = `
                         >
                           <img
                             alt="No files found."
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/question-mark.png"
                             width="56"
@@ -3404,7 +3404,7 @@ exports[`RemoteFileBrowser with empty files 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -3633,7 +3633,7 @@ exports[`RemoteFileBrowser with error 1`] = `
                         >
                           <img
                             alt="Loading error."
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/dead-fish.png"
                             width="56"
@@ -3668,7 +3668,7 @@ exports[`RemoteFileBrowser with error 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
@@ -3897,7 +3897,7 @@ exports[`RemoteFileBrowser with no service selected 1`] = `
                         >
                           <img
                             alt="No files found."
-                            class="h-16 ml-auto mr-auto opacity-80 mb-5"
+                            class="h-16 ml-auto mr-auto opacity-80 mb-5 dark:invert"
                             height="56"
                             src="./img/question-mark.png"
                             width="56"
@@ -3932,7 +3932,7 @@ exports[`RemoteFileBrowser with no service selected 1`] = `
           </div>
         </div>
         <div
-          class="flex justify-center mt-2"
+          class="flex justify-center py-1"
         >
           <button
             class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"

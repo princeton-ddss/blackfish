@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState, useRef, useCallback } from "react";
+import Markdown from "react-markdown";
 import {
   ArrowPathIcon,
   CheckIcon,
@@ -6,6 +7,7 @@ import {
   DocumentTextIcon,
   PaperAirplaneIcon,
   PencilIcon,
+  TrashIcon,
   XMarkIcon,
   PhotoIcon,
 } from "@heroicons/react/24/outline";
@@ -39,6 +41,32 @@ const Role = {
   ASSISTANT: "assistant",
   SYSTEM: "system",
 };
+
+/**
+ * Classify a streaming API error and return a user-friendly error object.
+ * @param {Error} error
+ * @returns {{ message: string, detail: string | null, isContextLength: boolean }}
+ */
+function classifyApiError(error) {
+  const msg = error.message || "An unexpected error occurred.";
+  const isContextLength =
+    /context length|token/.test(msg) && /maximum|exceeded/.test(msg);
+
+  if (isContextLength) {
+    return {
+      message: "Context length exceeded",
+      detail:
+        "Your conversation is too long for this model. Try clearing the conversation or reducing message length.",
+      isContextLength: true,
+    };
+  }
+
+  return {
+    message: "Request failed",
+    detail: msg,
+    isContextLength: false,
+  };
+}
 
 /**
  * User Message Input component.
@@ -76,6 +104,7 @@ function UserMessageInput({
   onImageRemoteSelect,
   onFileBrowserUpload,
   onFileRemoteSelect,
+  selectedService,
 }) {
   return (
     <div className="flex items-start space-x-4 mt-auto pt-4">
@@ -120,7 +149,9 @@ function UserMessageInput({
                   return;
                 } else if (event.key === "Enter") {
                   event.preventDefault();
-                  onSubmit(event);
+                  if (selectedService) {
+                    onSubmit(event);
+                  }
                 }
               }}
               className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6"
@@ -165,7 +196,7 @@ function UserMessageInput({
             <div className="shrink-0">
               <button
                 type="submit"
-                disabled={message && message.content && message.content.length === 0}
+                disabled={!selectedService || (message && message.content && message.content.length === 0)}
                 className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
               >
                 <PaperAirplaneIcon className="size-5" />
@@ -195,6 +226,7 @@ UserMessageInput.propTypes = {
   onImageRemoteSelect: PropTypes.func,
   onFileBrowserUpload: PropTypes.func,
   onFileRemoteSelect: PropTypes.func,
+  selectedService: PropTypes.object,
 };
 
 /**
@@ -230,6 +262,7 @@ MessageImage.propTypes = {
 function UserMessage({ message, onDeleteMessage, onEditMessage }) {
   const [hover, setHover] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Extract text and images from content
   // Use _displayText if available (when files were attached), otherwise extract from content
@@ -314,7 +347,7 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
                 <button
                   type="button"
                   onClick={() => {
-                    console.log("cancel button clicked");
+                    console.debug("cancel button clicked");
                     setIsEditing(false);
                     setContent(textContent);
                   }}
@@ -346,10 +379,10 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
         onMouseLeave={() => {
           setHover(false);
         }}
-        className="mt-5"
+        className="mt-3"
       >
         <div className="flex flex-row-reverse">
-          <div className="max-w-xl content-end bg-gray-100 dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 shadow-md">
+          <div className="max-w-xl content-end bg-gray-100 dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 shadow-sm">
             {/* Display images if any */}
             {images.length > 0 && (
               <div className="flex gap-2 flex-wrap mb-2">
@@ -370,40 +403,43 @@ function UserMessage({ message, onDeleteMessage, onEditMessage }) {
             {textContent}
           </div>
         </div>
-        <div className="flex flex-row-reverse h-8">
+        <div className={`flex flex-row-reverse items-center mt-2 transition-opacity duration-150 ${hover ? "opacity-100" : "opacity-0"}`}>
           <button
-            hidden={!hover}
             onClick={() => {
-              console.log("deleting user message");
+              console.debug("deleting user message");
               onDeleteMessage();
             }}
+            className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Delete message: "${textContent}"`}</span>
+            <XMarkIcon className="w-5 h-5" />
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Delete</span>
           </button>
           <button
-            hidden={!hover}
             onClick={() => {
-              console.log("edit button clicked");
+              console.debug("edit button clicked");
               setIsEditing(true);
             }}
+            className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <PencilIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Edit message: "${textContent}"`}</span>
+            <PencilIcon className="w-5 h-5" />
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Edit</span>
           </button>
           <button
-            hidden={!hover}
             onClick={() => {
               navigator.clipboard
                 .writeText(textContent)
-                .then(console.log("copied user message"))
+                .then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                })
                 .catch((err) => {
                   console.error("Failed to copy content: ", err);
                 });
             }}
+            className="group relative p-1 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <ClipboardDocumentIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5 mt-2" />
-            <span className="sr-only">{`Copy message to clipboard: ${textContent}`}</span>
+            {copied ? <CheckIcon className="w-5 h-5" /> : <ClipboardDocumentIcon className="w-5 h-5" />}
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">{copied ? "Copied" : "Copy"}</span>
           </button>
         </div>
       </div>
@@ -425,30 +461,38 @@ UserMessage.propTypes = {
  * @param {JSX.Element}
  */
 function AssisantMessage({ message, handleResubmit }) {
+  const [copied, setCopied] = useState(false);
   return (
-    <div className="mt-5 max-w-xl">
+    <div className="mt-3 max-w-xl">
       <div className="flex flex-row">
-        <div className="w-fit content-end bg-white dark:bg-transparent text-sm text-gray-900 dark:text-gray-100 rounded-lg ml-2">
-          {message.content}
+        <div className="w-fit content-end bg-white dark:bg-transparent text-sm text-gray-900 dark:text-gray-100 rounded-lg ml-2 prose prose-sm dark:prose-invert max-w-none">
+          <Markdown>{message.content}</Markdown>
         </div>
       </div>
-      <div className="flex flex-row h-8">
+      <div className="flex flex-row items-center mt-2 ml-1">
         <button
           onClick={() => {
             navigator.clipboard
               .writeText(message.content)
-              .then(console.log("copied assistant message"))
+              .then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              })
               .catch((err) => {
                 console.error("Failed to copy content: ", err);
               });
           }}
+          className="group relative px-1 py-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
         >
-          <ClipboardDocumentIcon className="ml-1.5 w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
+          {copied ? <CheckIcon className="w-5 h-5" /> : <ClipboardDocumentIcon className="w-5 h-5" />}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">{copied ? "Copied" : "Copy"}</span>
         </button>
         <button
           onClick={handleResubmit}
+          className="group relative px-1 py-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
         >
-          <ArrowPathIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300 m-0.5" />
+          <ArrowPathIcon className="w-5 h-5" />
+          <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Regenerate</span>
         </button>
       </div>
     </div>
@@ -513,7 +557,7 @@ Message.propTypes = {
 function MessageList({ messages, setMessages, handleResubmit, elementRef, isWaitingForResponse }) {
   try {
     sessionStorage.setItem("tgcc-ml", JSON.stringify(messages));
-  } catch(error) {
+  } catch (error) {
     console.error(error);
   };
   return (
@@ -523,7 +567,7 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef, isWait
           key={index}
           message={message}
           onEditMessage={(newContent) => {
-            console.log("editing message:", message);
+            console.debug("editing message:", message);
             setMessages((messages) =>
               messages.map((m, i) => {
                 if (i === index) {
@@ -558,7 +602,7 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef, isWait
             // TODO: recursively submit this and all subsequent user messages
           }}
           onDeleteMessage={() => {
-            console.log("delete message:", message);
+            console.debug("delete message:", message);
             setMessages((messages) =>
               messages.filter((_, i) => i !== index && i !== index + 1)
             );
@@ -612,6 +656,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   const [attachedImages, setAttachedImages] = useState([]);
   const [imageBrowserOpen, setImageBrowserOpen] = useState(false);
   const [imageError, setImageError] = useState(null);
+  const [apiError, setApiError] = useState(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
 
   // File attachment state and handlers
@@ -672,7 +717,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log("user message submitted");
+    console.debug("user message submitted");
 
     // Prepend file context to the message text (for LLM)
     const textWithFileContext = prependFileContext(userMessage.content, attachedFiles);
@@ -715,71 +760,81 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       _attachedFiles: fileMetadata,
     };
 
-    const stream = streamChatCompletionInference(
-      selectedService,
-      [systemMessage, ...messages, newUserMessage],
-      {
-        ...parameters,
-        stream: true,
-      },
-      true
-    );
+    // Clear any previous error
+    setApiError(null);
 
     setMessages((messages) => [...messages, newUserMessage]);
 
-    // Clear attachments after sending
+    // Clear input and attached items after sending
+    setUserMessage({ role: Role.USER, content: "" });
+    sessionStorage.removeItem("tgcc-um");
     setAttachedImages([]);
     clearFiles();
 
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
 
-    const data = await stream.next();
-    setIsWaitingForResponse(false);
-    console.debug("data:", data);
-    let response = data.value
-      .map((x) => x.choices[0].delta.content)
-      .join("")
-      .trimStart();
-    setMessages((messages) => [
-      ...messages.slice(0, messages.length),
-      {
-        role: "assistant",
-        content: response,
-      },
-    ]);
+    try {
+      const stream = streamChatCompletionInference(
+        selectedService,
+        [systemMessage, ...messages, newUserMessage],
+        {
+          ...parameters,
+          stream: true,
+        },
+        true
+      );
 
-    for await (const data of stream) {
+      const data = await stream.next();
+      setIsWaitingForResponse(false);
       console.debug("data:", data);
-      const text = data.map((x) => x.choices[0].delta.content).join("");
-      response += text;
-      console.debug("response: ", response);
+      let response = data.value
+        .map((x) => x.choices[0].delta.content)
+        .join("")
+        .trimStart();
       setMessages((messages) => [
-        ...messages.slice(0, messages.length - 1),
+        ...messages.slice(0, messages.length),
         {
           role: "assistant",
           content: response,
         },
       ]);
+
+      for await (const data of stream) {
+        console.debug("data:", data);
+        const text = data.map((x) => x.choices[0].delta.content).join("");
+        response += text;
+        console.debug("response: ", response);
+        setMessages((messages) => [
+          ...messages.slice(0, messages.length - 1),
+          {
+            role: "assistant",
+            content: response,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Chat submission error:", error);
+      setIsWaitingForResponse(false);
+      // Roll back the optimistically-added user message if no assistant response was started
+      setMessages((prev) => {
+        if (prev.length > 0 && prev[prev.length - 1].role === Role.USER) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
+      setApiError(classifyApiError(error));
     }
   };
 
   const handleResubmit = async (event, index) => {
     event.preventDefault();
-    console.log(`regenerating message at index ${index}`);
+    console.debug(`regenerating message at index ${index}`);
+
+    setApiError(null);
 
     // Get messages up to (but not including) the message being regenerated
     const conversationUpToIndex = messages.slice(0, index);
-
-    const stream = streamChatCompletionInference(
-      selectedService,
-      [systemMessage, ...conversationUpToIndex],
-      {
-        ...parameters,
-        stream: true,
-      },
-      true
-    );
 
     // Clear messages from the regenerated index onwards
     setMessages(conversationUpToIndex);
@@ -787,33 +842,49 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
 
-    const data = await stream.next();
-    setIsWaitingForResponse(false);
-    console.debug("data:", data);
-    let response = data.value
-      .map((x) => x.choices[0].delta.content)
-      .join("")
-      .trimStart();
-    setMessages((messages) => [
-      ...messages.slice(0, messages.length),
-      {
-        role: "assistant",
-        content: response,
-      },
-    ]);
+    try {
+      const stream = streamChatCompletionInference(
+        selectedService,
+        [systemMessage, ...conversationUpToIndex],
+        {
+          ...parameters,
+          stream: true,
+        },
+        true
+      );
 
-    for await (const data of stream) {
+      const data = await stream.next();
+      setIsWaitingForResponse(false);
       console.debug("data:", data);
-      const text = data.map((x) => x.choices[0].delta.content).join("");
-      response += text;
-      console.debug("response: ", response);
+      let response = data.value
+        .map((x) => x.choices[0].delta.content)
+        .join("")
+        .trimStart();
       setMessages((messages) => [
-        ...messages.slice(0, messages.length - 1),
+        ...messages.slice(0, messages.length),
         {
           role: "assistant",
           content: response,
         },
       ]);
+
+      for await (const data of stream) {
+        console.debug("data:", data);
+        const text = data.map((x) => x.choices[0].delta.content).join("");
+        response += text;
+        console.debug("response: ", response);
+        setMessages((messages) => [
+          ...messages.slice(0, messages.length - 1),
+          {
+            role: "assistant",
+            content: response,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Chat resubmit error:", error);
+      setIsWaitingForResponse(false);
+      setApiError(classifyApiError(error));
     }
   };
 
@@ -829,13 +900,36 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     sessionStorage.setItem("tgcc-um", value);
   }
 
+  function handleClearConversation() {
+    if (messages.length === 0) return;
+    setMessages([]);
+    setUserMessage({ role: Role.USER, content: "" });
+    setAttachedImages([]);
+    setIsWaitingForResponse(false);
+    setApiError(null);
+    sessionStorage.removeItem("tgcc-ml");
+    sessionStorage.removeItem("tgcc-um");
+  }
+
   return (
     <div className="flex flex-col grow pt-2 bg-white dark:bg-gray-800 lg:h-[calc(100vh-7rem)]">
       <div className="flex items-center justify-between mb-2">
         <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
           Chat
         </label>
-        {toolbar}
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={handleClearConversation}
+            disabled={messages.length === 0}
+            className="group relative p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Clear conversation"
+          >
+            <TrashIcon className="h-5 w-5" />
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Clear chat</span>
+          </button>
+          {toolbar}
+        </div>
       </div>
       <MessageList
         messages={messages}
@@ -864,6 +958,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         onImageRemoteSelect={() => setImageBrowserOpen(true)}
         onFileBrowserUpload={handleFileBrowserUpload}
         onFileRemoteSelect={() => setFileBrowserOpen(true)}
+        selectedService={selectedService}
       />
 
       {/* Image file browser modal */}
@@ -902,6 +997,14 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         message="Failed to attach file"
         detail={fileError ? `${fileError.fileName}: ${fileError.message}` : ""}
         onDismiss={() => setFileError(null)}
+      />
+
+      <Notification
+        show={!!apiError}
+        variant="error"
+        message={apiError ? apiError.message : ""}
+        detail={apiError ? apiError.detail : ""}
+        onDismiss={() => setApiError(null)}
       />
     </div>
   );

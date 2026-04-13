@@ -13,17 +13,9 @@ import PropTypes from "prop-types";
 function SystemMessageInput({ message, onChange }) {
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between mb-2">
-        <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
-          System Message
-        </label>
-        <button
-          type="button"
-          className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"
-        >
-          Save
-        </button>
-      </div>
+      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+        System Message
+      </label>
       <textarea
         placeholder="You are a helpful assistant."
         rows={10}

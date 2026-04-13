@@ -20,5 +20,7 @@ apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --revision {{ container_config.revision }} \
   --trust-remote-code \
 {%- endif %}
+{%- if container_config.launch_kwargs %}
   {{ container_config.launch_kwargs }}
+{%- endif %}
 {%- endblock %}

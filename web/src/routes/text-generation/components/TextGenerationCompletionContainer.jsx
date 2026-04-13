@@ -1,4 +1,5 @@
 import { useContext, useState } from "react";
+import Markdown from "react-markdown";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { streamCompletionInference } from "../lib/requests";
@@ -134,7 +135,7 @@ function TextGenerationPromptInput({
                   type="submit"
                   disabled={!selectedService || selectedService.status !== ServiceStatus.HEALTHY}
                   onClick={() => {
-                    console.log("Submit button clicked:", prompt);
+                    console.debug("Submit button clicked:", prompt);
                   }}
                   className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
                 >
@@ -186,8 +187,8 @@ function TextGenerationResponseOutput({
       <div>
         {/* TODO: display loading in case first token is slow... */}
         <div className="mt-8">
-          <div className="block w-full max-w-4xl overflow-y-auto bg-white dark:bg-transparent text-sm/6 text-gray-900 dark:text-gray-100 rounded-lg ml-1">
-            {content}
+          <div className="block w-full max-w-4xl overflow-y-auto bg-white dark:bg-transparent text-sm/6 text-gray-900 dark:text-gray-100 rounded-lg ml-1 prose prose-sm dark:prose-invert max-w-none">
+            <Markdown>{content}</Markdown>
           </div>
         </div>
         <div className="flex flex-row h-8 mt-1">
@@ -195,7 +196,7 @@ function TextGenerationResponseOutput({
             onClick={() => {
               navigator.clipboard
                 .writeText(content)
-                .then(console.log("copied assistant message"))
+                .then(console.debug("copied assistant message"))
                 .catch((err) => {
                   console.error("Failed to copy content: ", err);
                 });

@@ -20,7 +20,6 @@ import {
   ComputerDesktopIcon,
   PencilIcon,
   TrashIcon,
-  PlusIcon,
   CheckIcon,
   ChevronUpDownIcon,
 } from "@heroicons/react/24/outline";

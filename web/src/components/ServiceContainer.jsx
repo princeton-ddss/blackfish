@@ -12,7 +12,7 @@ import ServiceLauncher from "./ServiceLauncher";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { useServices } from "@/lib/loaders";
 import { deleteService, stopService } from "@/lib/requests";
-import { ServiceStatus, getStatusBadgeClasses } from "@/lib/util";
+import { getStatusBadgeClasses } from "@/lib/util";
 import PropTypes from "prop-types";
 
 const terminalStates = ["stopped", "expired", "timeout", "failed"];

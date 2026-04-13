@@ -186,6 +186,7 @@ ImageAttachment.propTypes = {
     file: PropTypes.object,
     path: PropTypes.string,
     profile: PropTypes.object,
+    base64: PropTypes.string,
   }).isRequired,
   onRemove: PropTypes.func.isRequired,
   onError: PropTypes.func,

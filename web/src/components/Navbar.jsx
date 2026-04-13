@@ -18,7 +18,7 @@ import PropTypes from "prop-types";
  */
 function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
   const { profile, setProfile } = useContext(ProfileContext);
-  const { theme, isDark, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { openSettings } = useSettings();
 
   // Show icon for the NEXT state (what clicking will activate)

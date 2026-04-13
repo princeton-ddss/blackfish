@@ -8,7 +8,7 @@ import re
 from collections.abc import Callable
 from typing import Any, Optional, Protocol
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 from packaging.version import Version
 from pydantic import BaseModel, ValidationError
 
@@ -681,9 +681,7 @@ class TigerFlowClient:
         except json.JSONDecodeError as e:
             raise TigerFlowError("report", self.host, f"Invalid JSON response: {e}")
         except ValidationError as e:
-            raise TigerFlowError(
-                "report", self.host, f"Invalid report format: {e}"
-            )
+            raise TigerFlowError("report", self.host, f"Invalid report format: {e}")
 
     async def stop(self, output_dir: str) -> None:
         """Stop a running job.

@@ -80,9 +80,13 @@ def schema_upgrades() -> None:
         batch_op.add_column(sa.Column("params", sa.JSON(), nullable=True))
         batch_op.add_column(sa.Column("resources", sa.JSON(), nullable=True))
         batch_op.add_column(sa.Column("pid", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("max_workers", sa.Integer(), nullable=False, server_default="1"))
+        batch_op.add_column(
+            sa.Column("max_workers", sa.Integer(), nullable=False, server_default="1")
+        )
         batch_op.add_column(sa.Column("tigerflow_version", sa.String(), nullable=True))
-        batch_op.add_column(sa.Column("tigerflow_ml_version", sa.String(), nullable=True))
+        batch_op.add_column(
+            sa.Column("tigerflow_ml_version", sa.String(), nullable=True)
+        )
 
         # Rename progress columns
         batch_op.alter_column("ntotal", new_column_name="staged")

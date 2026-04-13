@@ -732,7 +732,9 @@ class TestRepairProfileAPI:
                 repaired=True, message="Profile repaired on localhost."
             )
 
-            response = await client.put("/api/profiles/ondemand-slurm/repair?force=true")
+            response = await client.put(
+                "/api/profiles/ondemand-slurm/repair?force=true"
+            )
 
             assert response.status_code == 200
             # Verify repair_slurm_profile was called with host="localhost"

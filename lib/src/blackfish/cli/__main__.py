@@ -282,7 +282,9 @@ def start(reload: bool) -> None:  # pragma: no cover
                         f"Run: blackfish profile upgrade --name {name}"
                     )
                 else:
-                    logger.info(f"TigerFlow {current_version} on profile '{name}' is up to date.")
+                    logger.info(
+                        f"TigerFlow {current_version} on profile '{name}' is up to date."
+                    )
             except TigerFlowError as e:
                 logger.warning(f"Could not check TigerFlow on profile '{name}': {e}")
 

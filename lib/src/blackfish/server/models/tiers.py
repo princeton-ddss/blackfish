@@ -7,7 +7,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 
 class TierSource(str, Enum):

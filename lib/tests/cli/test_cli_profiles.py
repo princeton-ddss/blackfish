@@ -513,7 +513,6 @@ python_path = python3
         """Test successful upgrade of a Slurm profile."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
 
-        mock_ssh_runner = mock_ssh_runner_cls.return_value
         mock_tf_client = mock_tf_client_cls.return_value
         mock_tf_client.upgrade = lambda **kwargs: None  # sync mock
 
@@ -584,9 +583,6 @@ python_path = python3
     ):
         """Test upgrade with custom package specs."""
         profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
-
-        mock_ssh_runner = mock_ssh_runner_cls.return_value
-        mock_tf_client = mock_tf_client_cls.return_value
 
         with patch("blackfish.cli.__main__.config") as mock_config:
             mock_config.HOME_DIR = temp_home_dir
@@ -688,9 +684,7 @@ python_path = python3
             with open(profiles_path, "w") as f:
                 f.write(mock_slurm_profiles_config)
 
-            result = cli_runner.invoke(
-                main, ["profile", "repair", "--name", "default"]
-            )
+            result = cli_runner.invoke(main, ["profile", "repair", "--name", "default"])
 
             assert result.exit_code == 1
             assert "only supported on Slurm profiles" in result.output
@@ -731,5 +725,11 @@ python_path = python3
                 mock_repair.assert_called_once()
                 # Verify custom specs were passed
                 call_kwargs = mock_repair.call_args.kwargs
-                assert call_kwargs["tigerflow_spec"] == "git+https://github.com/org/tigerflow@branch"
-                assert call_kwargs["tigerflow_ml_spec"] == "git+https://github.com/org/tigerflow-ml@branch"
+                assert (
+                    call_kwargs["tigerflow_spec"]
+                    == "git+https://github.com/org/tigerflow@branch"
+                )
+                assert (
+                    call_kwargs["tigerflow_ml_spec"]
+                    == "git+https://github.com/org/tigerflow-ml@branch"
+                )

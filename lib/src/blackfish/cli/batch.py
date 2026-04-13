@@ -62,9 +62,7 @@ def _resolve_job_id(partial_id: str) -> str | None:
         try:
             res = requests.get(f"http://{config.HOST}:{config.PORT}/api/jobs")
         except requests.exceptions.ConnectionError:
-            spinner.text = (
-                f"Failed to connect to Blackfish API on port {config.PORT}."
-            )
+            spinner.text = f"Failed to connect to Blackfish API on port {config.PORT}."
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return None
 
@@ -89,7 +87,7 @@ def _resolve_job_id(partial_id: str) -> str | None:
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return None
         else:
-            full_id = matching[0]["id"]
+            full_id: str = str(matching[0]["id"])
             spinner.text = f"Found job {full_id[:DISPLAY_ID_LENGTH]}."
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
             return full_id
@@ -187,7 +185,7 @@ def list_batch_jobs(
 
     def is_active(job: Any) -> bool:
         job_status = job.get("status")
-        return job_status == BatchJobStatus.RUNNING or job_status == "running"
+        return bool(job_status == BatchJobStatus.RUNNING or job_status == "running")
 
     jobs = res.json()
     for job in jobs:
@@ -436,13 +434,13 @@ def remove_batch_job(
     "--params",
     type=str,
     default=None,
-    help="Task parameters as JSON string (e.g., '{\"language\": \"en\"}').",
+    help='Task parameters as JSON string (e.g., \'{"language": "en"}\').',
 )
 @click.option(
     "--resources",
     type=str,
     default=None,
-    help="Slurm resource configuration as JSON string (e.g., '{\"gpus\": 1, \"cpus\": 4}').",
+    help='Slurm resource configuration as JSON string (e.g., \'{"gpus": 1, "cpus": 4}\').',
 )
 @click.option(
     "--max-workers",
@@ -534,7 +532,7 @@ def run_batch_job(
         return
 
     # 6. Parse JSON parameters
-    params_dict: dict | None = None
+    params_dict: dict[str, Any] | None = None
     if params is not None:
         try:
             params_dict = json.loads(params)
@@ -542,7 +540,7 @@ def run_batch_job(
             click.echo(f"{LogSymbols.ERROR.value} Invalid JSON for --params: {e}")
             return
 
-    resources_dict: dict | None = None
+    resources_dict: dict[str, Any] | None = None
     if resources is not None:
         try:
             resources_dict = json.loads(resources)
@@ -556,7 +554,7 @@ def run_batch_job(
     # Handle dry-run: print config and exit
     if dry_run:
         # Build the same config that would be sent to TigerFlow
-        task_params: dict = {"model": model, "cache_dir": cache_dir}
+        task_params: dict[str, Any] = {"model": model, "cache_dir": cache_dir}
         if revision:
             task_params["revision"] = revision
         if params_dict:
@@ -575,7 +573,9 @@ def run_batch_job(
         )
 
         click.echo("Pipeline config (dry run):\n")
-        click.echo(yaml.dump(pipeline_config, default_flow_style=False, sort_keys=False))
+        click.echo(
+            yaml.dump(pipeline_config, default_flow_style=False, sort_keys=False)
+        )
         return
 
     # Build and submit the job

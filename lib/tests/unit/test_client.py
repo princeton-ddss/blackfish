@@ -52,7 +52,7 @@ class TestTigerFlowError:
             ("version", "too old"),
             ("missing", "not installed"),
             ("run", "start TigerFlow job"),
-            ("status", "get TigerFlow job status"),
+            ("report", "get TigerFlow job report"),
             ("stop", "stop TigerFlow job"),
             ("unsupported", "features not available"),
         ],

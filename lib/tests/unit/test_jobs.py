@@ -403,7 +403,7 @@ class TestTasks:
 
     def test_get_task_library_returns_library_for_valid_task(self) -> None:
         """get_task_library should return the library module for a task."""
-        assert get_task_library("transcribe") == "tigerflow_ml.audio.slurm:Transcribe"
+        assert get_task_library("transcribe") == "tigerflow_ml.audio.transcribe.slurm"
 
     def test_get_task_library_raises_for_invalid_task(self) -> None:
         """get_task_library should raise ValueError for unsupported tasks."""
@@ -421,7 +421,10 @@ class TestTasks:
             resources=resources,
         )
 
-        assert config["tasks"][0]["worker_resources"] == resources
+        # User-provided resources should override/be included in worker_resources
+        # (defaults from DEFAULT_WORKER_RESOURCES are merged in as well).
+        worker_resources = config["tasks"][0]["worker_resources"]
+        assert resources.items() <= worker_resources.items()
         assert config["tasks"][0]["setup_commands"] == [
             "source /home/user/.blackfish/.venv/bin/activate"
         ]

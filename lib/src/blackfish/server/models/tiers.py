@@ -294,44 +294,6 @@ def select_tier_for_model(
     return None
 
 
-def get_slurm_flags(tier: Tier, partition_name: str) -> dict[str, Any]:
-    """Generate SLURM job flags from tier configuration.
-
-    Args:
-        tier: Tier to generate flags for
-        partition_name: Name of the partition
-
-    Returns:
-        Dictionary with SLURM flag values
-    """
-    flags = {
-        "ntasks_per_node": tier.cpu_cores,
-        "mem": tier.memory_gb,
-        "gres": tier.gpu_count,
-        "partition": partition_name,
-        "constraint": None,
-    }
-
-    slurm_config = tier.slurm
-
-    # Handle constraint-based GPU specification
-    if "constraint" in slurm_config:
-        flags["constraint"] = slurm_config["constraint"]
-
-    # Handle gres-based GPU specification (gpu:type format)
-    if "gres" in slurm_config and tier.gpu_count > 0:
-        # If gres is specified as "gpu:type", append count
-        gres_base = slurm_config["gres"]
-        flags["gres_str"] = f"{gres_base}:{tier.gpu_count}"
-    elif tier.gpu_count > 0:
-        # Default gres format
-        flags["gres_str"] = f"gpu:{tier.gpu_count}"
-    else:
-        flags["gres_str"] = None
-
-    return flags
-
-
 def get_default_specs() -> ResourceSpecs:
     """Get fallback default resource specifications.
 

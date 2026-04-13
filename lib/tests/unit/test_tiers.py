@@ -13,7 +13,6 @@ from blackfish.server.models.tiers import (
     get_default_partition,
     get_partition_by_name,
     select_tier_for_model,
-    get_slurm_flags,
     get_default_specs,
 )
 
@@ -538,82 +537,6 @@ class TestTierSelection:
 
         result = select_tier_for_model(10.0, partition)
         assert result is None
-
-
-class TestSlurmFlags:
-    """Test SLURM flag generation."""
-
-    def test_get_slurm_flags_basic(self):
-        """Test basic SLURM flag generation."""
-        tier = Tier(
-            name="Small",
-            description="Small",
-            max_model_size_gb=16.0,
-            gpu_count=1,
-            gpu_type=None,
-            cpu_cores=4,
-            memory_gb=32,
-        )
-
-        flags = get_slurm_flags(tier, "gpu")
-
-        assert flags["ntasks_per_node"] == 4
-        assert flags["mem"] == 32
-        assert flags["gres"] == 1
-        assert flags["partition"] == "gpu"
-        assert flags["constraint"] is None
-        assert flags["gres_str"] == "gpu:1"
-
-    def test_get_slurm_flags_with_constraint(self):
-        """Test SLURM flags with constraint."""
-        tier = Tier(
-            name="A100",
-            description="A100 GPUs",
-            max_model_size_gb=80.0,
-            gpu_count=2,
-            gpu_type="a100",
-            cpu_cores=8,
-            memory_gb=64,
-            slurm={"constraint": "gpu80"},
-        )
-
-        flags = get_slurm_flags(tier, "gpu")
-
-        assert flags["constraint"] == "gpu80"
-
-    def test_get_slurm_flags_with_gres_type(self):
-        """Test SLURM flags with gres type specification."""
-        tier = Tier(
-            name="A100",
-            description="A100 GPUs",
-            max_model_size_gb=80.0,
-            gpu_count=2,
-            gpu_type="a100",
-            cpu_cores=8,
-            memory_gb=64,
-            slurm={"gres": "gpu:a100"},
-        )
-
-        flags = get_slurm_flags(tier, "gpu")
-
-        assert flags["gres_str"] == "gpu:a100:2"
-
-    def test_get_slurm_flags_no_gpu(self):
-        """Test SLURM flags for CPU-only tier."""
-        tier = Tier(
-            name="CPU",
-            description="CPU only",
-            max_model_size_gb=1.0,
-            gpu_count=0,
-            gpu_type=None,
-            cpu_cores=8,
-            memory_gb=16,
-        )
-
-        flags = get_slurm_flags(tier, "cpu")
-
-        assert flags["gres"] == 0
-        assert flags["gres_str"] is None
 
 
 class TestDefaultSpecs:

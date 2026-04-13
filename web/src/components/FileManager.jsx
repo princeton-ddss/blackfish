@@ -43,6 +43,23 @@ function FileManager({
         setPath(homeDir);
     }, [homeDir]);
 
+    // Auto-dismiss success notifications after 5s. The effect cleanup also
+    // cancels the timer on unmount and when a new success message arrives
+    // before the previous one expires, preventing state updates on an
+    // unmounted component.
+    useEffect(() => {
+        if (!operationSuccess) return undefined;
+        const id = setTimeout(() => setOperationSuccess(null), 5000);
+        return () => clearTimeout(id);
+    }, [operationSuccess]);
+
+    // Auto-dismiss error notifications after 5s.
+    useEffect(() => {
+        if (!operationError) return undefined;
+        const id = setTimeout(() => setOperationError(null), 5000);
+        return () => clearTimeout(id);
+    }, [operationError]);
+
     const displayRoot = homeDir ?? root;
 
     const handlePathChange = (newPath) => {
@@ -76,7 +93,6 @@ function FileManager({
         setOperationSuccess(message);
         setUploadDialogOpen(false);
         await refresh();
-        setTimeout(() => setOperationSuccess(null), 5000);
     };
 
     const handleDeleteSuccess = async (message) => {
@@ -85,12 +101,10 @@ function FileManager({
         setSelectedFile(null);
         if (onFileSelect) onFileSelect(null);
         await refresh();
-        setTimeout(() => setOperationSuccess(null), 5000);
     };
 
     const handleOperationError = (message) => {
         setOperationError(message);
-        setTimeout(() => setOperationError(null), 5000);
     };
 
     return (

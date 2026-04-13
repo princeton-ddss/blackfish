@@ -98,7 +98,7 @@ def _get_bin_files_size(repo_id: str, token: Optional[str] = None) -> Optional[f
     """
     try:
         api = HfApi()
-        repo_info = api.repo_info(repo_id, token=token, files_metadata=True)
+        repo_info = api.model_info(repo_id, token=token, files_metadata=True)
 
         if not repo_info.siblings:
             return None

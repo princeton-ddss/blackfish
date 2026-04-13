@@ -172,7 +172,7 @@ class TestGetBinFilesSize:
         mock_repo_info.siblings = [mock_sibling1, mock_sibling2, mock_sibling3]
 
         with patch("blackfish.server.models.metadata.HfApi") as mock_api:
-            mock_api.return_value.repo_info.return_value = mock_repo_info
+            mock_api.return_value.model_info.return_value = mock_repo_info
             result = _get_bin_files_size("test/model")
 
         assert result is not None
@@ -188,7 +188,7 @@ class TestGetBinFilesSize:
         mock_repo_info.siblings = [mock_sibling]
 
         with patch("blackfish.server.models.metadata.HfApi") as mock_api:
-            mock_api.return_value.repo_info.return_value = mock_repo_info
+            mock_api.return_value.model_info.return_value = mock_repo_info
             result = _get_bin_files_size("test/model")
 
         assert result is None
@@ -199,7 +199,7 @@ class TestGetBinFilesSize:
         mock_repo_info.siblings = None
 
         with patch("blackfish.server.models.metadata.HfApi") as mock_api:
-            mock_api.return_value.repo_info.return_value = mock_repo_info
+            mock_api.return_value.model_info.return_value = mock_repo_info
             result = _get_bin_files_size("test/model")
 
         assert result is None
@@ -207,7 +207,7 @@ class TestGetBinFilesSize:
     def test_get_bin_files_size_exception(self):
         """Test handling of exceptions."""
         with patch("blackfish.server.models.metadata.HfApi") as mock_api:
-            mock_api.return_value.repo_info.side_effect = Exception("Network error")
+            mock_api.return_value.model_info.side_effect = Exception("Network error")
             result = _get_bin_files_size("test/model")
 
         assert result is None

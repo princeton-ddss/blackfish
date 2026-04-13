@@ -1,14 +1,27 @@
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import NavbarLight from "@/components/NavbarLight";
+import { ProfileContext } from "@/components/ProfileSelect";
 
-// Wrap component with MemoryRouter for React Router context
+// Mock useProfiles so the embedded ProfileSelect doesn't try to fetch.
+vi.mock("@/lib/loaders", () => ({
+  useProfiles: vi.fn(() => ({
+    profiles: [],
+    isLoading: false,
+    error: false,
+  })),
+}));
+
+// Wrap component with MemoryRouter and ProfileContext for React Router /
+// ProfileContext dependencies.
 const renderWithRouter = (ui, { route = "/" } = {}) => {
   return render(
     <MemoryRouter initialEntries={[route]}>
-      {ui}
+      <ProfileContext.Provider value={{ profile: null, setProfile: vi.fn() }}>
+        {ui}
+      </ProfileContext.Provider>
     </MemoryRouter>
   );
 };

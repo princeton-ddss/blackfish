@@ -133,7 +133,7 @@ describe("ProfileSelect", () => {
         setSelectedProfile={() => vi.fn()}
       />
     );
-    expect(getByText("Loading profiles...")).toBeInTheDocument();
+    expect(getByText("Profile")).toBeInTheDocument();
   });
 
   it("renders error message", () => {
@@ -148,7 +148,7 @@ describe("ProfileSelect", () => {
         setSelectedProfile={() => vi.fn()}
       />
     );
-    expect(getByText("Error!")).toBeInTheDocument();
+    expect(getByText("Error")).toBeInTheDocument();
   });
 
   it("renders no profiles message", () => {
@@ -163,7 +163,7 @@ describe("ProfileSelect", () => {
         setSelectedProfile={() => vi.fn()}
       />
     );
-    expect(getByText("No profiles found.")).toBeInTheDocument();
+    expect(getByText("No profiles")).toBeInTheDocument();
   });
 
   it("renders with standard options", () => {
@@ -207,11 +207,15 @@ describe("ProfileSelect", () => {
     expect(baseElement).toMatchSnapshot();
   });
 
-  it("displays no profile selected message", () => {
-    const {baseElement, getByText} = render(
+  it("displays no profile selected state", () => {
+    const {baseElement, getByRole, getByText} = render(
       <ProfileSelect />
     );
-    expect(getByText("No profile selected")).toBeInTheDocument();
+    // When no profile is selected, the menu button shows the "Profile"
+    // fallback label alongside a warning triangle icon.
+    expect(getByText("Profile")).toBeInTheDocument();
+    expect(getByRole("button")).toBeInTheDocument();
+    expect(baseElement.querySelector('svg[aria-hidden="true"].text-yellow-400')).toBeInTheDocument();
     expect(baseElement).toMatchSnapshot();
   });
 

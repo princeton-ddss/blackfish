@@ -166,7 +166,9 @@ function JobsContainer() {
     const [selectedTask, setSelectedTask] = useState(null);
     const [jobActionInProgress, setJobActionInProgress] = useState(null); // job id being stopped/deleted
 
-    const jobs = useMockData ? MOCK_JOBS : apiJobs;
+    // Gate mock data on import.meta.env.DEV so Vite can tree-shake MOCK_JOBS
+    // out of production builds. In prod this expression simplifies to `apiJobs`.
+    const jobs = (import.meta.env.DEV && useMockData) ? MOCK_JOBS : apiJobs;
 
     // Fetch real results when viewing results for a job (not in mock mode)
     const fetchResultsForJobId = (!useMockData && viewingResults) ? selectedJobId : null;
@@ -247,8 +249,9 @@ function JobsContainer() {
         }
     };
 
-    // Map API results to the shape expected by JobResultsTable/ResultPreview
-    const jobResults = useMockData
+    // Map API results to the shape expected by JobResultsTable/ResultPreview.
+    // Mock branch is dev-only so MOCK_RESULTS gets tree-shaken from prod builds.
+    const jobResults = (import.meta.env.DEV && useMockData)
         ? (selectedJob ? MOCK_RESULTS[selectedJob.id] || [] : [])
         : apiResults.map((r) => ({
             id: `${r.task}/${r.file}`,

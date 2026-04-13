@@ -1,5 +1,4 @@
-import { useContext, useState } from "react";
-import { CheckIcon } from "@heroicons/react/24/outline";
+import { useContext } from "react";
 import { ProfileContext } from "./ProfileSelect";
 import ServiceContainer from "@/components/ServiceContainer";
 import PropTypes from "prop-types";
@@ -12,28 +11,11 @@ import PropTypes from "prop-types";
  * @return {JSX.Element}
  */
 function SystemMessageInput({ message, onChange }) {
-  const [saved, setSaved] = useState(false);
-
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
-
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between mb-2">
-        <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
-          System Message
-        </label>
-        <button
-          type="button"
-          onClick={handleSave}
-          className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600"
-        >
-          {saved && <CheckIcon className="h-3 w-3" />}
-          {saved ? "Saved" : "Save"}
-        </button>
-      </div>
+      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+        System Message
+      </label>
       <textarea
         placeholder="You are a helpful assistant."
         rows={10}

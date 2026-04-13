@@ -72,8 +72,8 @@ dev = [
   "types-pyyaml>=6.0.12",
 ]
 contract = [
-  "tigerflow @ git+https://github.com/princeton-ddss/tigerflow.git@feature/client-application-support",
-  "tigerflow-ml @ git+https://github.com/princeton-ddss/tigerflow-ml.git",
+  "tigerflow @ git+https://github.com/princeton-ddss/tigerflow.git@v0.3.0",
+  "tigerflow-ml @ git+https://github.com/princeton-ddss/tigerflow-ml.git@v0.1.0a1",
 ]
 
 [tool.hatch]

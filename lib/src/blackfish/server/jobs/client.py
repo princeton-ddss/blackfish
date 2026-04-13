@@ -16,8 +16,8 @@ from blackfish.server.logger import logger
 
 
 # Minimum required package versions (alpha versions accepted during development)
-MIN_TIGERFLOW_VERSION = "0.1.0a1"
-MIN_TIGERFLOW_ML_VERSION = "0.1.0a0"
+MIN_TIGERFLOW_VERSION = "0.3.0"
+MIN_TIGERFLOW_ML_VERSION = "0.1.0a1"
 
 # Venv location on remote cluster (relative to home_dir)
 VENV_PATH = ".venv"

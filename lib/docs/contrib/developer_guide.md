@@ -13,11 +13,8 @@ uv sync
 ### pre-commit
 You should install the `pre-commit` script: `uv run pre-commit install`.
 
-### nox
-The development dependencies include `nox`, which you can use to lint and test code locally:
-```
-uv run nox
-```
+### just
+Development tasks run through a `justfile` in `lib/`. From that directory, use `just lint` (pre-commit), `just test` (pytest + coverage), `just coverage` (refresh the coverage badge), or `just docs` (build the MkDocs site).
 
 ### ssh
 Running Blackfish from your laptop to start remote services requires a seamless (i.e., password-less) method of communication with remote clusters. A simple to set up password-less login is with the `ssh-keygen` and `ssh-copy-id` utilitites.
@@ -36,46 +33,15 @@ convert Docker images to SIF files. For images hosted on Docker Hub, running `ap
 pull` will do this automatically. For example,
 
 ```shell
-apptainer pull docker://ghcr.io/vllm/vllm-openai:latest
+apptainer pull docker://vllm/vllm-openai:v0.10.2
 ```
 
-This command generates a file `text-generation-inference_latest.sif`. In order for
+This command generates a file `vllm-openai_v0.10.2.sif`. In order for
 users of the remote to access the image, it should be moved to a shared cache directory,
 e.g., `/scratch/gpfs/.blackfish/images`.
 
-### Hugging Face
-**Update** The recommended method to manage models is now via the `blackfish model` commands using a profile linked to the shared cache directory (make sure to use the `--use_cache` flag). This will ensure that `info.json` files are updated. If the shared cache permissions have been set properly, then there should be no need to update permissions on the newly added files.
-
-Models should generally be pulled from the Hugging Face Model Hub. This can be done
-by either visiting the web page for the model card or using of one Hugging Face's Python
-packages. The latter is preferred as it stores files in a consistent manner in the
-cache directory. E.g.,
-```python
-from transformers import pipeline
-pipeline(
-    task='text-generation',
-    model='meta-llama/Meta-Llama-3-8B',
-    token=<token>,
-    revision=<revision>,
-
-)
-# or
-from transformers import AutoTokenizer, AutoModelForCausalLM
-tokenizer = AutoTokenizer.from_pretrained('meta-llama/Meta-Llama-3-8B')
-model = AutoModelForCausalLM('meta-llama/Meta-Llama-3-8b')
-# or
-from huggingface_hub import shapshot_download
-snapshot_download(repo_id="meta-llama/Meta-Llama-3-8B")
-```
-These commands store models files to `~/.cache/huggingface/hub/` by default. You can
-modify the directory by setting `HF_HOME` in the local environment or providing a
-`cache_dir` argument (where applicable). After the model files are downloaded, they
-should be moved to a shared cache directory, e.g., `/scratch/gpfs/blackfish/models`,
-and permissions on the new model directory should be updated to `755` (recursively)
-to allow all users read and execute.
-
 ## API Development
-Blackfish is Litestar application that is managed using the `litestar` CLI. You
+Blackfish is a Litestar application that is managed using the `litestar` CLI. You
 can get help with `litestar` by running `litestar --help` at the command line
 from within the application's home directory. Below are some of the essential
 tasks.
@@ -110,38 +76,4 @@ CONTAINER_PROVIDER = "docker" # determines how to launch containers
 ```
 
 ### UI Updates
-Blackfish ships with a copy of the built user interface so that users can run the user interface with having to install `npm`. To update the UI, you need:
-
-1. Build the UI
-Run `npm run build` in the `blackfish-ui` repo. The output of this command will be in `build/out`:
-```shell
-➜ tree build -d 1
-build
-└── out
-    ├── _next
-    │   ├── ssm_XfrOvugkYGVtNQ8ps
-    │   └── static
-    │       ├── chunks
-    │       │   ├── app
-    │       │   │   ├── _not-found
-    │       │   │   ├── dashboard
-    │       │   │   ├── login
-    │       │   │   ├── speech-recognition
-    │       │   │   └── text-generation
-    │       │   └── pages
-    │       ├── css
-    │       ├── media
-    │       └
-```
-2. Copy `blackfish-ui/build/out` to `blackfish/src/build`
-```
-cp -R build/out/* ~/GitHub/blackfish/src/build
-```
-
-3. Commit the change
-```
-git add .
-git commit
-# Add a useful message that includes the head of the UI, e.g.,
-# Update UI to blackfish-ui@7943376
-```
+The backend ships with a pre-built copy of the UI so users don't need `npm` installed to run Blackfish. To update it, run `npm run build:lib` from `web/`. This builds the UI with Vite and copies the output to `lib/src/blackfish/build/`. Commit the resulting build tree alongside your source changes.

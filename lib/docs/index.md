@@ -55,10 +55,10 @@ blackfish init
 # Example responses
 # > name: default
 # > type: slurm
-# > host: cluster.organization.edu
+# > host: localhost
 # > user: shamu
 # > home: /home/shamu/.blackfish
-# > cache: /shared/.blackfish
+# > cache: /scratch/gpfs/shared/.blackfish
 ```
 
 ### Step 3 - Start the API
@@ -70,13 +70,13 @@ blackfish start
 ### Step 4 - Obtain a model
 
 ```shell
-blackfish model add --profile default openai/whisper-large-v3  # This will take a minute...
+blackfish model add TinyLlama/TinyLlama-1.1B-Chat-v1.0  # This will take a minute...
 ```
 
 ### Step 5 - Run a service
 
 ```shell
-blackfish run --mount $HOME/Downloads speech-recognition openai/whisper-large-v3
+blackfish run --gres 1 --time 00:30:00 text-generation TinyLlama/TinyLlama-1.1B-Chat-v1.0 --api-key sealsaretasty
 ```
 
 ### Step 6 - Submit a request
@@ -86,7 +86,18 @@ blackfish run --mount $HOME/Downloads speech-recognition openai/whisper-large-v3
 blackfish ls
 
 # Once the service is healthy...
-curl -X POST 'http://localhost:8080/transcribe' -H 'Content-Type: application/json' -d '{"audio_path": "/data/audio/NY045.mp3", "response_format": "json"}'
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sealsaretasty" \
+  -d '{
+        "messages": [
+            {"role": "system", "content": "You are an expert marine biologist."},
+            {"role": "user", "content": "Why are orcas so awesome?"}
+        ],
+        "max_completion_tokens": 100,
+        "temperature": 0.1,
+        "stream": false
+    }' | jq
 ```
 
 ## Next Steps

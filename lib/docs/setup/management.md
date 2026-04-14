@@ -33,7 +33,7 @@ Let's consider what happens when a user launches a service from her laptop targe
 
 Blackfish does **not** ship with the Docker (OCI) or Apptainer (SFI) container images required to run services. These images should be downloaded before running services[^1]. The current required images are:
 
-- Text generation: `vllm/vllm-openai:v0.8.4`
+- Text generation: `vllm/vllm-openai:v0.10.2`
 - Speech recognition: `princeton-ddss/speech-recognition-inference:0.1.2`
 
 These images are expected to change over time, so be sure to check release notes for updates.
@@ -56,7 +56,7 @@ e.g., `/shared/.blackfish/images`.
 For local service deployment, Docker handles file management, so you can simply pull the required image, e.g.:
 
 ```shell
-docker pull vllm/vllm-openai:v0.8.4
+docker pull vllm/vllm-openai:v0.10.2
 ```
 
 ## Models
@@ -101,14 +101,14 @@ This stores the token at `~/.cache/huggingface/token`.
 
 ### Automatic Downloads
 
-You can download models with the `blackfish model add` command. Blackfish stores downloaded models to the `home_dir` of the specified profile by default. If you are downloading models to share with other users, add the `--use-cache` flag to save files to the `cache_dir` instead. Model download support is currently limited to *local* profiles. If you want to download models for use on HPC, you'll need to be running Blackfish on your cluster.
+You can download models with the `blackfish model add` command. Blackfish stores downloaded models to the `home_dir` of the specified profile by default. If you are downloading models to share with other users, add the `--use-cache` flag to save files to the `cache_dir` instead. Model download support is currently limited to *local* profiles and Slurm profiles configured with `host=localhost` (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself.
 
 ### Manual Downloads
 
 Internally, model downloads and management are performed by [`huggingface_hub`](https://github.com/huggingface/huggingface_hub). You can download models yourself using the same method:
 
 ```python
-from huggingface_hub import shapshot_download
+from huggingface_hub import snapshot_download
 snapshot_download(repo_id="meta-llama/Meta-Llama-3-8B")
 ```
 
@@ -118,6 +118,12 @@ The `snapshot_download` method store models files to `~/.cache/huggingface/hub/`
 !!! note
 
     In addition to downloading model files, the `blackfish model add` command extracts metadata from the model and adds it go an internal database of models available to the profile that was used to add the model. Manually added models will not show up when running `blackfish model ls` (because they are not added to this database), but Blackfish will still be able to discover and run these models.
+
+## Batch Jobs (TigerFlow)
+
+Blackfish delegates batch job execution to [TigerFlow](https://github.com/princeton-ddss/tigerflow), a companion project for running task-based pipelines on Slurm clusters. TigerFlow is installed automatically the first time you create a Slurm profile, so administrators typically don't need to manage it directly.
+
+The install step runs as the profile's user on the target cluster and requires network access to `github.com` from the cluster to fetch the `tigerflow` and `tigerflow-ml` packages. If the install fails — e.g. due to a network, permissions, or Python interpreter issue — users can re-run it via `blackfish profile repair`, and upgrade an existing install via `blackfish profile upgrade`.
 
 ## Resource Tiers
 

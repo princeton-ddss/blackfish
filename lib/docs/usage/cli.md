@@ -21,7 +21,7 @@ as it does not use authentication. In "production mode", Blackfish randomly gene
 
 ## Profiles
 
-Blackfish's primary function is to launch services that perform AI tasks. These services are, in general, detached from the system Blackfish runs on. Thus, we require a method to instruct Blackfish *how* we want to run services: what cluster should Blackfish use, and where should it look for any resources it needs? *Profiles* are Blackfish's method of saving this information and applying it across commands. A default profiles is *required*, but multiple profiles are useful if you have access to multiple HPC resources or have multiple accounts on a single HPC cluster.
+Blackfish's primary function is to launch services that perform AI tasks. These services are, in general, detached from the system Blackfish runs on. Thus, we require a method to instruct Blackfish *how* we want to run services: what cluster should Blackfish use, and where should it look for any resources it needs? *Profiles* are Blackfish's method of saving this information and applying it across commands. A default profile is *required*, but multiple profiles are useful if you have access to multiple HPC resources or have multiple accounts on a single HPC cluster.
 
 !!! tip
 
@@ -188,7 +188,7 @@ Let's say you would really prefer to use a smaller version of `Llama` than the 7
 blackfish model add meta-llama/Meta-Llama-3-1B
 ```
 
-This command downloads the model files, store them to the default profile's `home_dir`, and updates the model database. Note that the `model add` command currently only supports local downloads: if your default profile points to a remote cluster, then you'll need to run the command on that server instead.
+This command downloads the model files, store them to the default profile's `home_dir`, and updates the model database. Note that `model add` currently only supports *local* profiles and Slurm profiles configured with `host=localhost` (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself.
 
 Let's go ahead and run a service using one of these models.
 
@@ -347,6 +347,74 @@ Blackfish keeps a record of every service that you've ever run. These records ar
 ```shell
 blackfish rm --filters id=fed36739-70b4-4dc4-8017-a4277563aef9
 ```
+
+## Batch Jobs
+
+Services are great for interactive work, but sometimes you need to run an ML task across a whole directory of files — a corpus of audio to transcribe, a document set to translate, a photo library to run object detection on. Batch jobs are the right tool for this. Under the hood, Blackfish delegates batch execution to [TigerFlow](https://github.com/princeton-ddss/tigerflow), a companion project that manages Slurm job submission, worker parallelism, and per-file progress tracking.
+
+!!! note
+
+    Batch jobs require a Slurm profile. TigerFlow is installed automatically the first time you create a Slurm profile, so in practice any Slurm profile will work. See the [Management Guide](../setup/management.md#batch-jobs-tigerflow) for more on the install process.
+
+### Supported tasks
+
+| Task         | Description                               | Default input ext |
+|:-------------|:------------------------------------------|:------------------|
+| `transcribe` | Transcribe audio to text using Whisper    | `.wav`            |
+| `translate`  | Translate text between languages          | `.txt`            |
+| `detect`     | Zero-shot object detection on images      | `.jpg`            |
+| `ocr`        | Extract text from images or scanned pages | `.jpg`            |
+
+### `run` - Start a batch job
+
+Use `blackfish batch run` to submit a batch job:
+
+```shell
+blackfish batch run \
+  --name my-transcription \
+  --task transcribe \
+  --model openai/whisper-large-v3 \
+  --input-dir /scratch/shamu/audio \
+  --output-dir /scratch/shamu/transcripts \
+  --max-workers 4
+```
+
+The `--name`, `--task`, `--model`, `--input-dir`, and `--output-dir` flags are required. Other useful flags:
+
+- `--profile` / `-p`: Blackfish profile to use (defaults to the current default profile).
+- `--revision`: specific model commit (defaults to the latest downloaded revision).
+- `--input-ext`: input file extension filter. Defaults to the task's typical extension.
+- `--params`: task-specific parameters as a JSON string, e.g. `'{"language": "en"}'` for transcribe.
+- `--resources`: per-worker Slurm resources as a JSON string, e.g. `'{"gpus": 1, "cpus": 4, "memory": "32GB", "time": "02:00:00"}'`.
+- `--max-workers`: maximum number of concurrent Slurm workers.
+
+!!! tip
+
+    Add `--dry-run` to print the generated TigerFlow pipeline config without submitting the job. Useful for validating settings before a long-running batch.
+
+### `ls` - List batch jobs
+
+```shell
+blackfish batch ls
+```
+
+Lists all batch jobs with their current status, task, model, and per-file progress.
+
+### `stop` - Stop a batch job
+
+```shell
+blackfish batch stop <job-id>
+```
+
+Stops a running batch job. Partial results already written to the output directory are preserved.
+
+### `rm` - Delete a batch job
+
+```shell
+blackfish batch rm <job-id>
+```
+
+Removes a batch job record from Blackfish's internal database.
 
 [^1]: Researchers that only intend to use Blackfish OnDemand should not generally need to interact with the CLI.
 [^2]: The list of models displayed depends on your environment. If you do not have access to a shared HPC cache, your list of models is likely empty. Not to worry—we will see how to add models later on. If this is your first time running the command, use the `--refresh` flag to tell Blackfish to search for models in your cache directories and update the model database.

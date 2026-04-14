@@ -279,16 +279,22 @@ The current version of Blackfish does not ship Docker images required to run ser
 > [!NOTE]
 > When running services on Slurm clusters, Blackfish looks for the required SIF file in `$PROFILE_CACHE_DIR/images`.
 
-| Version | Text Generation   | Speech Recognition                 | Object Detection |
-|:--------|:-----------------:|:----------------------------------:|:----------------:|
-| 0.1.0   | vllm-openai:0.8.4 | speech-recognition-inference:0.1.2 | -                |
-| 0.2.0   | vllm-openai:0.8.4 | speech-recognition-inference:0.1.2 | -                |
+| Version | Text Generation    | Speech Recognition                 |
+|:--------|:------------------:|:----------------------------------:|
+| 1.0.0   | vllm-openai:0.10.2 | speech-recognition-inference:0.1.2 |
 
 ## Models
 
 Blackfish (or rather, the services Blackfish runs) does not guarantee support for every model available from the [Hugging Face's Model Hub](https://huggingface.co/models). As a practical matter, however, services support nearly all "popular" models listed under their corresponding pipeline, including many "quantized" models (in the case of LLMs). Below is an evolving list of models that we have tested on HPC, including the resources requested and utilized by the service.
 
 The main requirement to run online inference is sufficient GPU memory. As a rule-of-thumb, the *minimum* memory required for a model is obtained by multiplying the number of parameters (in billions) times the number of bytes per parameter (`dtype / 8`). In practice, you need to budget an additional 5-10 GB for KV caching and keep in mind that default GPU utilization is typically set to around 90-95% by service images.
+
+> [!NOTE]
+> The table below is a best-effort snapshot of what we've actively tested on
+> Princeton's HPC. Models and their resource needs change quickly, so treat
+> this as a starting point rather than a guarantee. Unlisted models from the
+> same pipeline will generally work as long as they fit within your requested
+> resources.
 
 | Model                                        | Pipeline                     | Supported | Chat     | Gated | Reasoning | Embedding [^1] | Memory | GPUs       | Cores | Size  | Dtype | Notes                                                                                                                  |
 |----------------------------------------------|------------------------------|-----------|----------|-------|-----------|----------------|--------|------------|-------|-------|-------|------------------------------------------------------------------------------------------------------------------------|
@@ -345,7 +351,7 @@ This is a monorepo containing:
 | Package | Description |
 |---------|-------------|
 | [lib/](lib/) | Python backend (`blackfish-ai`) - CLI, server, services |
-| [web/](web/) | Next.js frontend (`blackfish-ui`) - browser interface |
+| [web/](web/) | Vite + React frontend (`blackfish-ui`) - browser interface |
 
 See the package READMEs for development setup instructions.
 

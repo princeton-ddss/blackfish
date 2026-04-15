@@ -244,7 +244,7 @@ export function formattedTimeInterval(refTime, currentTime) {
  */
 export function isRemoteProfile(profile) {
   return Boolean(
-    profile?.schema === "slurm" && profile?.host && profile.host !== "localhost"
+    profile?.schema === "slurm" && profile.host && profile.host !== "localhost"
   );
 }
 

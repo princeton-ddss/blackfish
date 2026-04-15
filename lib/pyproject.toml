@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "blackfish-ai"
-version = "0.5.1"
+version = "1.0.0a0"
 description = "An open-source AI-as-a-Service platform."
 readme = "README.md"
 license = "MIT"
@@ -72,8 +72,8 @@ dev = [
   "types-pyyaml>=6.0.12",
 ]
 contract = [
-  "tigerflow @ git+https://github.com/princeton-ddss/tigerflow.git@feature/client-application-support",
-  "tigerflow-ml @ git+https://github.com/princeton-ddss/tigerflow-ml.git",
+  "tigerflow @ git+https://github.com/princeton-ddss/tigerflow.git@v0.3.0",
+  "tigerflow-ml @ git+https://github.com/princeton-ddss/tigerflow-ml.git@v0.1.0a1",
 ]
 
 [tool.hatch]

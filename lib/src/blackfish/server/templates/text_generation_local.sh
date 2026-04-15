@@ -5,7 +5,7 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
   -p {{ container_config.port }}:{{ container_config.port }} \
   -v {{ container_config.model_dir }}:/data \
   --name {{ name }} \
-  vllm/vllm-openai:v0.8.4 \
+  vllm/vllm-openai:v0.10.2 \
   --model /data/snapshots/{{ container_config['revision'] }} \
   --port {{ container_config.port }} \
   --revision {{ container_config.revision }} \

@@ -148,7 +148,7 @@ def init(
 @main.group()
 @click.pass_context
 def profile(ctx: Context) -> None:  # pragma: no cover
-    """Manage profiles.
+    """View and manage profiles.
 
         Profiles determine how services are deployed and what assets (i.e., models) are available.
     There are currently two profile types: "slurm" and "local". Slurm profiles look for model files
@@ -173,7 +173,7 @@ profile.add_command(repair_profile, "repair")
     "-r",
     is_flag=True,
     default=False,
-    help="Automatically reload changes to the application",
+    help="Automatically reload changes to the application.",
 )
 def start(reload: bool) -> None:  # pragma: no cover
     """Start the blackfish app.
@@ -418,7 +418,7 @@ run.add_command(run_speech_recognition, "speech-recognition")
     required=True,
 )
 def stop(service_id: str) -> None:  # pragma: no cover
-    """Stop one or more services"""
+    """Stop one or more services."""
 
     from uuid import UUID
 
@@ -471,7 +471,7 @@ def stop(service_id: str) -> None:  # pragma: no cover
     type=str,
     help=(
         "A list of comma-separated filtering criteria, e.g.,"
-        " image=text_generation,status=SUBMITTED"
+        " image=text_generation,status=SUBMITTED."
     ),
 )
 def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
@@ -541,7 +541,7 @@ def prune() -> None:  # pragma: no cover
 @main.command()
 @click.argument("service_id", required=True, type=str)
 def details(service_id: str) -> None:  # pragma: no cover
-    """Show detailed service information"""
+    """Show detailed service information."""
 
     from uuid import UUID
     from datetime import datetime
@@ -626,7 +626,7 @@ def details(service_id: str) -> None:  # pragma: no cover
     type=str,
     help=(
         "A list of comma-separated filtering criteria, e.g.,"
-        " image=text_generation,status=SUBMITTED"
+        " image=text_generation,status=SUBMITTED."
     ),
 )
 @click.option(
@@ -637,7 +637,7 @@ def details(service_id: str) -> None:  # pragma: no cover
     help="Include all services, i.e., including inactive ones.",
 )
 def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
-    """List services"""
+    """List services."""
 
     from typing import Any
     from prettytable import PrettyTable, TableStyle
@@ -1009,7 +1009,7 @@ def models_remove(
 
 @main.group()
 def database() -> None:  # pragma: no cover
-    """View and manage available models."""
+    """Manage database migrations."""
     pass
 
 

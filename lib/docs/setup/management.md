@@ -1,24 +1,24 @@
 # Management Guide
 
-This guide explains how to perform tasks to ensure that Blackfish has access to everything it needs in order to run services. If you are using Blackfish Ondemand, these steps have already been taken care of by your system admin.
+This guide explains how to perform tasks to ensure that Blackfish has access to everything it needs in order to run services. If you are using Blackfish OnDemand, these steps have already been taken care of by your system admin.
 
-If you are a system admin, or you do not have access to Blackfish Ondemand, these notes are for you.
+If you are a system admin, or you do not have access to Blackfish OnDemand, these notes are for you.
 
 ## Architecture Overview
 
 Blackfish consists of four components: a core REST API, a command-line interface (CLI), a browser-based user interface (UI), and a Python API. The core REST API performs all key service management operations while the Blackfish CLI and UI provide convenient methods for interacting with the Blackfish API. The Python API allows researchers to use Blackfish within Python scripts and pipelines.
 
-The Blackfish REST API automates the process of hosting AI models as APIs. Users instruct the Blackfish API  via the CLI or UI to deploy a model and the REST API creates a "service API" running that model. The researcher that starts a service "owns" that service: she has exclusive access to its use. Blackfish tracks the status of the users' services and provides methods to stop and delete services when they are no longer needed.
-
-In general, service APIs do not run on the same machine as the Blackfish application. Thus, when a researcher requests a model, she must specify a host for the service. The service API runs on the specifieid host and Blackfish ensures that the interface is able to communicate with the remote service API. There are several ways for researchers to setup and use Blackfish depending on their requirements. For testing and development purposes, users can run *everything* on their laptop, but his option is only practical for models with light resource requirements. Typically, users will want to run services on high-performance GPUs available on an HPC cluster with a Slurm job scheduler. In that case, researchers can run the Blackfish API on their local laptop *or* on an HPC login node.
-
-!!! note
-
-    Blackfish doesn't synchronize application data across machines. Services started by an instance of Blackfish running on your laptop will not show up on an HPC cluster. However, job data for services initiated by your laptop *will* be stored on the remote cluster.
-
 ![image](../assets/img/architecture-slurm.png)
 
 **Figure 1** The Blackfish architecture for running remote services on a Slurm cluster.
+
+The Blackfish REST API automates the process of hosting AI models as APIs. Users instruct the Blackfish API via the CLI or UI to deploy a model and the REST API creates a "service API" running that model. The researcher that starts a service "owns" that service and can secure it with an API key. Blackfish tracks service status and provides methods to stop and delete services when they are no longer needed.
+
+In general, service APIs do not run on the same machine as the Blackfish application. Researchers can run the Blackfish API on their local laptop or on an HPC login node. When a researcher requests a model, they must specify a host for the service. The service API runs on the specified host and Blackfish ensures that it is able to communicate with the possibly remote service API. Typically, users will run services on high-performance GPUs available on an HPC cluster with a Slurm job scheduler.
+
+!!! note
+
+    Blackfish doesn't synchronize application data across machines. Services started from your laptop will not appear when running `blackfish ls` on the cluster, and vice versa.
 
 ### Application Data
 
@@ -27,61 +27,39 @@ Blackfish stores data in several different locations:
 - Core application data is stored in `BLACKFISH_HOME_DIR` on the system where Blackfish is running (`~/.blackfish` by default). Core application data includes profile configuration, application logs, and database storage.
 - Models and images are stored in the user-defined locations `home_dir` and `cache_dir`. These are profile-specific locations that need not reside on the machine where Blackfish is running. `home_dir` also stores job files created each time a service launches.
 
-Let's consider what happens when a user launches a service from her laptop targeting a remote HPC cluster (Figure 1). The user will specify a profile that tells Blackfish the `host` and `user` of the targeted cluster. Blackfish will use this information to look for required model and image files in either the `home_dir` or `cache_dir`—also specified by the profile—on the cluster. If the required files exist, Blackfish creates a Slurm job script, stores it in `$BLACKFISH_HOME_DIR/jobs/$service_id`, then copies that job script to `$home_dir/jobs/$service_id` on the remote cluster. Finally, Blackfish remotely submits the Slurm job and stores its log files to `$home_dir/jobs/$service_id`.
+Let's consider what happens when a user launches a service from their laptop targeting a remote HPC cluster (Figure 1). The user will specify a profile that tells Blackfish the `host` and `user` of the targeted cluster. Blackfish uses this information to look for the required model and image files in both `home_dir` and `cache_dir`—also specified by the profile—on the cluster. If the required files exist, Blackfish creates a Slurm job script, stores it in `$BLACKFISH_HOME_DIR/jobs/$service_id`, and copies that job script to `$home_dir/jobs/$service_id` on the remote cluster. Finally, Blackfish remotely submits the Slurm job and stores its log files to `$home_dir/jobs/$service_id`.
 
 ## Images
 
-Blackfish does **not** ship with the Docker (OCI) or Apptainer (SFI) container images required to run services. These images should be downloaded before running services[^1]. The current required images are:
+Blackfish does **not** ship with the container images required to run services. These images should be downloaded before running services[^1]. The current required images are:
 
-- Text generation: `vllm/vllm-openai:v0.8.4`
+- Text generation: `vllm/vllm-openai:v0.10.2`
 - Speech recognition: `princeton-ddss/speech-recognition-inference:0.1.2`
 
 These images are expected to change over time, so be sure to check release notes for updates.
 
 ### Obtaining Images
 
-#### Apptainer
-
-Services deployed on high-performance computing systems should be run with Apptainer instead of Docker. Apptainer requires Single Image Format (SIF) images instead of the Open Container Image (OCI) format used by Docker. Thus, Docker images must be converted to SIF files before Blackfish can use them. For most images—including those hosted on the GitHub container registry—running `apptainer pull` will do this automatically. For example,
+Services deployed on HPC systems require Apptainer, which uses Single Image Format (SIF) images instead of Docker's OCI format. Docker images must be converted to SIF files before Blackfish can use them. For most images—including those hosted on the GitHub container registry—running `apptainer pull` will do this automatically. For example,
 
 ```shell
 apptainer pull docker://ghcr.io/princeton-ddss/speech-recognition-inference:0.1.2
 ```
 
-This command generates a file `speech-recognition-inference_0.1.2.sif` in the directory where it is run. If you are setting up Blackfish for your own account, you should move this image to your home directory, `/home/shamu/.blackfish/image`. If you are setting up a shared Blackfish environment, move the image to a shared cache directory,
-e.g., `/shared/.blackfish/images`.
-
-#### Docker
-
-For local service deployment, Docker handles file management, so you can simply pull the required image, e.g.:
-
-```shell
-docker pull vllm/vllm-openai:v0.8.4
-```
+This command generates a file `speech-recognition-inference_0.1.2.sif` in the directory where it is run. Blackfish looks for images in the `cache_dir/images` directory specified by your profile. If you are an HPC admin setting up a shared environment, move images to the shared cache directory (e.g., `/shared/.blackfish/images`). If you are an individual user and your cache directory is read-only, ask your admin to add the required images or set your profile's `cache_dir` to a directory you can write to.
 
 ## Models
 
 ### Hugging Face Authentication
 
-Some models on Hugging Face are "gated" and require authentication to download. Blackfish uses the [`huggingface_hub`](https://github.com/huggingface/huggingface_hub) library, which automatically detects authentication tokens from:
+Some models on Hugging Face are "gated" and require authentication to download. You can create access tokens on the [Hugging Face security tokens](https://huggingface.co/docs/hub/en/security-tokens) page. Blackfish uses the [`huggingface_hub`](https://github.com/huggingface/huggingface_hub) library, which automatically detects authentication tokens from:
 
 1. The `HF_TOKEN` environment variable
-2. A token stored at `~/.cache/huggingface/token` (set via `huggingface-cli login` or the Settings UI)
-
-#### Setting a Token via the UI
-
-The easiest way to configure your Hugging Face token is through the Blackfish Settings panel:
-
-1. Click the gear icon in the navigation bar to open Settings
-2. Find the "Hugging Face" section
-3. Click "Sign In" and enter your [Hugging Face access token](https://huggingface.co/settings/tokens)
-4. Click "Sign In" to store the token
-
-The token is validated and stored securely using `huggingface_hub`'s standard token storage. Once configured, all Hugging Face operations (model downloads, API calls) will automatically use this token.
+2. A token stored at `~/.cache/huggingface/token` (set via `huggingface-cli login`)
 
 #### Setting a Token via Environment Variable
 
-Alternatively, you can set the `HF_TOKEN` environment variable:
+You can set the `HF_TOKEN` environment variable:
 
 ```shell
 export HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -101,27 +79,30 @@ This stores the token at `~/.cache/huggingface/token`.
 
 ### Automatic Downloads
 
-You can download models with the `blackfish model add` command. Blackfish stores downloaded models to the `home_dir` of the specified profile by default. If you are downloading models to share with other users, add the `--use-cache` flag to save files to the `cache_dir` instead. Model download support is currently limited to *local* profiles. If you want to download models for use on HPC, you'll need to be running Blackfish on your cluster.
+You can download models with the `blackfish model add` command. Blackfish stores downloaded models in the `home_dir` of the specified profile by default. If you are downloading models to share with other users, add the `--use-cache` flag to save files to the `cache_dir` instead. Model download support is currently limited to Slurm profiles configured with `host=localhost` (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself.
 
 ### Manual Downloads
 
 Internally, model downloads and management are performed by [`huggingface_hub`](https://github.com/huggingface/huggingface_hub). You can download models yourself using the same method:
 
 ```python
-from huggingface_hub import shapshot_download
+from huggingface_hub import snapshot_download
 snapshot_download(repo_id="meta-llama/Meta-Llama-3-8B")
 ```
 
-The `snapshot_download` method store models files to `~/.cache/huggingface/hub/` by default. You should modify the directory by setting `HF_HOME` in the local environment or providing a
-`cache_dir` argument. Otherwise, after the model files are downloaded, they must be manually moved to your home or shared (cache) directory, e.g., `/shared/.blackfish/models`. For shared models, remember to set permissions on the model directory to `755` (recursively) to allow all users read and execute access.
+The `snapshot_download` method stores model files to `~/.cache/huggingface/hub/` by default. You should modify the directory by setting `HF_HOME` in the local environment or providing a `cache_dir` argument. Otherwise, after the model files are downloaded, they must be manually moved to your home or shared (cache) directory, e.g., `/shared/.blackfish/models`. For shared models, remember to set permissions on the model directory to `755` (recursively) to allow all users read and execute access.
 
 !!! note
 
-    In addition to downloading model files, the `blackfish model add` command extracts metadata from the model and adds it go an internal database of models available to the profile that was used to add the model. Manually added models will not show up when running `blackfish model ls` (because they are not added to this database), but Blackfish will still be able to discover and run these models.
+    In addition to downloading model files, the `blackfish model add` command extracts metadata from the model and adds it to an internal database of models available to the profile that was used to add the model. Manually added models will not show up when running `blackfish model ls` (because they are not added to this database), but Blackfish will still be able to discover and run these models.
+
+## Batch Jobs
+
+Blackfish delegates batch job execution to [TigerFlow](https://github.com/princeton-ddss/tigerflow), a companion project for running task-based pipelines on Slurm clusters. TigerFlow is installed automatically the first time you create a Slurm profile, so users typically don't need to manage it directly. If the install fails, users can re-run it via `blackfish profile repair`, and upgrade an existing install via `blackfish profile upgrade`.
 
 ## Resource Tiers
 
-Resource tiers allow HPC administrators to define pre-configured resource bundles that users can select when launching services. This simplifies the user experience by presenting meaningful options like "Small", "Medium", and "Large" instead of requiring users to manually specify GPU counts, memory, and CPU cores.
+Resource tiers allow HPC administrators to define pre-configured resource bundles that users can select when launching services through the Blackfish UI. This simplifies the user experience by presenting meaningful options like "Small", "Medium", and "Large" instead of requiring users to manually specify GPU counts, memory, and CPU cores.
 
 ### Configuration File
 
@@ -132,25 +113,23 @@ If no configuration file exists, Blackfish uses sensible defaults with four tier
 ### Schema
 
 ```yaml
-# Time constraints for job submission (in minutes)
 time:
-  default: 30    # Default job time
-  max: 180       # Maximum allowed job time
+  default: 30
+  max: 180
 
-# Slurm partitions and their available tiers
 partitions:
-  gpu:                          # Partition name (matches Slurm partition)
-    default: true               # Mark as default partition
+  gpu:
+    default: true
     tiers:
       - name: Small
         description: "Small models (up to 16GB)"
-        max_model_size_gb: 16   # Maximum model size for this tier
+        max_model_size_gb: 16
         gpu_count: 1
-        gpu_type: a100          # Optional: for display purposes
+        gpu_type: a100
         cpu_cores: 4
         memory_gb: 16
-        slurm:                  # Optional: additional Slurm flags
-          constraint: "gpu80"   # Passed to --constraint
+        slurm:
+          constraint: "gpu80"
 
       - name: Medium
         description: "Medium models (up to 80GB)"
@@ -161,12 +140,12 @@ partitions:
 
       - name: Large
         description: "Large models (80GB+)"
-        max_model_size_gb: null  # No limit (catch-all tier)
+        max_model_size_gb: null
         gpu_count: 4
         cpu_cores: 16
         memory_gb: 64
 
-  cpu:                          # Additional partition
+  cpu:
     default: false
     tiers:
       - name: CPU Only
@@ -176,9 +155,8 @@ partitions:
         cpu_cores: 4
         memory_gb: 8
 
-# Optional: Model-specific tier overrides
 models:
-  "meta-llama/Llama-2-70b-hf": "gpu.Large"      # Force specific tier
+  "meta-llama/Llama-2-70b-hf": "gpu.Large"
   "openai/whisper-large-v3": "gpu.Medium"
 ```
 
@@ -190,7 +168,7 @@ models:
 | `description` | string | Yes | User-facing description |
 | `max_model_size_gb` | number/null | Yes | Maximum model size (null = no limit) |
 | `gpu_count` | integer | Yes | Number of GPUs to request |
-| `gpu_type` | string | No | GPU type (for display only) |
+| `gpu_type` | string | No | GPU type label shown in the UI |
 | `cpu_cores` | integer | Yes | Number of CPU cores |
 | `memory_gb` | integer | Yes | Memory in GB |
 | `slurm` | object | No | Additional Slurm flags |

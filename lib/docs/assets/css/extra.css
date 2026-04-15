@@ -70,6 +70,15 @@
     font-weight: 100;
 }
 
+.md-typeset .twemoji {
+    --md-icon-size: 1.25em;
+}
+
+.md-typeset .twemoji svg {
+    fill: none !important;
+    stroke: currentcolor;
+}
+
 .custom-intro::first-letter {
     -webkit-initial-letter: 3;
     initial-letter: 3;

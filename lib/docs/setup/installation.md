@@ -1,12 +1,10 @@
 # Installation Guide
 
-If your HPC administrator has added Blackfish Ondemand to your Open Ondemand portal, then you can already use Blackfish on your cluster—congratulations! 🎉 Otherwise, if Blackfish Ondemand has not been setup, or if you would like to use Blackfish from your laptop, follow the instructions below.
-
-Note that Blackfish does **not** need to be installed on your HPC cluster in order to run services on the cluster. However, if you want to run Blackfish on a login node, it will need to be installed for your cluster account as well.
+If your HPC administrator has added Blackfish OnDemand to your Open OnDemand portal, then you can already use Blackfish on your cluster—congratulations! 🎉 Otherwise, if Blackfish OnDemand has not been set up, or if you would like to use Blackfish from your laptop, follow the instructions below.
 
 !!! note
 
-    Blackfish installations on different machines do not synchronize application data. In particular, Blackfish running on your laptop does not know about services started by Blackfish running on your HPC cluster.
+    Blackfish does **not** need to be installed on your HPC cluster in order to run services on the cluster. However, if you want to run Blackfish on a login node, it will need to be installed for your cluster account as well. Blackfish installations on different machines do not synchronize application data.
 
 ## Prerequisites
 
@@ -16,30 +14,19 @@ Blackfish is tested on **Linux** and **macOS**. Mileage may vary on Windows mach
 
 ### Container Provider
 
-In order facilitate reproducibility and minimize dependencies, Blackfish uses [Docker](https://docs.docker.com/desktop/) and [Apptainer](https://apptainer.org/docs/admin/main/installation.html) to run service containers. HPC-based services require Apptainer; local services support both Docker and Apptainer, but Apptainer only runs on Linux systems.
+In order to facilitate reproducibility and minimize dependencies, Blackfish uses [Docker](https://docs.docker.com/desktop/) and [Apptainer](https://apptainer.org/docs/admin/main/installation.html) to run service containers. HPC-based services require Apptainer to be installed on your university cluster.
 
-### SSH Configuration
+### Container Images
 
-Using Blackfish from your laptop requires a seamless (i.e., password-less) method of communicating with remote clusters. On many systems, this is simple to setup with the `ssh-keygen` and `ssh-copy-id` utilitites. First, make sure that you are connected to your institution's network (or VPN), then type the following at the command-line:
+Blackfish does not ship container images. Your HPC admin may provide these in a shared cache directory. Otherwise, you will need to obtain them yourself. See [Images](management.md#images) for details.
 
-```shell
-ssh-keygen -t rsa # generates ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa
-ssh-copy-id <user>@<host> # answer yes to transfer the public key
-```
-
-These commands create a secure public-private key pair and send the public key to the HPC server you need access to. You now have password-less access to your HPC server!
-
-!!! warning
-
-    Blackfish depends on seamless interaction with your university's HPC cluster. Before proceeding, make sure that you have enabled password-less login and are connected to your institutions network or VPN, if required.
-
-## Installation
+## Install Blackfish
 
 ### pip
 
 ```shell
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip
 pip install blackfish-ai
 ```
@@ -51,7 +38,13 @@ uv venv
 uv pip install blackfish-ai
 ```
 
-### Initialization
+Verify the installation:
+
+```shell
+blackfish version
+```
+
+## Setup
 
 Before you use Blackfish for the first time, you need to initialize it:
 
@@ -59,7 +52,26 @@ Before you use Blackfish for the first time, you need to initialize it:
 blackfish init
 ```
 
-Answer the prompts to create a new default profile. If you are installing Blackfish on your laptop and intend to run Blackfish services on a cluster, your default profile should be a *Slurm profile*:
+This command walks you through creating a default profile. The steps differ depending on where you are installing Blackfish.
+
+### On your laptop
+
+If you are installing Blackfish on your laptop, you will first need to configure password-less SSH access to your cluster.
+
+#### SSH Configuration
+
+On many systems, this is simple to set up with the `ssh-keygen` and `ssh-copy-id` utilities. First, make sure that you are connected to your institution's network (or VPN), then type the following at the command-line:
+
+```shell
+ssh-keygen -t rsa # generates ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa
+ssh-copy-id <user>@<host> # answer yes to transfer the public key
+```
+
+These commands create a secure public-private key pair and send the public key to the HPC server you need access to. You now have password-less access to your HPC server!
+
+#### Profile
+
+Your default profile should point to your cluster's hostname:
 
 ```shell
 # > name: default
@@ -70,7 +82,13 @@ Answer the prompts to create a new default profile. If you are installing Blackf
 # > cache: /shared/.blackfish
 ```
 
-If you are installing Blackfish on a cluster, your default profile should be a Slurm profile with `host` set to `localhost`:
+!!! note
+
+    Blackfish will attempt to connect to the remote host during profile creation. Make sure you have enabled password-less SSH access and are connected to your institution's network or VPN before proceeding.
+
+### On the cluster
+
+Log into your cluster and install Blackfish as described above. Your default profile should use `localhost` as the host:
 
 ```shell
 # > name: default
@@ -81,18 +99,10 @@ If you are installing Blackfish on a cluster, your default profile should be a S
 # > cache: /shared/.blackfish
 ```
 
-If you are installing Blackfish on your laptop and you want to run Blackfish services locally, your default profile should be a *local profile*:
+### Profile details
 
-```shell
-# > name: default
-# > type: local
-# > user: shamu
-# > home: /home/shamu/.blackfish
-# > cache: /home/shamu/.blackfish
-```
+The `home` directory must be a directory for which your user has read-write permissions; the `cache` directory only requires read permissions. You can modify this profile or add additional profiles later. See [Profiles](../usage/cli.md#profiles) for details.
 
-The home directory supplied must be a directory for which your user has read-write permissions; the cache directory only requires read permissions. You can modify this profile or add additional profiles later. See [Profiles](../usage/cli.md#profiles) for details.
+!!! tip
 
-!!! note
-
-    If your default profile connects to an HPC cluster, Blackfish will attempt to set up the remote host at this point. Profile creation will fail if you're unable to connect to the HPC server and you'll need to re-run the `blackfish init` command or create a profile with `blackfish profile create`.
+    Models and virtual environments can be large. On HPC systems where `~` has a strict quota, consider using a scratch or project directory for your virtual environment and setting `home` to a location with sufficient storage.

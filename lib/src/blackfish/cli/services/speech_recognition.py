@@ -73,9 +73,7 @@ def run_speech_recognition(
     port: int,
     dry_run: bool,
 ) -> None:  # pragma: no cover
-    """Start a speech recognition service hosting MODEL. MODEL is specified as a repo ID, e.g., openai/whisper-tiny. The model has access to files via a mounted directory, which defaults to the profile's
-    Blackfish home directory (e.g., $HOME/.blackfish). To use a custom directory, users should provide a
-    value for the `blackfish run` `MOUNT` option.
+    """Start a speech recognition service hosting MODEL. MODEL is specified as a repo ID, e.g., openai/whisper-large-v3.
 
     See https://github.com/princeton-ddss/speech-recognition-inference for additional option details.
     """

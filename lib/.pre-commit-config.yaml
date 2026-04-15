@@ -17,6 +17,9 @@ repos:
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-yaml
+        # mkdocs.yml uses `!!python/name:` tags (material for mkdocs emoji
+        # config) that PyYAML's safe loader can't parse. Exclude it.
+        exclude: ^lib/mkdocs\.yml$
       - id: debug-statements
       - id: end-of-file-fixer
       - id: mixed-line-ending

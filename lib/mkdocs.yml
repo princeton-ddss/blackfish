@@ -4,6 +4,7 @@ repo_url: https://github.com/princeton-ddss/blackfish
 copyright: Copyright &copy; 2024 Colin Swaney and The Trustees of Princeton University
 theme:
   name: "material"
+  custom_dir: docs/overrides
   logo: assets/img/logo.png
   favicon: assets/img/favicon.png
   palette:
@@ -48,7 +49,7 @@ nav:
       #   - 'Basic Transcription': 'examples/speech_recognition/basic_transcription.md'
   - 'Contributing':
     - Guidelines: 'contrib/guidelines.md'
-    - 'Developer Notes': 'contrib/developer_guide.md'
+    - 'Developer Guide': 'contrib/developer_guide.md'
   - 'API Reference':
     - 'Core': 'api/core.md'
     - 'Services': 'api/services.md'
@@ -81,6 +82,12 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      options:
+        custom_icons:
+          - docs/overrides/.icons
 extra:
   version:
     provider: mike

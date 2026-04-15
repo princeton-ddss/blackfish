@@ -162,4 +162,3 @@ when a Slurm profile is selected.
 
 - Read-only display of the running app's version, home directory,
   container provider, and debug flag.
-

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { blackfishApiURL } from "@/config";
 import { DocumentIcon } from "@heroicons/react/24/outline";
 import Alert from "@/components/Alert";
-import { fileSize } from "@/lib/util";
+import { fileSize, isRemoteProfile } from "@/lib/util";
 import { MAX_PREVIEW_SIZE, truncateTextPreview } from "@/lib/fileApi";
 import PropTypes from "prop-types";
 
@@ -12,7 +12,7 @@ function FilePreview({ file, profile = null }) {
     const [textLoading, setTextLoading] = useState(false);
     const [textError, setTextError] = useState(null);
 
-    const profileParam = profile && profile.schema !== "local"
+    const profileParam = isRemoteProfile(profile)
         ? `&profile=${encodeURIComponent(profile.name)}`
         : "";
 

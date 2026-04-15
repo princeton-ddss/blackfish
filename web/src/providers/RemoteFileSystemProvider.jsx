@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { ProfileContext } from "@/components/ProfileSelect";
+import { isRemoteProfile } from "@/lib/util";
 import { blackfishApiURL } from "@/config";
 import PropTypes from "prop-types";
 
@@ -82,7 +83,7 @@ function RemoteFileSystemProvider({ children }) {
 
     const connect = useCallback(() => {
         const profileToConnect = currentProfileRef.current;
-        if (!profileToConnect || profileToConnect.schema === "local") {
+        if (!isRemoteProfile(profileToConnect)) {
             return;
         }
 
@@ -224,7 +225,7 @@ function RemoteFileSystemProvider({ children }) {
             return;
         }
 
-        const isRemote = profile && profile.schema !== "local";
+        const isRemote = isRemoteProfile(profile);
         currentProfileRef.current = profile;
 
         // Always disconnect first when profile changes

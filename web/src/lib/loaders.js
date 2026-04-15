@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
 import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults } from "./requests";
-import { ServiceStatus } from "./util";
+import { ServiceStatus, isRemoteProfile } from "./util";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 
 
@@ -124,7 +124,7 @@ export const useProfiles = () => {
 
 export const useFileSystem = (path, profile = null) => {
   // Determine if this is a remote profile
-  const isRemote = profile && profile.schema !== "local";
+  const isRemote = isRemoteProfile(profile);
 
   // Get remote file system from context
   const remoteFs = useRemoteFileSystem();

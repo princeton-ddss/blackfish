@@ -1,4 +1,5 @@
 import { blackfishApiURL } from "@/config";
+import { isRemoteProfile } from "@/lib/util";
 
 /** Maximum file size (in bytes) for preview. Files larger than this are skipped. */
 export const MAX_PREVIEW_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -88,7 +89,7 @@ export async function uploadFile(filePath, file, profile = null) {
     formData.append("file", file);
 
     let url = `${blackfishApiURL}${endpoint}`;
-    if (profile && profile.schema !== "local") {
+    if (isRemoteProfile(profile)) {
         url += `?profile=${encodeURIComponent(profile.name)}`;
     }
 
@@ -113,7 +114,7 @@ export async function replaceFile(filePath, newFile, profile = null) {
     formData.append("file", newFile);
 
     let url = `${blackfishApiURL}${endpoint}`;
-    if (profile && profile.schema !== "local") {
+    if (isRemoteProfile(profile)) {
         url += `?profile=${encodeURIComponent(profile.name)}`;
     }
 
@@ -128,7 +129,7 @@ export async function deleteFile(filePath, profile = null) {
 
     const endpoint = getUploadEndpoint(fileType);
     let url = `${blackfishApiURL}${endpoint}?path=${encodeURIComponent(filePath)}`;
-    if (profile && profile.schema !== "local") {
+    if (isRemoteProfile(profile)) {
         url += `&profile=${encodeURIComponent(profile.name)}`;
     }
 

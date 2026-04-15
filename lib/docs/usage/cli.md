@@ -1,6 +1,6 @@
 # Command Line
 
-This guide walks through usage of the Blackfish command line tool (CLI). In the current version of Blackfish, the CLI is the *only* way to perform certain management operations, such as creating profiles and adding models. Thus, it's highly recommended that users develop some level of familiarity with the CLI even if intend to primarily use the UI or Python API[^1].
+This guide walks through usage of the Blackfish command line tool (CLI). Most operations are also available through the UI, but the CLI is currently the only way to upgrade or repair profiles. It's recommended that users develop some level of familiarity with the CLI even if they intend to primarily use the UI or Python API[^1].
 
 ## Configuration
 
@@ -17,7 +17,7 @@ as it does not use authentication. In "production mode", Blackfish randomly gene
 
 !!! note
 
-    The settings for the REST API are determined when the Blackfish application is started via `blackfish start`. Subsequent interactions with the API via the command line assume that the CLI is using the same configuration and will fail if this is not the case. For example, if you start Blackfish with `BLACKFISH_PORT=8081` and then try to run commands in a new terminal where `BLACKFISH_PORT` isn't set, the CLI will not be able communicate with the API.
+    The settings for the REST API are determined when the Blackfish application is started via `blackfish start`. Subsequent interactions with the API via the command line assume that the CLI is using the same configuration and will fail if this is not the case. For example, if you start Blackfish with `BLACKFISH_PORT=8081` and then try to run commands in a new terminal where `BLACKFISH_PORT` isn't set, the CLI will not be able to communicate with the API.
 
 ## Profiles
 
@@ -27,12 +27,12 @@ Blackfish's primary function is to launch services that perform AI tasks. These 
 
     Blackfish profiles are stored in `$BLACKFISH_HOME/profiles.cfg`. On Linux, this is
     `$HOME/.blackfish/profiles.cfg` by default. You can modify this file directly, if needed, but you'll
-    need to need setup any required remote resources by hand.
+    need to set up any required remote resources by hand.
 
 ### Schemas
 
 Every profile specifies a number of attributes that allow Blackfish to find resources (e.g., model
-files) and deploy services accordingly. The exact attributes depend on the profile *schema*. There are currently two profile schemas: `LocalProfile` ("local") and `SlurmProfile` ("slurm"). All profiles require the following attributes:
+files) and deploy services accordingly. The exact attributes depend on the profile *schema*. There are currently two profile schemas: Slurm and Local. All profiles require the following attributes:
 
 - `name`: a unique profile name. The profile named "default" is used by Blackfish when a profile isn't
 explicitly provided.
@@ -41,22 +41,22 @@ profile are deployed by Blackfish. Use "slurm" if this profile will run jobs on 
 
 The additional attribute requirements for specific types are listed below.
 
+#### Slurm
+
+A *Slurm profile* specifies how to schedule services *on* a (possibly) remote server (e.g., HPC cluster) running Slurm.
+
+- `host`: a server to run services on, e.g. `<cluster>.<university>.edu` or `localhost` if also running Blackfish on the cluster.
+- `user`: a user name used to connect to server.
+- `home`: a location on the server to store application model, image and job data, e.g., `/home/<user>/.blackfish`. User should have read-write access to this directory.
+- `cache`: a location on the server to source additional shared model and images files from. Blackfish does *not* attempt to create this directory for you, but it does require that it can be found. User should *at least* have read access to this directory.
+- `python_path` (optional): path to Python on the cluster, e.g., `python3` (default) or `/usr/local/bin/python3.11`. This may also include module load commands like `module load python && python3`. Used for setting up the TigerFlow environment for batch jobs.
+
 #### Local
 
 A *local profile* specifies how to run services on a local machine, i.e., your laptop or desktop, *without a job scheduler*. This is useful for development and running models that do not require significant resources, especially if the model is able to use the GPU on your laptop.
 
 - `home_dir`: a user-owned location to store model and image files on the local machine, e.g., `/home/<user>/.blackfish`. User should have read-write access to this directory.
 - `cache_dir`: a shared location to source model and image files from. Blackfish does *not* attempt to create this directory for you, but it does require that it can be found. User should *at least* have read access to this directory.
-
-#### Slurm
-
-A *Slurm profile* specifies how to schedule services *on* a (possibly) remote server (e.g., HPC cluster) running Slurm.
-
-- `host`: a server to run services on, e.g. `<cluster>@<university>.edu` or `localhost` if also running Blackfish on the cluster.
-- `user`: a user name used to connect to server.
-- `home`: a location on the server to store application model, image and job data, e.g., `/home/<user>/.blackfish`. User should have read-write access to this directory.
-- `cache`: a location on the server to source additional shared model and images files from. Blackfish does *not* attempt to create this directory for you, but it does require that it can be found. User should *at least* have read access to this directory.
-- `python_path` (optional): path to Python on the cluster, e.g., `python3` (default) or `/usr/local/bin/python3.11`. This may also include module load commands like `module load python && python3`. Used for setting up the TigerFlow environment for batch jobs.
 
 ### Managing Profiles
 
@@ -101,7 +101,7 @@ To modify a profile, use the `blackfish profile update` command, e.g.
 blackfish profile update --name <profile>
 ```
 
-This command updates the default profile if not `--name` is specified. Note that you cannot change
+This command updates the default profile if no `--name` is specified. Note that you cannot change
 the `name` or `schema` attributes of a profile.
 
 #### upgrade - Upgrade TigerFlow
@@ -113,11 +113,12 @@ To upgrade TigerFlow to the latest version on a profile, use:
 blackfish profile upgrade --name <profile>
 ```
 
-You can also install from a specific git branch for testing unreleased features:
+You can also install from a specific git branch:
 
 ```shell
 blackfish profile upgrade --name <profile> \
-    --tigerflow-spec "git+https://github.com/princeton-ddss/tigerflow@feature-branch"
+    --tigerflow-spec "git+https://github.com/princeton-ddss/tigerflow@main"
+    --tigerflow-ml-spec "git+https://github.com/princeton-ddss/tigerflow-ml@main"
 ```
 
 #### repair - Repair a profile
@@ -140,15 +141,19 @@ requires you to confirm before deleting.
 blackfish profile rm --name <profile>
 ```
 
+!!! note
+
+    Deleting a profile does not remove its remote resources (e.g., models, images, or job files in `home_dir` or `cache_dir`). These may be shared with other profiles and should be cleaned up manually if no longer needed.
+
 ## Services
 
-Once you've initialized Blackfish and created a profile, you're ready to get to work! The entrypoint for working with the blackfish CLI is to type
+Once you've initialized Blackfish and created a profile, you're ready to get to work! The entrypoint for working with the Blackfish CLI is to type
 
 ```shell
 blackfish start
 ```
 
-in your terminal. If everything worked, you should see a message stating the application startup is complete. This command starts the Blackfish API *and* UI. At this point, you're free to switch over to the UI, if desired: just mosey on over to `http://localhost:8000` in your favorite browser. It's a relatively straight-forward interface, and we provide a detailed [usage guide](ui.md). But let's stay focus on the CLI.
+in your terminal. If everything worked, you should see a message stating the application startup is complete. This command starts the Blackfish API *and* UI. At this point, you're free to switch over to the UI, if desired: just mosey on over to `http://localhost:8000` in your favorite browser. It's a relatively straight-forward interface, and we provide a detailed [usage guide](ui.md). But let's stay focused on the CLI.
 
 Open a new terminal tab or window. First, let's see what type of services are available.
 
@@ -166,7 +171,7 @@ The command to list available models is:
 blackfish model ls
 ```
 
-Once you've added some models or if you already have access a shared cache directory of model, the output should look something like the following:
+Once you've added some models or if you already have access to a shared cache directory of models, the output should look something like the following:
 
 ```
 REPO                                   REVISION                                   PROFILE   IMAGE
@@ -182,23 +187,31 @@ TinyLlama/TinyLlama-1.1B-Chat-v1.0     4f42c91d806a19ae1a46af6c3fb5f4990d884cd6 
 As you can see, there are a number of models available[^2]. Notice that `TinyLlama/TinyLlama-1.1B-Chat-v1.0` is listed twice. The first listing refers to a specific "revision" (i.e., version) of this model—
 `ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971`—that is available to the `default` profile; the second listing refers to a different version of the same model—`4f42c91d806a19ae1a46af6c3fb5f4990d884cd6`—that is available to the `macbook` profile. For reproducibility, it's important to keep track of the exact revision used.
 
-Let's say you would really prefer to use a smaller version of `Llama` than the 70 billion parameter model shown above, say `meta-llama/Meta-Llama-3-1B`. To add the new model, we would simply type
+Let's say you would really prefer to use a smaller version of `Llama` than the 70 billion parameter model shown above, say `meta-llama/Meta-Llama-3-1B`. To add the new model, simply type
 
 ```shell
 blackfish model add meta-llama/Meta-Llama-3-1B
 ```
 
-This command downloads the model files, store them to the default profile's `home_dir`, and updates the model database. Note that `model add` currently only supports *local* profiles and Slurm profiles configured with `host=localhost` (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself.
+This command downloads the model files, stores them in the default profile's `home_dir`, and updates the model database. Note that `model add` currently only supports Slurm profiles configured with `host=localhost` (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself.
+
+To remove a model, use `blackfish model rm`:
+
+```shell
+blackfish model rm meta-llama/Meta-Llama-3-1B
+```
+
+This removes the model files and its entry from the model database.
 
 Let's go ahead and run a service using one of these models.
 
 ### Managing Services
 
-A *service* is a containerized API that is called to perform a specific task, such a text generation, using a model specified by the user when the API is created. Services perform inference in an "online" fashion, meaning that, in general, they process requests one at a time[^3]. Users can create as many services as they like (up to resource availability) and interact with them simultaneously. Services are completely managed by the user: as the creator of a service, you can stop or restart the service, and you control access to the service via an authentication token.
+A *service* is a containerized API that is called to perform a specific task, such as text generation, using a model specified by the user when the API is created. Services perform inference in an "online" fashion, meaning that, in general, they process requests one at a time[^3]. Users can create as many services as they like (up to resource availability) and interact with them simultaneously. Services are completely managed by the user: as the creator of a service, you can stop or restart the service, and you control access to the service via an authentication token.
 
 #### `run` - Start a service
 
-Looking back at the help message for `blackfish run`, we see that there are a few items that we should provide. First, we need to select the type of service to run. We've already decide to run
+Looking back at the help message for `blackfish run`, we see that there are a few items that we should provide. First, we need to select the type of service to run. We've already decided to run
 `text-generation`, so we're good there. Next, there are a number of job options that we can provide. With the exception of `profile`, job options are based on the Slurm `sbatch` command and tell Blackfish the resources required to run a service. Finally, there are a number of "container options" available. To get a list of these, type `blackfish run text-generation --help`:
 
 ```shell
@@ -221,7 +234,7 @@ blackfish run \
 
 !!! warning
 
-    Omitting the `--api-key` argument leaves your service naked. Others users of the system where your service is running could potentially hijack your server or even gain access to your files via the service.
+    Omitting the `--api-key` argument leaves your service naked. Other users of the system where your service is running could potentially hijack your server or even gain access to your files via the service.
 
 If everything worked, you should see output that looks something like this:
 
@@ -234,12 +247,12 @@ If everything worked, you should see output that looks something like this:
 ```
 
 What just happened? First, Blackfish checked to make sure that the requested model is available to the `default` profile. Next, it found a list of available revisions of the model and selected the
-most recently published version because no revision was specified. Finally, it sent a request to deploy the model. Helpfully, the CLI returned an ID associated with the new service `fed36739-70b4-4dc4-8017-a4277563aef9`, which you can use get information about our service via the `blackfish ls` command.
+most recently published version because no revision was specified. Finally, it sent a request to deploy the model. Helpfully, the CLI returned an ID associated with the new service `fed36739-70b4-4dc4-8017-a4277563aef9`, which you can use to get information about our service via the `blackfish ls` command.
 
 !!! note
 
     If no `--revision` is provided, Blackfish automatically selects the most recently available *downloaded* version of the requested model. This reduces the
-    time-to-first-inference, but may not be desirable for your use case. Download the model *before* starting your service if you need the [most recent version]() available on Hugging Face.
+    time-to-first-inference, but may not be desirable for your use case. Download the model *before* starting your service if you need the most recent version available on Hugging Face.
 
 !!! tip
 
@@ -258,10 +271,10 @@ This will output a table similar to the following:
 ```shell
 SERVICE ID      IMAGE                MODEL                                CREATED       UPDATED     STATUS    PORT   NAME              PROFILE
 97ffde37-7e02   speech_recognition   openai/whisper-large-v3              7 hours ago   1 min ago   HEALTHY   8082   blackfish-11846   default
-fed36739-70b4   text_generation      TinyLlama/TinyLlama-1.1B-Chat-v1.0   7 sec ago     5 sec ago   PENDING   None   blackfish-89359   della
+fed36739-70b4   text_generation      TinyLlama/TinyLlama-1.1B-Chat-v1.0   7 sec ago     5 sec ago   PENDING   None   blackfish-89359   default
 ```
 
-The last item in this list is the service we just started. In this case, the `default` profile happens to be set up to connect to a remote HPC cluster, so the service is run as a Slurm job. It may take a few minutes for our Slurm job to start, and it will require additional time for the service to be ready after that[^4]. Until then, our service's status will be either `SUBMITTED`, `PENDING` or `STARTING`. Now would be a good time to brew a hot beverage ☕️.
+The last item in this list is the service we just started. In this case, the `default` profile happens to be set up to connect to a remote HPC cluster, so the service is run as a Slurm job. It may take a few minutes for our Slurm job to start, and it will require additional time for the service to be ready after that[^4]. Until then, our service's status will be either `PENDING` or `STARTING`. Now would be a good time to brew a hot beverage ☕️.
 
 !!! tip
 
@@ -350,20 +363,20 @@ blackfish rm --filters id=fed36739-70b4-4dc4-8017-a4277563aef9
 
 ## Batch Jobs
 
-Services are great for interactive work, but sometimes you need to run an ML task across a whole directory of files — a corpus of audio to transcribe, a document set to translate, a photo library to run object detection on. Batch jobs are the right tool for this. Under the hood, Blackfish delegates batch execution to [TigerFlow](https://github.com/princeton-ddss/tigerflow), a companion project that manages Slurm job submission, worker parallelism, and per-file progress tracking.
+Services are great for interactive work, but sometimes you need to run an ML task across a whole directory of files — a corpus of audio to transcribe, a document set to translate, or a photo library to run object detection on. Batch jobs are the right tool for this. Under the hood, Blackfish delegates batch execution to [TigerFlow](https://github.com/princeton-ddss/tigerflow), a companion project that manages Slurm job submission, worker parallelism, and per-file progress tracking.
 
 !!! note
 
-    Batch jobs require a Slurm profile. TigerFlow is installed automatically the first time you create a Slurm profile, so in practice any Slurm profile will work. See the [Management Guide](../setup/management.md#batch-jobs-tigerflow) for more on the install process.
+    Batch jobs require a Slurm profile. TigerFlow is installed automatically the first time you create a Slurm profile, so in practice any Slurm profile will work. See the [Management Guide](../setup/management.md#batch-jobs) for more on the install process.
 
 ### Supported tasks
 
-| Task         | Description                               | Default input ext |
-|:-------------|:------------------------------------------|:------------------|
-| `transcribe` | Transcribe audio to text using Whisper    | `.wav`            |
-| `translate`  | Translate text between languages          | `.txt`            |
-| `detect`     | Zero-shot object detection on images      | `.jpg`            |
-| `ocr`        | Extract text from images or scanned pages | `.jpg`            |
+| Task         | Description                               | Input formats          | Output formats          |
+|:-------------|:------------------------------------------|:-----------------------|:------------------------|
+| [`transcribe`](https://princeton-ddss.github.io/tigerflow-ml/next/tasks/transcribe) | Transcribe audio to text using Whisper    | `.wav`, `.mp3`, etc.   | `.txt`, `.srt`, `.json` |
+| [`translate`](https://princeton-ddss.github.io/tigerflow-ml/next/tasks/translate)   | Translate text between languages          | `.txt`                 | `.txt`                  |
+| [`detect`](https://princeton-ddss.github.io/tigerflow-ml/next/tasks/detect)         | Zero-shot object detection on images      | `.png`, `.jpg`, etc.   | `.json`                 |
+| [`ocr`](https://princeton-ddss.github.io/tigerflow-ml/next/tasks/ocr)               | Extract text from images or scanned pages | `.png`, `.jpg`, etc.   | `.txt`, `.md`, `.json`  |
 
 ### `run` - Start a batch job
 
@@ -418,5 +431,5 @@ Removes a batch job record from Blackfish's internal database.
 
 [^1]: Researchers that only intend to use Blackfish OnDemand should not generally need to interact with the CLI.
 [^2]: The list of models displayed depends on your environment. If you do not have access to a shared HPC cache, your list of models is likely empty. Not to worry—we will see how to add models later on. If this is your first time running the command, use the `--refresh` flag to tell Blackfish to search for models in your cache directories and update the model database.
-[^3]: In practice, services like `vLLM` can use dynamic batching to process requests concurrently. The number of concurrent requests these service can process is limited by a number of factors including the amount of memory available and properties of the requests themselves.
+[^3]: In practice, services like `vLLM` can use dynamic batching to process requests concurrently. The number of concurrent requests these services can process is limited by a number of factors including the amount of memory available and properties of the requests themselves.
 [^4]: The bulk of this time is spent loading model weights into memory. For small models (< 1B parameters), the service might be ready in a matter of seconds. Large models (~8B) might take 5-10 minutes to load.

@@ -11,7 +11,7 @@ hide:
 Welcome to Blackfish! Blackfish is an open source "ML-as-a-Service" (MLaaS) platform that helps researchers use state-of-the-art, open source artificial intelligence and machine learning models. With Blackfish, researchers can spin up their own version of popular public cloud services (e.g., ChatGPT, Amazon Transcribe, etc.) using high-performance computing (HPC) resources already available on campus.
 </p>
 
-The primary goal of Blackfish is to facilitate **transparent** and **reproducible** research based on **open source** machine learning and artificial intelligence. We do this by providing mechanisms to run user-specified models with user-defined configurations. For academic research, open source models present several advantages over closed source models. First, whereas large-scale projects using public cloud services might cost $10K to $100K for [similar quality results](https://www.frontiersin.org/journals/big-data/articles/10.3389/fdata.2023.1210559/full), open source models running on HPC resources are free to researchers. Second, with open source models you know *exactly* what model you are using and you can easily provide a copy of that model to other researchers. Closed source models can and do change without notice. Third, using open-source models allows complete transparency into how *your* data is being used.
+The primary goal of Blackfish is to facilitate **transparent** and **reproducible** research based on **open source** machine learning and artificial intelligence. We do this by providing mechanisms to run user-specified models with user-defined configurations. For academic research, open source models present several advantages over closed source models. First, whereas large-scale projects using public cloud services might cost $10K to $100K for [similar quality results](https://www.frontiersin.org/journals/big-data/articles/10.3389/fdata.2023.1210559/full), open source models running on HPC resources are free to researchers. Second, with open source models you know *exactly* what model you are using and you can easily provide a copy of that model to other researchers. Closed source models can and do change without notice. Third, using open source models allows complete transparency into how *your* data is being used.
 
 ## Why should you use Blackfish?
 
@@ -19,7 +19,7 @@ The primary goal of Blackfish is to facilitate **transparent** and **reproducibl
 
 Researchers should focus on research, not tooling. We try to meet researchers where they're at by providing multiple ways to work with Blackfish, including a Python API, a command-line tool (CLI), and a browser-based user interface (UI).
 
-Don't want to install a Python package? Ask your HPC admins to install [Blackfish OnDemand](https://github.com/princeton-ddss/blackfish-ondemand)!
+Don't want to install anything? Ask your HPC admins to install [Blackfish OnDemand](https://github.com/princeton-ddss/blackfish-ondemand)!
 
 ### 2. It's transparent 🧐
 
@@ -31,19 +31,19 @@ You have an HPC cluster. We have software to run on it.
 
 ## Requirements
 
-### Python
-
-Blackfish requires Python to run locally. Alternatively, Blackfish can be added to your university's [Open OnDemand](https://openondemand.org/) portal, which allows users to run applications on HPC resources through a web browser. For more information, see our companion repo [blackfish-ondemand](https://github.com/princeton-ddss/blackfish-ondemand).
-
-### Docker & Apptainer
-
-Blackfish uses Docker or Apptainer to run service containers locally. HPC-based services require Apptainer to be installed on your university cluster.
+- **Python 3.12+**
+- **Docker or Apptainer** — Blackfish runs services inside containers. HPC-based services require Apptainer to be installed on your university cluster.
+- **Container images** — Blackfish does not ship container images. Your HPC admin may provide these in a shared cache directory, or you can [add them yourself](setup/management.md#images).
 
 ## Quickstart
 
-### Step 1 - Install blackfish
+Here's what the typical Blackfish workflow looks like on an HPC cluster:
+
+### Step 1 - Install Blackfish
 
 ```shell
+python -m venv .venv
+source .venv/bin/activate
 pip install blackfish-ai
 ```
 
@@ -61,7 +61,7 @@ blackfish init
 # > cache: /scratch/gpfs/shared/.blackfish
 ```
 
-### Step 3 - Start the API
+### Step 3 - Start Blackfish
 
 ```shell
 blackfish start
@@ -102,7 +102,7 @@ curl http://localhost:8080/v1/chat/completions \
 
 ## Next Steps
 
-Ready to give Blackfish a try? Check out our [setup guide](setup/installation.md).
+Ready to get started? The [setup guide](setup/installation.md) walks through each step in detail.
 
 ## Acknowledgements
 

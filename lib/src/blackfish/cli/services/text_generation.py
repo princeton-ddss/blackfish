@@ -104,7 +104,7 @@ def run_text_generation(
     port: int,
     dry_run: bool,
 ) -> None:  # pragma: no cover
-    """Start a text generation service hosting a model provided by REPO_ID, e.g., openai/whisper-tiny.
+    """Start a text generation service hosting MODEL. MODEL is specified as a repo ID, e.g., google/gemma-3-27b-it.
 
     In addition to the options listed by `--help`, you can pass any arguments of the `vllm serve` command, such as `--api-key`, `enable_reasoning`, or `seed`.
     """

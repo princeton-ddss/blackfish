@@ -1,8 +1,6 @@
 # Python API
 
-While the Blackfish CLI and UI are convenient for interactive, time-limited, or small-scale projects, they can prove quite awkward for workflows that require automation and/or might run for more than a few hours.
-
-For this reason, Blackfish provides a Python API for managing services directly from Python scripts, *without* requiring the REST API server to be running. This allows users to, for example, define tasks that make requests to a text generation service as part of a larger orchestration script.
+While the Blackfish CLI and UI are convenient for interactive, time-limited, or small-scale projects, they can prove quite awkward for workflows that require automation and/or might run for more than a few hours. For this reason, Blackfish provides a Python API for managing services directly from Python scripts, *without* requiring the REST API server to be running. This allows users to, for example, define tasks that make requests to a text generation service as part of a larger orchestration script.
 
 We provide synchronous and asynchronous APIs.
 
@@ -56,7 +54,7 @@ bf.close()
 
 ## Asynchronous API
 
-For async applications, use the async methods (prefixed with `async`):
+For async applications, use the async methods (prefixed with `async_`):
 
 ```python
 import asyncio
@@ -106,12 +104,12 @@ Use context managers for automatic cleanup of the Blackfish client:
 ```python
 # Sync context manager
 with Blackfish() as bf:
-    service = bf.create_service(...)
+    service = bf.launch_service(...)
     # Connection closes automatically
 
 # Async context manager
 async with Blackfish() as bf:
-    service = await bf.acreate_service(...)
+    service = await bf.async_launch_service(...)
     # Connection closes automatically
 ```
 
@@ -136,7 +134,7 @@ print(f"Port: {service.port}")
 
 !!! note
 
-    The status of a service should be understood as the most recently observed status of that service. The current status of a service only known to the external system running the service, e.g., Slurm. To update the status of a service, use `service.refresh()`.
+    The status of a service should be understood as the most recently observed status of that service. The current status of a service is only known to the external system running the service, e.g., Slurm. To update the status of a service, use `service.refresh()`.
 
 After a service is deleted, however, the internal service is no longer valid and is therefore set to `None`. At this point, attempting to access the service's attributes will produce a runtime error:
 
@@ -145,17 +143,6 @@ After a service is deleted, however, the internal service is no longer valid and
 ✔ Service deleted: 20054b7c-7600-4c4e-9dde-d893333ca8b1
 True
 >>> service.id
----------------------------------------------------------------------------
-RuntimeError                              Traceback (most recent call last)
-Cell In[9], line 1
-----> 1 s.status
-
-File ~/GitHub/blackfish/src/blackfish/__init__.py:83, in ManagedService.__getattr__(self, name)
-     81 """Delegate attribute access to the underlying service."""
-     82 if self._service is None:
----> 83     raise RuntimeError("This service has been deleted and can no longer be accessed.")
-     84 return getattr(self._service, name)
-
 RuntimeError: This service has been deleted and can no longer be accessed.
 ```
 
@@ -189,13 +176,13 @@ from blackfish import Blackfish
 async def create_multiple_services():
     async with Blackfish() as bf:
         tasks = [
-            bf.async_create_service(
+            bf.async_launch_service(
                 name=f"service-1",
                 image="text_generation",
                 model="meta-llama/Llama-3.3-70B-Instruct",
                 profile_name="default"
             ),
-            bf.async_create_service(
+            bf.async_launch_service(
                 name=f"service-2",
                 image="text_generation",
                 model="meta-llama/Llama-3.3-70B-Instruct",
@@ -241,4 +228,4 @@ blackfish init
 
 And verify that the home directory `~/.blackfish` exists.
 
-[^1]: If `auto_clean=False`. Otherwise, Blackfish automatically deletes services on shutdown.
+[^1]: If `auto_cleanup=False`. Otherwise, Blackfish automatically deletes services on shutdown.

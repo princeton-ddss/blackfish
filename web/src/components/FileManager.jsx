@@ -12,6 +12,7 @@ import FilterInput from "@/components/FilterInput";
 import FileUploadDialog from "@/components/FileUploadDialog";
 import FileDeleteDialog from "@/components/FileDeleteDialog";
 import { getFileType } from "@/lib/fileApi";
+import { isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
 /** File Manager component with CRUD operations. */
@@ -25,7 +26,7 @@ function FileManager({
     status,
     profile = null,
 }) {
-    const isRemote = profile && profile.schema !== "local";
+    const isRemote = isRemoteProfile(profile);
     const { reconnect, isConnecting, error: connectionError } = useRemoteFileSystem();
     const [path, setPath] = useState(null);
     const [query, setQuery] = useState("");

@@ -10,6 +10,7 @@ import {
   fileSize,
   lastModified,
   formattedTimeInterval,
+  isRemoteProfile,
   isServiceRunning,
   selectTierByModelSize
 } from "@/lib/util";
@@ -180,6 +181,79 @@ describe("Utils", () => {
       .toBe("7 days 0 min");
     expect(formattedTimeInterval(baseTime, new Date("2025-07-04T15:30:00.000Z")))
       .toBe("30 days 30 min");
+  });
+
+  describe("isRemoteProfile", () => {
+    it("returns false for null or undefined", () => {
+      expect(isRemoteProfile(null)).toBe(false);
+      expect(isRemoteProfile(undefined)).toBe(false);
+    });
+
+    it("returns false for an empty object", () => {
+      expect(isRemoteProfile({})).toBe(false);
+    });
+
+    it("returns false for a LocalProfile", () => {
+      expect(
+        isRemoteProfile({
+          name: "local",
+          schema: "local",
+          home_dir: "/home/u",
+          cache_dir: "/cache",
+        })
+      ).toBe(false);
+    });
+
+    it("returns false for a Slurm profile with host=localhost (OnDemand case)", () => {
+      expect(
+        isRemoteProfile({
+          name: "ondemand",
+          schema: "slurm",
+          host: "localhost",
+          user: "u",
+          home_dir: "/home/u/.blackfish-ondemand",
+          cache_dir: "/cache",
+        })
+      ).toBe(false);
+    });
+
+    it("returns true for a Slurm profile with a remote host", () => {
+      expect(
+        isRemoteProfile({
+          name: "della",
+          schema: "slurm",
+          host: "della.princeton.edu",
+          user: "u",
+          home_dir: "/home/u/.blackfish",
+          cache_dir: "/cache",
+        })
+      ).toBe(true);
+    });
+
+    it("returns false for a Slurm profile with no host", () => {
+      expect(
+        isRemoteProfile({
+          name: "bad",
+          schema: "slurm",
+          user: "u",
+          home_dir: "/home/u",
+          cache_dir: "/cache",
+        })
+      ).toBe(false);
+    });
+
+    it("returns false for a Slurm profile with an empty host", () => {
+      expect(
+        isRemoteProfile({
+          name: "bad",
+          schema: "slurm",
+          host: "",
+          user: "u",
+          home_dir: "/home/u",
+          cache_dir: "/cache",
+        })
+      ).toBe(false);
+    });
   });
 
   test("IsServiceRunning", () => {

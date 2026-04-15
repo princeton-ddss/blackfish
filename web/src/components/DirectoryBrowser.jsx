@@ -4,6 +4,7 @@ import { useFileSystem } from "@/lib/loaders";
 import DirectoryInput from "@/components/DirectoryInput";
 import FilterInput from "@/components/FilterInput";
 import FileManagerTable from "@/components/FileManagerTable";
+import { isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
 /**
@@ -27,7 +28,7 @@ function DirectoryBrowser({
   const { files, error: fsError, isLoading, refresh, homeDir, isConnected } = useFileSystem(value, profile);
 
   // Determine if this is a remote profile
-  const isRemote = profile && profile.schema !== "local";
+  const isRemote = isRemoteProfile(profile);
 
   // Set path to homeDir when it becomes available (if no value)
   useEffect(() => {

@@ -5,6 +5,7 @@ import {
   ComputerDesktopIcon,
   ServerIcon,
 } from "@heroicons/react/24/outline";
+import { isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -44,7 +45,7 @@ function AttachmentMenu({
   onError,
 }) {
   const fileInputRef = useRef(null);
-  const isRemote = profile && profile.schema !== "local";
+  const isRemote = isRemoteProfile(profile);
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files || []);

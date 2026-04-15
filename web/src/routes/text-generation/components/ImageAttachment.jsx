@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { blackfishApiURL } from "@/config";
+import { isRemoteProfile } from "@/lib/util";
 import { blobToBase64 } from "../lib/imageUtils";
 import PropTypes from "prop-types";
 
@@ -44,10 +45,9 @@ function ImageAttachment({ image, onRemove, onError, onLoad, index }) {
           // No need to cache base64 for browser files - we can convert on submit
         } else if (image.source === "remote") {
           // Remote file - fetch via API with progress tracking
-          const profileParam =
-            image.profile && image.profile.schema !== "local"
-              ? `&profile=${encodeURIComponent(image.profile.name)}`
-              : "";
+          const profileParam = isRemoteProfile(image.profile)
+            ? `&profile=${encodeURIComponent(image.profile.name)}`
+            : "";
           const url = `${blackfishApiURL}/api/image?path=${encodeURIComponent(image.path)}${profileParam}`;
 
           const response = await fetch(url);

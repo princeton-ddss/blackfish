@@ -3,6 +3,7 @@
  */
 
 import { blackfishApiURL } from "@/config";
+import { isRemoteProfile } from "@/lib/util";
 
 /**
  * Supported text file extensions for attachments.
@@ -72,10 +73,9 @@ export function readFileAsText(file) {
  * @returns {Promise<string>} The file content as text.
  */
 export async function fetchRemoteText(path, profile) {
-  const profileParam =
-    profile && profile.schema !== "local"
-      ? `&profile=${encodeURIComponent(profile.name)}`
-      : "";
+  const profileParam = isRemoteProfile(profile)
+    ? `&profile=${encodeURIComponent(profile.name)}`
+    : "";
   const url = `${blackfishApiURL}/api/text?path=${encodeURIComponent(path)}${profileParam}`;
 
   const response = await fetch(url);

@@ -383,6 +383,70 @@ describe("TextGenerationChatContainer", () => {
     });
   });
 
+  describe("Error recovery", () => {
+    it("restores typed input when submission fails", async () => {
+      const user = userEvent.setup();
+      const failingStream = {
+        next: vi.fn().mockRejectedValue(new Error("API error")),
+        [Symbol.asyncIterator]: vi.fn().mockReturnValue({
+          next: vi.fn().mockResolvedValue({ done: true })
+        })
+      };
+      streamChatCompletionInference.mockReturnValue(failingStream);
+      const { getByPlaceholderText, getByRole } = render(
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
+      );
+      const textarea = getByPlaceholderText("Why are orcas so awesome?");
+      await user.type(textarea, "My important message");
+      await user.click(getByRole("button", { name: "Submit" }));
+      await waitFor(() => {
+        expect(textarea.value).toBe("My important message");
+      });
+    });
+
+    it("preserves assistant message when regeneration fails", async () => {
+      const user = userEvent.setup();
+      // First call succeeds
+      const successStream = {
+        next: vi.fn().mockResolvedValue({
+          value: [{ choices: [{ delta: { content: "Original response" } }] }]
+        }),
+        [Symbol.asyncIterator]: vi.fn().mockReturnValue({
+          next: vi.fn().mockResolvedValue({ done: true })
+        })
+      };
+      streamChatCompletionInference.mockReturnValue(successStream);
+      const { getByPlaceholderText, getByRole, getByText } = render(
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
+      );
+      const textarea = getByPlaceholderText("Why are orcas so awesome?");
+      await user.type(textarea, "Test message");
+      await user.click(getByRole("button", { name: "Submit" }));
+      await waitFor(() => {
+        expect(getByText("Original response")).toBeInTheDocument();
+      });
+      // Second call (regeneration) fails
+      const failingStream = {
+        next: vi.fn().mockRejectedValue(new Error("API error")),
+        [Symbol.asyncIterator]: vi.fn().mockReturnValue({
+          next: vi.fn().mockResolvedValue({ done: true })
+        })
+      };
+      streamChatCompletionInference.mockReturnValue(failingStream);
+      const assistantMessage = getByText("Original response").closest(".mt-3");
+      await user.hover(assistantMessage);
+      const regenButton = getByRole("button", { name: "Regenerate" });
+      await user.click(regenButton);
+      await waitFor(() => {
+        expect(getByText("Original response")).toBeInTheDocument();
+      });
+    });
+  });
+
   describe("Resubmit functionality", () => {
     it("handles resubmit of assistant message", async () => {
       const user = userEvent.setup();

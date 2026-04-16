@@ -765,6 +765,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     setMessages((messages) => [...messages, newUserMessage]);
 
+    const savedInput = userMessage.content;
+
     // Clear input and attached items after sending
     setUserMessage({ role: Role.USER, content: "" });
     sessionStorage.removeItem("tgcc-um");
@@ -823,6 +825,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         }
         return prev;
       });
+      setUserMessage({ role: Role.USER, content: savedInput });
+      sessionStorage.setItem("tgcc-um", savedInput);
       setApiError(classifyApiError(error));
     }
   };
@@ -832,6 +836,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     console.debug(`regenerating message at index ${index}`);
 
     setApiError(null);
+
+    const savedMessages = messages;
 
     // Get messages up to (but not including) the message being regenerated
     const conversationUpToIndex = messages.slice(0, index);
@@ -884,6 +890,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     } catch (error) {
       console.error("Chat resubmit error:", error);
       setIsWaitingForResponse(false);
+      setMessages(savedMessages.slice(0, index + 1));
       setApiError(classifyApiError(error));
     }
   };

@@ -704,6 +704,10 @@ class TestDownloadModelAPI:
         data = {"repo_id": "test/model", "profile": "ondemand"}
         response = await client.post("/api/models/download", json=data)
         assert response.status_code == 201
+        result = response.json()
+        assert "task_id" in result
+        assert result["status"] == "pending"
+        assert result["repo_id"] == "test/model"
 
     async def test_download_model_invalid_repo_id_format(self, client: AsyncTestClient):
         """Test download with invalid repo_id format returns 400."""
@@ -1229,7 +1233,7 @@ class TestUpdateModelAPI:
         assert "Failed to download update" in result["message"]
 
     async def test_update_model_rejected_for_remote_slurm_profile(
-        self, client: AsyncTestClient, session: AsyncSession
+        self, client: AsyncTestClient
     ):
         """Test that update returns error for a remote Slurm profile."""
         model_id = "b2c3d4e5-f6a7-8901-bcde-f12345678901"  # profile="hpc"
@@ -1241,11 +1245,11 @@ class TestUpdateModelAPI:
 
     @patch("huggingface_hub.model_info")
     async def test_update_model_accepted_for_slurm_localhost_profile(
-        self, mock_model_info, client: AsyncTestClient, session: AsyncSession
+        self, mock_model_info, client: AsyncTestClient
     ):
         """Test that update works for a Slurm profile with host=localhost."""
         model_id = "c3d4e5f6-a7b8-9012-cdef-123456789012"  # profile="ondemand"
-        mock_info = AsyncMock()
+        mock_info = MagicMock()
         mock_info.sha = "1"  # Same revision — triggers "up_to_date"
         mock_model_info.return_value = mock_info
         response = await client.put(f"/api/models/{model_id}")

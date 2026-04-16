@@ -5,7 +5,6 @@ import {
   ComputerDesktopIcon,
   ServerIcon,
 } from "@heroicons/react/24/outline";
-import { isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -45,7 +44,7 @@ function AttachmentMenu({
   onError,
 }) {
   const fileInputRef = useRef(null);
-  const isRemote = isRemoteProfile(profile);
+  const hasServerFiles = profile?.schema === "slurm";
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files || []);
@@ -114,7 +113,7 @@ function AttachmentMenu({
               )}
             </MenuItem>
 
-            {isRemote && (
+            {hasServerFiles && (
               <MenuItem>
                 {({ active }) => (
                   <button
@@ -130,7 +129,7 @@ function AttachmentMenu({
                       className="mr-2 h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400"
                       aria-hidden="true"
                     />
-                    Select from remote
+                    Select from server
                   </button>
                 )}
               </MenuItem>

@@ -7,6 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { blackfishApiURL } from "@/config";
 import { getFileType, truncateTextPreview } from "@/lib/fileApi";
+import { isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
 function TruncatedPath({ path, maxWidth = "max-w-[14rem]" }) {
@@ -74,7 +75,7 @@ function OutputFilePreview({ file, profile = null }) {
     const [textError, setTextError] = useState(null);
 
     const fileType = file ? getFileType(file) : null;
-    const profileParam = profile && profile.schema !== "local"
+    const profileParam = isRemoteProfile(profile)
         ? `&profile=${encodeURIComponent(profile.name)}`
         : "";
 

@@ -101,6 +101,7 @@ from blackfish.server.models.profile import (
     BlackfishProfile as Profile,
 )
 from blackfish.server.jobs.client import (
+    DEFAULT_IDLE_TIMEOUT,
     TigerFlowClient,
     TigerFlowError,
     SSHRunner,
@@ -1323,6 +1324,7 @@ class BatchJobRequest(BaseModel):
     params: Optional[dict[str, Any]] = None  # Task-specific parameters
     resources: Optional[dict[str, Any]] = None  # Resource requirements
     max_workers: int = 1  # Max concurrent Slurm workers
+    idle_timeout: int = DEFAULT_IDLE_TIMEOUT  # Minutes before auto-stop
 
 
 def build_batch_job(data: BatchJobRequest) -> BatchJob:
@@ -1343,6 +1345,7 @@ def build_batch_job(data: BatchJobRequest) -> BatchJob:
         "params": data.params,
         "resources": data.resources,
         "max_workers": data.max_workers,
+        "idle_timeout": data.idle_timeout,
     }
 
     if isinstance(data.profile, LocalProfile):

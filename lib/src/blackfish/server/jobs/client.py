@@ -22,6 +22,9 @@ MIN_TIGERFLOW_ML_VERSION = "0.1.0a1"
 # Venv location on remote cluster (relative to home_dir)
 VENV_PATH = ".venv"
 
+# Default idle timeout for TigerFlow jobs (minutes)
+DEFAULT_IDLE_TIMEOUT = 10
+
 
 class TigerFlowReportStatus(BaseModel):
     """Status section from tigerflow report."""
@@ -603,7 +606,7 @@ class TigerFlowClient:
         config: dict[str, Any],
         input_dir: str,
         output_dir: str,
-        idle_timeout: int = 10,
+        idle_timeout: int = DEFAULT_IDLE_TIMEOUT,
         config_name: str = "pipeline.yaml",
     ) -> None:
         """Start tigerflow job in background.

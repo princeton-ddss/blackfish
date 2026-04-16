@@ -1,7 +1,6 @@
 import {
   ChatBubbleBottomCenterTextIcon,
   SpeakerWaveIcon,
-  PhotoIcon,
 } from "@heroicons/react/24/outline";
 
 const tasks = [
@@ -18,13 +17,6 @@ const tasks = [
     description: "Convert spoken words to text.",
     icon: SpeakerWaveIcon,
     path: "speech-recognition",
-  },
-  {
-    id: "object-detection",
-    name: "Object Detection",
-    description: "Locate and classify objects in images.",
-    icon: PhotoIcon,
-    path: "object-detection",
   },
 ];
 

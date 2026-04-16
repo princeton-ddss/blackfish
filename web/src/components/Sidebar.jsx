@@ -7,7 +7,6 @@ import {
     FolderIcon,
     HomeIcon,
     CubeIcon,
-    ViewfinderCircleIcon,
     Square3Stack3DIcon,
 } from "@heroicons/react/24/outline";
 import { assetPath } from "@/config";
@@ -23,7 +22,6 @@ const navigation = [
 const secondaryNavigation = [
     { name: "Text Generation", href: "/text-generation", icon: ChatBubbleLeftRightIcon },
     { name: "Speech Recognition", href: "/speech-recognition", icon: MicrophoneIcon },
-    { name: "Object Detection", href: "/object-detection", icon: ViewfinderCircleIcon },
 ];
 
 function classNames(...classes) {

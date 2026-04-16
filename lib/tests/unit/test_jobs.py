@@ -150,32 +150,6 @@ class TestBatchJobStart:
         with pytest.raises(TigerFlowError):
             await job.start(client)
 
-
-def make_mock_report(
-    running: bool = True,
-    pid: int | None = 12345,
-    finished: int = 5,
-    in_progress: int = 3,
-    staged: int | None = 2,
-    errored: int = 0,
-) -> TigerFlowReport:
-    """Create a TigerFlowReport for testing."""
-    return TigerFlowReport(
-        status=TigerFlowReportStatus(running=running, pid=pid),
-        progress=TigerFlowProgress(
-            pipeline=TigerFlowPipelineProgress(
-                finished=finished,
-                in_progress=in_progress,
-                staged=staged,
-                errored=errored,
-            ),
-            tasks=[],
-        ),
-        metrics={},
-        errors={},
-    )
-
-
     async def test_start_passes_explicit_idle_timeout(self) -> None:
         """start should pass idle_timeout to client.run when set."""
         job = create_test_batch_job(idle_timeout=30)
@@ -201,6 +175,31 @@ def make_mock_report(
 
         call_args = client.run.call_args
         assert call_args.kwargs["idle_timeout"] == DEFAULT_IDLE_TIMEOUT
+
+
+def make_mock_report(
+    running: bool = True,
+    pid: int | None = 12345,
+    finished: int = 5,
+    in_progress: int = 3,
+    staged: int | None = 2,
+    errored: int = 0,
+) -> TigerFlowReport:
+    """Create a TigerFlowReport for testing."""
+    return TigerFlowReport(
+        status=TigerFlowReportStatus(running=running, pid=pid),
+        progress=TigerFlowProgress(
+            pipeline=TigerFlowPipelineProgress(
+                finished=finished,
+                in_progress=in_progress,
+                staged=staged,
+                errored=errored,
+            ),
+            tasks=[],
+        ),
+        metrics={},
+        errors={},
+    )
 
 
 class TestBatchJobUpdate:

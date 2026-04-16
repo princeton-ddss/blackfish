@@ -764,7 +764,7 @@ function AppConfigSection() {
         HOME_DIR: "/deep/blue/sea/.blackfish",
         DEBUG: true,
         CONTAINER_PROVIDER: "docker",
-        VERSION: "1.0.0a1-whale",
+        VERSION: "1.0.0a2-whale",
       });
       setLoading(false);
       return;

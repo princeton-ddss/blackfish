@@ -39,10 +39,17 @@ function FileManager({
 
     const { files, error, isLoading, refresh, isConnected, homeDir } = useFileSystem(path, profile);
 
-    // Update path when home directory changes
+    // Reset path when profile changes
     useEffect(() => {
-        setPath(homeDir);
-    }, [homeDir]);
+        setPath(null);
+    }, [profile?.name]);
+
+    // Initialize path from home directory (once per profile)
+    useEffect(() => {
+        if (homeDir && path === null) {
+            setPath(homeDir);
+        }
+    }, [homeDir, path]);
 
     // Auto-dismiss success notifications after 5s. The effect cleanup also
     // cancels the timer on unmount and when a new success message arrives

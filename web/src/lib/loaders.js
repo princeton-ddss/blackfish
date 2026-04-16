@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
 import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults } from "./requests";
 import { ServiceStatus, isRemoteProfile } from "./util";
@@ -134,11 +134,18 @@ export const useFileSystem = (path, profile = null) => {
   const [remoteError, setRemoteError] = useState(null);
   const [remoteLoading, setRemoteLoading] = useState(false);
 
+  // Stable home directory for local profiles. Captured once from the first
+  // successful fetch (path defaults to "~") and held stable across navigations.
+  // The remote path gets homeDir from the WS "connected" message which is
+  // already stable; this ref gives the local path the same behavior.
+  const localHomeDirRef = useRef(null);
+
   // Clear state when profile changes
   useEffect(() => {
     setRemoteFiles(null);
     setRemoteError(null);
     setRemoteLoading(false);
+    localHomeDirRef.current = null;
   }, [profile?.name]);
 
   // Also clear when connection drops
@@ -196,10 +203,18 @@ export const useFileSystem = (path, profile = null) => {
       });
   }, [isRemote, path, isConnected, listDir]);
 
-  // SWR hook for local profiles (only runs when not remote)
-  // Uses ~ as default to fetch home directory when path is null
-  const localKey = !isRemote ? `files?path=${path ?? "~"}` : null;
+  // SWR hook for local profiles (only runs when not remote).
+  // Uses || (not ??) so that both null and "" default to "~" — callers
+  // like NewJobModal initialize path state to "" which is not nullish.
+  const localKey = !isRemote ? `files?path=${path || "~"}` : null;
   const localFs = useSWR(localKey, fetchFiles);
+
+  // Capture home dir from the first local fetch (when path defaults to "~").
+  // Only set once per profile — subsequent navigations change localFs.data.path
+  // but should not change homeDir.
+  if (!isRemote && localFs.data?.path && !localHomeDirRef.current) {
+    localHomeDirRef.current = localFs.data.path;
+  }
 
   // Return appropriate source based on profile type
   if (isRemote) {
@@ -219,7 +234,7 @@ export const useFileSystem = (path, profile = null) => {
     isLoading: localFs.isLoading,
     refresh: localFs.mutate,
     isConnected: true, // Local is always "connected"
-    homeDir: localFs.data?.path ?? null,
+    homeDir: localHomeDirRef.current,
   };
 }
 

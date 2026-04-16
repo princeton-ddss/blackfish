@@ -28,7 +28,7 @@ import DirectoryBrowser from "@/components/DirectoryBrowser";
 import { useModels } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 import { fetchProfileResources, fetchModelSizeFromHub, createJob } from "@/lib/requests";
-import { selectTierByModelSize } from "@/lib/util";
+import { selectTierByModelSize, isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
 // Task definitions - each task maps to a TigerFlow task type
@@ -420,7 +420,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
 
   // Remote file system connection state
   const { isConnected, error: connectionError } = useRemoteFileSystem();
-  const isRemote = profile && profile.schema !== "local";
+  const isRemote = isRemoteProfile(profile);
 
   // Stepper state
   const [currentStep, setCurrentStep] = useState(0);

@@ -9,6 +9,7 @@ import {
 import { XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useFileSystem } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
+import { isRemoteProfile } from "@/lib/util";
 import DirectoryInput from "@/components/DirectoryInput";
 import FilterInput from "@/components/FilterInput";
 import FileManagerTable from "@/components/FileManagerTable";
@@ -144,8 +145,8 @@ function FileSelectModal({
                   </button>
                 </div>
 
-                {/* Connection status */}
-                {profile && (
+                {/* Connection status (remote profiles only) */}
+                {isRemoteProfile(profile) && (
                   <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                     <div className="flex items-center gap-1.5">
                       <span

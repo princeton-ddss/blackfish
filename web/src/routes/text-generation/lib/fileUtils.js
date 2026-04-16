@@ -12,7 +12,7 @@ import { isRemoteProfile } from "@/lib/util";
 export const TEXT_FILE_EXTENSIONS = [
   // Prose / data
   ".txt", ".md", ".csv", ".xml", ".json",
-  ".yaml", ".yml", ".toml", ".log", ".env",
+  ".yaml", ".yml", ".toml", ".log",
   // Web
   ".html", ".css", ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte",
   // Systems / scripting

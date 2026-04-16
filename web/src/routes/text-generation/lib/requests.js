@@ -165,7 +165,7 @@ export async function* streamTextGenerationInference(service, inputs, params, us
  * @param {boolean} [use_proxy=false]
  * @return {object}
  */
-export async function* streamChatCompletionInference(service, messages, params, use_proxy=false) {
+export async function* streamChatCompletionInference(service, messages, params, use_proxy=false, signal=undefined) {
 
   const body = JSON.stringify({
     messages: messages,
@@ -184,6 +184,7 @@ export async function* streamChatCompletionInference(service, messages, params, 
       "Content-Type": "application/json",
     },
     body: body,
+    signal,
   });
 
   if (!res.ok) {

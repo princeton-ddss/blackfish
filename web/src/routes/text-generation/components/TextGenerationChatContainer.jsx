@@ -658,6 +658,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   const [imageError, setImageError] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const abortRef = useRef(null);
 
   // File attachment state and handlers
   const {
@@ -777,6 +778,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     setIsWaitingForResponse(true);
 
     try {
+      abortRef.current = new AbortController();
       const stream = streamChatCompletionInference(
         selectedService,
         [systemMessage, ...messages, newUserMessage],
@@ -784,7 +786,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
           ...parameters,
           stream: true,
         },
-        true
+        true,
+        abortRef.current.signal
       );
 
       const data = await stream.next();
@@ -816,6 +819,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         ]);
       }
     } catch (error) {
+      if (error.name === "AbortError") return;
       console.error("Chat submission error:", error);
       setIsWaitingForResponse(false);
       // Roll back the optimistically-added user message if no assistant response was started
@@ -849,6 +853,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     setIsWaitingForResponse(true);
 
     try {
+      abortRef.current = new AbortController();
       const stream = streamChatCompletionInference(
         selectedService,
         [systemMessage, ...conversationUpToIndex],
@@ -856,7 +861,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
           ...parameters,
           stream: true,
         },
-        true
+        true,
+        abortRef.current.signal
       );
 
       const data = await stream.next();
@@ -888,6 +894,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         ]);
       }
     } catch (error) {
+      if (error.name === "AbortError") return;
       console.error("Chat resubmit error:", error);
       setIsWaitingForResponse(false);
       setMessages(savedMessages.slice(0, index + 1));
@@ -909,6 +916,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
   function handleClearConversation() {
     if (messages.length === 0) return;
+    abortRef.current?.abort();
     setMessages([]);
     setUserMessage({ role: Role.USER, content: "" });
     setAttachedImages([]);

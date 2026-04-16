@@ -445,6 +445,37 @@ describe("TextGenerationChatContainer", () => {
         expect(getByText("Original response")).toBeInTheDocument();
       });
     });
+
+    it("does not append ghost message when conversation is cleared mid-stream", async () => {
+      const user = userEvent.setup();
+      const abortError = new DOMException("The operation was aborted.", "AbortError");
+      const mockStream = {
+        next: vi.fn().mockResolvedValue({
+          value: [{ choices: [{ delta: { content: "Partial response" } }] }]
+        }),
+        [Symbol.asyncIterator]: vi.fn().mockReturnValue({
+          next: vi.fn().mockRejectedValue(abortError)
+        })
+      };
+      streamChatCompletionInference.mockReturnValue(mockStream);
+      const { getByPlaceholderText, getByRole, queryByText } = render(
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
+      );
+      const textarea = getByPlaceholderText("Why are orcas so awesome?");
+      await user.type(textarea, "Test message");
+      await user.click(getByRole("button", { name: "Submit" }));
+      await waitFor(() => {
+        expect(queryByText("Partial response")).toBeInTheDocument();
+      });
+      const clearButton = getByRole("button", { name: "Clear conversation" });
+      await user.click(clearButton);
+      await waitFor(() => {
+        expect(queryByText("Partial response")).not.toBeInTheDocument();
+        expect(queryByText("Test message")).not.toBeInTheDocument();
+      });
+    });
   });
 
   describe("Resubmit functionality", () => {

@@ -839,6 +839,9 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     setApiError(null);
 
+    // Save messages before truncating (restored on error)
+    const savedMessages = messages;
+
     // Get messages up to (but not including) the message being regenerated
     const conversationUpToIndex = messages.slice(0, index);
 
@@ -890,6 +893,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     } catch (error) {
       console.error("Chat resubmit error:", error);
       setIsWaitingForResponse(false);
+      // Restore the original conversation including the assistant message
+      setMessages(savedMessages.slice(0, index + 1));
       setApiError(classifyApiError(error));
     }
   };

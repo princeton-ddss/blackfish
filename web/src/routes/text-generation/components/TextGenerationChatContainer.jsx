@@ -819,6 +819,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         ]);
       }
     } catch (error) {
+      // handleClearConversation already reset state; skip rollback
       if (error.name === "AbortError") return;
       console.error("Chat submission error:", error);
       setIsWaitingForResponse(false);
@@ -894,6 +895,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         ]);
       }
     } catch (error) {
+      // handleClearConversation already reset state; skip rollback
       if (error.name === "AbortError") return;
       console.error("Chat resubmit error:", error);
       setIsWaitingForResponse(false);

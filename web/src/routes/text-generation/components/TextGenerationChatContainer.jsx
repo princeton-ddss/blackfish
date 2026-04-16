@@ -765,7 +765,6 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     setMessages((messages) => [...messages, newUserMessage]);
 
-    // Save input before clearing (restored on error)
     const savedInput = userMessage.content;
 
     // Clear input and attached items after sending
@@ -826,7 +825,6 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         }
         return prev;
       });
-      // Restore the typed input so the user doesn't have to retype
       setUserMessage({ role: Role.USER, content: savedInput });
       sessionStorage.setItem("tgcc-um", savedInput);
       setApiError(classifyApiError(error));
@@ -839,7 +837,6 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     setApiError(null);
 
-    // Save messages before truncating (restored on error)
     const savedMessages = messages;
 
     // Get messages up to (but not including) the message being regenerated
@@ -893,7 +890,6 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     } catch (error) {
       console.error("Chat resubmit error:", error);
       setIsWaitingForResponse(false);
-      // Restore the original conversation including the assistant message
       setMessages(savedMessages.slice(0, index + 1));
       setApiError(classifyApiError(error));
     }

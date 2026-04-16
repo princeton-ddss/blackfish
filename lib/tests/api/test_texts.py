@@ -72,26 +72,8 @@ class TestUploadTextAPI:
             # Should create new directories
             assert os.path.exists(os.path.join(temp_dir, "nested", "dirs"))
 
-    async def test_upload_text_invalid_extension(self, client: AsyncTestClient):
-        """Test that invalid file extensions are rejected."""
-        text_bytes = self._create_test_text()
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            file_path = os.path.join(temp_dir, "test.exe")
-
-            response = await client.post(
-                "/api/text",
-                files={"file": text_bytes},
-                data={"path": file_path},
-            )
-
-            # Should return validation error
-            assert response.status_code == 400
-            result = response.json()
-            assert "Validation failed for POST /api/text" in result["detail"]
-
     async def test_upload_text_valid_extensions(self, client: AsyncTestClient):
-        """Test that all valid text extensions are accepted."""
+        """Test that text and code file extensions are accepted."""
 
         valid_extensions = [
             ".txt",
@@ -102,6 +84,10 @@ class TestUploadTextAPI:
             ".yaml",
             ".yml",
             ".log",
+            ".py",
+            ".js",
+            ".sh",
+            ".toml",
         ]
         text_bytes = self._create_test_text()
 
@@ -260,24 +246,6 @@ class TestGetTextAPI:
             assert response.status_code == 400
             result = response.json()
             assert "not a file" in result["detail"]
-
-    async def test_get_text_invalid_extension(self, client: AsyncTestClient):
-        """Test that files with invalid extensions are rejected."""
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            file_path = os.path.join(temp_dir, "test.exe")
-            with open(file_path, "w") as f:
-                f.write("Not a valid extension")
-
-            response = await client.get(
-                "/api/text",
-                params={"path": file_path},
-            )
-
-            # Should return validation error
-            assert response.status_code == 400
-            result = response.json()
-            assert "Invalid file extension" in result["detail"]
 
     async def test_get_text_corrupted_file(self, client: AsyncTestClient):
         """Test that corrupted text files (invalid UTF-8) are rejected."""
@@ -521,24 +489,6 @@ class TestDeleteTextAPI:
             assert response.status_code == 400
             result = response.json()
             assert "not a file" in result["detail"]
-
-    async def test_delete_text_invalid_extension(self, client: AsyncTestClient):
-        """Test that files with invalid extensions cannot be deleted."""
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            file_path = os.path.join(temp_dir, "test.exe")
-            with open(file_path, "w") as f:
-                f.write("Not a text file")
-
-            response = await client.delete(
-                "/api/text",
-                params={"path": file_path},
-            )
-
-            # Should return validation error
-            assert response.status_code == 400
-            result = response.json()
-            assert "Invalid file extension" in result["detail"]
 
     async def test_delete_text_permission_denied(self, client: AsyncTestClient):
         """Test handling of permission denied errors."""

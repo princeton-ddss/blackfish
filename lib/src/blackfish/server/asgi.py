@@ -523,7 +523,6 @@ async def get_files(
 
 
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
-TEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv", ".xml", ".yaml", ".yml", ".log"]
 AUDIO_EXTENSIONS = [".wav", ".mp3"]
 
 # Mapping of task/image types to compatible pipeline tags
@@ -546,11 +545,6 @@ COMPATIBLE_PIPELINES: dict[str, list[str]] = {
 
 def has_image_extension(path: str) -> str:
     validate_file_extension(Path(path), IMAGE_EXTENSIONS)
-    return path
-
-
-def has_text_extension(path: str) -> str:
-    validate_file_extension(Path(path), TEXT_EXTENSIONS)
     return path
 
 
@@ -722,7 +716,7 @@ async def delete_image(path: str, profile: Optional[str] = None) -> Path | str:
 class TextUploadRequest(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    path: Annotated[str, AfterValidator(has_text_extension)]
+    path: str
     file: UploadFile
 
 
@@ -768,7 +762,6 @@ async def get_text(path: str, profile: Optional[str] = None) -> File | Response[
     """Retrieve a text file from the specified path."""
 
     if profile is not None:
-        validate_file_extension(Path(path), TEXT_EXTENSIONS)
         remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Downloading text file from remote profile {profile}: {path}")
         content = sftp.read_file(remote_profile, path)
@@ -804,7 +797,6 @@ async def get_text(path: str, profile: Optional[str] = None) -> File | Response[
     logger.debug(f"Attempting to retrieve text file from {file_path}")
 
     validate_file_exists(file_path)
-    validate_file_extension(file_path, TEXT_EXTENSIONS)
 
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -825,7 +817,6 @@ async def update_text(
 
     content = await data.file.read()
 
-    validate_file_extension(Path(data.path), TEXT_EXTENSIONS)
     validate_file_size(content, state.MAX_FILE_SIZE)
 
     try:
@@ -856,7 +847,6 @@ async def delete_text(path: str, profile: Optional[str] = None) -> Path | str:
     """Delete a text file at the specified path."""
 
     if profile is not None:
-        validate_file_extension(Path(path), TEXT_EXTENSIONS)
         remote_profile = _get_validated_slurm_profile(profile)
         logger.debug(f"Deleting text file on remote profile {profile}: {path}")
         return sftp.delete_file(remote_profile, path)
@@ -866,7 +856,6 @@ async def delete_text(path: str, profile: Optional[str] = None) -> Path | str:
     logger.debug(f"Attempting to delete text file at {file_path}")
 
     validate_file_exists(file_path)
-    validate_file_extension(file_path, TEXT_EXTENSIONS)
 
     return try_delete_file(file_path)
 

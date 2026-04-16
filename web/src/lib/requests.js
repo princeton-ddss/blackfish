@@ -143,7 +143,7 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
       },
       job_config: jobConfig,
       mount: containerConfig.input_dir,
-      grace_period: 180,
+      grace_period: 600,
     }
   } else if (profile.schema === "local") {
     const res = await fetch(`${blackfishApiURL}/api/ports`)
@@ -170,7 +170,7 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
         gres: jobConfig.gres,
       },
       mount: containerConfig.input_dir,
-      grace_period: 180,
+      grace_period: 600,
     }
   } else {
     throw new Error(`Unsupported job profile type: ${profile.schema}`)

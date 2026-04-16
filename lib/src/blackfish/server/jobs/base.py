@@ -148,7 +148,9 @@ class BatchJob(UUIDAuditBase):
         JSON, nullable=True, default=None
     )
     max_workers: Mapped[int] = mapped_column(default=1)
-    idle_timeout: Mapped[Optional[int]] = mapped_column(default=None)  # minutes
+    idle_timeout: Mapped[Optional[int]] = mapped_column(
+        default=None
+    )  # minutes; nullable for pre-migration rows only
 
     # Profile info (denormalized for convenience)
     profile: Mapped[str]
@@ -224,7 +226,9 @@ class BatchJob(UUIDAuditBase):
             config=config,
             input_dir=self.input_dir,
             output_dir=self.output_dir,
-            idle_timeout=self.idle_timeout or DEFAULT_IDLE_TIMEOUT,
+            idle_timeout=self.idle_timeout
+            if self.idle_timeout is not None
+            else DEFAULT_IDLE_TIMEOUT,
             config_name=f"pipeline-{self.id}.yaml",
         )
 

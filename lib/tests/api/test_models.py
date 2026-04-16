@@ -681,6 +681,30 @@ class TestDownloadModelAPI:
         response = await client.post("/api/models/download", json=data)
         assert response.status_code == 404
 
+    async def test_download_model_rejected_for_remote_slurm_profile(
+        self, client: AsyncTestClient
+    ):
+        """Test download rejected for a remote Slurm profile."""
+        data = {"repo_id": "test/model", "profile": "hpc"}
+        response = await client.post("/api/models/download", json=data)
+        assert response.status_code == 400
+        assert (
+            "Downloads only supported for local profiles" in response.json()["detail"]
+        )
+
+    @patch("blackfish.server.asgi.hf_model_info")
+    @patch("blackfish.server.asgi._run_download_task")
+    async def test_download_model_accepted_for_slurm_localhost_profile(
+        self,
+        mock_run_task: AsyncMock,
+        mock_model_info: MagicMock,
+        client: AsyncTestClient,
+    ):
+        """Test download accepted for a Slurm profile with host=localhost."""
+        data = {"repo_id": "test/model", "profile": "ondemand"}
+        response = await client.post("/api/models/download", json=data)
+        assert response.status_code == 201
+
     async def test_download_model_invalid_repo_id_format(self, client: AsyncTestClient):
         """Test download with invalid repo_id format returns 400."""
         invalid_repo_ids = [
@@ -1204,22 +1228,30 @@ class TestUpdateModelAPI:
         assert result["status"] == "error"
         assert "Failed to download update" in result["message"]
 
-    async def test_update_model_slurm_profile(
+    async def test_update_model_rejected_for_remote_slurm_profile(
         self, client: AsyncTestClient, session: AsyncSession
     ):
-        """Test that update returns error for non-local (Slurm) profiles."""
-        # Use model with test-slurm profile (id 0022468b is "test" profile)
-        # Need to check if test-slurm model exists in fixtures
-        # The fixtures have "test" profile models, need to check profiles.cfg
-        # For now, let's use the "test" profile model with openai/whisper-tiny
-        # This tests when profile doesn't exist scenario
-        model_id = "0022468b-3182-4381-a76a-25d06248398f"
-
+        """Test that update returns error for a remote Slurm profile."""
+        model_id = "b2c3d4e5-f6a7-8901-bcde-f12345678901"  # profile="hpc"
         response = await client.put(f"/api/models/{model_id}")
+        assert response.status_code == 200
+        result = response.json()
+        assert result["status"] == "error"
+        assert "Update only supported for local profiles" in result["message"]
 
-        # Should return 404 because "test" profile doesn't exist in profiles.cfg
-        # (only "default" exists based on test fixtures)
-        assert response.status_code == 404
+    @patch("huggingface_hub.model_info")
+    async def test_update_model_accepted_for_slurm_localhost_profile(
+        self, mock_model_info, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Test that update works for a Slurm profile with host=localhost."""
+        model_id = "c3d4e5f6-a7b8-9012-cdef-123456789012"  # profile="ondemand"
+        mock_info = AsyncMock()
+        mock_info.sha = "1"  # Same revision — triggers "up_to_date"
+        mock_model_info.return_value = mock_info
+        response = await client.put(f"/api/models/{model_id}")
+        assert response.status_code == 200
+        result = response.json()
+        assert result["status"] == "up_to_date"
 
     @patch("huggingface_hub.model_info")
     async def test_update_model_already_have_latest_in_another_row(

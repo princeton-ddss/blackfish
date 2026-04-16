@@ -2249,7 +2249,7 @@ async def update_model(
         raise NotFoundException(detail=f"Profile {model.profile} not found")
 
     # 3. Only support local profiles for now
-    if not isinstance(profile, LocalProfile):
+    if not profile.is_local():
         return ModelUpdateResponse(
             model_id=str(model.id),
             status="error",
@@ -2473,7 +2473,7 @@ async def download_model(
     profile = next((p for p in profiles if p.name == data.profile), None)
     if profile is None:
         raise NotFoundException(detail=f"Profile '{data.profile}' not found")
-    if not isinstance(profile, LocalProfile):
+    if not profile.is_local():
         raise ValidationException(detail="Downloads only supported for local profiles")
 
     # Validate model exists on HuggingFace Hub before starting download
@@ -3385,7 +3385,7 @@ async def resume_incomplete_downloads(app: Litestar) -> None:
                     task.error_message = f"Profile {task.profile} not found"
                     continue
 
-                if not isinstance(profile, LocalProfile):
+                if not profile.is_local():
                     logger.warning(
                         f"Profile {task.profile} is not local, marking task {task.id} as failed"
                     )

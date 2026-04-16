@@ -7,26 +7,27 @@ import { isRemoteProfile } from "@/lib/util";
 
 /**
  * Supported text file extensions for attachments.
+ * The backend accepts any UTF-8 file, so this list is a UX filter only.
  */
 export const TEXT_FILE_EXTENSIONS = [
-  ".txt",
-  ".md",
-  ".json",
-  ".py",
-  ".js",
-  ".jsx",
-  ".ts",
-  ".tsx",
-  ".html",
-  ".css",
-  ".sh",
-  ".sql",
-  ".toml",
-  ".yaml",
-  ".yml",
-  ".log",
-  ".csv",
-  ".xml",
+  // Prose / data
+  ".txt", ".md", ".csv", ".xml", ".json",
+  ".yaml", ".yml", ".toml", ".log", ".env",
+  // Web
+  ".html", ".css", ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte",
+  // Systems / scripting
+  ".py", ".sh", ".bash", ".zsh", ".rb", ".pl", ".lua",
+  ".r", ".R", ".jl",
+  // Compiled languages
+  ".c", ".h", ".cpp", ".hpp", ".cc", ".cxx",
+  ".java", ".kt", ".kts", ".scala",
+  ".go", ".rs", ".swift", ".m",
+  // Config / infra
+  ".sql", ".graphql", ".proto",
+  ".dockerfile", ".tf", ".hcl",
+  ".ini", ".cfg", ".conf",
+  // Other
+  ".tex", ".bib", ".rst",
 ];
 
 /**

@@ -765,6 +765,9 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     setMessages((messages) => [...messages, newUserMessage]);
 
+    // Save input before clearing (restored on error)
+    const savedInput = userMessage.content;
+
     // Clear input and attached items after sending
     setUserMessage({ role: Role.USER, content: "" });
     sessionStorage.removeItem("tgcc-um");
@@ -823,6 +826,9 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         }
         return prev;
       });
+      // Restore the typed input so the user doesn't have to retype
+      setUserMessage({ role: Role.USER, content: savedInput });
+      sessionStorage.setItem("tgcc-um", savedInput);
       setApiError(classifyApiError(error));
     }
   };

@@ -235,6 +235,15 @@ export function formattedTimeInterval(refTime, currentTime) {
 };
 
 /**
+ * Whether a profile is a Slurm profile (local, localhost, or remote).
+ * @param {object|null} profile
+ * @return {boolean}
+ */
+export function isSlurmProfile(profile) {
+  return profile?.schema === "slurm";
+}
+
+/**
  * Whether a profile should be treated as "remote" for file I/O and other
  * non-scheduling purposes. A Slurm profile with host=localhost is scheduled
  * via sbatch but its filesystem is the same as the server's, so it should

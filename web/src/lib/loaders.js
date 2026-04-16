@@ -203,8 +203,9 @@ export const useFileSystem = (path, profile = null) => {
       });
   }, [isRemote, path, isConnected, listDir]);
 
-  // SWR hook for local profiles (only runs when not remote)
-  // Uses ~ as default to fetch home directory when path is null or empty
+  // SWR hook for local profiles (only runs when not remote).
+  // Uses || (not ??) so that both null and "" default to "~" — callers
+  // like NewJobModal initialize path state to "" which is not nullish.
   const localKey = !isRemote ? `files?path=${path || "~"}` : null;
   const localFs = useSWR(localKey, fetchFiles);
 

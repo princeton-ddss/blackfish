@@ -166,4 +166,20 @@ def models_fixture() -> list[Model | dict[str, Any]]:
             "image": "image-text-to-text",
             "model_dir": "/home/test/.blackfish/models/models--llava-hf/llava-1.5-7b-hf",
         },
+        {
+            "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+            "repo": "openai/whisper-large-v3",
+            "profile": "hpc",
+            "revision": "1",
+            "image": "speech_recognition",
+            "model_dir": "/home/test/.blackfish/models/models--openai/whisper-large-v3",
+        },
+        {
+            "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+            "repo": "openai/whisper-large-v3",
+            "profile": "ondemand",
+            "revision": "1",
+            "image": "speech_recognition",
+            "model_dir": "/home/test/.blackfish/models/models--openai/whisper-large-v3",
+        },
     ]

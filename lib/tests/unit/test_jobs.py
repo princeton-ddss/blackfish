@@ -11,6 +11,7 @@ from blackfish.server.jobs.base import (
     create_tigerflow_client_for_profile,
 )
 from blackfish.server.jobs.client import (
+    DEFAULT_IDLE_TIMEOUT,
     TigerFlowClient,
     TigerFlowReport,
     TigerFlowReportStatus,
@@ -148,6 +149,32 @@ class TestBatchJobStart:
 
         with pytest.raises(TigerFlowError):
             await job.start(client)
+
+    async def test_start_passes_explicit_idle_timeout(self) -> None:
+        """start should pass idle_timeout to client.run when set."""
+        job = create_test_batch_job(idle_timeout=30)
+        client = create_mock_client()
+        client.check_health.return_value = TigerFlowVersions(
+            tigerflow="0.1.0", tigerflow_ml="0.1.0"
+        )
+
+        await job.start(client)
+
+        call_args = client.run.call_args
+        assert call_args.kwargs["idle_timeout"] == 30
+
+    async def test_start_uses_default_idle_timeout_when_none(self) -> None:
+        """start should fall back to DEFAULT_IDLE_TIMEOUT when idle_timeout is None."""
+        job = create_test_batch_job(idle_timeout=None)
+        client = create_mock_client()
+        client.check_health.return_value = TigerFlowVersions(
+            tigerflow="0.1.0", tigerflow_ml="0.1.0"
+        )
+
+        await job.start(client)
+
+        call_args = client.run.call_args
+        assert call_args.kwargs["idle_timeout"] == DEFAULT_IDLE_TIMEOUT
 
 
 def make_mock_report(

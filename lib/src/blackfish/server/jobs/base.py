@@ -15,6 +15,7 @@ from blackfish.server.jobs.tasks import (
 from blackfish.server.logger import logger
 from blackfish.server.models.profile import SlurmProfile, deserialize_profile
 from blackfish.server.jobs.client import (
+    DEFAULT_IDLE_TIMEOUT,
     LocalRunner,
     SSHRunner,
     TigerFlowClient,
@@ -147,6 +148,7 @@ class BatchJob(UUIDAuditBase):
         JSON, nullable=True, default=None
     )
     max_workers: Mapped[int] = mapped_column(default=1)
+    idle_timeout: Mapped[Optional[int]] = mapped_column(default=None)  # minutes
 
     # Profile info (denormalized for convenience)
     profile: Mapped[str]
@@ -222,6 +224,7 @@ class BatchJob(UUIDAuditBase):
             config=config,
             input_dir=self.input_dir,
             output_dir=self.output_dir,
+            idle_timeout=self.idle_timeout or DEFAULT_IDLE_TIMEOUT,
             config_name=f"pipeline-{self.id}.yaml",
         )
 

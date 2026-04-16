@@ -675,6 +675,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
         params: Object.keys(taskParams).length > 0 ? taskParams : null,
         resources: Object.keys(jobResources).length > 0 ? jobResources : null,
         max_workers: maxWorkers,
+        idle_timeout: clientTimeout ? parseInt(clientTimeout, 10) : undefined,
       };
 
       console.debug("Submitting job request:", jobRequest);

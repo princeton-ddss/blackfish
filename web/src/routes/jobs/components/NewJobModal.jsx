@@ -623,8 +623,24 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
 
   // Slurm account names: letters, digits, underscore, dash, dot
   const ACCOUNT_PATTERN = /^[A-Za-z0-9_.-]+$/;
-  const WORKER_TIMEOUT_PATTERN = /^(\d{1,3}):([0-5]\d):([0-5]\d)$/;
-  const IDLE_TIMEOUT_MAX = 1440; // 24 hours
+  const TIME_PATTERN = /^(\d{1,3}):([0-5]\d):([0-5]\d)$/;
+  const WORKER_TIMEOUT_MAX_SECONDS = 7 * 24 * 3600; // 7 days
+  const IDLE_TIMEOUT_MAX_SECONDS = 24 * 3600; // 24 hours
+
+  const parseTimeToSeconds = (value) => {
+    const match = TIME_PATTERN.exec(String(value).trim());
+    if (!match) return null;
+    const [, h, m, s] = match;
+    return Number(h) * 3600 + Number(m) * 60 + Number(s);
+  };
+
+  const formatSecondsAsTime = (totalSeconds) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  };
 
   const validateAccount = (value) => {
     const trimmed = String(value).trim();
@@ -644,50 +660,52 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     return { ok: true };
   };
 
-  const validateWorkerTimeout = (value) => {
+  const validateHHMMSS = (value, { maxSeconds, fieldKey }) => {
     const trimmed = String(value).trim();
     if (trimmed === "") {
-      setAdvancedErrors((prev) => ({ ...prev, workerTimeout: null }));
+      setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: null }));
       return { ok: true };
     }
-    if (!WORKER_TIMEOUT_PATTERN.test(trimmed)) {
+    const seconds = parseTimeToSeconds(trimmed);
+    if (seconds === null) {
       const error = {
-        message: "Worker timeout must be in HH:MM:SS format (e.g., 01:00:00).",
+        message: "Time must be in HH:MM:SS format (e.g., 01:00:00).",
         ok: false,
       };
-      setAdvancedErrors((prev) => ({ ...prev, workerTimeout: error }));
+      setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
       return error;
     }
-    setAdvancedErrors((prev) => ({ ...prev, workerTimeout: null }));
+    if (seconds < 1) {
+      const error = {
+        message: "Time must be at least 00:00:01.",
+        ok: false,
+      };
+      setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
+      return error;
+    }
+    if (seconds > maxSeconds) {
+      const error = {
+        message: `Time must be ${formatSecondsAsTime(maxSeconds)} or less.`,
+        ok: false,
+      };
+      setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
+      return error;
+    }
+    setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: null }));
     return { ok: true };
   };
 
-  const validateIdleTimeout = (value) => {
-    const trimmed = String(value).trim();
-    if (trimmed === "") {
-      setAdvancedErrors((prev) => ({ ...prev, idleTimeout: null }));
-      return { ok: true };
-    }
-    const minutes = Number(trimmed);
-    if (!Number.isInteger(minutes) || minutes < 1) {
-      const error = {
-        message: "Idle timeout must be a positive integer.",
-        ok: false,
-      };
-      setAdvancedErrors((prev) => ({ ...prev, idleTimeout: error }));
-      return error;
-    }
-    if (minutes > IDLE_TIMEOUT_MAX) {
-      const error = {
-        message: `Idle timeout must be ${IDLE_TIMEOUT_MAX} minutes or less.`,
-        ok: false,
-      };
-      setAdvancedErrors((prev) => ({ ...prev, idleTimeout: error }));
-      return error;
-    }
-    setAdvancedErrors((prev) => ({ ...prev, idleTimeout: null }));
-    return { ok: true };
-  };
+  const validateWorkerTimeout = (value) =>
+    validateHHMMSS(value, {
+      maxSeconds: WORKER_TIMEOUT_MAX_SECONDS,
+      fieldKey: "workerTimeout",
+    });
+
+  const validateIdleTimeout = (value) =>
+    validateHHMMSS(value, {
+      maxSeconds: IDLE_TIMEOUT_MAX_SECONDS,
+      fieldKey: "idleTimeout",
+    });
 
   const hasAdvancedErrors = Boolean(
     advancedErrors.account || advancedErrors.workerTimeout || advancedErrors.idleTimeout
@@ -754,7 +772,9 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
         params: Object.keys(taskParams).length > 0 ? taskParams : null,
         resources: Object.keys(jobResources).length > 0 ? jobResources : null,
         max_workers: maxWorkers,
-        idle_timeout: idleTimeout ? parseInt(idleTimeout, 10) : undefined,
+        idle_timeout: idleTimeout
+          ? Math.max(1, Math.ceil(parseTimeToSeconds(idleTimeout) / 60))
+          : undefined,
       };
 
       console.debug("Submitting job request:", jobRequest);
@@ -1185,22 +1205,19 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                     type="text"
                     htmlFor="worker-timeout"
                     label="Worker Timeout"
-                    placeholder="e.g., 01:00:00"
-                    help="Time limit for each worker job (HH:MM:SS)."
+                    placeholder="01:00:00"
+                    help="Time limit for each worker job in HH:MM:SS format (max 168:00:00)."
                     value={workerTimeout}
                     setValue={setWorkerTimeout}
                     validate={validateWorkerTimeout}
                     disabled={isSubmitting}
                   />
                   <ServiceModalValidatedInput
-                    type="number"
+                    type="text"
                     htmlFor="idle-timeout"
                     label="Idle Timeout"
-                    placeholder="10"
-                    units="minutes"
-                    min={1}
-                    max={IDLE_TIMEOUT_MAX}
-                    help={`Minutes of inactivity before the job auto-terminates (1–${IDLE_TIMEOUT_MAX}).`}
+                    placeholder="00:10:00"
+                    help="Time of inactivity before the job auto-terminates in HH:MM:SS format (max 24:00:00)."
                     value={idleTimeout}
                     setValue={setIdleTimeout}
                     validate={validateIdleTimeout}

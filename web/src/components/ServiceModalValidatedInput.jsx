@@ -29,7 +29,9 @@ function ServiceModalValidatedInput({
   validate,
   type,
   disabled,
-  htmlFor
+  htmlFor,
+  min,
+  max,
 }) {
 
   const [isValid, setIsValid] = React.useState(true);
@@ -48,6 +50,8 @@ function ServiceModalValidatedInput({
         <input
           id={id}
           type={type}
+          min={min}
+          max={max}
           disabled={disabled}
           className={classNames(
             !isValid
@@ -108,6 +112,8 @@ ServiceModalValidatedInput.propTypes = {
   type: PropTypes.string,
   disabled: PropTypes.bool,
   htmlFor: PropTypes.string,
+  min: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  max: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 export default ServiceModalValidatedInput;

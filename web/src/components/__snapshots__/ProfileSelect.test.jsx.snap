@@ -10,7 +10,7 @@ exports[`ProfileProvider > renders children 1`] = `
 </body>
 `;
 
-exports[`ProfileProvider > restores profile from storage 1`] = `
+exports[`ProfileProvider > resolves profile from storage by name 1`] = `
 <body>
   <div>
     <h1>

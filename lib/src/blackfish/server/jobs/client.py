@@ -349,9 +349,22 @@ class TigerFlowClient:
         """
         self._on_progress(f"Setting up TigerFlow on {self.host}")
 
-        # Create parent directory if needed
+        # Fail fast if venv path is already occupied (non-empty dir or file).
+        # Otherwise `python -m venv` produces a confusing self-symlink error.
+        returncode, stdout, _ = await self.runner.run(
+            f"ls -A {self._venv_path} 2>/dev/null"
+        )
+        if returncode == 0 and stdout.strip():
+            raise TigerFlowError(
+                "setup",
+                self.host,
+                f"Venv path {self._venv_path} already exists and is not empty. "
+                "Remove it or choose a different home_dir.",
+            )
+
+        # Create home directory if needed
         try:
-            await self._run(f"mkdir -p {self.home_dir}/.blackfish")
+            await self._run(f"mkdir -p {self.home_dir}")
         except TigerFlowError:
             raise TigerFlowError("setup", self.host, "Failed to create directory")
 

@@ -269,10 +269,11 @@ class TestTigerFlowClientSetup:
     """Tests for TigerFlowClient.setup()."""
 
     async def test_setup_creates_directory_and_venv(self) -> None:
-        """Setup should create .blackfish directory and venv."""
+        """Setup should create home directory and venv."""
         runner = MockRunner()
         runner.set_responses(
             [
+                (1, b"", b""),  # venv path check (empty)
                 (0, b"", b""),  # mkdir
                 (0, b"", b""),  # venv creation
                 (0, b"", b""),  # pip upgrade
@@ -283,14 +284,33 @@ class TestTigerFlowClientSetup:
 
         await client.setup()
 
-        assert "mkdir -p /home/user/.blackfish" in runner.commands[0]
-        assert "-m venv" in runner.commands[1]
+        assert runner.commands[1] == "mkdir -p /home/user"
+        assert "-m venv" in runner.commands[2]
+
+    async def test_setup_does_not_create_nested_blackfish_directory(self) -> None:
+        """Setup should not create a nested .blackfish subdirectory."""
+        runner = MockRunner()
+        runner.set_responses(
+            [
+                (1, b"", b""),  # venv path check (empty)
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # venv creation
+                (0, b"", b""),  # pip upgrade
+                (0, b"", b""),  # pip install
+            ]
+        )
+        client = TigerFlowClient(runner, "/home/user/.blackfish")
+
+        await client.setup()
+
+        assert runner.commands[1] == "mkdir -p /home/user/.blackfish"
 
     async def test_setup_installs_tigerflow_packages(self) -> None:
         """Setup should install tigerflow and tigerflow-ml."""
         runner = MockRunner()
         runner.set_responses(
             [
+                (1, b"", b""),  # venv path check (empty)
                 (0, b"", b""),  # mkdir
                 (0, b"", b""),  # venv creation
                 (0, b"", b""),  # pip upgrade
@@ -301,7 +321,7 @@ class TestTigerFlowClientSetup:
 
         await client.setup()
 
-        install_cmd = runner.commands[3]
+        install_cmd = runner.commands[4]
         assert "tigerflow" in install_cmd
         assert "tigerflow-ml" in install_cmd
 
@@ -310,6 +330,7 @@ class TestTigerFlowClientSetup:
         runner = MockRunner()
         runner.set_responses(
             [
+                (1, b"", b""),  # venv path check (empty)
                 (0, b"", b""),  # mkdir
                 (0, b"", b""),  # venv creation
                 (0, b"", b""),  # pip upgrade
@@ -322,7 +343,7 @@ class TestTigerFlowClientSetup:
 
         await client.setup()
 
-        venv_cmd = runner.commands[1]
+        venv_cmd = runner.commands[2]
         assert "/opt/python3.11/bin/python3 -m venv" in venv_cmd
 
     async def test_setup_uses_venv_pip_not_system_pip(self) -> None:
@@ -330,6 +351,7 @@ class TestTigerFlowClientSetup:
         runner = MockRunner()
         runner.set_responses(
             [
+                (1, b"", b""),  # venv path check (empty)
                 (0, b"", b""),  # mkdir
                 (0, b"", b""),  # venv creation
                 (0, b"", b""),  # pip upgrade
@@ -340,16 +362,55 @@ class TestTigerFlowClientSetup:
 
         await client.setup()
 
-        pip_upgrade_cmd = runner.commands[2]
-        pip_install_cmd = runner.commands[3]
+        pip_upgrade_cmd = runner.commands[3]
+        pip_install_cmd = runner.commands[4]
         expected_pip = f"/home/user/{VENV_PATH}/bin/pip"
         assert expected_pip in pip_upgrade_cmd
         assert expected_pip in pip_install_cmd
 
+    async def test_setup_raises_setup_error_when_venv_path_not_empty(self) -> None:
+        """Setup should fail fast with a clear message if venv path is occupied."""
+        runner = MockRunner()
+        runner.set_response(0, b"conda-meta\nbin\n", b"")  # venv path is non-empty
+        client = TigerFlowClient(runner, "/home/user")
+
+        with pytest.raises(TigerFlowError) as exc_info:
+            await client.setup()
+
+        assert exc_info.value.error_type == "setup"
+        details = str(exc_info.value.details)
+        assert client._venv_path in details
+        assert "already exists" in details
+        # Should bail before attempting mkdir or venv creation
+        assert len(runner.commands) == 1
+
+    async def test_setup_proceeds_when_venv_path_empty_directory(self) -> None:
+        """Setup should proceed if venv path exists but is an empty directory."""
+        runner = MockRunner()
+        runner.set_responses(
+            [
+                (0, b"", b""),  # ls returns 0 with empty stdout (empty dir)
+                (0, b"", b""),  # mkdir
+                (0, b"", b""),  # venv creation
+                (0, b"", b""),  # pip upgrade
+                (0, b"", b""),  # pip install
+            ]
+        )
+        client = TigerFlowClient(runner, "/home/user")
+
+        await client.setup()
+
+        assert "-m venv" in runner.commands[2]
+
     async def test_setup_raises_setup_error_when_mkdir_fails(self) -> None:
         """Setup should raise setup error if directory creation fails."""
         runner = MockRunner()
-        runner.set_response(1, b"", b"Permission denied")
+        runner.set_responses(
+            [
+                (1, b"", b""),  # venv path check (empty)
+                (1, b"", b"Permission denied"),  # mkdir fails
+            ]
+        )
         client = TigerFlowClient(runner, "/home/user")
 
         with pytest.raises(TigerFlowError) as exc_info:
@@ -362,6 +423,7 @@ class TestTigerFlowClientSetup:
         runner = MockRunner()
         runner.set_responses(
             [
+                (1, b"", b""),  # venv path check (empty)
                 (0, b"", b""),  # mkdir succeeds
                 (1, b"", b"venv module not found"),  # venv fails
             ]
@@ -379,6 +441,7 @@ class TestTigerFlowClientSetup:
         runner = MockRunner()
         runner.set_responses(
             [
+                (1, b"", b""),  # venv path check (empty)
                 (0, b"", b""),  # mkdir succeeds
                 (127, b"", b"/opt/python3.11/bin/python3: No such file or directory"),
             ]
@@ -398,6 +461,7 @@ class TestTigerFlowClientSetup:
         runner = MockRunner()
         runner.set_responses(
             [
+                (1, b"", b""),  # venv path check (empty)
                 (0, b"", b""),  # mkdir
                 (0, b"", b""),  # venv creation
                 (0, b"", b""),  # pip upgrade
@@ -597,6 +661,7 @@ class TestTigerFlowClientCleanup:
         runner.set_responses(
             [
                 (0, b"", b""),  # rm -rf
+                (1, b"", b""),  # venv path check (empty after rm)
                 (0, b"", b""),  # mkdir
                 (0, b"", b""),  # venv creation
                 (0, b"", b""),  # pip upgrade

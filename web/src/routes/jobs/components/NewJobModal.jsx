@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState, useEffect, useMemo } from "react";
+import { Fragment, useRef, useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogPanel,
@@ -22,6 +22,7 @@ import ModelSelect from "@/components/ModelSelect";
 import RevisionSelect from "@/components/RevisionSelect";
 import PartitionSelect from "@/components/PartitionSelect";
 import TierSelect from "@/components/TierSelect";
+import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
 import Alert from "@/components/Alert";
 import Stepper from "@/components/Stepper";
 import DirectoryBrowser from "@/components/DirectoryBrowser";
@@ -415,6 +416,26 @@ const STEPS_LOCAL = [
   { id: "paths", name: "Data", description: "Choose data directories" },
 ];
 
+// Slurm account names: letters, digits, underscore, dash, dot
+const ACCOUNT_PATTERN = /^[A-Za-z0-9_.-]+$/;
+const TIME_PATTERN = /^(\d{1,3}):([0-5]\d)$/;
+const WORKER_TIMEOUT_MAX_MINUTES = 7 * 24 * 60; // 7 days
+const IDLE_TIMEOUT_MAX_MINUTES = 24 * 60; // 24 hours
+
+const parseTimeToMinutes = (value) => {
+  const match = TIME_PATTERN.exec(String(value).trim());
+  if (!match) return null;
+  const [, h, m] = match;
+  return Number(h) * 60 + Number(m);
+};
+
+const formatMinutesAsTime = (totalMinutes) => {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(h)}:${pad(m)}`;
+};
+
 function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   const cancelButtonRef = useRef(null);
 
@@ -456,7 +477,12 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [account, setAccount] = useState("");
   const [workerTimeout, setWorkerTimeout] = useState("");
-  const [clientTimeout, setClientTimeout] = useState("");
+  const [idleTimeout, setIdleTimeout] = useState("");
+  const [advancedErrors, setAdvancedErrors] = useState({
+    account: null,
+    workerTimeout: null,
+    idleTimeout: null,
+  });
   const contentRef = useRef(null);
 
   // Submission state
@@ -559,7 +585,8 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       setShowAdvanced(false);
       setAccount("");
       setWorkerTimeout("");
-      setClientTimeout("");
+      setIdleTimeout("");
+      setAdvancedErrors({ account: null, workerTimeout: null, idleTimeout: null });
       setIsSubmitting(false);
       setSubmitError(null);
     }
@@ -614,6 +641,81 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     setTaskParams((prev) => ({ ...prev, [paramName]: value }));
   };
 
+  const validateAccount = useCallback((value) => {
+    const trimmed = String(value).trim();
+    if (trimmed === "") {
+      setAdvancedErrors((prev) => ({ ...prev, account: null }));
+      return { ok: true };
+    }
+    if (!ACCOUNT_PATTERN.test(trimmed)) {
+      const error = {
+        message: "Account may only contain letters, numbers, '_', '-', and '.'.",
+        ok: false,
+      };
+      setAdvancedErrors((prev) => ({ ...prev, account: error }));
+      return error;
+    }
+    setAdvancedErrors((prev) => ({ ...prev, account: null }));
+    return { ok: true };
+  }, []);
+
+  const validateHHMM = useCallback((value, { maxMinutes, fieldKey }) => {
+    const trimmed = String(value).trim();
+    if (trimmed === "") {
+      setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: null }));
+      return { ok: true };
+    }
+    const minutes = parseTimeToMinutes(trimmed);
+    if (minutes === null) {
+      const error = {
+        message: "Time must be in HH:MM format (e.g., 01:00).",
+        ok: false,
+      };
+      setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
+      return error;
+    }
+    if (minutes < 1) {
+      const error = {
+        message: "Time must be at least 00:01.",
+        ok: false,
+      };
+      setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
+      return error;
+    }
+    if (minutes > maxMinutes) {
+      const error = {
+        message: `Time must be ${formatMinutesAsTime(maxMinutes)} or less.`,
+        ok: false,
+      };
+      setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
+      return error;
+    }
+    setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: null }));
+    return { ok: true };
+  }, []);
+
+  const validateWorkerTimeout = useCallback(
+    (value) =>
+      validateHHMM(value, {
+        maxMinutes: WORKER_TIMEOUT_MAX_MINUTES,
+        fieldKey: "workerTimeout",
+      }),
+    [validateHHMM]
+  );
+
+  const validateIdleTimeout = useCallback(
+    (value) =>
+      validateHHMM(value, {
+        maxMinutes: IDLE_TIMEOUT_MAX_MINUTES,
+        fieldKey: "idleTimeout",
+      }),
+    [validateHHMM]
+  );
+
+  const hasAdvancedErrors = Boolean(
+    advancedErrors.account || advancedErrors.workerTimeout || advancedErrors.idleTimeout
+  );
+
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       const nextStep = currentStep + 1;
@@ -650,7 +752,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       // Add optional advanced options as sbatch_options
       const sbatchOptions = [];
       if (account) sbatchOptions.push(`--account=${account}`);
-      if (workerTimeout) jobResources.time = workerTimeout;
+      if (workerTimeout) jobResources.time = `${workerTimeout}:00`;
       if (sbatchOptions.length > 0) jobResources.sbatch_options = sbatchOptions;
 
       // Derive cache_dir from model's model_dir (parent directory)
@@ -675,7 +777,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
         params: Object.keys(taskParams).length > 0 ? taskParams : null,
         resources: Object.keys(jobResources).length > 0 ? jobResources : null,
         max_workers: maxWorkers,
-        idle_timeout: clientTimeout ? parseInt(clientTimeout, 10) : undefined,
+        idle_timeout: idleTimeout ? parseTimeToMinutes(idleTimeout) : undefined,
       };
 
       console.debug("Submitting job request:", jobRequest);
@@ -741,8 +843,9 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     return isStepValid(stepId);
   };
 
-  // Form is valid when all steps are complete
-  const isFormValid = steps.every((_, index) => checkStepComplete(index));
+  // Form is valid when all steps are complete and no advanced option errors
+  const isFormValid =
+    steps.every((_, index) => checkStepComplete(index)) && !hasAdvancedErrors;
 
   if (!profile || !task) {
     return null;
@@ -1091,56 +1194,38 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
               </button>
               {showAdvanced && (
                 <div className="mt-3 space-y-4 pl-0">
-                  <div>
-                    <label htmlFor="account" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Account
-                    </label>
-                    <input
-                      type="text"
-                      id="account"
-                      value={account}
-                      onChange={(e) => setAccount(e.target.value)}
-                      disabled={isSubmitting}
-                      className="mt-1 block w-full rounded-md border-0 py-1.5 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800"
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Leave empty to use your default account.
-                    </p>
-                  </div>
-                  <div>
-                    <label htmlFor="worker-timeout" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Worker Timeout
-                    </label>
-                    <input
-                      type="text"
-                      id="worker-timeout"
-                      value={workerTimeout}
-                      onChange={(e) => setWorkerTimeout(e.target.value)}
-                      placeholder="e.g., 01:00:00"
-                      disabled={isSubmitting}
-                      className="mt-1 block w-full rounded-md border-0 py-1.5 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800"
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Time limit for each worker job (HH:MM:SS).
-                    </p>
-                  </div>
-                  <div>
-                    <label htmlFor="client-timeout" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Client Timeout
-                    </label>
-                    <input
-                      type="text"
-                      id="client-timeout"
-                      value={clientTimeout}
-                      onChange={(e) => setClientTimeout(e.target.value)}
-                      placeholder="e.g., 300"
-                      disabled={isSubmitting}
-                      className="mt-1 block w-full rounded-md border-0 py-1.5 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800"
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Timeout in seconds for client connections.
-                    </p>
-                  </div>
+                  <ServiceModalValidatedInput
+                    type="text"
+                    htmlFor="account"
+                    label="Account"
+                    help="Leave empty to use your default account."
+                    value={account}
+                    setValue={setAccount}
+                    validate={validateAccount}
+                    disabled={isSubmitting}
+                  />
+                  <ServiceModalValidatedInput
+                    type="text"
+                    htmlFor="worker-timeout"
+                    label="Worker Timeout"
+                    placeholder="01:00"
+                    help="Time limit for each worker job in HH:MM format (max 168:00)."
+                    value={workerTimeout}
+                    setValue={setWorkerTimeout}
+                    validate={validateWorkerTimeout}
+                    disabled={isSubmitting}
+                  />
+                  <ServiceModalValidatedInput
+                    type="text"
+                    htmlFor="idle-timeout"
+                    label="Idle Timeout"
+                    placeholder="00:10"
+                    help="Time of inactivity before the job auto-terminates in HH:MM format (max 24:00)."
+                    value={idleTimeout}
+                    setValue={setIdleTimeout}
+                    validate={validateIdleTimeout}
+                    disabled={isSubmitting}
+                  />
                 </div>
               )}
             </fieldset>

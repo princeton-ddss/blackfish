@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useMemo } from "react";
+import { createContext, useState, useEffect, useMemo, useCallback } from "react";
 import {
   Menu,
   MenuButton,
@@ -35,7 +35,7 @@ const ProfileProvider = ({ children }) => {
     [profiles, profileName]
   );
 
-  const setProfile = (nextProfile) => {
+  const setProfile = useCallback((nextProfile) => {
     const name = nextProfile?.name ?? null;
     if (name) {
       localStorage.setItem("profileName", name);
@@ -43,10 +43,15 @@ const ProfileProvider = ({ children }) => {
       localStorage.removeItem("profileName");
     }
     setProfileName(name);
-  };
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ profile, setProfile }),
+    [profile, setProfile]
+  );
 
   return (
-    <ProfileContext.Provider value={{ profile, setProfile }}>
+    <ProfileContext.Provider value={contextValue}>
       {children}
     </ProfileContext.Provider>
   );

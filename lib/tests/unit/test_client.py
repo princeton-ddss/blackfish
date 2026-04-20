@@ -304,7 +304,6 @@ class TestTigerFlowClientSetup:
         await client.setup()
 
         assert runner.commands[1] == "mkdir -p /home/user/.blackfish"
-        assert "/home/user/.blackfish/.blackfish" not in runner.commands[1]
 
     async def test_setup_installs_tigerflow_packages(self) -> None:
         """Setup should install tigerflow and tigerflow-ml."""

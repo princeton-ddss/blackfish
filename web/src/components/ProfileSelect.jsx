@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useMemo, useCallback } from "react";
 import {
   Menu,
   MenuButton,
@@ -19,22 +19,39 @@ const ProfileContext = createContext();
  * @return {JSX.Element}
  */
 const ProfileProvider = ({ children }) => {
-  const [profile, setProfileContext] = useState(null);
+  const { profiles } = useProfiles();
+  const [profileName, setProfileName] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("profileName") : null
+  );
 
+  // Discard the legacy full-object payload so stale shapes from older
+  // versions (or external writers like Open OnDemand) can't leak in.
   useEffect(() => {
-    const data = localStorage.getItem("profile");
-    const restoredProfile = data ? JSON.parse(data) : null;
-    console.debug("Restored profile", restoredProfile);
-    setProfileContext(restoredProfile);
+    localStorage.removeItem("profile");
   }, []);
 
-  const setProfile = (profile) => {
-    localStorage.setItem("profile", JSON.stringify(profile));
-    setProfileContext(profile);
-  };
+  const profile = useMemo(
+    () => profiles?.find((p) => p.name === profileName) ?? null,
+    [profiles, profileName]
+  );
+
+  const setProfile = useCallback((nextProfile) => {
+    const name = nextProfile?.name ?? null;
+    if (name) {
+      localStorage.setItem("profileName", name);
+    } else {
+      localStorage.removeItem("profileName");
+    }
+    setProfileName(name);
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ profile, setProfile }),
+    [profile, setProfile]
+  );
 
   return (
-    <ProfileContext.Provider value={{ profile, setProfile }}>
+    <ProfileContext.Provider value={contextValue}>
       {children}
     </ProfileContext.Provider>
   );

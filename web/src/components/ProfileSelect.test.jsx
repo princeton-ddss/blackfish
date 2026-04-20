@@ -7,13 +7,16 @@ import ProfileSelect, {
 } from "@/components/ProfileSelect";
 import { useProfiles } from "@/lib/loaders";
 
+const defaultProfiles = [
+  {name: "test-profile", host: "example.com"},
+  {name: "local-test-profile", host: "localhost"},
+  {name: "new-profile", host: "newhost.com"}
+];
+
 // Mock the hooks
 vi.mock("@/lib/loaders", () => ({
   useProfiles: vi.fn(() => ({
-    profiles: [
-      {name: "test-profile", host: "example.com"},
-      {name: "local-test-profile", host: "localhost"}
-    ],
+    profiles: defaultProfiles,
     isLoading: false,
     error: false
   }))
@@ -31,6 +34,11 @@ describe("ProfileProvider", () => {
     vi.clearAllMocks();
     // Clear localStorage
     localStorage.clear();
+    vi.mocked(useProfiles).mockReturnValue({
+      profiles: defaultProfiles,
+      isLoading: false,
+      error: false
+    });
   });
 
   it("renders children", () => {
@@ -43,14 +51,8 @@ describe("ProfileProvider", () => {
     expect(baseElement).toMatchSnapshot();
   });
 
-  it("restores profile from storage", () => {
-    const mockProfile = {
-      name: "test-profile",
-      host: "example.com"
-    };
-
-    // Set the item in localStorage before rendering
-    localStorage.setItem("profile", JSON.stringify(mockProfile));
+  it("resolves profile from storage by name", () => {
+    localStorage.setItem("profileName", "test-profile");
 
     let contextValue = null;
     const TestComponent = () => {
@@ -70,15 +72,81 @@ describe("ProfileProvider", () => {
       </ProfileProvider>
     );
 
-    expect(contextValue.profile).toEqual(mockProfile);
+    expect(contextValue.profile).toEqual(
+      defaultProfiles.find((p) => p.name === "test-profile")
+    );
     expect(baseElement).toMatchSnapshot();
   });
 
-  it("setProfile updates context and localStorage", () => {
-    const mockProfile = {
-      name: "new-profile",
-      host: "newhost.com"
+  it("resolves to null when the stored name is not in /api/profiles", () => {
+    localStorage.setItem("profileName", "unknown-profile");
+
+    let contextValue = null;
+    const TestComponent = () => {
+      const context = useContext(ProfileContext);
+      contextValue = context;
+      return <h1>Hello, world!</h1>;
     };
+
+    render(
+      <ProfileProvider>
+        <ProfileContext.Consumer>
+          {(value) => {
+            contextValue = value;
+            return <TestComponent />;
+          }}
+        </ProfileContext.Consumer>
+      </ProfileProvider>
+    );
+
+    expect(contextValue.profile).toBeNull();
+  });
+
+  it("removes legacy 'profile' key on mount", () => {
+    localStorage.setItem("profile", JSON.stringify({name: "stale", type: "slurm"}));
+
+    render(
+      <ProfileProvider>
+        <h1>Hello, world!</h1>
+      </ProfileProvider>
+    );
+
+    expect(localStorage.getItem("profile")).toBeNull();
+  });
+
+  it("setProfile persists name and resolves fresh profile from the API list", () => {
+    let contextValue = null;
+    const TestComponent = () => {
+      const context = useContext(ProfileContext);
+      contextValue = context;
+      return <h1>Hello, world!</h1>;
+    };
+
+    render(
+      <ProfileProvider>
+        <ProfileContext.Consumer>
+          {(value) => {
+            contextValue = value;
+            return <TestComponent />;
+          }}
+        </ProfileContext.Consumer>
+      </ProfileProvider>
+    );
+
+    // Simulate an external writer passing a stale shape. Only the name
+    // should be persisted; the resolved profile should be the fresh API copy.
+    act(() => {
+      contextValue.setProfile({name: "new-profile", type: "slurm", host: "stale"});
+    });
+
+    expect(localStorage.getItem("profileName")).toEqual("new-profile");
+    expect(contextValue.profile).toEqual(
+      defaultProfiles.find((p) => p.name === "new-profile")
+    );
+  });
+
+  it("setProfile with null clears the stored name", () => {
+    localStorage.setItem("profileName", "test-profile");
 
     let contextValue = null;
     const TestComponent = () => {
@@ -99,11 +167,11 @@ describe("ProfileProvider", () => {
     );
 
     act(() => {
-      contextValue.setProfile(mockProfile);
+      contextValue.setProfile(null);
     });
 
-    expect(localStorage.getItem("profile")).toEqual(JSON.stringify(mockProfile));
-    expect(contextValue.profile).toEqual(mockProfile);
+    expect(localStorage.getItem("profileName")).toBeNull();
+    expect(contextValue.profile).toBeNull();
   });
 });
 
@@ -112,10 +180,7 @@ describe("ProfileSelect", () => {
     vi.clearAllMocks();
     // Reset mock to default
     vi.mocked(useProfiles).mockReturnValue({
-      profiles: [
-        {name: "test-profile", host: "example.com"},
-        {name: "local-test-profile", host: "localhost"}
-      ],
+      profiles: defaultProfiles,
       isLoading: false,
       error: false
     });

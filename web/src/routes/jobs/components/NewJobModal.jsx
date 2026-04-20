@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState, useEffect, useMemo } from "react";
+import { Fragment, useRef, useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogPanel,
@@ -416,6 +416,26 @@ const STEPS_LOCAL = [
   { id: "paths", name: "Data", description: "Choose data directories" },
 ];
 
+// Slurm account names: letters, digits, underscore, dash, dot
+const ACCOUNT_PATTERN = /^[A-Za-z0-9_.-]+$/;
+const TIME_PATTERN = /^(\d{1,3}):([0-5]\d)$/;
+const WORKER_TIMEOUT_MAX_MINUTES = 7 * 24 * 60; // 7 days
+const IDLE_TIMEOUT_MAX_MINUTES = 24 * 60; // 24 hours
+
+const parseTimeToMinutes = (value) => {
+  const match = TIME_PATTERN.exec(String(value).trim());
+  if (!match) return null;
+  const [, h, m] = match;
+  return Number(h) * 60 + Number(m);
+};
+
+const formatMinutesAsTime = (totalMinutes) => {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(h)}:${pad(m)}`;
+};
+
 function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   const cancelButtonRef = useRef(null);
 
@@ -621,28 +641,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     setTaskParams((prev) => ({ ...prev, [paramName]: value }));
   };
 
-  // Slurm account names: letters, digits, underscore, dash, dot
-  const ACCOUNT_PATTERN = /^[A-Za-z0-9_.-]+$/;
-  const TIME_PATTERN = /^(\d{1,3}):([0-5]\d):([0-5]\d)$/;
-  const WORKER_TIMEOUT_MAX_SECONDS = 7 * 24 * 3600; // 7 days
-  const IDLE_TIMEOUT_MAX_SECONDS = 24 * 3600; // 24 hours
-
-  const parseTimeToSeconds = (value) => {
-    const match = TIME_PATTERN.exec(String(value).trim());
-    if (!match) return null;
-    const [, h, m, s] = match;
-    return Number(h) * 3600 + Number(m) * 60 + Number(s);
-  };
-
-  const formatSecondsAsTime = (totalSeconds) => {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${pad(h)}:${pad(m)}:${pad(s)}`;
-  };
-
-  const validateAccount = (value) => {
+  const validateAccount = useCallback((value) => {
     const trimmed = String(value).trim();
     if (trimmed === "") {
       setAdvancedErrors((prev) => ({ ...prev, account: null }));
@@ -658,34 +657,34 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     }
     setAdvancedErrors((prev) => ({ ...prev, account: null }));
     return { ok: true };
-  };
+  }, []);
 
-  const validateHHMMSS = (value, { maxSeconds, fieldKey }) => {
+  const validateHHMM = useCallback((value, { maxMinutes, fieldKey }) => {
     const trimmed = String(value).trim();
     if (trimmed === "") {
       setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: null }));
       return { ok: true };
     }
-    const seconds = parseTimeToSeconds(trimmed);
-    if (seconds === null) {
+    const minutes = parseTimeToMinutes(trimmed);
+    if (minutes === null) {
       const error = {
-        message: "Time must be in HH:MM:SS format (e.g., 01:00:00).",
+        message: "Time must be in HH:MM format (e.g., 01:00).",
         ok: false,
       };
       setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
       return error;
     }
-    if (seconds < 1) {
+    if (minutes < 1) {
       const error = {
-        message: "Time must be at least 00:00:01.",
+        message: "Time must be at least 00:01.",
         ok: false,
       };
       setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
       return error;
     }
-    if (seconds > maxSeconds) {
+    if (minutes > maxMinutes) {
       const error = {
-        message: `Time must be ${formatSecondsAsTime(maxSeconds)} or less.`,
+        message: `Time must be ${formatMinutesAsTime(maxMinutes)} or less.`,
         ok: false,
       };
       setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: error }));
@@ -693,19 +692,25 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     }
     setAdvancedErrors((prev) => ({ ...prev, [fieldKey]: null }));
     return { ok: true };
-  };
+  }, []);
 
-  const validateWorkerTimeout = (value) =>
-    validateHHMMSS(value, {
-      maxSeconds: WORKER_TIMEOUT_MAX_SECONDS,
-      fieldKey: "workerTimeout",
-    });
+  const validateWorkerTimeout = useCallback(
+    (value) =>
+      validateHHMM(value, {
+        maxMinutes: WORKER_TIMEOUT_MAX_MINUTES,
+        fieldKey: "workerTimeout",
+      }),
+    [validateHHMM]
+  );
 
-  const validateIdleTimeout = (value) =>
-    validateHHMMSS(value, {
-      maxSeconds: IDLE_TIMEOUT_MAX_SECONDS,
-      fieldKey: "idleTimeout",
-    });
+  const validateIdleTimeout = useCallback(
+    (value) =>
+      validateHHMM(value, {
+        maxMinutes: IDLE_TIMEOUT_MAX_MINUTES,
+        fieldKey: "idleTimeout",
+      }),
+    [validateHHMM]
+  );
 
   const hasAdvancedErrors = Boolean(
     advancedErrors.account || advancedErrors.workerTimeout || advancedErrors.idleTimeout
@@ -747,7 +752,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       // Add optional advanced options as sbatch_options
       const sbatchOptions = [];
       if (account) sbatchOptions.push(`--account=${account}`);
-      if (workerTimeout) jobResources.time = workerTimeout;
+      if (workerTimeout) jobResources.time = `${workerTimeout}:00`;
       if (sbatchOptions.length > 0) jobResources.sbatch_options = sbatchOptions;
 
       // Derive cache_dir from model's model_dir (parent directory)
@@ -772,9 +777,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
         params: Object.keys(taskParams).length > 0 ? taskParams : null,
         resources: Object.keys(jobResources).length > 0 ? jobResources : null,
         max_workers: maxWorkers,
-        idle_timeout: idleTimeout
-          ? Math.max(1, Math.ceil(parseTimeToSeconds(idleTimeout) / 60))
-          : undefined,
+        idle_timeout: idleTimeout ? parseTimeToMinutes(idleTimeout) : undefined,
       };
 
       console.debug("Submitting job request:", jobRequest);
@@ -1205,8 +1208,8 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                     type="text"
                     htmlFor="worker-timeout"
                     label="Worker Timeout"
-                    placeholder="01:00:00"
-                    help="Time limit for each worker job in HH:MM:SS format (max 168:00:00)."
+                    placeholder="01:00"
+                    help="Time limit for each worker job in HH:MM format (max 168:00)."
                     value={workerTimeout}
                     setValue={setWorkerTimeout}
                     validate={validateWorkerTimeout}
@@ -1216,8 +1219,8 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                     type="text"
                     htmlFor="idle-timeout"
                     label="Idle Timeout"
-                    placeholder="00:10:00"
-                    help="Time of inactivity before the job auto-terminates in HH:MM:SS format (max 24:00:00)."
+                    placeholder="00:10"
+                    help="Time of inactivity before the job auto-terminates in HH:MM format (max 24:00)."
                     value={idleTimeout}
                     setValue={setIdleTimeout}
                     validate={validateIdleTimeout}

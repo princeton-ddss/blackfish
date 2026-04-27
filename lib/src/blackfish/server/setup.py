@@ -244,30 +244,6 @@ async def repair_slurm_profile(
     return RepairResult(repaired=True, message=f"Profile repaired on {host}.")
 
 
-def create_local_home_dir(home_dir: str | os.PathLike[str]) -> None:
-    """Attempt to construct root directory to store core application data and raise an
-    exception if creation fails and the directory does not already exist.
-
-    This method should be called when the application is initialized or a local profile
-    is created.
-    """
-    with yaspin(text=f"Setting up home directory {home_dir}") as spinner:
-        if not os.path.isdir(home_dir):
-            try:
-                os.mkdir(home_dir)
-                os.mkdir(os.path.join(home_dir, "models"))
-                os.mkdir(os.path.join(home_dir, "images"))
-                spinner.text = f"Set up default Blackfish home directory {home_dir}"
-                spinner.ok(f"{LogSymbols.SUCCESS.value}")
-            except OSError as e:
-                spinner.text = f"Failed to set up Blackfish home directory: {e}"
-                spinner.fail(f"{LogSymbols.ERROR.value}")
-                raise Exception
-        else:
-            spinner.text = "Blackfish home directory already exists."
-            spinner.ok(f"{LogSymbols.SUCCESS.value}")
-
-
 def create_remote_home_dir(
     host: str, user: str, home_dir: str | os.PathLike[str]
 ) -> None:

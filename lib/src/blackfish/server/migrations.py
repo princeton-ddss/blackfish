@@ -18,8 +18,6 @@ import importlib.metadata
 import os
 from pathlib import Path
 
-from blackfish.server.logger import logger
-
 
 CURRENT_VERSION = importlib.metadata.version("blackfish-ai")
 VERSION_FILE = ".blackfish_app_version"
@@ -83,7 +81,6 @@ def ensure_db(app_dir: str | os.PathLike[str]) -> None:
         ),
     )
 
-    logger.info("Upgrading database...")
     AlembicCommands(sqlalchemy_config=db_config).upgrade()
 
 

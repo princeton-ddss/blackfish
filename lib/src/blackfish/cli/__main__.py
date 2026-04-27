@@ -115,11 +115,11 @@ def init(
     Creates all files and directories to run Blackfish.
     """
 
-    from blackfish.server.setup import create_local_home_dir
+    from blackfish.server.migrations import bootstrap
     from blackfish.cli.profile import _auto_profile_, _create_profile_
     import configparser
 
-    create_local_home_dir(app_dir)
+    bootstrap(app_dir)
 
     profiles = configparser.ConfigParser()
     profiles.read(f"{app_dir}/profiles.cfg")
@@ -194,36 +194,11 @@ def start(reload: bool) -> None:  # pragma: no cover
     """
 
     import uvicorn
-    from advanced_alchemy.extensions.litestar import (
-        AlembicCommands as _AlembicCommands,
-        SQLAlchemyInitPlugin,
-    )
-    from sqlalchemy.exc import OperationalError
-    from litestar import Litestar
 
     import blackfish.server as server
-    from blackfish.server.asgi import app
+    from blackfish.server.migrations import bootstrap
 
-    if not os.path.isdir(config.HOME_DIR):
-        click.echo("Home directory not found. Have you run `blackfish init`?")
-        return
-
-    class AlembicCommands(_AlembicCommands):
-        def __init__(self, app: Litestar) -> None:
-            self._app = app
-            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # type: ignore # noqa: SLF001
-            self.config = self._get_alembic_command_config()
-
-    alembic_commands = AlembicCommands(app=app)
-
-    try:
-        logger.info("Upgrading database...")
-        alembic_commands.upgrade()
-    except OperationalError as e:
-        if e.args == ("(sqlite3.OperationalError) table service already exists",):
-            logger.info("Database is already up-to-date. Skipping.")
-        else:
-            logger.error(f"Failed to upgrade database: {e}")
+    bootstrap(config.HOME_DIR)
 
     # Check TigerFlow versions on Slurm profiles
     import asyncio

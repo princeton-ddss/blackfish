@@ -6,6 +6,8 @@ import subprocess
 from base64 import b64encode
 from copy import deepcopy
 
+from blackfish.server.images import DEFAULT_IMAGES, ImageSpec
+
 
 DEFAULT_BASE_PATH = ""
 DEFAULT_HOST = "localhost"
@@ -83,6 +85,10 @@ class BlackfishConfig:
         else:
             self.CONTAINER_PROVIDER = container_provider
         self.MAX_FILE_SIZE = int(os.getenv("BLACKFISH_MAX_FILE_SIZE", max_file_size))
+        self.IMAGES: dict[str, ImageSpec] = {}
+        for service, default in DEFAULT_IMAGES.items():
+            override = os.getenv(f"BLACKFISH_{service.upper()}_IMAGE")
+            self.IMAGES[service] = ImageSpec.parse(override) if override else default
 
     def __str__(self) -> str:
         return str(self.__dict__)

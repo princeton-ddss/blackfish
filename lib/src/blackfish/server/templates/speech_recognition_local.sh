@@ -6,7 +6,7 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
   -v {{ mount }}:/data/audio \
   -v {{ container_config.model_dir }}:/data/models \
   --name {{ name }} \
-  ghcr.io/princeton-ddss/speech-recognition-inference:0.1.2 \
+  {{ image.docker_ref }} \
   --model_dir /data/models \
   --model_id {{ model }} \
   {%- if container_config.revision %}
@@ -17,7 +17,7 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ mount }}:/data/audio \
   --bind {{ container_config.model_dir }}:/data/models \
-  {{ profile.cache_dir }}/images/speech-recognition-inference_0.1.2.sif \
+  {{ profile.cache_dir }}/images/{{ image.sif }} \
   {{ name }} \
   --model_dir /data/models \
   --model_id {{ model }} \

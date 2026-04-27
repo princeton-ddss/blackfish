@@ -29,7 +29,7 @@ from blackfish.server.job import (
 )
 from blackfish.server.logger import logger
 from blackfish.server.utils import find_port
-from blackfish.server.config import ContainerProvider
+from blackfish.server.config import ContainerProvider, config as blackfish_config
 from blackfish.server.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
 
@@ -695,6 +695,7 @@ class Service(UUIDAuditBase):
             container_config=container_config,
             job_config=job_config,
             mount=self.mount,
+            image=blackfish_config.IMAGES[self.image],
         )
 
         return job_script

@@ -52,6 +52,25 @@ def version() -> None:  # pragma: no cover
 
 
 @main.command()
+def images() -> None:  # pragma: no cover
+    """Show pinned service container images.
+
+    Defaults can be overridden by `BLACKFISH_<SERVICE>_IMAGE` env vars
+    (e.g. `BLACKFISH_TEXT_GENERATION_IMAGE=vllm/vllm-openai:v0.9.0`).
+    """
+    from prettytable import PrettyTable, TableStyle
+
+    tab = PrettyTable(field_names=["SERVICE", "DOCKER REF", "SIF"])
+    tab.set_style(TableStyle.PLAIN_COLUMNS)
+    for field in tab.field_names:
+        tab.align[field] = "l"
+    tab.right_padding_width = 3
+    for service, spec in config.IMAGES.items():
+        tab.add_row([service, spec.docker_ref, spec.sif])
+    print(tab)
+
+
+@main.command()
 @click.option(
     "--app-dir",
     "-r",

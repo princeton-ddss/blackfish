@@ -5,7 +5,7 @@ import sqlite3
 
 import pytest
 
-from blackfish.server.migrations import (
+from blackfish.server.bootstrap import (
     CURRENT_VERSION,
     VERSION_FILE,
     ensure_app_dir,
@@ -118,6 +118,24 @@ def test_ensure_db_idempotent(tmp_path):
     ensure_app_dir(p)
     ensure_db(p)
     ensure_db(p)
+
+
+def test_ensure_db_preserves_existing_data(tmp_path):
+    p = tmp_path / ".blackfish"
+    ensure_app_dir(p)
+    ensure_db(p)
+
+    db_path = p / "app.sqlite"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("CREATE TABLE _smoke (id INTEGER PRIMARY KEY, payload TEXT)")
+        conn.execute("INSERT INTO _smoke (id, payload) VALUES (1, 'keep me')")
+        conn.commit()
+
+    ensure_db(p)
+
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT payload FROM _smoke WHERE id = 1").fetchone()
+    assert row == ("keep me",)
 
 
 def test_bootstrap_empty_dir(tmp_path):

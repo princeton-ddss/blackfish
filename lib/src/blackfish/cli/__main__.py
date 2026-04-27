@@ -115,7 +115,7 @@ def init(
     Creates all files and directories to run Blackfish.
     """
 
-    from blackfish.server.migrations import bootstrap
+    from blackfish.server.bootstrap import bootstrap
     from blackfish.cli.profile import _auto_profile_, _create_profile_
     import configparser
 
@@ -196,7 +196,7 @@ def start(reload: bool) -> None:  # pragma: no cover
     import uvicorn
 
     import blackfish.server as server
-    from blackfish.server.migrations import bootstrap
+    from blackfish.server.bootstrap import bootstrap
 
     bootstrap(config.HOME_DIR)
 

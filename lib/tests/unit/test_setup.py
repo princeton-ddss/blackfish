@@ -2,7 +2,7 @@ import pytest
 
 
 from blackfish.server.setup import check_local_cache_exists
-from blackfish.server.migrations import ensure_app_dir
+from blackfish.server.bootstrap import ensure_app_dir
 from blackfish.cli.profile import _auto_profile_
 
 

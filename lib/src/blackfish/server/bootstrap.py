@@ -51,7 +51,7 @@ def ensure_app_dir(app_dir: str | os.PathLike[str]) -> None:
     if app_path.exists() and not app_path.is_dir():
         raise NotADirectoryError(str(app_path))
     if not app_path.exists():
-        os.mkdir(app_path)
+        app_path.mkdir()
     (app_path / "models").mkdir(exist_ok=True)
     (app_path / "images").mkdir(exist_ok=True)
 
@@ -67,17 +67,22 @@ def ensure_db(app_dir: str | os.PathLike[str]) -> None:
 
     import blackfish.server as server
 
-    server_dir = os.path.dirname(server.__file__)
-    migrations_dir = os.path.join(server_dir, "db", "migrations")
+    migrations_dir = Path(server.__file__).parent / "db" / "migrations"
+    db_path = Path(app_dir) / "app.sqlite"
 
+    # `metadata` is intentionally inert here: Alembic uses file-based migration
+    # scripts (not the live ORM metadata), and `create_all=False` means
+    # SQLAlchemyAsyncConfig won't materialize tables from it either. We pass
+    # UUIDAuditBase.metadata only because the field is required; the model
+    # modules aren't imported on this path, so the metadata is empty anyway.
     db_config = SQLAlchemyAsyncConfig(
-        connection_string=f"sqlite+aiosqlite:///{app_dir}/app.sqlite",
+        connection_string=f"sqlite+aiosqlite:///{db_path}",
         metadata=UUIDAuditBase.metadata,
         create_all=False,
         alembic_config=AlembicAsyncConfig(
             version_table_name="ddl_version",
-            script_config=os.path.join(migrations_dir, "alembic.ini"),
-            script_location=migrations_dir,
+            script_config=str(migrations_dir / "alembic.ini"),
+            script_location=str(migrations_dir),
         ),
     )
 
@@ -105,7 +110,7 @@ def normalize_profiles_cfg(app_dir: str | os.PathLike[str]) -> None:
             changed = True
 
     if changed:
-        with open(cfg_path, "w") as f:
+        with cfg_path.open("w") as f:
             parser.write(f)
 
 

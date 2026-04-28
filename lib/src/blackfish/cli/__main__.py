@@ -28,6 +28,7 @@ from blackfish.cli.profile import (
     upgrade_tigerflow,
     repair_profile,
 )
+from blackfish.cli.image import list_images, check_images
 from blackfish.server.config import config
 from blackfish.server.logger import logger
 from blackfish.cli.classes import ServiceOptions
@@ -68,23 +69,18 @@ def version() -> None:  # pragma: no cover
     print(f"blackfish-ai {version}")
 
 
-@main.command()
-def images() -> None:  # pragma: no cover
-    """Show pinned service container images.
+@main.group()
+def image() -> None:  # pragma: no cover
+    """Inspect and manage service container images.
 
-    Defaults can be overridden by `BLACKFISH_<SERVICE>_IMAGE` env vars
+    Pinned defaults can be overridden by `BLACKFISH_<SERVICE>_IMAGE` env vars
     (e.g. `BLACKFISH_TEXT_GENERATION_IMAGE=vllm/vllm-openai:v0.9.0`).
     """
-    from prettytable import PrettyTable, TableStyle
+    pass
 
-    tab = PrettyTable(field_names=["SERVICE", "DOCKER REF", "SIF"])
-    tab.set_style(TableStyle.PLAIN_COLUMNS)
-    for field in tab.field_names:
-        tab.align[field] = "l"
-    tab.right_padding_width = 3
-    for service, spec in config.IMAGES.items():
-        tab.add_row([service, spec.docker_ref, spec.sif])
-    print(tab)
+
+image.add_command(list_images, "ls")
+image.add_command(check_images, "check")
 
 
 @main.command()

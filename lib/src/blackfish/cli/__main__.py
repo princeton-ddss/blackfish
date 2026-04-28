@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import rich_click as click
 from rich_click import Context
+import configparser
 import requests
 import os
 from yaspin import yaspin
@@ -33,6 +34,22 @@ from blackfish.cli.classes import ServiceOptions
 
 
 DISPLAY_ID_LENGTH = 13
+
+
+def _warn_if_no_profiles(home_dir: str) -> None:
+    """Log a warning if `home_dir/profiles.cfg` has no profile sections.
+
+    A server with no profiles boots cleanly but cannot deploy any service —
+    surface the misconfig at startup rather than at first failed API call.
+    """
+    profiles = configparser.ConfigParser()
+    profiles.read(os.path.join(home_dir, "profiles.cfg"))
+    if not profiles.sections():
+        logger.warning(
+            "No profiles configured. Run `blackfish init` or "
+            "`blackfish profile add` to register one. "
+            "Service deployment will fail until then."
+        )
 
 
 # blackfish
@@ -136,7 +153,6 @@ def init(
 
     from blackfish.server.bootstrap import bootstrap
     from blackfish.cli.profile import _auto_profile_, _create_profile_
-    import configparser
 
     bootstrap(app_dir)
 
@@ -219,9 +235,10 @@ def start(reload: bool) -> None:  # pragma: no cover
 
     bootstrap(config.HOME_DIR)
 
+    _warn_if_no_profiles(config.HOME_DIR)
+
     # Check TigerFlow versions on Slurm profiles
     import asyncio
-    import configparser
     from blackfish.server.jobs.client import (
         TigerFlowClient,
         TigerFlowError,

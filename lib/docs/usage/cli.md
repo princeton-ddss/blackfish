@@ -155,9 +155,13 @@ blackfish start
 
 in your terminal. If everything worked, you should see a message stating the application startup is complete. This command starts the Blackfish API *and* UI. At this point, you're free to switch over to the UI, if desired: just mosey on over to `http://localhost:8000` in your favorite browser. It's a relatively straight-forward interface, and we provide a detailed [usage guide](ui.md). But let's stay focused on the CLI.
 
-!!! note
+!!! tip
 
-    If you encounter an `address already in use` error after trying to start the application, switch to a different port number using `BLACKFISH_PORT` and rerun `blackfish start`.
+    If you encounter an `address already in use` error after trying to start the application, switch to a different port number and rerun `blackfish start`:
+    ```shell
+    BLACKFISH_PORT=8001 blackfish start
+    ```
+    Remember to set `BLACKFISH_PORT` consistently across all terminal sessions (see the [Configuration](#configuration) section above).
 
 Open a new terminal tab or window. First, let's see what type of services are available.
 

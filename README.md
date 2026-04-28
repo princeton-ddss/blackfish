@@ -253,10 +253,9 @@ Blackfish does not ship Docker images required to run services. When running job
 > [!NOTE]
 > When running services on Slurm clusters, Blackfish looks for the required SIF file in `$PROFILE_CACHE_DIR/images`.
 
-| Version | Service            | Image                              | File                                   |
-|:--------|:-------------------|:----------------------------------:|:--------------------------------------:|
-| 1.0.0   | Text Generation    | vllm-openai:0.10.2                 | vllm-openai_v0.10.2.sif                |
-| 1.0.0   | Speech Recognition | speech-recognition-inference:0.1.2 | speech-recognition-inference_0.1.2.sif |
+Run `blackfish images` to see the pinned image references and SIF filenames for your installed version.
+
+You can pin a different image at deploy time with the per-service env vars `BLACKFISH_TEXT_GENERATION_IMAGE` and `BLACKFISH_SPEECH_RECOGNITION_IMAGE` (format: `repo:tag`). These are surfaced through `blackfish images` and `/api/info`, so the rest of the system stays in sync with your override.
 
 ## Models
 

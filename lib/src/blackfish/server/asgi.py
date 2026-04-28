@@ -434,6 +434,15 @@ async def info(state: State) -> dict[str, Any]:
         "DEBUG": state.DEBUG,
         "CONTAINER_PROVIDER": state.CONTAINER_PROVIDER,
         "VERSION": importlib.metadata.version("blackfish-ai"),
+        "IMAGES": {
+            service: {
+                "repo": spec.repo,
+                "tag": spec.tag,
+                "docker_ref": spec.docker_ref,
+                "sif": spec.sif,
+            }
+            for service, spec in blackfish_config.IMAGES.items()
+        },
     }
 
 

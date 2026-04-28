@@ -1,4 +1,4 @@
-"""Tests for `blackfish image ls` and `blackfish image check`."""
+"""Tests for `blackfish image ls`."""
 
 import os
 import tempfile
@@ -82,27 +82,31 @@ class TestImageLs:
         assert result.exit_code != 0
 
 
-class TestImageCheck:
-    def test_missing_exits_nonzero(self, cli_runner, home_dir):
+class TestImageLsStrict:
+    def test_strict_missing_exits_nonzero(self, cli_runner, home_dir):
         home, _, _ = home_dir
         with _patch_home(home):
-            result = cli_runner.invoke(main, ["image", "check", "--profile", "default"])
+            result = cli_runner.invoke(
+                main, ["image", "ls", "--profile", "default", "--strict"]
+            )
         assert result.exit_code == 1
         assert "Missing images" in result.output
 
-    def test_all_present_exits_zero(self, cli_runner, home_dir):
+    def test_strict_all_present_exits_zero(self, cli_runner, home_dir):
         home, profile_home, _ = home_dir
         from blackfish.server.config import config
 
         for spec in config.IMAGES.values():
             open(os.path.join(profile_home, "images", spec.sif), "w").close()
         with _patch_home(home):
-            result = cli_runner.invoke(main, ["image", "check", "--profile", "default"])
+            result = cli_runner.invoke(
+                main, ["image", "ls", "--profile", "default", "--strict"]
+            )
         assert result.exit_code == 0, result.output
 
-    def test_default_profile_when_no_args(self, cli_runner, home_dir):
+    def test_strict_without_profile_errors(self, cli_runner, home_dir):
         home, _, _ = home_dir
         with _patch_home(home):
-            result = cli_runner.invoke(main, ["image", "check"])
-        # default profile exists and has no images -> exit 1
-        assert result.exit_code == 1
+            result = cli_runner.invoke(main, ["image", "ls", "--strict"])
+        assert result.exit_code != 0
+        assert "--strict" in result.output

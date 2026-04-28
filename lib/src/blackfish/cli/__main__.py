@@ -28,7 +28,7 @@ from blackfish.cli.profile import (
     upgrade_tigerflow,
     repair_profile,
 )
-from blackfish.cli.image import list_images, check_images
+from blackfish.cli.image import list_images
 from blackfish.server.config import config
 from blackfish.server.logger import logger
 from blackfish.cli.classes import ServiceOptions
@@ -80,7 +80,6 @@ def image() -> None:  # pragma: no cover
 
 
 image.add_command(list_images, "ls")
-image.add_command(check_images, "check")
 
 
 @main.command()

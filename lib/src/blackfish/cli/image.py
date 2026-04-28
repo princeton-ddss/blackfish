@@ -1,9 +1,8 @@
 """CLI utilities for inspecting service container images.
 
 `blackfish image ls` shows pinned registry images, optionally with per-profile
-availability. `blackfish image check` is a script-friendly variant that exits
-non-zero when a registry image is missing from both shared (cache) and home
-dirs of the selected profile.
+availability. Pass `--strict` to exit non-zero when any pinned image is missing
+from both shared (cache) and home dirs — useful in scripts and health checks.
 """
 
 from __future__ import annotations
@@ -181,14 +180,24 @@ def _fail(ctx: click.Context, message: str) -> None:
     default=False,
     help="Inspect every profile.",
 )
+@click.option(
+    "--strict",
+    is_flag=True,
+    default=False,
+    help="Exit 1 if any pinned image is missing from the inspected profile(s).",
+)
 @click.pass_context
 def list_images(
-    ctx: click.Context, profile_name: str | None, all_profiles: bool
+    ctx: click.Context,
+    profile_name: str | None,
+    all_profiles: bool,
+    strict: bool,
 ) -> None:
     """List pinned service images.
 
     Without --profile or --all, shows the registry (service, docker ref, SIF).
     With either flag, also reports availability in shared (cache) and home dirs.
+    Pass --strict to exit 1 when any pinned image is missing from both locations.
     """
     try:
         profiles = _resolve_profiles(profile_name, all_profiles)
@@ -197,6 +206,9 @@ def list_images(
         return
 
     if not profiles:
+        if strict:
+            _fail(ctx, "--strict requires --profile or --all.")
+            return
         print(_render_registry_table())
         return
 
@@ -208,41 +220,13 @@ def list_images(
 
     print(_render_availability_table(profiles, availability))
 
-
-@click.command(name="check")
-@click.option(
-    "--profile", "profile_name", type=str, default=None, help="Profile to check."
-)
-@click.option(
-    "--all", "all_profiles", is_flag=True, default=False, help="Check every profile."
-)
-@click.pass_context
-def check_images(
-    ctx: click.Context, profile_name: str | None, all_profiles: bool
-) -> None:
-    """Check that pinned images are available for the selected profile(s).
-
-    Exits 1 if any registry image is missing from both shared and home dirs.
-    Defaults to the "default" profile when neither --profile nor --all is given.
-    """
-    if not profile_name and not all_profiles:
-        profile_name = "default"
-
-    try:
-        profiles = _resolve_profiles(profile_name, all_profiles)
-        availability = {p.name: _availability(p, config.IMAGES) for p in profiles}
-    except _ImageCliError as exc:
-        _fail(ctx, str(exc))
-        return
-
-    print(_render_availability_table(profiles, availability))
-
-    missing = [
-        (p.name, service)
-        for p in profiles
-        for service, (shared, home) in availability[p.name].items()
-        if not shared and not home
-    ]
-    if missing:
-        details = ", ".join(f"{p}:{s}" for p, s in missing)
-        _fail(ctx, f"Missing images: {details}")
+    if strict:
+        missing = [
+            (p.name, service)
+            for p in profiles
+            for service, (shared, home) in availability[p.name].items()
+            if not shared and not home
+        ]
+        if missing:
+            details = ", ".join(f"{p}:{s}" for p, s in missing)
+            _fail(ctx, f"Missing images: {details}")

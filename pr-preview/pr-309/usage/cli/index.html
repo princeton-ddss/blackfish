@@ -1923,36 +1923,39 @@ requires you to confirm before deleting.</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>blackfish<span class="w"> </span>start
 </span></code></pre></div>
 <p>in your terminal. If everything worked, you should see a message stating the application startup is complete. This command starts the Blackfish API <em>and</em> UI. At this point, you're free to switch over to the UI, if desired: just mosey on over to <code>http://localhost:8000</code> in your favorite browser. It's a relatively straight-forward interface, and we provide a detailed <a href="../ui/">usage guide</a>. But let's stay focused on the CLI.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you encounter an <code>address already in use</code> error after trying to start the application, switch to a different port number using <code>BLACKFISH_PORT</code> and rerun <code>blackfish start</code>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If you encounter an <code>address already in use</code> error after trying to start the application, switch to a different port number and rerun <code>blackfish start</code>:
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nv">BLACKFISH_PORT</span><span class="o">=</span><span class="m">8001</span><span class="w"> </span>blackfish<span class="w"> </span>start
+</span></code></pre></div>
+Remember to set <code>BLACKFISH_PORT</code> consistently across all terminal sessions (see the <a href="#configuration">Configuration</a> section above).</p>
 </div>
 <p>Open a new terminal tab or window. First, let's see what type of services are available.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span>--help
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span>--help
 </span></code></pre></div>
 <p>This command displays a list of available sub-commands. One of these is <code>text-generation</code>, which is a service that generates text given an input prompt. There are a variety of models that we might use to perform this task, so let's check out what's available on our setup.</p>
 <h3 id="obtaining-models">Obtaining Models</h3>
 <p>The command to list available models is:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>blackfish<span class="w"> </span>model<span class="w"> </span>ls
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>blackfish<span class="w"> </span>model<span class="w"> </span>ls
 </span></code></pre></div>
 <p>Once you've added some models or if you already have access to a shared cache directory of models, the output should look something like the following:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>REPO                                   REVISION                                   PROFILE   IMAGE
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>openai/whisper-tiny                    169d4a4341b33bc18d8881c4b69c2e104e1cc0af   default   speech-recognition
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>openai/whisper-tiny                    be0ba7c2f24f0127b27863a23a08002af4c2c279   default   speech-recognition
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>openai/whisper-small                   973afd24965f72e36ca33b3055d56a652f456b4d   default   speech-recognition
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>TinyLlama/TinyLlama-1.1B-Chat-v1.0     ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971   default   text-generation
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>meta-llama/Meta-Llama-3-70B            b4d08b7db49d488da3ac49adf25a6b9ac01ae338   macbook   text-generation
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>openai/whisper-tiny                    169d4a4341b33bc18d8881c4b69c2e104e1cc0af   macbook   speech-recognition
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>TinyLlama/TinyLlama-1.1B-Chat-v1.0     4f42c91d806a19ae1a46af6c3fb5f4990d884cd6   macbook   text-generation
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>REPO                                   REVISION                                   PROFILE   IMAGE
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>openai/whisper-tiny                    169d4a4341b33bc18d8881c4b69c2e104e1cc0af   default   speech-recognition
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>openai/whisper-tiny                    be0ba7c2f24f0127b27863a23a08002af4c2c279   default   speech-recognition
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>openai/whisper-small                   973afd24965f72e36ca33b3055d56a652f456b4d   default   speech-recognition
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>TinyLlama/TinyLlama-1.1B-Chat-v1.0     ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971   default   text-generation
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>meta-llama/Meta-Llama-3-70B            b4d08b7db49d488da3ac49adf25a6b9ac01ae338   macbook   text-generation
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>openai/whisper-tiny                    169d4a4341b33bc18d8881c4b69c2e104e1cc0af   macbook   speech-recognition
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>TinyLlama/TinyLlama-1.1B-Chat-v1.0     4f42c91d806a19ae1a46af6c3fb5f4990d884cd6   macbook   text-generation
 </span></code></pre></div>
 <p>As you can see, there are a number of models available<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>. Notice that <code>TinyLlama/TinyLlama-1.1B-Chat-v1.0</code> is listed twice. The first listing refers to a specific "revision" (i.e., version) of this model—
 <code>ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971</code>—that is available to the <code>default</code> profile; the second listing refers to a different version of the same model—<code>4f42c91d806a19ae1a46af6c3fb5f4990d884cd6</code>—that is available to the <code>macbook</code> profile. For reproducibility, it's important to keep track of the exact revision used.</p>
 <p>Let's say you would really prefer to use a smaller version of <code>Llama</code> than the 70 billion parameter model shown above, say <code>meta-llama/Meta-Llama-3-1B</code>. To add the new model, simply type</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>blackfish<span class="w"> </span>model<span class="w"> </span>add<span class="w"> </span>meta-llama/Meta-Llama-3-1B
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>blackfish<span class="w"> </span>model<span class="w"> </span>add<span class="w"> </span>meta-llama/Meta-Llama-3-1B
 </span></code></pre></div>
 <p>This command downloads the model files, stores them in the default profile's <code>home_dir</code>, and updates the model database. Note that <code>model add</code> currently only supports Slurm profiles configured with <code>host=localhost</code> (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself.</p>
 <p>To remove a model, use <code>blackfish model rm</code>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>blackfish<span class="w"> </span>model<span class="w"> </span>rm<span class="w"> </span>meta-llama/Meta-Llama-3-1B
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>blackfish<span class="w"> </span>model<span class="w"> </span>rm<span class="w"> </span>meta-llama/Meta-Llama-3-1B
 </span></code></pre></div>
 <p>This removes the model files and its entry from the model database.</p>
 <p>Let's go ahead and run a service using one of these models.</p>
@@ -1961,28 +1964,28 @@ requires you to confirm before deleting.</p>
 <h4 id="run-start-a-service"><code>run</code> - Start a service</h4>
 <p>Looking back at the help message for <code>blackfish run</code>, we see that there are a few items that we should provide. First, we need to select the type of service to run. We've already decided to run
 <code>text-generation</code>, so we're good there. Next, there are a number of job options that we can provide. With the exception of <code>profile</code>, job options are based on the Slurm <code>sbatch</code> command and tell Blackfish the resources required to run a service. Finally, there are a number of "container options" available. To get a list of these, type <code>blackfish run text-generation --help</code>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span>text-generation<span class="w"> </span>--help
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span>text-generation<span class="w"> </span>--help
 </span></code></pre></div>
 <p>The most important of these is the <code>revision</code>, which specifies the exact version of the model we want to run. By default, Blackfish selects the most recent locally available version. This container option (as well as <code>--name</code>) is available for <em>all</em> tasks: the remaining options are task-specific.</p>
 <p>We'll choose <code>TinyLlama/TinyLlama-1.1B-Chat-v1.0</code> for the required <code>MODEL</code> argument, which we saw earlier is available to the <code>default</code> and <code>macbook</code> profiles. This is a relatively small model, but we still want to ask for a GPU to speed things up. Putting it altogether, here's the command to start your service:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>--gres<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>--mem<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>--ntasks-per-node<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span>--time<span class="w"> </span><span class="m">00</span>:30:00<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span>text-generation<span class="w"> </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span>--api-key<span class="w"> </span>sealsaretasty
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>blackfish<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>--gres<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>--mem<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span>--ntasks-per-node<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span>--time<span class="w"> </span><span class="m">00</span>:30:00<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span>text-generation<span class="w"> </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span>--api-key<span class="w"> </span>sealsaretasty
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Omitting the <code>--api-key</code> argument leaves your service naked. Other users of the system where your service is running could potentially hijack your server or even gain access to your files via the service.</p>
 </div>
 <p>If everything worked, you should see output that looks something like this:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>✔<span class="w"> </span>Found<span class="w"> </span><span class="m">49</span><span class="w"> </span>models.
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>✔<span class="w"> </span>Found<span class="w"> </span><span class="m">1</span><span class="w"> </span>snapshots.
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>⚠<span class="w"> </span>No<span class="w"> </span>revision<span class="w"> </span>provided.<span class="w"> </span>Using<span class="w"> </span>latest<span class="w"> </span>available<span class="w"> </span>commit:<span class="w"> </span>fe8a4ea1ffedaf415f4da2f062534de366a451e6.
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>✔<span class="w"> </span>Found<span class="w"> </span>model<span class="w"> </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0!
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>✔<span class="w"> </span>Started<span class="w"> </span>service:<span class="w"> </span>fed36739-70b4-4dc4-8017-a4277563aef9
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>✔<span class="w"> </span>Found<span class="w"> </span><span class="m">49</span><span class="w"> </span>models.
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>✔<span class="w"> </span>Found<span class="w"> </span><span class="m">1</span><span class="w"> </span>snapshots.
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>⚠<span class="w"> </span>No<span class="w"> </span>revision<span class="w"> </span>provided.<span class="w"> </span>Using<span class="w"> </span>latest<span class="w"> </span>available<span class="w"> </span>commit:<span class="w"> </span>fe8a4ea1ffedaf415f4da2f062534de366a451e6.
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>✔<span class="w"> </span>Found<span class="w"> </span>model<span class="w"> </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0!
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>✔<span class="w"> </span>Started<span class="w"> </span>service:<span class="w"> </span>fed36739-70b4-4dc4-8017-a4277563aef9
 </span></code></pre></div>
 <p>What just happened? First, Blackfish checked to make sure that the requested model is available to the <code>default</code> profile. Next, it found a list of available revisions of the model and selected the
 most recently published version because no revision was specified. Finally, it sent a request to deploy the model. Helpfully, the CLI returned an ID associated with the new service <code>fed36739-70b4-4dc4-8017-a4277563aef9</code>, which you can use to get information about our service via the <code>blackfish ls</code> command.</p>
@@ -1997,12 +2000,12 @@ time-to-first-inference, but may not be desirable for your use case. Download th
 </div>
 <h4 id="ls-list-services"><code>ls</code> - List services</h4>
 <p>To view a list of your <em>running</em> Blackfish services, type</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>blackfish<span class="w"> </span>ls<span class="w"> </span><span class="c1"># --filter id=&lt;service_id&gt;,status=&lt;status&gt;</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>blackfish<span class="w"> </span>ls<span class="w"> </span><span class="c1"># --filter id=&lt;service_id&gt;,status=&lt;status&gt;</span>
 </span></code></pre></div>
 <p>This will output a table similar to the following:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>SERVICE<span class="w"> </span>ID<span class="w">      </span>IMAGE<span class="w">                </span>MODEL<span class="w">                                </span>CREATED<span class="w">       </span>UPDATED<span class="w">     </span>STATUS<span class="w">    </span>PORT<span class="w">   </span>NAME<span class="w">              </span>PROFILE
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>97ffde37-7e02<span class="w">   </span>speech_recognition<span class="w">   </span>openai/whisper-large-v3<span class="w">              </span><span class="m">7</span><span class="w"> </span>hours<span class="w"> </span>ago<span class="w">   </span><span class="m">1</span><span class="w"> </span>min<span class="w"> </span>ago<span class="w">   </span>HEALTHY<span class="w">   </span><span class="m">8082</span><span class="w">   </span>blackfish-11846<span class="w">   </span>default
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>fed36739-70b4<span class="w">   </span>text_generation<span class="w">      </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w">   </span><span class="m">7</span><span class="w"> </span>sec<span class="w"> </span>ago<span class="w">     </span><span class="m">5</span><span class="w"> </span>sec<span class="w"> </span>ago<span class="w">   </span>PENDING<span class="w">   </span>None<span class="w">   </span>blackfish-89359<span class="w">   </span>default
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>SERVICE<span class="w"> </span>ID<span class="w">      </span>IMAGE<span class="w">                </span>MODEL<span class="w">                                </span>CREATED<span class="w">       </span>UPDATED<span class="w">     </span>STATUS<span class="w">    </span>PORT<span class="w">   </span>NAME<span class="w">              </span>PROFILE
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>97ffde37-7e02<span class="w">   </span>speech_recognition<span class="w">   </span>openai/whisper-large-v3<span class="w">              </span><span class="m">7</span><span class="w"> </span>hours<span class="w"> </span>ago<span class="w">   </span><span class="m">1</span><span class="w"> </span>min<span class="w"> </span>ago<span class="w">   </span>HEALTHY<span class="w">   </span><span class="m">8082</span><span class="w">   </span>blackfish-11846<span class="w">   </span>default
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>fed36739-70b4<span class="w">   </span>text_generation<span class="w">      </span>TinyLlama/TinyLlama-1.1B-Chat-v1.0<span class="w">   </span><span class="m">7</span><span class="w"> </span>sec<span class="w"> </span>ago<span class="w">     </span><span class="m">5</span><span class="w"> </span>sec<span class="w"> </span>ago<span class="w">   </span>PENDING<span class="w">   </span>None<span class="w">   </span>blackfish-89359<span class="w">   </span>default
 </span></code></pre></div>
 <p>The last item in this list is the service we just started. In this case, the <code>default</code> profile happens to be set up to connect to a remote HPC cluster, so the service is run as a Slurm job. It may take a few minutes for our Slurm job to start, and it will require additional time for the service to be ready after that<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>. Until then, our service's status will be either <code>PENDING</code> or <code>STARTING</code>. Now would be a good time to brew a hot beverage ☕️.</p>
 <div class="admonition tip">
@@ -2013,50 +2016,50 @@ information.</p>
 <p>Now that you're refreshed, let's see how our service is doing. Re-run the command above. If things went smoothly, then you should see that the service's status has changed to <code>HEALTHY</code> (if your service is still <code>STARTING</code>, give it another minute and try again).</p>
 <p>At this point, we can start interacting with the service. Let's say "Hello", shall we?</p>
 <p>The details of calling a service depend on the service you are trying to connect to. For the <code>text-generation</code> service, the primary endpoint is <code>/v1/chat/completions</code>. Here's a typical request from the command-line:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>curl<span class="w"> </span>http://localhost:8080/v1/chat/completions<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer sealsaretasty&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="s1">        &quot;messages&quot;: [</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="s1">            {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;You are an expert marine biologist.&quot;},</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="s1">            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Why are orcas so awesome?&quot;}</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="s1">        ],</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="s1">        &quot;max_completion_tokens&quot;: 100,</span>
-</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="s1">        &quot;temperature&quot;: 0.1,</span>
-</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="s1">        &quot;stream&quot;: false</span>
-</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="s1">    }&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>curl<span class="w"> </span>http://localhost:8080/v1/chat/completions<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer sealsaretasty&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="s1">        &quot;messages&quot;: [</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="s1">            {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;You are an expert marine biologist.&quot;},</span>
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="s1">            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Why are orcas so awesome?&quot;}</span>
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="s1">        ],</span>
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="s1">        &quot;max_completion_tokens&quot;: 100,</span>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="s1">        &quot;temperature&quot;: 0.1,</span>
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="s1">        &quot;stream&quot;: false</span>
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="s1">    }&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
 </span></code></pre></div>
 <p>A successful response will look like this:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>                                 Dload  Upload   Total   Spent    Left  Speed
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>100  1192  100   911  100   281   1652    509 --:--:-- --:--:-- --:--:--  2159
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>{
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>  &quot;id&quot;: &quot;chatcmpl-b6452981728f4f3cb563960d6639f8a4&quot;,
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>  &quot;object&quot;: &quot;chat.completion&quot;,
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>  &quot;created&quot;: 1747826716,
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>  &quot;model&quot;: &quot;/data/snapshots/fe8a4ea1ffedaf415f4da2f062534de366a451e6&quot;,
-</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>  &quot;choices&quot;: [
-</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>    {
-</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>      &quot;index&quot;: 0,
-</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>      &quot;message&quot;: {
-</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>        &quot;role&quot;: &quot;assistant&quot;,
-</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>        &quot;reasoning_content&quot;: null,
-</span><span id="__span-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>        &quot;content&quot;: &quot;Orcas (also known as killer whales) are incredibly intelligent and social animals that are known for their incredible abilities. Here are some reasons why orcas are so awesome:\n\n1. Intelligence: Orcas are highly intelligent and have been observed using tools, communicating with each other, and even learning from their trainers.\n\n2. Social behavior: Orcas are highly social animals and form complex social structures, including family groups, pods,&quot;,
-</span><span id="__span-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>        &quot;tool_calls&quot;: []
-</span><span id="__span-20-17"><a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>      },
-</span><span id="__span-20-18"><a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>      &quot;logprobs&quot;: null,
-</span><span id="__span-20-19"><a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>      &quot;finish_reason&quot;: &quot;length&quot;,
-</span><span id="__span-20-20"><a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>      &quot;stop_reason&quot;: null
-</span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>    }
-</span><span id="__span-20-22"><a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a>  ],
-</span><span id="__span-20-23"><a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a>  &quot;usage&quot;: {
-</span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>    &quot;prompt_tokens&quot;: 40,
-</span><span id="__span-20-25"><a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a>    &quot;total_tokens&quot;: 140,
-</span><span id="__span-20-26"><a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a>    &quot;completion_tokens&quot;: 100,
-</span><span id="__span-20-27"><a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a>    &quot;prompt_tokens_details&quot;: null
-</span><span id="__span-20-28"><a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a>  },
-</span><span id="__span-20-29"><a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a>  &quot;prompt_logprobs&quot;: null
-</span><span id="__span-20-30"><a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a>}
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>                                 Dload  Upload   Total   Spent    Left  Speed
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>100  1192  100   911  100   281   1652    509 --:--:-- --:--:-- --:--:--  2159
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>{
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>  &quot;id&quot;: &quot;chatcmpl-b6452981728f4f3cb563960d6639f8a4&quot;,
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>  &quot;object&quot;: &quot;chat.completion&quot;,
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>  &quot;created&quot;: 1747826716,
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>  &quot;model&quot;: &quot;/data/snapshots/fe8a4ea1ffedaf415f4da2f062534de366a451e6&quot;,
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>  &quot;choices&quot;: [
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>    {
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>      &quot;index&quot;: 0,
+</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>      &quot;message&quot;: {
+</span><span id="__span-21-13"><a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a>        &quot;role&quot;: &quot;assistant&quot;,
+</span><span id="__span-21-14"><a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a>        &quot;reasoning_content&quot;: null,
+</span><span id="__span-21-15"><a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a>        &quot;content&quot;: &quot;Orcas (also known as killer whales) are incredibly intelligent and social animals that are known for their incredible abilities. Here are some reasons why orcas are so awesome:\n\n1. Intelligence: Orcas are highly intelligent and have been observed using tools, communicating with each other, and even learning from their trainers.\n\n2. Social behavior: Orcas are highly social animals and form complex social structures, including family groups, pods,&quot;,
+</span><span id="__span-21-16"><a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a>        &quot;tool_calls&quot;: []
+</span><span id="__span-21-17"><a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a>      },
+</span><span id="__span-21-18"><a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a>      &quot;logprobs&quot;: null,
+</span><span id="__span-21-19"><a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a>      &quot;finish_reason&quot;: &quot;length&quot;,
+</span><span id="__span-21-20"><a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a>      &quot;stop_reason&quot;: null
+</span><span id="__span-21-21"><a id="__codelineno-21-21" name="__codelineno-21-21" href="#__codelineno-21-21"></a>    }
+</span><span id="__span-21-22"><a id="__codelineno-21-22" name="__codelineno-21-22" href="#__codelineno-21-22"></a>  ],
+</span><span id="__span-21-23"><a id="__codelineno-21-23" name="__codelineno-21-23" href="#__codelineno-21-23"></a>  &quot;usage&quot;: {
+</span><span id="__span-21-24"><a id="__codelineno-21-24" name="__codelineno-21-24" href="#__codelineno-21-24"></a>    &quot;prompt_tokens&quot;: 40,
+</span><span id="__span-21-25"><a id="__codelineno-21-25" name="__codelineno-21-25" href="#__codelineno-21-25"></a>    &quot;total_tokens&quot;: 140,
+</span><span id="__span-21-26"><a id="__codelineno-21-26" name="__codelineno-21-26" href="#__codelineno-21-26"></a>    &quot;completion_tokens&quot;: 100,
+</span><span id="__span-21-27"><a id="__codelineno-21-27" name="__codelineno-21-27" href="#__codelineno-21-27"></a>    &quot;prompt_tokens_details&quot;: null
+</span><span id="__span-21-28"><a id="__codelineno-21-28" name="__codelineno-21-28" href="#__codelineno-21-28"></a>  },
+</span><span id="__span-21-29"><a id="__codelineno-21-29" name="__codelineno-21-29" href="#__codelineno-21-29"></a>  &quot;prompt_logprobs&quot;: null
+</span><span id="__span-21-30"><a id="__codelineno-21-30" name="__codelineno-21-30" href="#__codelineno-21-30"></a>}
 </span></code></pre></div>
 <p>You can, of course, use any language you like for communicating with services: Python, R, JavaScript, etc. In the case of <code>text-generation</code>, you can also use client-libraries like <a href="https://github.com/openai/openai-python"><code>openai-python</code></a> to simplify API workflows.</p>
 <div class="admonition tip">
@@ -2065,12 +2068,12 @@ information.</p>
 </div>
 <h4 id="stop-stop-a-service"><code>stop</code> - Stop a service</h4>
 <p>When you are done with a service, you should shut it down and return its resources to the cluster. To do so, simply type:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>blackfish<span class="w"> </span>stop<span class="w"> </span>fed36739-70b4-4dc4-8017-a4277563aef9
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>blackfish<span class="w"> </span>stop<span class="w"> </span>fed36739-70b4-4dc4-8017-a4277563aef9
 </span></code></pre></div>
 <p>You should receive a nice message stating that the service was stopped, which you can confirm by checking its status with <code>blackfish ls</code>.</p>
 <h4 id="rm-delete-a-service"><code>rm</code> - Delete a service</h4>
 <p>Blackfish keeps a record of every service that you've ever run. These records aren't automatically cleaned up, so it's a good idea to delete them when you're done using a service (if you don't need them for record keeping):</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>blackfish<span class="w"> </span>rm<span class="w"> </span>--filters<span class="w"> </span><span class="nv">id</span><span class="o">=</span>fed36739-70b4-4dc4-8017-a4277563aef9
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>blackfish<span class="w"> </span>rm<span class="w"> </span>--filters<span class="w"> </span><span class="nv">id</span><span class="o">=</span>fed36739-70b4-4dc4-8017-a4277563aef9
 </span></code></pre></div>
 <h2 id="batch-jobs">Batch Jobs</h2>
 <p>Services are great for interactive work, but sometimes you need to run an ML task across a whole directory of files — a corpus of audio to transcribe, a document set to translate, or a photo library to run object detection on. Batch jobs are the right tool for this. Under the hood, Blackfish delegates batch execution to <a href="https://github.com/princeton-ddss/tigerflow">TigerFlow</a>, a companion project that manages Slurm job submission, worker parallelism, and per-file progress tracking.</p>
@@ -2117,13 +2120,13 @@ information.</p>
 </table>
 <h3 id="run-start-a-batch-job"><code>run</code> - Start a batch job</h3>
 <p>Use <code>blackfish batch run</code> to submit a batch job:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">  </span>--name<span class="w"> </span>my-transcription<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span>--task<span class="w"> </span>transcribe<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span>--model<span class="w"> </span>openai/whisper-large-v3<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">  </span>--input-dir<span class="w"> </span>/scratch/shamu/audio<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">  </span>--output-dir<span class="w"> </span>/scratch/shamu/transcripts<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">  </span>--max-workers<span class="w"> </span><span class="m">4</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span>--name<span class="w"> </span>my-transcription<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">  </span>--task<span class="w"> </span>transcribe<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span>--model<span class="w"> </span>openai/whisper-large-v3<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">  </span>--input-dir<span class="w"> </span>/scratch/shamu/audio<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="w">  </span>--output-dir<span class="w"> </span>/scratch/shamu/transcripts<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="w">  </span>--max-workers<span class="w"> </span><span class="m">4</span>
 </span></code></pre></div>
 <p>The <code>--name</code>, <code>--task</code>, <code>--model</code>, <code>--input-dir</code>, and <code>--output-dir</code> flags are required. Other useful flags:</p>
 <ul>
@@ -2139,15 +2142,15 @@ information.</p>
 <p>Add <code>--dry-run</code> to print the generated TigerFlow pipeline config without submitting the job. Useful for validating settings before a long-running batch.</p>
 </div>
 <h3 id="ls-list-batch-jobs"><code>ls</code> - List batch jobs</h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>ls
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>ls
 </span></code></pre></div>
 <p>Lists all batch jobs with their current status, task, model, and per-file progress.</p>
 <h3 id="stop-stop-a-batch-job"><code>stop</code> - Stop a batch job</h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>stop<span class="w"> </span>&lt;job-id&gt;
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>stop<span class="w"> </span>&lt;job-id&gt;
 </span></code></pre></div>
 <p>Stops a running batch job. Partial results already written to the output directory are preserved.</p>
 <h3 id="rm-delete-a-batch-job"><code>rm</code> - Delete a batch job</h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>rm<span class="w"> </span>&lt;job-id&gt;
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>rm<span class="w"> </span>&lt;job-id&gt;
 </span></code></pre></div>
 <p>Removes a batch job record from Blackfish's internal database.</p>
 <div class="footnote">

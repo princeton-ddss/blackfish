@@ -34,6 +34,7 @@ import FileAttachmentList from "./FileAttachmentList";
 import FileSelectModal from "@/components/FileSelectModal";
 import Notification from "@/components/Notification";
 import { IMAGE_EXTENSIONS } from "../lib/imageUtils";
+import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
 
 const Role = {
@@ -86,6 +87,7 @@ function classifyApiError(error) {
  * @param {Function} options.onImageRemoteSelect
  * @param {Function} options.onFileBrowserUpload
  * @param {Function} options.onFileRemoteSelect
+ * @param {boolean} options.isServiceHealthy
  * @return {JSX.Element}
  */
 function UserMessageInput({
@@ -104,8 +106,15 @@ function UserMessageInput({
   onImageRemoteSelect,
   onFileBrowserUpload,
   onFileRemoteSelect,
-  selectedService,
+  isServiceHealthy,
 }) {
+  const hasMessageContent = Boolean(
+    (message && message.content && message.content.length > 0) ||
+    attachedImages.length > 0 ||
+    attachedFiles.length > 0
+  );
+  const canSubmit = isServiceHealthy && hasMessageContent;
+
   return (
     <div className="flex items-start space-x-4 mt-auto pt-4">
       <div className="min-w-0 flex-1">
@@ -149,7 +158,7 @@ function UserMessageInput({
                   return;
                 } else if (event.key === "Enter") {
                   event.preventDefault();
-                  if (selectedService) {
+                  if (canSubmit) {
                     onSubmit(event);
                   }
                 }
@@ -196,7 +205,7 @@ function UserMessageInput({
             <div className="shrink-0">
               <button
                 type="submit"
-                disabled={!selectedService || (message && message.content && message.content.length === 0)}
+                disabled={!canSubmit}
                 className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
               >
                 <PaperAirplaneIcon className="size-5" />
@@ -226,7 +235,7 @@ UserMessageInput.propTypes = {
   onImageRemoteSelect: PropTypes.func,
   onFileBrowserUpload: PropTypes.func,
   onFileRemoteSelect: PropTypes.func,
-  selectedService: PropTypes.object,
+  isServiceHealthy: PropTypes.bool,
 };
 
 /**
@@ -460,7 +469,7 @@ UserMessage.propTypes = {
  * @param {Function} options.handleResubmit
  * @param {JSX.Element}
  */
-function AssisantMessage({ message, handleResubmit }) {
+function AssisantMessage({ message, handleResubmit, canRegenerate }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="mt-3 max-w-xl">
@@ -489,7 +498,8 @@ function AssisantMessage({ message, handleResubmit }) {
         </button>
         <button
           onClick={handleResubmit}
-          className="group relative px-1 py-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+          disabled={!canRegenerate}
+          className="group relative px-1 py-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-400 dark:disabled:hover:text-gray-500"
         >
           <ArrowPathIcon className="w-5 h-5" />
           <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">Regenerate</span>
@@ -502,6 +512,7 @@ function AssisantMessage({ message, handleResubmit }) {
 AssisantMessage.propTypes = {
   message: PropTypes.object,
   handleResubmit: PropTypes.func,
+  canRegenerate: PropTypes.bool,
 };
 
 /**
@@ -511,6 +522,7 @@ AssisantMessage.propTypes = {
  * @param {Function} options.onEditMessage
  * @param {Function} options.onDeleteMessage
  * @param {Function} options.handleResubmit
+ * @param {boolean} options.canRegenerate
  * @return {JSX.Element}
  */
 function Message({
@@ -518,6 +530,7 @@ function Message({
   onEditMessage,
   onDeleteMessage,
   handleResubmit,
+  canRegenerate,
 }) {
   if (message.role === Role.USER) {
     return (
@@ -532,6 +545,7 @@ function Message({
       <AssisantMessage
         message={message}
         handleResubmit={handleResubmit}
+        canRegenerate={canRegenerate}
       />
     );
   }
@@ -542,6 +556,7 @@ Message.propTypes = {
   onEditMessage: PropTypes.func,
   onDeleteMessage: PropTypes.func,
   handleResubmit: PropTypes.func,
+  canRegenerate: PropTypes.bool,
 };
 
 /**
@@ -552,9 +567,10 @@ Message.propTypes = {
  * @param {Function} options.handleResubmit
  * @param {JSX.Element} options.elementRef
  * @param {boolean} options.isWaitingForResponse
+ * @param {boolean} options.canRegenerate
  * @return {JSX.Element}
  */
-function MessageList({ messages, setMessages, handleResubmit, elementRef, isWaitingForResponse }) {
+function MessageList({ messages, setMessages, handleResubmit, elementRef, isWaitingForResponse, canRegenerate }) {
   try {
     sessionStorage.setItem("tgcc-ml", JSON.stringify(messages));
   } catch (error) {
@@ -608,6 +624,7 @@ function MessageList({ messages, setMessages, handleResubmit, elementRef, isWait
             );
           }}
           handleResubmit={(event) => handleResubmit(event, index)}
+          canRegenerate={canRegenerate}
         />
       ))}
       {isWaitingForResponse && (
@@ -632,6 +649,7 @@ MessageList.propTypes = {
   handleResubmit: PropTypes.func,
   elementRef: PropTypes.object,
   isWaitingForResponse: PropTypes.bool,
+  canRegenerate: PropTypes.bool,
 };
 
 /**
@@ -645,6 +663,7 @@ MessageList.propTypes = {
 export default function TextGenerationChatContainer({ parameters, systemMessage, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
   const { profile } = useContext(ProfileContext);
+  const isServiceHealthy = selectedService?.status === ServiceStatus.HEALTHY;
   const storedMessages = sessionStorage.getItem("tgcc-ml");
   const [messages, setMessages] = useState(
     storedMessages ? JSON.parse(storedMessages) : []
@@ -718,6 +737,13 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const hasUserInput = Boolean(
+      userMessage.content.length > 0 ||
+      attachedImages.length > 0 ||
+      attachedFiles.length > 0
+    );
+    if (!isServiceHealthy || !hasUserInput) return;
+
     console.debug("user message submitted");
 
     // Prepend file context to the message text (for LLM)
@@ -838,6 +864,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
   const handleResubmit = async (event, index) => {
     event.preventDefault();
+    if (!isServiceHealthy) return;
+
     console.debug(`regenerating message at index ${index}`);
 
     setApiError(null);
@@ -954,6 +982,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         handleResubmit={handleResubmit}
         elementRef={elementRef}
         isWaitingForResponse={isWaitingForResponse}
+        canRegenerate={isServiceHealthy}
       />
 
       <UserMessageInput
@@ -975,7 +1004,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         onImageRemoteSelect={() => setImageBrowserOpen(true)}
         onFileBrowserUpload={handleFileBrowserUpload}
         onFileRemoteSelect={() => setFileBrowserOpen(true)}
-        selectedService={selectedService}
+        isServiceHealthy={isServiceHealthy}
       />
 
       {/* Image file browser modal */}

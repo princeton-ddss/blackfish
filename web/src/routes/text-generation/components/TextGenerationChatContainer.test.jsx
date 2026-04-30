@@ -127,6 +127,7 @@ const MockProviders = ({ children, selectedService = mockSelectedService, profil
 describe("TextGenerationChatContainer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     mockClipboard.writeText.mockClear();
     console.log = vi.fn();
     console.error = vi.fn();
@@ -218,6 +219,40 @@ describe("TextGenerationChatContainer", () => {
       const submitButton = getByRole("button", { name: "Submit" });
       expect(submitButton).not.toBeDisabled();
       await user.clear(textarea);
+    });
+
+    it("disables submit button when selected service is unhealthy", async () => {
+      const user = userEvent.setup();
+      const unhealthyService = {
+        ...mockSelectedService,
+        status: ServiceStatus.UNHEALTHY,
+      };
+      const {getByPlaceholderText, getByRole} = render(
+        <MockProviders selectedService={unhealthyService}>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
+      );
+      const textarea = getByPlaceholderText("Why are orcas so awesome?");
+      await user.type(textarea, "Test prompt");
+      const submitButton = getByRole("button", { name: "Submit" });
+      expect(submitButton).toBeDisabled();
+      await user.keyboard("{Enter}");
+      expect(streamChatCompletionInference).not.toHaveBeenCalled();
+    });
+
+    it("disables submit button when no service is selected", async () => {
+      const user = userEvent.setup();
+      const {getByPlaceholderText, getByRole} = render(
+        <MockProviders selectedService={null}>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
+      );
+      const textarea = getByPlaceholderText("Why are orcas so awesome?");
+      await user.type(textarea, "Test prompt");
+      const submitButton = getByRole("button", { name: "Submit" });
+      expect(submitButton).toBeDisabled();
+      await user.keyboard("{Enter}");
+      expect(streamChatCompletionInference).not.toHaveBeenCalled();
     });
   });
 
@@ -505,12 +540,40 @@ describe("TextGenerationChatContainer", () => {
       mockStream.next.mockResolvedValue({
         value: [{ choices: [{ delta: { content: "Resubmitted response" } }] }]
       });
-      await user.click(submitButton);
+      const regenButton = getByRole("button", { name: "Regenerate" });
+      await user.click(regenButton);
       await waitFor(() => {
         expect(getByText("Resubmitted response")).toBeInTheDocument();
       });
       expect(streamChatCompletionInference).toHaveBeenCalledTimes(2);
       await user.clear(textarea);
+    });
+
+    it.each([
+      ["no selected service", null],
+      [
+        "an unhealthy service",
+        {
+          ...mockSelectedService,
+          status: ServiceStatus.UNHEALTHY,
+        },
+      ],
+    ])("disables regenerate button with %s", async (_, selectedService) => {
+      const user = userEvent.setup();
+      sessionStorage.setItem("tgcc-ml", JSON.stringify([
+        { role: "user", content: "Test message", _displayText: "Test message" },
+        { role: "assistant", content: "Original response" },
+      ]));
+      const {getByRole, getByText} = render(
+        <MockProviders selectedService={selectedService}>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
+      );
+      expect(getByText("Original response")).toBeInTheDocument();
+      const regenButton = getByRole("button", { name: "Regenerate" });
+      expect(regenButton).toBeDisabled();
+      await user.click(regenButton);
+      expect(streamChatCompletionInference).not.toHaveBeenCalled();
     });
   });
 });

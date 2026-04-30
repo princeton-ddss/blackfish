@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shlex
 from typing import Iterable
 
 import rich_click as click
@@ -61,7 +62,9 @@ async def _check_paths(
         return {}
 
     # One round trip: print "1" if exists else "0", line per path.
-    script = " ; ".join(f"if [ -e {p!r} ]; then echo 1; else echo 0; fi" for p in paths)
+    script = " ; ".join(
+        f"if [ -e {shlex.quote(p)} ]; then echo 1; else echo 0; fi" for p in paths
+    )
     rc, stdout, stderr = await runner.run(script)
     if rc != 0:
         raise _ImageCliError(

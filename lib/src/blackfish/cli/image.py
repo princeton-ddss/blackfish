@@ -2,7 +2,7 @@
 
 `blackfish image ls` shows pinned registry images, optionally with per-profile
 availability. Pass `--strict` to exit non-zero when any pinned image is missing
-from both shared (cache) and home dirs — useful in scripts and health checks.
+from both cache and home dirs — useful in scripts and health checks.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def _load_profile(home_dir: str, name: str) -> BlackfishProfile:
 
 
 def _sif_paths(profile: BlackfishProfile, spec: ImageSpec) -> tuple[str, str]:
-    """Return (shared_path, home_path) for a SIF on this profile."""
+    """Return (cache_path, home_path) for a SIF on this profile."""
     return (
         os.path.join(profile.cache_dir, "images", spec.sif),
         os.path.join(profile.home_dir, "images", spec.sif),
@@ -82,14 +82,14 @@ async def _check_paths(
 def _availability(
     profile: BlackfishProfile, images: dict[str, ImageSpec]
 ) -> dict[str, tuple[bool, bool]]:
-    """For each service, return (shared_exists, home_exists) on the profile.
+    """For each service, return (cache_exists, home_exists) on the profile.
 
     Wraps the probe in a spinner so users get feedback during slow SSH calls.
     """
     paths: list[str] = []
     for spec in images.values():
-        shared, home = _sif_paths(profile, spec)
-        paths.extend([shared, home])
+        cache, home = _sif_paths(profile, spec)
+        paths.extend([cache, home])
 
     runner = _runner_for(profile)
     with yaspin(text=f"Checking images for profile {profile.name!r}...") as spinner:
@@ -107,8 +107,8 @@ def _availability(
 
     out: dict[str, tuple[bool, bool]] = {}
     for service, spec in images.items():
-        shared, home = _sif_paths(profile, spec)
-        out[service] = (present[shared], present[home])
+        cache, home = _sif_paths(profile, spec)
+        out[service] = (present[cache], present[home])
     return out
 
 
@@ -127,23 +127,25 @@ def _render_availability_table(
     profiles: list[BlackfishProfile],
     availability: dict[str, dict[str, tuple[bool, bool]]],
 ) -> PrettyTable:
-    headers = ["PROFILE", "SERVICE", "DOCKER REF", "SIF", "SHARED", "HOME"]
+    headers = ["PROFILE", "SERVICE", "DOCKER REF", "SIF", "CACHE", "HOME"]
     tab = PrettyTable(field_names=headers)
     tab.set_style(TableStyle.PLAIN_COLUMNS)
     for field in headers:
         tab.align[field] = "l"
     tab.right_padding_width = 3
+    yes = LogSymbols.SUCCESS.value
+    no = LogSymbols.ERROR.value
     for profile in profiles:
         for service, spec in config.IMAGES.items():
-            shared, home = availability[profile.name][service]
+            cache, home = availability[profile.name][service]
             tab.add_row(
                 [
                     profile.name,
                     service,
                     spec.docker_ref,
                     spec.sif,
-                    "yes" if shared else "no",
-                    "yes" if home else "no",
+                    yes if cache else no,
+                    yes if home else no,
                 ]
             )
     return tab
@@ -199,7 +201,7 @@ def list_images(
     """List pinned service images.
 
     Without --profile or --all, shows the registry (service, docker ref, SIF).
-    With either flag, also reports availability in shared (cache) and home dirs.
+    With either flag, also reports availability in cache and home dirs.
     Pass --strict to exit 1 when any pinned image is missing from both locations.
     """
     try:
@@ -227,8 +229,8 @@ def list_images(
         missing = [
             (p.name, service)
             for p in profiles
-            for service, (shared, home) in availability[p.name].items()
-            if not shared and not home
+            for service, (cache, home) in availability[p.name].items()
+            if not cache and not home
         ]
         if missing:
             details = ", ".join(f"{p}:{s}" for p, s in missing)

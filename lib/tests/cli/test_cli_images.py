@@ -6,8 +6,12 @@ from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
+from log_symbols.symbols import LogSymbols
 
 from blackfish.cli.__main__ import main
+
+YES = LogSymbols.SUCCESS.value
+NO = LogSymbols.ERROR.value
 
 
 @pytest.fixture
@@ -89,7 +93,7 @@ class TestImageLs:
         assert result.exit_code == 0, result.output
         assert "default" in result.output
         # No SIFs placed -> nothing is reported as available.
-        assert "yes" not in result.output
+        assert YES not in result.output
 
     def test_profile_reports_present_in_home(self, cli_runner, home_dir):
         home, profile_home, _ = home_dir
@@ -100,7 +104,7 @@ class TestImageLs:
         with _patch_home(home):
             result = cli_runner.invoke(main, ["image", "ls", "--profile", "default"])
         assert result.exit_code == 0, result.output
-        assert "yes" in result.output
+        assert YES in result.output
 
     def test_unknown_profile(self, cli_runner, home_dir):
         home, _, _ = home_dir
@@ -140,11 +144,11 @@ class TestImageLs:
         assert len(default_rows) == len(services)
         assert len(secondary_rows) == len(services)
 
-        # `default` reports HOME=yes for every service; `secondary` reports no.
+        # `default` reports HOME present for every service; `secondary` does not.
         for row in default_rows:
-            assert "yes" in row, row
+            assert YES in row, row
         for row in secondary_rows:
-            assert "yes" not in row, row
+            assert YES not in row, row
 
     def test_profile_and_all_conflict(self, cli_runner, home_dir):
         home, _, _ = home_dir

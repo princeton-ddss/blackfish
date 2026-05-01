@@ -21,10 +21,10 @@ function Page({ task, fullWidth = false, children }) {
             alt="blackfish-error"
           />
         </div>
-        <div className="flex flex-row justify-center items-center dark:text-white">
+        <div className="flex flex-row justify-center items-center dark:text-gray-100">
           {"There's something fishy going on here."}
         </div>
-        <div className="flex flex-row justify-center items-center dark:text-white">
+        <div className="flex flex-row justify-center items-center dark:text-gray-100">
           {error.status}
         </div>
       </div>

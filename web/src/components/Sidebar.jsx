@@ -60,7 +60,6 @@ function Sidebar() {
                                         <span
                                             className="group flex gap-x-3 rounded-md p-2 text-sm text-gray-400 dark:text-white/50 cursor-not-allowed"
                                             title="Requires Slurm profile"
-                                            aria-disabled="true"
                                         >
                                             <item.icon
                                                 aria-hidden="true"

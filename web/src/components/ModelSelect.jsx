@@ -12,15 +12,46 @@ import PropTypes from "prop-types";
 import { classNames, getUniqueRepoIds } from "@/lib/util";
 
 /**
- * Model Select component.
+ * Loading skeleton for select controls.
  * @param {object} options
- * @param {Function} options.setRepoId
- * @param {boolean} options.disabled
+ * @param {string} options.label
  * @return {JSX.Element}
  */
-function ModelSelect({ models, setRepoId, setModelId, disabled }) {
+function SelectSkeleton({ label }) {
+  return (
+    <Field disabled>
+      <Label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+        {label}
+      </Label>
+      <div className="relative mt-2">
+        <div
+          aria-label={`${label} loading`}
+          aria-busy="true"
+          className="h-9 w-full animate-pulse rounded-md bg-gray-200 dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600"
+        />
+      </div>
+    </Field>
+  );
+}
+
+SelectSkeleton.propTypes = {
+  label: PropTypes.string.isRequired,
+};
+
+/**
+ * Model Select component.
+ * @param {object} options
+ * @param {Array<object>} options.models
+ * @param {Function} options.setRepoId
+ * @param {Function} options.setModelId
+ * @param {boolean} options.disabled
+ * @param {boolean} options.isLoading
+ * @return {JSX.Element}
+ */
+function ModelSelect({ models, setRepoId, setModelId, disabled, isLoading = false }) {
 
   const [selected, setSelected] = useState(null);
+  const isDisabled = disabled || isLoading;
 
   // filter unique repo_ids
   const repos = getUniqueRepoIds(models);
@@ -50,20 +81,24 @@ function ModelSelect({ models, setRepoId, setModelId, disabled }) {
   }
 
   // handle errors and missingness
+  if (isLoading) {
+    return <SelectSkeleton label="Model" />;
+  }
+
   if (selected === null) {
     return <></>;
   }
 
   return (
-    <Field disabled={disabled}>
-      <Listbox value={selected} onChange={handleRepoChange}>
+    <Field disabled={isDisabled}>
+      <Listbox value={selected} onChange={handleRepoChange} disabled={isDisabled}>
         <Label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
           Model
         </Label>
             <div className="relative mt-2">
               <ListboxButton
                 className={classNames(
-                  disabled ? "bg-gray-100 dark:bg-gray-800 ring-gray-300 dark:ring-gray-600 ring-1" : "bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                  isDisabled ? "bg-gray-100 dark:bg-gray-800 ring-gray-300 dark:ring-gray-600 ring-1" : "bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500",
                   "relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 sm:text-sm sm:leading-6"
                 )}
               >
@@ -135,6 +170,7 @@ ModelSelect.propTypes = {
   setRepoId: PropTypes.func,
   setModelId: PropTypes.func,
   disabled: PropTypes.bool,
+  isLoading: PropTypes.bool,
 };
 
 export default ModelSelect;

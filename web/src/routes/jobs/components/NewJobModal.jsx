@@ -451,7 +451,13 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   const [jobName, setJobName] = useState("");
 
   // Model selection - fetch models for the task's service type(s)
-  const { models, isLoading: modelsLoading, error: modelsError } = useModels(profile, task?.service);
+  const {
+    models,
+    isLoading: modelsLoading,
+    isRefreshing: modelsRefreshing,
+    error: modelsError,
+  } = useModels(profile, task?.service);
+  const modelsFetching = modelsLoading || modelsRefreshing;
   const [repoId, setRepoId] = useState(null);
   const [model, setModel] = useState(null);
 
@@ -805,7 +811,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   const isStepValid = (stepId) => {
     switch (stepId) {
       case "model":
-        return repoId && !modelsLoading;
+        return repoId && !modelsFetching;
       case "options":
         // Check required params (including dynamically required ones based on model type)
         if (!task) return false;
@@ -877,7 +883,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
               <Alert variant="error" title="Failed to load models">
                 {modelsError.message || "Could not fetch models from the server."}
               </Alert>
-            ) : !modelsLoading && (!models || models.length === 0) ? (
+            ) : !modelsFetching && (!models || models.length === 0) ? (
               <Alert variant="warning" title="No models available">
                 Switch profiles or download a model from{" "}
                 <a className="underline" href="https://huggingface.co/models?pipeline_tag=text-generation&sort=trending">
@@ -891,7 +897,8 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                     models={models || []}
                     repoId={repoId}
                     setRepoId={setRepoId}
-                    disabled={isSubmitting || modelsLoading}
+                    disabled={isSubmitting || modelsFetching}
+                    isLoading={modelsFetching}
                   />
                 </fieldset>
                 <fieldset>
@@ -899,12 +906,10 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                     models={models || []}
                     repoId={repoId}
                     setModel={setModel}
-                    disabled={isSubmitting || modelsLoading}
+                    disabled={isSubmitting || modelsFetching}
+                    isLoading={modelsFetching}
                   />
                 </fieldset>
-                {modelsLoading && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Loading models...</p>
-                )}
               </>
             )}
           </div>

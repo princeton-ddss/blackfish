@@ -560,10 +560,14 @@ describe("TextGenerationChatContainer", () => {
       ],
     ])("disables regenerate button with %s", async (_, selectedService) => {
       const user = userEvent.setup();
-      sessionStorage.setItem("tgcc-ml", JSON.stringify([
+      const storedMessages = JSON.stringify([
         { role: "user", content: "Test message", _displayText: "Test message" },
         { role: "assistant", content: "Original response" },
-      ]));
+      ]);
+      sessionStorage.getItem.mockImplementation((key) => {
+        if (key === "tgcc-ml") return storedMessages;
+        return null;
+      });
       const {getByRole, getByText} = render(
         <MockProviders selectedService={selectedService}>
           <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />

@@ -44,4 +44,39 @@ describe("RevisionSelect", () => {
     );
     expect(baseElement).toMatchSnapshot();
   });
+
+  test("Loading", () => {
+    const {container, getByText, queryByText} = render(
+      <RevisionSelect
+        models={[]}
+        repoId="model-1"
+        setModel={(e) => e}
+        disabled={true}
+        isLoading={true}
+      />
+    );
+    expect(getByText("Revision")).toBeInTheDocument();
+    expect(queryByText("Loading revisions...")).not.toBeInTheDocument();
+    expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
+  });
+
+  test("Refreshing", () => {
+    const {container, queryByText} = render(
+      <RevisionSelect
+        models={[
+          {
+            repo_id: "model-1",
+            revision: "rev-1"
+          },
+        ]}
+        repoId="model-1"
+        setModel={(e) => e}
+        disabled={true}
+        isLoading={true}
+      />
+    );
+    expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
+    expect(queryByText("Loading revisions...")).not.toBeInTheDocument();
+    expect(queryByText("rev-1")).not.toBeInTheDocument();
+  });
 });

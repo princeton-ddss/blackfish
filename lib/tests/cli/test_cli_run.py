@@ -5,6 +5,7 @@ This module tests the CLI commands for running inference services:
 - `blackfish run speech-recognition` - Start a speech recognition service
 """
 
+import shlex
 import pytest
 from unittest.mock import patch, Mock, MagicMock
 from blackfish.cli.__main__ import main
@@ -396,6 +397,61 @@ class TestRunTextGeneration:
         assert "secret" in launch_kwargs
         assert "--seed" in launch_kwargs
         assert "42" in launch_kwargs
+
+    def test_extra_args_with_spaces_are_quoted(
+        self, cli_runner, mock_config, local_profile
+    ):
+        """Extra args containing spaces/JSON must round-trip through the shell."""
+        json_value = '{"enable_thinking": false, "thinking": false}'
+        cmd = [
+            "run",
+            "-p",
+            "default",
+            "text-generation",
+            "openai/gpt-2",
+            "--",
+            "--default-chat-template-kwargs",
+            json_value,
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.text_generation.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.text_generation.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.text_generation.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.text_generation.get_model_dir"
+            ) as mock_get_model_dir,
+            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/gpt-2"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model"
+
+            mock_response = Mock()
+            mock_response.ok = True
+            mock_response.json.return_value = {"id": "service-uuid-123"}
+            mock_post.return_value = mock_response
+
+            cli_runner.invoke(main, cmd)
+
+        launch_kwargs = mock_post.call_args[1]["json"]["container_config"][
+            "launch_kwargs"
+        ]
+        assert shlex.split(launch_kwargs) == [
+            "--default-chat-template-kwargs",
+            json_value,
+        ]
 
     def test_no_revision_uses_latest(self, cli_runner, mock_config, local_profile):
         """Test that when no revision is provided, the latest commit is used."""

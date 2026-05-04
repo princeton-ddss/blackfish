@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shlex
 from typing import Optional, Tuple
 import rich_click as click
 from rich_click import Context
@@ -150,7 +151,7 @@ def run_text_generation(
         port=port,
         model_dir=model_dir,
         revision=revision,
-        launch_kwargs=" ".join(ctx.args),
+        launch_kwargs=shlex.join(ctx.args),
     )
 
     job_config: JobConfig

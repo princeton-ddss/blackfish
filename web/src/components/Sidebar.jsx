@@ -58,12 +58,12 @@ function Sidebar() {
                                 <li key={item.name}>
                                     {isDisabled(item) ? (
                                         <span
-                                            className="group flex gap-x-3 rounded-md p-2 text-sm text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                                            className="group flex gap-x-3 rounded-md p-2 text-sm text-gray-400 dark:text-white/50 cursor-not-allowed"
                                             title="Requires Slurm profile"
                                         >
                                             <item.icon
                                                 aria-hidden="true"
-                                                className="h-6 w-6 shrink-0 text-gray-400 dark:text-gray-500"
+                                                className="h-6 w-6 shrink-0 text-gray-400 dark:text-white/50"
                                             />
                                             {item.name}
                                         </span>

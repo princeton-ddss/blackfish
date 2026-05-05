@@ -28,7 +28,7 @@ function TextGenerationContainerOptionsForm({
           )}
         </button>
         {expanded && (
-          <div className="mt-3">
+          <div className="mt-3 space-y-3">
             <ServiceModalCheckbox
               checked={containerOptions.disable_custom_kernels}
               onChange={() => setContainerOptions(prevContainerOptions => {
@@ -39,6 +39,18 @@ function TextGenerationContainerOptionsForm({
               })}
               label="Disable Custom Kernels"
               help="Disables custom CUDA kernels that may not work on all devices."
+              disabled={disabled}
+            />
+            <ServiceModalCheckbox
+              checked={containerOptions.disable_thinking}
+              onChange={() => setContainerOptions(prevContainerOptions => {
+                return {
+                  ...prevContainerOptions,
+                  disable_thinking: !prevContainerOptions.disable_thinking,
+                };
+              })}
+              label="Disable Thinking"
+              help="Disables thinking/reasoning output for models that support it."
               disabled={disabled}
             />
           </div>

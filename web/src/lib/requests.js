@@ -124,6 +124,23 @@ export async function deleteProfile(name) {
   return res.json();
 }
 
+/**
+ * Translate UI-only container option flags into backend fields. Currently:
+ * `disable_thinking` becomes `--default-chat-template-kwargs '{...}'` appended
+ * to `launch_kwargs`. The UI flag itself is stripped from the returned object.
+ */
+function buildContainerConfig(containerConfig) {
+  const { disable_thinking, launch_kwargs, ...rest } = containerConfig;
+  if (!disable_thinking) {
+    return launch_kwargs !== undefined ? { ...rest, launch_kwargs } : rest;
+  }
+  const flag = `--default-chat-template-kwargs '{"enable_thinking": false, "thinking": false}'`;
+  return {
+    ...rest,
+    launch_kwargs: launch_kwargs ? `${launch_kwargs} ${flag}` : flag,
+  };
+}
+
 /** Start an service to perform the specified ML/AI pipeline. */
 export async function runService(pipeline, model, jobConfig, containerConfig, profile) {
   let body;
@@ -134,7 +151,7 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
       repo_id: model.repo_id,
       profile: profile,
       container_config: {
-        ...containerConfig,
+        ...buildContainerConfig(containerConfig),
         revision: model.revision,
         model_dir: pipeline === "speech-recognition"
           ? dirname(model.model_dir)
@@ -159,7 +176,7 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
       repo_id: model.repo_id,
       profile: profile,
       container_config: {
-        ...containerConfig,
+        ...buildContainerConfig(containerConfig),
         revision: model.revision,
         model_dir: pipeline === "speech-recognition"
           ? dirname(model.model_dir)

@@ -5,14 +5,10 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import ServiceLauncher from "@/components/ServiceLauncher";
 import { ServiceContext } from "@/providers/ServiceProvider";
-import { useModels, useServices } from "@/lib/loaders";
+import { useServices } from "@/lib/loaders";
 
 // Mock the hooks
 vi.mock("@/lib/loaders", () => ({
-  useModels: vi.fn(() => ({
-    models: [{ id: "test-model", name: "Test Model" }],
-    isLoading: false
-  })),
   useServices: vi.fn(() => ({
     services: [],
     mutate: vi.fn()
@@ -46,11 +42,6 @@ function testComponent() {
 describe("ServiceLauncher", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset useModels to default
-    vi.mocked(useModels).mockReturnValue({
-      models: [{ id: "test-model", name: "Test Model" }],
-      isLoading: false
-    });
     vi.mocked(useServices).mockReturnValue({
       services: [],
       mutate: vi.fn()
@@ -87,12 +78,8 @@ describe("ServiceLauncher", () => {
     expect(baseElement).toMatchSnapshot();
   });
 
-  it("renders in enabled state when missing models and not loading", () => {
-    vi.mocked(useModels).mockReturnValueOnce({
-      models: undefined,
-      isLoading: false
-    });
-    const {baseElement} = render(
+  it("stays enabled while models are loading", () => {
+    const {getByLabelText} = render(
       <ServiceContext.Provider value={mockServiceContext}>
         <ServiceLauncher
           profile={{
@@ -105,28 +92,7 @@ describe("ServiceLauncher", () => {
         />
       </ServiceContext.Provider>
     );
-    expect(baseElement).toMatchSnapshot();
-  });
-
-  it("renders in disabled state when missing models and loading", () => {
-    vi.mocked(useModels).mockReturnValueOnce({
-      models: undefined,
-      isLoading: true
-    });
-    const {baseElement} = render(
-      <ServiceContext.Provider value={mockServiceContext}>
-        <ServiceLauncher
-          profile={{
-            host: "localhost",
-            type: "local"
-          }}
-          task="speech-recognition"
-          defaultContainerOptions={{testProp: "yes"}}
-          ContainerOptionsFormComponent={testComponent}
-        />
-      </ServiceContext.Provider>
-    );
-    expect(baseElement).toMatchSnapshot();
+    expect(getByLabelText("Launch service")).not.toBeDisabled();
   });
 
   it("renders container component", () => {

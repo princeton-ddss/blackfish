@@ -1,7 +1,6 @@
 import React from "react";
 import { RocketLaunchIcon } from "@heroicons/react/24/outline";
 import ServiceModal from "@/components/ServiceModal";
-import { useModels } from "@/lib/loaders";
 import PropTypes from "prop-types";
 
 /**
@@ -21,7 +20,6 @@ function ServiceLauncher({
   open: controlledOpen,
   setOpen: controlledSetOpen,
 }) {
-  const { models, isLoading } = useModels(profile, task)
   const [internalOpen, setInternalOpen] = React.useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledSetOpen ?? setInternalOpen;
@@ -41,7 +39,7 @@ function ServiceLauncher({
         onClick={() => {
           setOpen(true);
         }}
-        disabled={!profile || (!models && isLoading)}
+        disabled={!profile}
         aria-label="Launch service"
       >
         <RocketLaunchIcon className="h-5 w-5" />

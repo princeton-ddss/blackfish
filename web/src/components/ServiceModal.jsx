@@ -102,6 +102,7 @@ function ServiceModal({
     services,
     mutate: mutateServices
   } = useServices(profile, task);
+  // Using isLoading instead of isValidating to avoid loading state on revalidations
   const {
     models,
     isLoading: modelsLoading,
@@ -275,7 +276,7 @@ function ServiceModal({
                   <form className="mt-2">
                       <ServiceModalForm
                         models={models}
-                        modelsLoading={modelsLoading}
+                        isModelsLoading={modelsLoading}
                         services={services}
                         setModel={setModel}
                         jobOptions={jobOptions}

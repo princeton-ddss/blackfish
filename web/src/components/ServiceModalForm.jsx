@@ -24,7 +24,7 @@ const parseTime = (time) => {
 
 function ServiceModalForm({
   models,
-  modelsLoading = false,
+  isModelsLoading = false,
   services,
   setModel,
   jobOptions,
@@ -316,7 +316,7 @@ function ServiceModalForm({
         />
       </fieldset>
 
-      {modelsLoading || (models && models.length) ? (
+      {isModelsLoading || (models && models.length) ? (
         <div className="space-y-3">
           <fieldset>
             <ModelSelect
@@ -325,7 +325,7 @@ function ServiceModalForm({
               setRepoId={setRepoId}
               setModelId={setModelId}
               disabled={disabled}
-              isLoading={modelsLoading}
+              isLoading={isModelsLoading}
             />
           </fieldset>
 
@@ -335,7 +335,7 @@ function ServiceModalForm({
               repoId={repoId}
               setModel={setModel}
               disabled={disabled}
-              isLoading={modelsLoading}
+              isLoading={isModelsLoading}
             />
           </fieldset>
         </div>
@@ -541,7 +541,7 @@ function ServiceModalForm({
 
 ServiceModalForm.propTypes = {
   models: PropTypes.array,
-  modelsLoading: PropTypes.bool,
+  isModelsLoading: PropTypes.bool,
   services: PropTypes.array,
   setModel: PropTypes.func,
   jobOptions: PropTypes.object,

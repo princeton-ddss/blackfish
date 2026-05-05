@@ -212,6 +212,19 @@ describe("ServiceModal", () => {
       const {getByText} = renderServiceModal({ isLaunching: true });
       expect(getByText("Launching").closest("button")).toBeDisabled();
     });
+
+    it("disables Launch button while no model is selected", () => {
+      useModels.mockReturnValue({ models: [], isLoading: true });
+      const {getByText} = renderServiceModal();
+      expect(getByText("Launch")).toBeDisabled();
+    });
+
+    it("enables Launch button once a model is selected", async () => {
+      const user = userEvent.setup();
+      const {getByText, getByTestId} = renderServiceModal();
+      await user.click(getByTestId("set-model-button"));
+      expect(getByText("Launch")).not.toBeDisabled();
+    });
   });
 
   describe("Launch Error State", () => {

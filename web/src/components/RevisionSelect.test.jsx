@@ -1,9 +1,9 @@
 import { render } from "@testing-library/react";
-import { describe, test, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import RevisionSelect from "@/components/RevisionSelect";
 
 describe("RevisionSelect", () => {
-  test("Standard", () => {
+  it("Standard", () => {
     const {baseElement} = render(
       <RevisionSelect
         models={[
@@ -24,7 +24,7 @@ describe("RevisionSelect", () => {
     expect(baseElement).toMatchSnapshot();
   });
 
-  test("Disabled", () => {
+  it("Disabled", () => {
     const {baseElement} = render(
       <RevisionSelect
         models={[
@@ -43,5 +43,40 @@ describe("RevisionSelect", () => {
       />
     );
     expect(baseElement).toMatchSnapshot();
+  });
+
+  it("Loading", () => {
+    const {container, getByText, queryByText} = render(
+      <RevisionSelect
+        models={[]}
+        repoId="model-1"
+        setModel={(e) => e}
+        disabled={true}
+        isLoading={true}
+      />
+    );
+    expect(getByText("Revision")).toBeInTheDocument();
+    expect(queryByText("Loading revisions...")).not.toBeInTheDocument();
+    expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
+  });
+
+  it("Refreshing", () => {
+    const {container, queryByText} = render(
+      <RevisionSelect
+        models={[
+          {
+            repo_id: "model-1",
+            revision: "rev-1"
+          },
+        ]}
+        repoId="model-1"
+        setModel={(e) => e}
+        disabled={true}
+        isLoading={true}
+      />
+    );
+    expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
+    expect(queryByText("Loading revisions...")).not.toBeInTheDocument();
+    expect(queryByText("rev-1")).not.toBeInTheDocument();
   });
 });

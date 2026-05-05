@@ -190,4 +190,32 @@ describe("ModelSelect", () => {
       expect(mockSetRepoId).toHaveBeenCalledWith("model-3");
     });
   });
+
+  it("renders a loading skeleton when models are being fetched", () => {
+    const {container, getByText, queryByText} = render(
+      <ModelSelect
+        models={[]}
+        setRepoId={mockSetRepoId}
+        disabled={true}
+        isLoading={true}
+      />
+    );
+    expect(getByText("Model")).toBeInTheDocument();
+    expect(queryByText("Loading models...")).not.toBeInTheDocument();
+    expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
+  });
+
+  it("shows a loading skeleton over stale model options while refreshing", () => {
+    const {container, queryByText} = render(
+      <ModelSelect
+        models={mockModels}
+        setRepoId={mockSetRepoId}
+        disabled={true}
+        isLoading={true}
+      />
+    );
+    expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
+    expect(queryByText("Loading models...")).not.toBeInTheDocument();
+    expect(queryByText("model-1")).not.toBeInTheDocument();
+  });
 });

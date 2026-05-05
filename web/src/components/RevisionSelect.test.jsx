@@ -1,9 +1,9 @@
 import { render } from "@testing-library/react";
-import { describe, test, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import RevisionSelect from "@/components/RevisionSelect";
 
 describe("RevisionSelect", () => {
-  test("Standard", () => {
+  it("Standard", () => {
     const {baseElement} = render(
       <RevisionSelect
         models={[
@@ -24,7 +24,7 @@ describe("RevisionSelect", () => {
     expect(baseElement).toMatchSnapshot();
   });
 
-  test("Disabled", () => {
+  it("Disabled", () => {
     const {baseElement} = render(
       <RevisionSelect
         models={[
@@ -45,7 +45,7 @@ describe("RevisionSelect", () => {
     expect(baseElement).toMatchSnapshot();
   });
 
-  test("Loading", () => {
+  it("Loading", () => {
     const {container, getByText, queryByText} = render(
       <RevisionSelect
         models={[]}
@@ -60,7 +60,7 @@ describe("RevisionSelect", () => {
     expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
   });
 
-  test("Refreshing", () => {
+  it("Refreshing", () => {
     const {container, queryByText} = render(
       <RevisionSelect
         models={[

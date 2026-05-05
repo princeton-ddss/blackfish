@@ -10,33 +10,7 @@ import {
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import PropTypes from "prop-types";
 import { classNames } from "@/lib/util";
-
-/**
- * Loading skeleton for select controls.
- * @param {object} options
- * @param {string} options.label
- * @return {JSX.Element}
- */
-function SelectSkeleton({ label }) {
-  return (
-    <Field disabled>
-      <Label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-        {label}
-      </Label>
-      <div className="relative mt-2">
-        <div
-          aria-label={`${label} loading`}
-          aria-busy="true"
-          className="h-9 w-full animate-pulse rounded-md bg-gray-200 dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600"
-        />
-      </div>
-    </Field>
-  );
-}
-
-SelectSkeleton.propTypes = {
-  label: PropTypes.string.isRequired,
-};
+import SelectSkeleton from "@/components/SelectSkeleton";
 
 /**
  * Revision Select component.
@@ -107,7 +81,7 @@ function RevisionSelect({ models, repoId, setModel, disabled, isLoading = false 
                     {selected.revision}
                   </span>
                 </span>
-                {!disabled &&
+                {!isDisabled &&
                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                     <ChevronUpDownIcon
                       className="h-5 w-5 text-gray-400"

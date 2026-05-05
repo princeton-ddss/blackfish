@@ -205,7 +205,7 @@ describe("ModelSelect", () => {
     expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
   });
 
-  it("shows a loading skeleton over stale model options while refreshing", async () => {
+  it("shows a loading skeleton over stale model options while refreshing", () => {
     const {container, queryByText} = render(
       <ModelSelect
         models={mockModels}
@@ -214,10 +214,8 @@ describe("ModelSelect", () => {
         isLoading={true}
       />
     );
-    await waitFor(() => {
-      expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
-      expect(queryByText("Loading models...")).not.toBeInTheDocument();
-      expect(queryByText("model-1")).not.toBeInTheDocument();
-    });
+    expect(container.querySelector('[aria-busy="true"].animate-pulse')).toBeInTheDocument();
+    expect(queryByText("Loading models...")).not.toBeInTheDocument();
+    expect(queryByText("model-1")).not.toBeInTheDocument();
   });
 });

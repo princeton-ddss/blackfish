@@ -126,18 +126,15 @@ export async function deleteProfile(name) {
 
 /**
  * Translate UI-only container option flags into backend fields. Currently:
- * `disable_thinking` becomes `--default-chat-template-kwargs '{...}'` appended
- * to `launch_kwargs`. The UI flag itself is stripped from the returned object.
+ * `disable_thinking` becomes `launch_kwargs: --default-chat-template-kwargs '{...}'`.
+ * The UI flag itself is stripped from the returned object.
  */
-function buildContainerConfig(containerConfig) {
-  const { disable_thinking, launch_kwargs, ...rest } = containerConfig;
-  if (!disable_thinking) {
-    return launch_kwargs !== undefined ? { ...rest, launch_kwargs } : rest;
-  }
-  const flag = `--default-chat-template-kwargs '{"enable_thinking": false, "thinking": false}'`;
+export function buildContainerConfig(containerConfig) {
+  const { disable_thinking, ...rest } = containerConfig;
+  if (!disable_thinking) return rest;
   return {
     ...rest,
-    launch_kwargs: launch_kwargs ? `${launch_kwargs} ${flag}` : flag,
+    launch_kwargs: `--default-chat-template-kwargs '{"enable_thinking": false, "thinking": false}'`,
   };
 }
 

@@ -30,11 +30,11 @@ function RevisionSelect({ models, repoId, setModel, disabled, isLoading = false 
   const isDisabled = disabled || isLoading;
 
   // filter repo_id revisions
-  const revisions = models.filter(model => model.repo_id === repoId);
+  const revisions = (models ?? []).filter(model => model.repo_id === repoId);
 
   // update selection on revisions refresh
   useEffect(() => {
-    const revisions = models.filter(model => model.repo_id === repoId);
+    const revisions = (models ?? []).filter(model => model.repo_id === repoId);
     if (revisions && revisions.length > 0) {
       setSelected(revisions[0])
     } else {

@@ -402,7 +402,7 @@ class TestRunTextGeneration:
         self, cli_runner, mock_config, local_profile
     ):
         """Extra args containing spaces/JSON must round-trip through the shell."""
-        json_value = '{"enable_thinking": false, "thinking": false}'
+        json_value = '{"enable_thinking": false}'
         cmd = [
             "run",
             "-p",
@@ -443,8 +443,9 @@ class TestRunTextGeneration:
             mock_response.json.return_value = {"id": "service-uuid-123"}
             mock_post.return_value = mock_response
 
-            cli_runner.invoke(main, cmd)
+            result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0, result.output
         launch_kwargs = mock_post.call_args[1]["json"]["container_config"][
             "launch_kwargs"
         ]

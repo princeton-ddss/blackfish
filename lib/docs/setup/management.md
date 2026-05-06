@@ -31,12 +31,13 @@ Let's consider what happens when a user launches a service from their laptop tar
 
 ## Images
 
-Blackfish does **not** ship with the container images required to run services. These images should be downloaded before running services[^1]. The current required images are:
+Blackfish does **not** ship with the container images required to run services. These images should be downloaded before running services[^1]. To see the images required by your installed version of Blackfish, run:
 
-- Text generation: `vllm/vllm-openai:v0.10.2`
-- Speech recognition: `princeton-ddss/speech-recognition-inference:0.1.2`
+```shell
+blackfish image ls
+```
 
-These images are expected to change over time, so be sure to check release notes for updates.
+This lists each service's pinned image and whether it is available in the configured cache. Pinned versions change over time as Blackfish releases bump the underlying runtimes.
 
 ### Obtaining Images
 

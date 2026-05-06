@@ -1,5 +1,6 @@
 {% extends "base_slurm.sh" %}
 {% block command %}
+export SINGULARITY_NO_EVAL=1
 apptainer run {{ '--nv' if job_config.gres else '' }} \
   --bind {{ container_config.model_dir }}:/data \
   {{ profile.cache_dir }}/images/{{ image.sif }} \

@@ -11,6 +11,7 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
   --revision {{ container_config.revision }} \
   --trust-remote-code \
 {%- elif provider == 'apptainer' %}
+export SINGULARITY_NO_EVAL=1
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ container_config.model_dir }}:/data \
   {{ profile.cache_dir }}/images/{{ image.sif }} \

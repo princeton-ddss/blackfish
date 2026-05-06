@@ -47,10 +47,10 @@ These commands create a secure public-private key pair and send the public key t
 Services deployed on HPC systems need to be run by Apptainer instead of Docker. Apptainer will not run Docker images directly. Instead, you need to convert Docker images to SIF files. For images hosted on Docker Hub, running `apptainer pull` will do this automatically. For example,
 
 ```shell
-apptainer pull docker://vllm/vllm-openai:v0.10.2
+apptainer pull docker://vllm/vllm-openai:<version>
 ```
 
-This command generates a file `vllm-openai_v0.10.2.sif`. In order for users to access the image, it should be moved to a shared cache directory, e.g., `/shared/.blackfish/images`.
+(Run `blackfish image ls` to see the version Blackfish currently pins.) This command generates a file `vllm-openai_<version>.sif`. In order for users to access the image, it should be moved to a shared cache directory, e.g., `/shared/.blackfish/images`.
 
 ## API Development
 

@@ -26,6 +26,7 @@ from blackfish.server.jobs.tasks import (
     get_default_input_ext,
     is_supported_task,
 )
+from blackfish.cli.profile import resolve_profile_or_exit
 from blackfish.server.models.profile import deserialize_profile
 from blackfish.server.utils import (
     format_datetime,
@@ -407,8 +408,8 @@ def remove_batch_job(
     "--profile",
     "-p",
     type=str,
-    default="default",
-    help="Blackfish profile to use.",
+    default=None,
+    help="Blackfish profile to use (defaults to the default profile).",
 )
 @click.option(
     "--input-dir",
@@ -464,7 +465,7 @@ def run_batch_job(
     name: str,
     task: str,
     model: str,
-    profile: str,
+    profile: Optional[str],
     input_dir: str,
     output_dir: str,
     revision: Optional[str],
@@ -480,7 +481,8 @@ def run_batch_job(
     writing results to OUTPUT_DIR. Jobs are managed by TigerFlow on the cluster.
     """
 
-    # 1. Validate profile exists
+    # 1. Validate profile exists (falling back to the default)
+    profile = resolve_profile_or_exit(config.HOME_DIR, profile)
     matched_profile = deserialize_profile(config.HOME_DIR, profile)
     if matched_profile is None:
         click.echo(

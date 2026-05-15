@@ -256,6 +256,10 @@ def test_add_model(
         patch(
             "blackfish.server.models.profile.deserialize_profile"
         ) as mock_deserialize_profile,
+        patch(
+            "blackfish.cli.__main__.resolve_profile_or_exit",
+            side_effect=lambda _home, name: name if name is not None else "default",
+        ),
         patch("blackfish.server.models.model.add_model") as mock_add_model,
         patch("blackfish.cli.__main__.requests.post") as mock_post,
     ):
@@ -443,6 +447,10 @@ def test_remove_model(
         patch(
             "blackfish.server.models.profile.deserialize_profile"
         ) as mock_deserialize_profile,
+        patch(
+            "blackfish.cli.__main__.resolve_profile_or_exit",
+            side_effect=lambda _home, name: name if name is not None else "default",
+        ),
         patch("blackfish.server.models.model.remove_model") as mock_remove_model,
         patch("blackfish.cli.__main__.requests.delete") as mock_delete,
     ):

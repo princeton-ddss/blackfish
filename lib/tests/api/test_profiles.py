@@ -634,6 +634,74 @@ class TestDeleteProfileAPI:
             assert response.status_code == 404
 
 
+class TestDefaultFlagAPI:
+    """Tests for default-flag behavior across the profile endpoints."""
+
+    async def test_delete_refuses_default(self, client: AsyncTestClient):
+        """DELETE refuses to remove the default profile without force=true."""
+        with patch(
+            "blackfish.server.asgi.get_default_profile_name", return_value="myprof"
+        ):
+            with patch("blackfish.server.asgi._get_profiles_config") as mock_get_config:
+                mock_config = MagicMock()
+                mock_config.__contains__ = MagicMock(return_value=True)
+                mock_get_config.return_value = mock_config
+
+                response = await client.delete("/api/profiles/myprof")
+
+                assert response.status_code == 409
+                assert "default profile" in response.json()["detail"]
+
+    async def test_delete_default_with_force(self, client: AsyncTestClient):
+        """DELETE removes the default profile when force=true."""
+        with patch(
+            "blackfish.server.asgi.get_default_profile_name", return_value="myprof"
+        ):
+            with (
+                patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+                patch(
+                    "blackfish.server.asgi._save_profiles_config"
+                ) as mock_save_config,
+            ):
+                mock_config = MagicMock()
+                mock_config.__contains__ = MagicMock(return_value=True)
+                mock_get_config.return_value = mock_config
+
+                response = await client.delete("/api/profiles/myprof?force=true")
+
+                assert response.status_code == 200
+                mock_save_config.assert_called_once()
+
+    async def test_set_default_endpoint(self, client: AsyncTestClient):
+        """PUT /api/profiles/{name}/default flags the named profile exclusively."""
+        with (
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi._save_profiles_config") as mock_save_config,
+            patch("blackfish.server.asgi.set_exclusive_default") as mock_set_exclusive,
+        ):
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_get_config.return_value = mock_config
+
+            response = await client.put("/api/profiles/myprof/default")
+
+            assert response.status_code == 200
+            assert response.json()["status"] == "ok"
+            mock_set_exclusive.assert_called_once_with(mock_config, "myprof")
+            mock_save_config.assert_called_once()
+
+    async def test_set_default_not_found(self, client: AsyncTestClient):
+        """PUT /api/profiles/{name}/default returns 404 if the profile is missing."""
+        with patch("blackfish.server.asgi._get_profiles_config") as mock_get_config:
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=False)
+            mock_get_config.return_value = mock_config
+
+            response = await client.put("/api/profiles/nope/default")
+
+            assert response.status_code == 404
+
+
 class TestRepairProfileAPI:
     """Test cases for the PUT /api/profiles/{name}/repair endpoint."""
 

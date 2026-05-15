@@ -9,7 +9,14 @@ from log_symbols.symbols import LogSymbols
 from yaspin import yaspin
 
 from blackfish.server.setup import ProfileManager, ProfileSetupError
-from blackfish.server.models.profile import SlurmProfile, LocalProfile
+from blackfish.server.models.profile import (
+    SlurmProfile,
+    LocalProfile,
+    get_default_profile_name,
+    has_any_default,
+    section_is_default,
+    set_exclusive_default,
+)
 from blackfish.server.jobs.client import (
     TigerFlowClient,
     TigerFlowError,
@@ -193,6 +200,24 @@ class ProfileType(StrEnum):
     Local = "local"
 
 
+def resolve_profile_or_exit(home_dir: str, profile: Optional[str]) -> str:
+    """Return ``profile`` if provided, else the resolved default profile name.
+
+    Exits the process with code 1 if no profile is given and none is configured.
+    Intended for CLI commands whose ``--profile`` option falls back to the default.
+    """
+    if profile is not None:
+        return profile
+    resolved = get_default_profile_name(home_dir)
+    if resolved is None:
+        print(
+            f"{LogSymbols.ERROR.value} No profiles configured. Run"
+            " `blackfish profile add` to register one."
+        )
+        raise SystemExit(1)
+    return resolved
+
+
 def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
     profiles = configparser.ConfigParser()
     profiles.read(f"{app_dir}/profiles.cfg")
@@ -288,6 +313,11 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
             "home_dir": home_dir,
             "cache_dir": cache_dir,
         }
+
+    if not has_any_default(profiles):
+        profiles[name]["default"] = "true"
+    else:
+        profiles[name]["default"] = "false"
 
     with open(os.path.join(app_dir, "profiles.cfg"), "w") as f:
         profiles.write(f)
@@ -403,6 +433,11 @@ def _auto_profile_(
             "cache_dir": profile.cache_dir,
         }
 
+    if not has_any_default(profiles):
+        profiles[profile.name]["default"] = "true"
+    else:
+        profiles[profile.name]["default"] = "false"
+
     with open(os.path.join(app_dir, "profiles.cfg"), "w") as f:
         profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Created profile '{profile.name}'.")
@@ -418,6 +453,8 @@ def _update_profile_(
     if name is None:
         name = input(f"> name [{default_name}]: ")
         name = default_name if name == "" else name
+
+    was_default = name in profiles and section_is_default(profiles, name)
 
     if name not in profiles:
         print(
@@ -502,6 +539,8 @@ def _update_profile_(
     else:
         raise NotImplementedError
 
+    profiles[name]["default"] = "true" if was_default else "false"
+
     with open(os.path.join(default_home, "profiles.cfg"), "w") as f:
         profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Updated profile {name}.")
@@ -520,16 +559,26 @@ def create_profile(ctx: Context) -> None:  # pragma: no cover
 
 @click.command()
 @click.option(
-    "--name", type=str, default="default", help="The name of the profile to display."
+    "--name",
+    type=str,
+    default=None,
+    help="The name of the profile to display (defaults to the default profile).",
 )
 @click.pass_context
-def show_profile(ctx: Context, name: str) -> None:  # pragma: no cover
+def show_profile(ctx: Context, name: str | None) -> None:  # pragma: no cover
     """Display a profile."""
 
     default_home = ctx.obj.get("home_dir")
 
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles.cfg")
+
+    if name is None:
+        name = get_default_profile_name(default_home)
+        if name is None:
+            print(f"{LogSymbols.ERROR.value} No profiles configured.")
+            ctx.exit(1)
+            return
 
     if name in profiles:
         profile = profiles[name]
@@ -565,13 +614,16 @@ def list_profiles(ctx: Context) -> None:  # pragma: no cover
     profiles = configparser.ConfigParser()
     profiles.read(f"{default_home}/profiles.cfg")
 
+    default_name = get_default_profile_name(default_home)
+
     for name in profiles:
         profile = profiles[name]
         if profile.name == "DEFAULT":
             continue
         schema = profile.get("schema") or profile.get("type")
+        marker = " (default)" if name == default_name else ""
         if schema == "slurm":
-            print(f"[{name}]")
+            print(f"[{name}]{marker}")
             print("schema: slurm")
             print(f"host: {profile['host']}")
             print(f"user: {profile['user']}")
@@ -580,7 +632,7 @@ def list_profiles(ctx: Context) -> None:  # pragma: no cover
             python_path = profile.get("python_path", "python3")
             print(f"python_path: {python_path}")
         elif schema == "local":
-            print(f"[{name}]")
+            print(f"[{name}]{marker}")
             print("schema: local")
             print(f"home: {profile['home_dir']}")
             print(f"cache: {profile['cache_dir']}")
@@ -607,10 +659,16 @@ def update_profile(ctx: Context, name: str) -> None:  # pragma: no cover
 
 @click.command()
 @click.option(
-    "--name", type=str, default="default", help="The name of the profile to delete."
+    "--name", type=str, required=True, help="The name of the profile to delete."
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Allow deleting the default profile; another must be set as default first.",
 )
 @click.pass_context
-def delete_profile(ctx: Context, name: str) -> None:  # pragma: no cover
+def delete_profile(ctx: Context, name: str, force: bool) -> None:  # pragma: no cover
     """Delete a profile.
 
     This command does not clean up the profile's remote or local resources because
@@ -621,17 +679,52 @@ def delete_profile(ctx: Context, name: str) -> None:  # pragma: no cover
     profiles = configparser.ConfigParser()
     profiles.read(f"{home_dir}/profiles.cfg")
 
-    if name in profiles:
-        confirm = input(f"  Delete profile {name}? (y/n) ")
-        if confirm.lower() == "y":
-            del profiles[name]
-            with open(os.path.join(home_dir, "profiles.cfg"), "w") as f:
-                profiles.write(f)
-            print(f"{LogSymbols.SUCCESS.value} Profile {name} deleted.")
-        # Note: User canceling deletion is not an error, so no exit(1)
-    else:
+    if name not in profiles:
         print(f"{LogSymbols.ERROR.value} Profile {name} not found.")
         ctx.exit(1)
+        return
+
+    if name == get_default_profile_name(home_dir) and not force:
+        print(
+            f"{LogSymbols.ERROR.value} '{name}' is the default profile. Set another"
+            " profile as default with `blackfish profile default <name>` first, or"
+            " pass --force."
+        )
+        ctx.exit(1)
+        return
+
+    confirm = input(f"  Delete profile {name}? (y/n) ")
+    if confirm.lower() == "y":
+        del profiles[name]
+        with open(os.path.join(home_dir, "profiles.cfg"), "w") as f:
+            profiles.write(f)
+        print(f"{LogSymbols.SUCCESS.value} Profile {name} deleted.")
+    # Note: User canceling deletion is not an error, so no exit(1)
+
+
+@click.command(name="default")
+@click.argument("name", type=str, required=True)
+@click.pass_context
+def set_default_profile(ctx: Context, name: str) -> None:  # pragma: no cover
+    """Set the default profile.
+
+    Exactly one profile is marked default at a time; this command sets the flag on
+    NAME and clears it from every other profile.
+    """
+
+    home_dir = ctx.obj.get("home_dir")
+    profiles = configparser.ConfigParser()
+    profiles.read(f"{home_dir}/profiles.cfg")
+
+    if name not in profiles:
+        print(f"{LogSymbols.ERROR.value} Profile {name} not found.")
+        ctx.exit(1)
+        return
+
+    set_exclusive_default(profiles, name)
+    with open(os.path.join(home_dir, "profiles.cfg"), "w") as f:
+        profiles.write(f)
+    print(f"{LogSymbols.SUCCESS.value} '{name}' is now the default profile.")
 
 
 @click.command()

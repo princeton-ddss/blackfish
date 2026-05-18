@@ -1,6 +1,13 @@
+import configparser
 import pytest
+import sqlalchemy as sa
 from unittest.mock import patch, AsyncMock, MagicMock
 from litestar.testing import AsyncTestClient
+
+from blackfish.server.models.model import Model
+from blackfish.server.models.download import DownloadTask
+from blackfish.server.services.base import Service
+from blackfish.server.jobs.base import BatchJob
 
 pytestmark = pytest.mark.anyio
 
@@ -708,8 +715,6 @@ class TestRenameProfileAPI:
     @staticmethod
     def _config(*sections):
         """Build a ConfigParser with the given local-profile sections."""
-        import configparser
-
         cfg = configparser.ConfigParser()
         for s in sections:
             cfg[s] = {"schema": "local", "home_dir": "/h", "cache_dir": "/c"}
@@ -717,8 +722,6 @@ class TestRenameProfileAPI:
 
     @staticmethod
     async def _count(session, model, profile):
-        import sqlalchemy as sa
-
         res = await session.execute(
             sa.select(sa.func.count())
             .select_from(model)
@@ -735,13 +738,14 @@ class TestRenameProfileAPI:
         assert response.status_code in [401, 403] or response.is_redirect
 
     async def test_rename_sweeps_db_tables(self, client: AsyncTestClient, session):
-        """Rename cascades the new name to model, service and job rows."""
-        from blackfish.server.models.model import Model
-        from blackfish.server.services.base import Service
-        from blackfish.server.jobs.base import BatchJob
+        """Rename cascades the new name to all four profile-referencing tables."""
+        # The seeded fixtures cover model/service/job but not download_task,
+        # so add one download task against the "test" profile.
+        session.add(DownloadTask(repo_id="org/model", profile="test"))
+        await session.commit()
 
-        # The seeded fixtures use profile "test" on models, services and jobs.
-        for model in (Model, Service, BatchJob):
+        tables = (Model, DownloadTask, Service, BatchJob)
+        for model in tables:
             assert await self._count(session, model, "test") > 0
 
         with (
@@ -759,7 +763,7 @@ class TestRenameProfileAPI:
         assert response.json()["status"] == "ok"
         mock_save.assert_called_once()
 
-        for model in (Model, Service, BatchJob):
+        for model in tables:
             assert await self._count(session, model, "test") == 0
             assert await self._count(session, model, "renamed") > 0
 
@@ -798,8 +802,6 @@ class TestRenameProfileAPI:
         self, client: AsyncTestClient, session
     ):
         """A rejected rename leaves the DB profile names untouched."""
-        from blackfish.server.models.model import Model
-
         before = await self._count(session, Model, "test")
         assert before > 0
 

@@ -1,7 +1,8 @@
 import pytest
 import tempfile
 import os
-from unittest.mock import patch
+import requests
+from unittest.mock import patch, Mock
 from click.testing import CliRunner
 from blackfish.cli.__main__ import main
 
@@ -616,8 +617,6 @@ class TestProfileRename:
     """Tests for `blackfish profile rename <old> <new>`."""
 
     def test_rename_success(self, cli_runner):
-        from unittest.mock import Mock
-
         mock_response = Mock()
         mock_response.ok = True
 
@@ -634,8 +633,6 @@ class TestProfileRename:
         assert mock_put.call_args.kwargs["json"] == {"new_name": "new"}
 
     def test_rename_error_response(self, cli_runner):
-        from unittest.mock import Mock
-
         mock_response = Mock()
         mock_response.ok = False
         mock_response.status_code = 409
@@ -648,8 +645,6 @@ class TestProfileRename:
         assert "Profile 'new' already exists." in result.output
 
     def test_rename_connection_error(self, cli_runner):
-        import requests
-
         with patch(
             "blackfish.cli.profile.requests.put",
             side_effect=requests.exceptions.ConnectionError("refused"),

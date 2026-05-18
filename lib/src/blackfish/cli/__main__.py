@@ -27,7 +27,10 @@ from blackfish.cli.profile import (
     delete_profile,
     upgrade_tigerflow,
     repair_profile,
+    set_default_profile,
+    resolve_profile_or_exit,
 )
+from blackfish.server.models.profile import get_default_profile_name
 from blackfish.cli.image import list_images
 from blackfish.server.config import config
 from blackfish.server.logger import logger
@@ -151,9 +154,8 @@ def init(
 
     bootstrap(app_dir)
 
-    profiles = configparser.ConfigParser()
-    profiles.read(f"{app_dir}/profiles.cfg")
-    if "default" not in profiles:
+    existing_default = get_default_profile_name(app_dir)
+    if existing_default is None:
         success = False
         if auto and schema:
             success = _auto_profile_(
@@ -171,7 +173,10 @@ def init(
         if success:
             print("🎉 All done—let's fish!")
     else:
-        print(f"{LogSymbols.SUCCESS.value} Default profile already exists.")
+        print(
+            f"{LogSymbols.SUCCESS.value} Default profile '{existing_default}' already"
+            " exists."
+        )
         print("🎉 Looks good—let's fish!")
 
 
@@ -195,6 +200,7 @@ profile.add_command(delete_profile, "rm")
 profile.add_command(update_profile, "update")
 profile.add_command(upgrade_tigerflow, "upgrade")
 profile.add_command(repair_profile, "repair")
+profile.add_command(set_default_profile, "default")
 
 
 @main.command()
@@ -360,7 +366,11 @@ def start(reload: bool) -> None:  # pragma: no cover
     help="The Slurm account to charge resources to.",
 )
 @click.option(
-    "--profile", "-p", type=str, default="default", help="The Blackfish profile to use."
+    "--profile",
+    "-p",
+    type=str,
+    default=None,
+    help="The Blackfish profile to use (defaults to the default profile).",
 )
 @click.option(
     "--mount", "-m", type=str, default=None, help="An optional directory to mount."
@@ -382,7 +392,7 @@ def run(
     partition: Optional[str],
     constraint: Optional[str],
     account: Optional[str],
-    profile: str,
+    profile: Optional[str],
     mount: Optional[str],
     grace_period: int,
 ) -> None:  # pragma: no cover
@@ -392,6 +402,8 @@ def run(
     """
 
     from blackfish.server.models.profile import deserialize_profile
+
+    profile = resolve_profile_or_exit(config.HOME_DIR, profile)
 
     ctx.obj = {
         "config": config,
@@ -832,8 +844,8 @@ def models_ls(
     "--profile",
     type=str,
     required=False,
-    default="default",
-    help="Add model to the given profile (default: 'default').",
+    default=None,
+    help="Add model to the given profile (defaults to the default profile).",
 )
 @click.option(
     "-r",
@@ -857,7 +869,7 @@ def models_ls(
     ),
 )
 def models_add(
-    repo_id: str, profile: str, revision: Optional[str], use_cache: bool
+    repo_id: str, profile: Optional[str], revision: Optional[str], use_cache: bool
 ) -> None:
     """Download a model to make it available.
 
@@ -867,6 +879,7 @@ def models_add(
     from blackfish.server.models.model import add_model
     from blackfish.server.models.profile import deserialize_profile, SlurmProfile
 
+    profile = resolve_profile_or_exit(config.HOME_DIR, profile)
     matched = deserialize_profile(config.HOME_DIR, profile)
     if matched is None:
         click.echo(
@@ -926,8 +939,8 @@ def models_add(
     "--profile",
     type=str,
     required=False,
-    default="default",
-    help="Remove model from the given profile (default: 'default').",
+    default=None,
+    help="Remove model from the given profile (defaults to the default profile).",
 )
 @click.option(
     "-r",
@@ -951,13 +964,14 @@ def models_add(
     ),
 )
 def models_remove(
-    repo_id: str, profile: str, revision: Optional[str], use_cache: bool
+    repo_id: str, profile: Optional[str], revision: Optional[str], use_cache: bool
 ) -> None:
     """Remove model files."""
 
     from blackfish.server.models.model import remove_model
     from blackfish.server.models.profile import deserialize_profile, SlurmProfile
 
+    profile = resolve_profile_or_exit(config.HOME_DIR, profile)
     matched = deserialize_profile(config.HOME_DIR, profile)
     if matched is None:
         click.echo(

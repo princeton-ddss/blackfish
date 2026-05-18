@@ -26,6 +26,7 @@ from log_symbols.symbols import LogSymbols
 from blackfish.server.config import BlackfishConfig
 from blackfish.server.models.profile import (
     deserialize_profile,
+    get_default_profile_name,
     LocalProfile,
     SlurmProfile,
 )
@@ -264,7 +265,7 @@ class Blackfish:
         name: str,
         image: str,
         model: str,
-        profile_name: str = "default",
+        profile_name: Optional[str] = None,
         container_config: Optional[dict[str, Any]] = None,
         job_config: Optional[dict[str, Any]] = None,
         mount: Optional[str] = None,
@@ -278,7 +279,8 @@ class Blackfish:
             name: Service name
             image: Service image type (e.g., "text_generation", "speech_recognition")
             model: Model repository ID (e.g., "meta-llama/Llama-3.3-70B-Instruct")
-            profile_name: Name of the profile to use
+            profile_name: Name of the profile to use. If None, the configured
+                default profile is used.
             container_config: Container configuration options. If 'model_dir' and 'revision'
                 are not provided, they will be automatically determined by searching for
                 the model in the profile's cache directories and selecting the latest revision.
@@ -297,7 +299,12 @@ class Blackfish:
                 or model files cannot be located.
         """
 
-        # Load profile
+        # Load profile (falling back to the configured default)
+        if profile_name is None:
+            profile_name = get_default_profile_name(self.home_dir)
+            if profile_name is None:
+                raise ValueError("No profiles are configured.")
+
         profile = deserialize_profile(self.home_dir, profile_name)
         if profile is None:
             raise ValueError(f"Profile '{profile_name}' not found")
@@ -442,7 +449,7 @@ class Blackfish:
         name: str,
         image: str,
         model: str,
-        profile_name: str = "default",
+        profile_name: Optional[str] = None,
         container_config: Optional[dict[str, Any]] = None,
         job_config: Optional[dict[str, Any]] = None,
         mount: Optional[str] = None,

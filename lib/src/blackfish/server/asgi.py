@@ -96,6 +96,10 @@ from blackfish.server.utils import find_port
 from blackfish.server.models.profile import (
     deserialize_profiles,
     deserialize_profile,
+    has_any_default,
+    resolve_default_section,
+    section_is_default,
+    set_exclusive_default,
     SlurmProfile,
     LocalProfile,
     BlackfishProfile as Profile,
@@ -2679,12 +2683,15 @@ async def create_profile(data: ProfileRequest) -> Profile:
         except TigerFlowError as e:
             raise InternalServerException(detail=e.user_message())
 
+        is_default = not has_any_default(config)
+
         config[data.name] = {
             "schema": "slurm",
             "host": data.host,
             "user": data.user,
             "home_dir": data.home_dir,
             "cache_dir": data.cache_dir,
+            "default": "true" if is_default else "false",
         }
         if data.python_path:
             config[data.name]["python_path"] = data.python_path
@@ -2697,6 +2704,7 @@ async def create_profile(data: ProfileRequest) -> Profile:
             user=data.user,
             home_dir=data.home_dir,
             cache_dir=data.cache_dir,
+            default=is_default,
         )
 
     elif data.schema_type == "local":
@@ -2713,10 +2721,13 @@ async def create_profile(data: ProfileRequest) -> Profile:
         except ProfileSetupError as e:
             raise InternalServerException(detail=e.user_message())
 
+        is_default = not has_any_default(config)
+
         config[data.name] = {
             "schema": "local",
             "home_dir": data.home_dir,
             "cache_dir": data.cache_dir,
+            "default": "true" if is_default else "false",
         }
         _save_profiles_config(config)
 
@@ -2724,6 +2735,7 @@ async def create_profile(data: ProfileRequest) -> Profile:
             name=data.name,
             home_dir=data.home_dir,
             cache_dir=data.cache_dir,
+            default=is_default,
         )
 
     else:
@@ -2745,6 +2757,9 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
         raise ValidationException(
             detail="Profile name cannot be changed. Delete and recreate the profile instead."
         )
+
+    # Preserve the existing default flag across the rewrite.
+    was_default = section_is_default(config, name)
 
     if data.schema_type == "slurm":
         if not data.host or not data.user:
@@ -2788,6 +2803,7 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
             "user": data.user,
             "home_dir": data.home_dir,
             "cache_dir": data.cache_dir,
+            "default": "true" if was_default else "false",
         }
         if data.python_path:
             config[data.name]["python_path"] = data.python_path
@@ -2800,6 +2816,7 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
             user=data.user,
             home_dir=data.home_dir,
             cache_dir=data.cache_dir,
+            default=was_default,
         )
 
     elif data.schema_type == "local":
@@ -2820,6 +2837,7 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
             "schema": "local",
             "home_dir": data.home_dir,
             "cache_dir": data.cache_dir,
+            "default": "true" if was_default else "false",
         }
         _save_profiles_config(config)
 
@@ -2827,6 +2845,7 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
             name=data.name,
             home_dir=data.home_dir,
             cache_dir=data.cache_dir,
+            default=was_default,
         )
 
     else:
@@ -2836,20 +2855,50 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
 
 
 @delete("/api/profiles/{name:str}", guards=ENDPOINT_GUARDS, status_code=200)
-async def delete_profile(name: str) -> dict[str, str]:
+async def delete_profile(name: str, force: bool = False) -> dict[str, str]:
     """Delete a profile.
 
-    This does not clean up remote resources (venv, files) as they may be shared.
+    Refuses to delete the default profile unless ``force=true`` is passed; the
+    caller is expected to set another profile as default first. Does not clean
+    up remote resources (venv, files) as they may be shared.
     """
     config = _get_profiles_config()
 
     if name not in config:
         raise NotFoundException(detail=f"Profile '{name}' not found.")
 
+    is_default = name == resolve_default_section(config)
+    if is_default and not force:
+        raise ClientException(
+            status_code=HTTP_409_CONFLICT,
+            detail=(
+                f"'{name}' is the default profile. Set another profile as default"
+                " first, or retry with force=true."
+            ),
+        )
+
     del config[name]
     _save_profiles_config(config)
 
-    return {"status": "ok", "message": f"Profile '{name}' deleted."}
+    message = f"Profile '{name}' deleted."
+    if is_default and not has_any_default(config):
+        message += " No default profile is set; assign one with PUT /api/profiles/{name}/default."
+
+    return {"status": "ok", "message": message}
+
+
+@put("/api/profiles/{name:str}/default", guards=ENDPOINT_GUARDS)
+async def set_profile_default(name: str) -> dict[str, str]:
+    """Mark ``name`` as the default profile (clearing the flag from all others)."""
+    config = _get_profiles_config()
+
+    if name not in config:
+        raise NotFoundException(detail=f"Profile '{name}' not found.")
+
+    set_exclusive_default(config, name)
+    _save_profiles_config(config)
+
+    return {"status": "ok", "message": f"'{name}' is now the default profile."}
 
 
 @put("/api/profiles/{name:str}/repair", guards=ENDPOINT_GUARDS)
@@ -3472,6 +3521,7 @@ app = Litestar(
         create_profile,
         update_profile,
         delete_profile,
+        set_profile_default,
         repair_profile,
         upgrade_profile,
         get_cluster_status,

@@ -492,9 +492,9 @@ function ProfilesSection() {
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(p.name)}
-                      className={`p-1.5 ${p.name === "default" ? "text-gray-200 dark:text-gray-600 cursor-not-allowed" : "text-gray-400 hover:text-red-500"}`}
-                      title={p.name === "default" ? "Cannot delete default profile" : "Delete"}
-                      disabled={p.name === "default"}
+                      className={`p-1.5 ${p.default ? "text-gray-200 dark:text-gray-600 cursor-not-allowed" : "text-gray-400 hover:text-red-500"}`}
+                      title={p.default ? "Cannot delete default profile" : "Delete"}
+                      disabled={p.default}
                     >
                       <TrashIcon className="h-5 w-5" />
                     </button>

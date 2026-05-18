@@ -34,10 +34,13 @@ Blackfish's primary function is to launch services that perform AI tasks. These 
 Every profile specifies a number of attributes that allow Blackfish to find resources (e.g., model
 files) and deploy services accordingly. The exact attributes depend on the profile *schema*. There are currently two profile schemas: Slurm and Local. All profiles require the following attributes:
 
-- `name`: a unique profile name. The profile named "default" is used by Blackfish when a profile isn't
-explicitly provided.
+- `name`: a unique profile name. Profiles can be named freely.
 - `schema`: one of "slurm" or "local". The profile schema determines how services associated with this
 profile are deployed by Blackfish. Use "slurm" if this profile will run jobs on an HPC cluster (via a Slurm job scheduler) and "local" to run services on your laptop.
+- `default`: an optional boolean. Exactly one profile is the *default*, used by Blackfish whenever a
+profile isn't explicitly provided. The default is the profile with `default = true`; for backward
+compatibility, a profile literally named "default" is treated as the default if no profile sets the
+flag. Use `blackfish profile default <name>` to change it.
 
 The additional attribute requirements for specific types are listed below.
 
@@ -79,7 +82,8 @@ blackfish profile add
 ```
 
 and following the prompts (see attribute descriptions above). Note that profile names
-are unique.
+are unique. The first profile you create becomes the default automatically;
+subsequent profiles do not change the default.
 
 #### show - View a profile
 
@@ -103,6 +107,18 @@ blackfish profile update --name <profile>
 
 This command updates the default profile if no `--name` is specified. Note that you cannot change
 the `name` or `schema` attributes of a profile.
+
+#### default - Set the default profile
+
+To change which profile is the default, use the `blackfish profile default` command, e.g.
+
+```shell
+blackfish profile default <profile>
+```
+
+This marks `<profile>` as the default and clears the flag from every other profile—exactly one
+profile is the default at a time. The default profile is shown with a `(default)` marker in
+`blackfish profile ls`.
 
 #### upgrade - Upgrade TigerFlow
 
@@ -134,16 +150,29 @@ This recreates the profile's directories and reinstalls TigerFlow.
 
 #### rm - Delete a profile
 
-To delete a profile, type `blackfish profile rm --name <profile>`. By default, the command
+To delete a profile, type `blackfish profile rm --name <profile>`. The command
 requires you to confirm before deleting.
 
 ```shell
 blackfish profile rm --name <profile>
 ```
 
+Blackfish refuses to delete the default profile. Set another profile as the default first
+(`blackfish profile default <other>`), or pass `--force` to delete it anyway:
+
+```shell
+blackfish profile rm --name <profile> --force
+```
+
 !!! note
 
     Deleting a profile does not remove its remote resources (e.g., models, images, or job files in `home_dir` or `cache_dir`). These may be shared with other profiles and should be cleaned up manually if no longer needed.
+
+!!! warning
+
+    Force-deleting the default profile leaves Blackfish without an explicitly flagged default. It
+    will fall back to a profile named "default" or, failing that, the first profile listed—set a new
+    default explicitly to avoid surprises.
 
 ## Services
 

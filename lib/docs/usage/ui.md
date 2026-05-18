@@ -144,8 +144,9 @@ when a Slurm profile is selected.
     - Click **Create**.
 - **To edit a profile**: click :heroicons-pencil: on the row; the same
   form appears pre-filled with every field editable except Name.
-- **To delete a profile**: click :heroicons-trash:. The `default` profile
-  is protected and cannot be deleted.
+- **To delete a profile**: click :heroicons-trash:. The default profile
+  is protected and cannot be deleted from the UI — change the default
+  first (currently via the CLI: `blackfish profile default <name>`).
 
 #### Hugging Face
 

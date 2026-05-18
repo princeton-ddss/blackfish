@@ -1,7 +1,8 @@
 import pytest
 import tempfile
 import os
-from unittest.mock import patch
+import requests
+from unittest.mock import patch, Mock
 from click.testing import CliRunner
 from blackfish.cli.__main__ import main
 
@@ -610,6 +611,48 @@ class TestProfileUpdatePreservesDefault:
             parsed = configparser.ConfigParser()
             parsed.read(profiles_path)
             assert parsed["default"]["default"] == "true"
+
+
+class TestProfileRename:
+    """Tests for `blackfish profile rename <old> <new>`."""
+
+    def test_rename_success(self, cli_runner):
+        mock_response = Mock()
+        mock_response.ok = True
+
+        with patch(
+            "blackfish.cli.profile.requests.put", return_value=mock_response
+        ) as mock_put:
+            result = cli_runner.invoke(main, ["profile", "rename", "old", "new"])
+
+        assert result.exit_code == 0
+        assert "Renamed profile 'old' to 'new'" in result.output
+        # The command targets the rename endpoint with the new name in the body.
+        url = mock_put.call_args[0][0]
+        assert url.endswith("/api/profiles/old/rename")
+        assert mock_put.call_args.kwargs["json"] == {"new_name": "new"}
+
+    def test_rename_error_response(self, cli_runner):
+        mock_response = Mock()
+        mock_response.ok = False
+        mock_response.status_code = 409
+        mock_response.json.return_value = {"detail": "Profile 'new' already exists."}
+
+        with patch("blackfish.cli.profile.requests.put", return_value=mock_response):
+            result = cli_runner.invoke(main, ["profile", "rename", "old", "new"])
+
+        assert result.exit_code == 1
+        assert "Profile 'new' already exists." in result.output
+
+    def test_rename_connection_error(self, cli_runner):
+        with patch(
+            "blackfish.cli.profile.requests.put",
+            side_effect=requests.exceptions.ConnectionError("refused"),
+        ):
+            result = cli_runner.invoke(main, ["profile", "rename", "old", "new"])
+
+        assert result.exit_code == 1
+        assert "Failed to connect" in result.output
 
 
 class TestProfileDefaultCommand:

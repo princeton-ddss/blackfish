@@ -1,6 +1,13 @@
+import configparser
 import pytest
+import sqlalchemy as sa
 from unittest.mock import patch, AsyncMock, MagicMock
 from litestar.testing import AsyncTestClient
+
+from blackfish.server.models.model import Model
+from blackfish.server.models.download import DownloadTask
+from blackfish.server.services.base import Service
+from blackfish.server.jobs.base import BatchJob
 
 pytestmark = pytest.mark.anyio
 
@@ -700,6 +707,112 @@ class TestDefaultFlagAPI:
             response = await client.put("/api/profiles/nope/default")
 
             assert response.status_code == 404
+
+
+class TestRenameProfileAPI:
+    """Test cases for the PUT /api/profiles/{name}/rename endpoint."""
+
+    @staticmethod
+    def _config(*sections):
+        """Build a ConfigParser with the given local-profile sections."""
+        cfg = configparser.ConfigParser()
+        for s in sections:
+            cfg[s] = {"schema": "local", "home_dir": "/h", "cache_dir": "/c"}
+        return cfg
+
+    @staticmethod
+    async def _count(session, model, profile):
+        res = await session.execute(
+            sa.select(sa.func.count())
+            .select_from(model)
+            .where(model.profile == profile)
+        )
+        return res.scalar()
+
+    async def test_rename_requires_authentication(
+        self, no_auth_client: AsyncTestClient
+    ):
+        response = await no_auth_client.put(
+            "/api/profiles/test/rename", json={"new_name": "x"}
+        )
+        assert response.status_code in [401, 403] or response.is_redirect
+
+    async def test_rename_sweeps_db_tables(self, client: AsyncTestClient, session):
+        """Rename cascades the new name to all four profile-referencing tables."""
+        # The seeded fixtures cover model/service/job but not download_task,
+        # so add one download task against the "test" profile.
+        session.add(DownloadTask(repo_id="org/model", profile="test"))
+        await session.commit()
+
+        tables = (Model, DownloadTask, Service, BatchJob)
+        for model in tables:
+            assert await self._count(session, model, "test") > 0
+
+        with (
+            patch(
+                "blackfish.server.asgi._get_profiles_config",
+                return_value=self._config("test", "default"),
+            ),
+            patch("blackfish.server.asgi._save_profiles_config") as mock_save,
+        ):
+            response = await client.put(
+                "/api/profiles/test/rename", json={"new_name": "renamed"}
+            )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+        mock_save.assert_called_once()
+
+        for model in tables:
+            assert await self._count(session, model, "test") == 0
+            assert await self._count(session, model, "renamed") > 0
+
+    async def test_rename_collision_returns_409(self, client: AsyncTestClient):
+        """Renaming onto an existing profile name is rejected."""
+        with patch(
+            "blackfish.server.asgi._get_profiles_config",
+            return_value=self._config("test", "default"),
+        ):
+            response = await client.put(
+                "/api/profiles/test/rename", json={"new_name": "default"}
+            )
+        assert response.status_code == 409
+
+    async def test_rename_not_found_returns_404(self, client: AsyncTestClient):
+        with patch(
+            "blackfish.server.asgi._get_profiles_config",
+            return_value=self._config("default"),
+        ):
+            response = await client.put(
+                "/api/profiles/missing/rename", json={"new_name": "x"}
+            )
+        assert response.status_code == 404
+
+    async def test_rename_to_same_name_returns_400(self, client: AsyncTestClient):
+        with patch(
+            "blackfish.server.asgi._get_profiles_config",
+            return_value=self._config("test"),
+        ):
+            response = await client.put(
+                "/api/profiles/test/rename", json={"new_name": "test"}
+            )
+        assert response.status_code == 400
+
+    async def test_rename_collision_does_not_sweep_db(
+        self, client: AsyncTestClient, session
+    ):
+        """A rejected rename leaves the DB profile names untouched."""
+        before = await self._count(session, Model, "test")
+        assert before > 0
+
+        with patch(
+            "blackfish.server.asgi._get_profiles_config",
+            return_value=self._config("test", "default"),
+        ):
+            await client.put("/api/profiles/test/rename", json={"new_name": "default"})
+
+        # The collision is rejected before any DB write, so counts are unchanged.
+        assert await self._count(session, Model, "test") == before
 
 
 class TestRepairProfileAPI:

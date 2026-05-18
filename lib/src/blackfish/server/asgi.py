@@ -2619,6 +2619,12 @@ class ProfileRequest(BaseModel):
     python_path: Optional[str] = None  # For remote TigerFlow setup
 
 
+class RenameProfileRequest(BaseModel):
+    """Request model for renaming a profile."""
+
+    new_name: str
+
+
 def _profiles_config_path() -> str:
     """Return path to profiles.cfg."""
     return os.path.join(blackfish_config.HOME_DIR, "profiles.cfg")
@@ -2899,6 +2905,56 @@ async def set_profile_default(name: str) -> dict[str, str]:
     _save_profiles_config(config)
 
     return {"status": "ok", "message": f"'{name}' is now the default profile."}
+
+
+@put("/api/profiles/{name:str}/rename", guards=ENDPOINT_GUARDS)
+async def rename_profile(
+    name: str, data: RenameProfileRequest, session: AsyncSession
+) -> dict[str, str]:
+    """Rename a profile.
+
+    Renames the ``profiles.cfg`` section and cascades the new name to the
+    ``profile`` column on the model, download_task, service and jobs tables.
+    The DB updates and the file rewrite run within the request's transaction:
+    if the file rewrite fails, the DB changes roll back.
+    """
+    new_name = data.new_name.strip()
+
+    config = _get_profiles_config()
+
+    if name not in config:
+        raise NotFoundException(detail=f"Profile '{name}' not found.")
+
+    if not new_name:
+        raise ValidationException(detail="New profile name must not be empty.")
+
+    if new_name == name:
+        raise ValidationException(
+            detail="New profile name is the same as the current name."
+        )
+
+    if new_name in config:
+        raise ClientException(
+            status_code=HTTP_409_CONFLICT,
+            detail=f"Profile '{new_name}' already exists.",
+        )
+
+    # Cascade the new name to every table that stores it as a string.
+    for model in (Model, DownloadTask, Service, BatchJob):
+        await session.execute(
+            sa.update(model).where(model.profile == name).values(profile=new_name)
+        )
+
+    # Rewrite the section header, preserving all keys. A failure here raises,
+    # rolling back the DB updates above via the request transaction.
+    config[new_name] = {k: v for k, v in config[name].items()}
+    del config[name]
+    _save_profiles_config(config)
+
+    return {
+        "status": "ok",
+        "message": f"Profile '{name}' renamed to '{new_name}'.",
+    }
 
 
 @put("/api/profiles/{name:str}/repair", guards=ENDPOINT_GUARDS)
@@ -3522,6 +3578,7 @@ app = Litestar(
         update_profile,
         delete_profile,
         set_profile_default,
+        rename_profile,
         repair_profile,
         upgrade_profile,
         get_cluster_status,

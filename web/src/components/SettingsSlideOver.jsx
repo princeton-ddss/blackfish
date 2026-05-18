@@ -22,13 +22,14 @@ import {
   TrashIcon,
   CheckIcon,
   ChevronUpDownIcon,
+  StarIcon,
 } from "@heroicons/react/24/outline";
 import { useSettings } from "@/providers/SettingsProvider";
 import { useTheme } from "@/providers/ThemeProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useProfiles } from "@/lib/loaders";
 import Notification from "@/components/Notification";
-import { createProfile, updateProfile, deleteProfile, fetchHfTokenStatus, setHfToken, deleteHfToken, fetchAppInfo } from "@/lib/requests";
+import { createProfile, updateProfile, deleteProfile, setDefaultProfile, fetchHfTokenStatus, setHfToken, deleteHfToken, fetchAppInfo } from "@/lib/requests";
 import { blackfishApiURL } from "@/config";
 
 // Context for toast notifications within Settings
@@ -397,6 +398,16 @@ function ProfilesSection() {
     setIsAdding(false);
   };
 
+  const handleSetDefault = async (profileName) => {
+    try {
+      await setDefaultProfile(profileName);
+      mutate();
+      showSuccess(`Profile "${profileName}" is now the default`);
+    } catch (err) {
+      showError(err.message);
+    }
+  };
+
   const renderHeader = () => (
     <div className="flex items-center justify-between mb-3">
       <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -463,6 +474,11 @@ function ProfilesSection() {
                 }`}>
                   {p.schema}
                 </span>
+                {p.default && (
+                  <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                    default
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1">
                 {deleteConfirm === p.name ? (
@@ -483,6 +499,15 @@ function ProfilesSection() {
                   </>
                 ) : (
                   <>
+                    {!p.default && (
+                      <button
+                        onClick={() => handleSetDefault(p.name)}
+                        className="p-1.5 text-gray-400 hover:text-amber-500"
+                        title="Set as default profile"
+                      >
+                        <StarIcon className="h-5 w-5" />
+                      </button>
+                    )}
                     <button
                       onClick={() => setEditingProfile(p)}
                       className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"

@@ -24,6 +24,7 @@ import {
   ChevronUpDownIcon,
   StarIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { useSettings } from "@/providers/SettingsProvider";
 import { useTheme } from "@/providers/ThemeProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
@@ -474,11 +475,6 @@ function ProfilesSection() {
                 }`}>
                   {p.schema}
                 </span>
-                {p.default && (
-                  <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-                    default
-                  </span>
-                )}
               </div>
               <div className="flex items-center gap-1">
                 {deleteConfirm === p.name ? (
@@ -499,7 +495,14 @@ function ProfilesSection() {
                   </>
                 ) : (
                   <>
-                    {!p.default && (
+                    {p.default ? (
+                      <span
+                        className="p-1.5 text-amber-500"
+                        title="Default profile"
+                      >
+                        <StarIconSolid className="h-5 w-5" />
+                      </span>
+                    ) : (
                       <button
                         onClick={() => handleSetDefault(p.name)}
                         className="p-1.5 text-gray-400 hover:text-amber-500"

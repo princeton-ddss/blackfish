@@ -377,6 +377,7 @@ function ProfilesSection() {
   const [editingProfile, setEditingProfile] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [settingDefault, setSettingDefault] = useState(false);
 
   const handleDelete = async (profileName) => {
     try {
@@ -400,12 +401,16 @@ function ProfilesSection() {
   };
 
   const handleSetDefault = async (profileName) => {
+    if (settingDefault) return;
+    setSettingDefault(true);
     try {
       await setDefaultProfile(profileName);
       mutate();
       showSuccess(`Profile "${profileName}" is now the default`);
     } catch (err) {
       showError(err.message);
+    } finally {
+      setSettingDefault(false);
     }
   };
 
@@ -499,14 +504,17 @@ function ProfilesSection() {
                       <span
                         className="p-1.5 text-amber-500"
                         title="Default profile"
+                        aria-label="Default profile"
                       >
                         <StarIconSolid className="h-5 w-5" />
                       </span>
                     ) : (
                       <button
                         onClick={() => handleSetDefault(p.name)}
-                        className="p-1.5 text-gray-400 hover:text-amber-500"
+                        disabled={settingDefault}
+                        className="p-1.5 text-gray-400 hover:text-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Set as default profile"
+                        aria-label="Set as default profile"
                       >
                         <StarIcon className="h-5 w-5" />
                       </button>

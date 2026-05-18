@@ -102,6 +102,92 @@ describe("ProfileProvider", () => {
     expect(contextValue.profile).toBeNull();
   });
 
+  it("falls back to the default-flagged profile when no name is stored", () => {
+    const profilesWithDefault = [
+      {name: "test-profile", host: "example.com"},
+      {name: "default-profile", host: "defaulthost.com", default: true},
+    ];
+    vi.mocked(useProfiles).mockReturnValue({
+      profiles: profilesWithDefault,
+      isLoading: false,
+      error: false
+    });
+
+    let contextValue = null;
+    render(
+      <ProfileProvider>
+        <ProfileContext.Consumer>
+          {(value) => {
+            contextValue = value;
+            return <h1>Hello, world!</h1>;
+          }}
+        </ProfileContext.Consumer>
+      </ProfileProvider>
+    );
+
+    expect(contextValue.profile).toEqual(
+      profilesWithDefault.find((p) => p.default)
+    );
+  });
+
+  it("falls back to the default-flagged profile when the stored name is stale", () => {
+    localStorage.setItem("profileName", "deleted-profile");
+    const profilesWithDefault = [
+      {name: "test-profile", host: "example.com"},
+      {name: "default-profile", host: "defaulthost.com", default: true},
+    ];
+    vi.mocked(useProfiles).mockReturnValue({
+      profiles: profilesWithDefault,
+      isLoading: false,
+      error: false
+    });
+
+    let contextValue = null;
+    render(
+      <ProfileProvider>
+        <ProfileContext.Consumer>
+          {(value) => {
+            contextValue = value;
+            return <h1>Hello, world!</h1>;
+          }}
+        </ProfileContext.Consumer>
+      </ProfileProvider>
+    );
+
+    expect(contextValue.profile).toEqual(
+      profilesWithDefault.find((p) => p.default)
+    );
+  });
+
+  it("prefers an explicit stored selection over the default-flagged profile", () => {
+    localStorage.setItem("profileName", "test-profile");
+    const profilesWithDefault = [
+      {name: "test-profile", host: "example.com"},
+      {name: "default-profile", host: "defaulthost.com", default: true},
+    ];
+    vi.mocked(useProfiles).mockReturnValue({
+      profiles: profilesWithDefault,
+      isLoading: false,
+      error: false
+    });
+
+    let contextValue = null;
+    render(
+      <ProfileProvider>
+        <ProfileContext.Consumer>
+          {(value) => {
+            contextValue = value;
+            return <h1>Hello, world!</h1>;
+          }}
+        </ProfileContext.Consumer>
+      </ProfileProvider>
+    );
+
+    expect(contextValue.profile).toEqual(
+      profilesWithDefault.find((p) => p.name === "test-profile")
+    );
+  });
+
   it("removes legacy 'profile' key on mount", () => {
     localStorage.setItem("profile", JSON.stringify({name: "stale", type: "slurm"}));
 

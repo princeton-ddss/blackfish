@@ -545,6 +545,37 @@ class TestDefaultResolution:
         assert profiles["beta"].default is False
 
 
+class TestResolveProfileOrExit:
+    """`resolve_profile_or_exit` is the shared fallback for `--profile` options."""
+
+    def test_returns_explicit_profile_unchanged(self, temp_home_dir):
+        from blackfish.cli.profile import resolve_profile_or_exit
+
+        # An explicit name is returned without touching the config.
+        assert resolve_profile_or_exit(temp_home_dir, "myprof") == "myprof"
+
+    def test_resolves_default_when_unset(self, temp_home_dir):
+        from blackfish.cli.profile import resolve_profile_or_exit
+
+        config = (
+            "[alpha]\nschema = local\nhome_dir = /h\ncache_dir = /c\ndefault = true\n"
+        )
+        with open(os.path.join(temp_home_dir, "profiles.cfg"), "w") as f:
+            f.write(config)
+
+        assert resolve_profile_or_exit(temp_home_dir, None) == "alpha"
+
+    def test_exits_when_no_profiles_configured(self, temp_home_dir):
+        from blackfish.cli.profile import resolve_profile_or_exit
+
+        with open(os.path.join(temp_home_dir, "profiles.cfg"), "w") as f:
+            f.write("")
+
+        with pytest.raises(SystemExit) as exc_info:
+            resolve_profile_or_exit(temp_home_dir, None)
+        assert exc_info.value.code == 1
+
+
 class TestProfileUpdatePreservesDefault:
     """`blackfish profile update` should preserve the `default` flag."""
 
@@ -658,6 +689,8 @@ class TestProfileDefaultCommand:
             assert result.exit_code == 0
             with open(profiles_path, "r") as f:
                 assert "[default]" not in f.read()
+            # No remaining profile is flagged default -> user is warned.
+            assert "No default profile is set" in result.output
 
 
 class TestProfileUpgrade:

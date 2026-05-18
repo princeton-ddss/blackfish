@@ -639,38 +639,38 @@ class TestDefaultFlagAPI:
 
     async def test_delete_refuses_default(self, client: AsyncTestClient):
         """DELETE refuses to remove the default profile without force=true."""
-        with patch(
-            "blackfish.server.asgi.get_default_profile_name", return_value="myprof"
+        with (
+            patch(
+                "blackfish.server.asgi.resolve_default_section", return_value="myprof"
+            ),
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
         ):
-            with patch("blackfish.server.asgi._get_profiles_config") as mock_get_config:
-                mock_config = MagicMock()
-                mock_config.__contains__ = MagicMock(return_value=True)
-                mock_get_config.return_value = mock_config
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_get_config.return_value = mock_config
 
-                response = await client.delete("/api/profiles/myprof")
+            response = await client.delete("/api/profiles/myprof")
 
-                assert response.status_code == 409
-                assert "default profile" in response.json()["detail"]
+            assert response.status_code == 409
+            assert "default profile" in response.json()["detail"]
 
     async def test_delete_default_with_force(self, client: AsyncTestClient):
         """DELETE removes the default profile when force=true."""
-        with patch(
-            "blackfish.server.asgi.get_default_profile_name", return_value="myprof"
+        with (
+            patch(
+                "blackfish.server.asgi.resolve_default_section", return_value="myprof"
+            ),
+            patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
+            patch("blackfish.server.asgi._save_profiles_config") as mock_save_config,
         ):
-            with (
-                patch("blackfish.server.asgi._get_profiles_config") as mock_get_config,
-                patch(
-                    "blackfish.server.asgi._save_profiles_config"
-                ) as mock_save_config,
-            ):
-                mock_config = MagicMock()
-                mock_config.__contains__ = MagicMock(return_value=True)
-                mock_get_config.return_value = mock_config
+            mock_config = MagicMock()
+            mock_config.__contains__ = MagicMock(return_value=True)
+            mock_get_config.return_value = mock_config
 
-                response = await client.delete("/api/profiles/myprof?force=true")
+            response = await client.delete("/api/profiles/myprof?force=true")
 
-                assert response.status_code == 200
-                mock_save_config.assert_called_once()
+            assert response.status_code == 200
+            mock_save_config.assert_called_once()
 
     async def test_set_default_endpoint(self, client: AsyncTestClient):
         """PUT /api/profiles/{name}/default flags the named profile exclusively."""

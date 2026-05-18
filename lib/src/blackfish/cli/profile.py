@@ -1,5 +1,6 @@
 from typing import Optional
 import asyncio
+import sys
 import rich_click as click
 from rich_click import Context
 import configparser
@@ -210,11 +211,11 @@ def resolve_profile_or_exit(home_dir: str, profile: Optional[str]) -> str:
         return profile
     resolved = get_default_profile_name(home_dir)
     if resolved is None:
-        print(
+        click.echo(
             f"{LogSymbols.ERROR.value} No profiles configured. Run"
             " `blackfish profile add` to register one."
         )
-        raise SystemExit(1)
+        sys.exit(1)
     return resolved
 
 
@@ -684,7 +685,8 @@ def delete_profile(ctx: Context, name: str, force: bool) -> None:  # pragma: no 
         ctx.exit(1)
         return
 
-    if name == get_default_profile_name(home_dir) and not force:
+    was_default = name == get_default_profile_name(home_dir)
+    if was_default and not force:
         print(
             f"{LogSymbols.ERROR.value} '{name}' is the default profile. Set another"
             " profile as default with `blackfish profile default <name>` first, or"
@@ -699,6 +701,11 @@ def delete_profile(ctx: Context, name: str, force: bool) -> None:  # pragma: no 
         with open(os.path.join(home_dir, "profiles.cfg"), "w") as f:
             profiles.write(f)
         print(f"{LogSymbols.SUCCESS.value} Profile {name} deleted.")
+        if was_default and not has_any_default(profiles):
+            print(
+                f"{LogSymbols.WARNING.value} No default profile is set. Run"
+                " `blackfish profile default <name>` to assign one."
+            )
     # Note: User canceling deletion is not an error, so no exit(1)
 
 

@@ -96,8 +96,8 @@ from blackfish.server.utils import find_port
 from blackfish.server.models.profile import (
     deserialize_profiles,
     deserialize_profile,
-    get_default_profile_name,
     has_any_default,
+    resolve_default_section,
     section_is_default,
     set_exclusive_default,
     SlurmProfile,
@@ -2867,7 +2867,8 @@ async def delete_profile(name: str, force: bool = False) -> dict[str, str]:
     if name not in config:
         raise NotFoundException(detail=f"Profile '{name}' not found.")
 
-    if name == get_default_profile_name(blackfish_config.HOME_DIR) and not force:
+    is_default = name == resolve_default_section(config)
+    if is_default and not force:
         raise ClientException(
             status_code=HTTP_409_CONFLICT,
             detail=(
@@ -2879,7 +2880,11 @@ async def delete_profile(name: str, force: bool = False) -> dict[str, str]:
     del config[name]
     _save_profiles_config(config)
 
-    return {"status": "ok", "message": f"Profile '{name}' deleted."}
+    message = f"Profile '{name}' deleted."
+    if is_default and not has_any_default(config):
+        message += " No default profile is set; assign one with PUT /api/profiles/{name}/default."
+
+    return {"status": "ok", "message": message}
 
 
 @put("/api/profiles/{name:str}/default", guards=ENDPOINT_GUARDS)

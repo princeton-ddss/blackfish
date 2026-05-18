@@ -151,14 +151,30 @@ def deserialize_profile(home_dir: str, name: str) -> BlackfishProfile | None:
     return None
 
 
-def get_default_profile_name(home_dir: str) -> str | None:
-    """Resolve the name of the default profile.
+def resolve_default_section(parser: ConfigParser) -> str | None:
+    """Resolve the default profile name from an already-loaded parser.
 
     Resolution order:
       1. The (first) profile with ``default = true``.
       2. A profile literally named ``default`` (legacy convention).
       3. The first declared profile section.
       4. ``None`` if no profiles exist.
+    """
+    sections: list[str] = parser.sections()
+    for section in sections:
+        if section_is_default(parser, section):
+            return section
+
+    if "default" in sections:
+        return "default"
+
+    return sections[0] if sections else None
+
+
+def get_default_profile_name(home_dir: str) -> str | None:
+    """Resolve the name of the default profile from ``home_dir/profiles.cfg``.
+
+    See :func:`resolve_default_section` for the resolution order.
     """
 
     profiles_path = os.path.join(home_dir, "profiles.cfg")
@@ -168,12 +184,4 @@ def get_default_profile_name(home_dir: str) -> str | None:
     parser = ConfigParser()
     parser.read(profiles_path)
 
-    sections: list[str] = parser.sections()
-    for section in sections:
-        if _as_bool(parser[section].get("default")):
-            return section
-
-    if "default" in sections:
-        return "default"
-
-    return sections[0] if sections else None
+    return resolve_default_section(parser)

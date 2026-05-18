@@ -124,6 +124,26 @@ export async function deleteProfile(name) {
   return res.json();
 }
 
+/** Set a profile as the default. */
+export async function setDefaultProfile(name) {
+  const res = await fetch(`${blackfishApiURL}/api/profiles/${encodeURIComponent(name)}/default`, {
+    method: "PUT",
+  });
+  if (!res.ok) {
+    let message = "Failed to set default profile.";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
 /**
  * Translate UI-only container option flags into backend fields. Currently:
  * `disable_thinking` becomes `launch_kwargs: --default-chat-template-kwargs '{...}'`.

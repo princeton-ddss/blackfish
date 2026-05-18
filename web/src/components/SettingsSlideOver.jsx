@@ -22,13 +22,15 @@ import {
   TrashIcon,
   CheckIcon,
   ChevronUpDownIcon,
+  StarIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { useSettings } from "@/providers/SettingsProvider";
 import { useTheme } from "@/providers/ThemeProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useProfiles } from "@/lib/loaders";
 import Notification from "@/components/Notification";
-import { createProfile, updateProfile, deleteProfile, fetchHfTokenStatus, setHfToken, deleteHfToken, fetchAppInfo } from "@/lib/requests";
+import { createProfile, updateProfile, deleteProfile, setDefaultProfile, fetchHfTokenStatus, setHfToken, deleteHfToken, fetchAppInfo } from "@/lib/requests";
 import { blackfishApiURL } from "@/config";
 
 // Context for toast notifications within Settings
@@ -375,6 +377,7 @@ function ProfilesSection() {
   const [editingProfile, setEditingProfile] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [settingDefault, setSettingDefault] = useState(false);
 
   const handleDelete = async (profileName) => {
     try {
@@ -395,6 +398,20 @@ function ProfilesSection() {
     mutate();
     setEditingProfile(null);
     setIsAdding(false);
+  };
+
+  const handleSetDefault = async (profileName) => {
+    if (settingDefault) return;
+    setSettingDefault(true);
+    try {
+      await setDefaultProfile(profileName);
+      mutate();
+      showSuccess(`Profile "${profileName}" is now the default`);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setSettingDefault(false);
+    }
   };
 
   const renderHeader = () => (
@@ -483,6 +500,25 @@ function ProfilesSection() {
                   </>
                 ) : (
                   <>
+                    {p.default ? (
+                      <span
+                        className="p-1.5 text-amber-500"
+                        title="Default profile"
+                        aria-label="Default profile"
+                      >
+                        <StarIconSolid className="h-5 w-5" />
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleSetDefault(p.name)}
+                        disabled={settingDefault}
+                        className="p-1.5 text-gray-400 hover:text-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Set as default profile"
+                        aria-label="Set as default profile"
+                      >
+                        <StarIcon className="h-5 w-5" />
+                      </button>
+                    )}
                     <button
                       onClick={() => setEditingProfile(p)}
                       className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"

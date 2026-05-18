@@ -30,10 +30,17 @@ const ProfileProvider = ({ children }) => {
     localStorage.removeItem("profile");
   }, []);
 
-  const profile = useMemo(
-    () => profiles?.find((p) => p.name === profileName) ?? null,
-    [profiles, profileName]
-  );
+  // Resolve the active profile: an explicit (persisted) selection wins;
+  // otherwise fall back to the profile flagged `default = true`. The UI only
+  // honors the explicit flag — unlike the CLI, it does not fall back to a
+  // profile named "default" or the first listed profile.
+  const profile = useMemo(() => {
+    if (!profiles) return null;
+    const explicit = profileName
+      ? profiles.find((p) => p.name === profileName)
+      : null;
+    return explicit ?? profiles.find((p) => p.default) ?? null;
+  }, [profiles, profileName]);
 
   const setProfile = useCallback((nextProfile) => {
     const name = nextProfile?.name ?? null;

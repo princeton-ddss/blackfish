@@ -28,6 +28,7 @@ from blackfish.cli.profile import (
     upgrade_tigerflow,
     repair_profile,
     set_default_profile,
+    rename_profile,
     resolve_profile_or_exit,
 )
 from blackfish.server.models.profile import get_default_profile_name
@@ -201,6 +202,7 @@ profile.add_command(update_profile, "update")
 profile.add_command(upgrade_tigerflow, "upgrade")
 profile.add_command(repair_profile, "repair")
 profile.add_command(set_default_profile, "default")
+profile.add_command(rename_profile, "rename")
 
 
 @main.command()

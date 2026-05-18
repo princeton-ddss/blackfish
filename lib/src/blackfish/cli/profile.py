@@ -8,7 +8,9 @@ import os
 from enum import StrEnum
 from log_symbols.symbols import LogSymbols
 from yaspin import yaspin
+import requests
 
+from blackfish.server.config import config
 from blackfish.server.setup import ProfileManager, ProfileSetupError
 from blackfish.server.models.profile import (
     SlurmProfile,
@@ -648,9 +650,8 @@ def list_profiles(ctx: Context) -> None:  # pragma: no cover
 def update_profile(ctx: Context, name: str) -> None:  # pragma: no cover
     """Update a profile.
 
-    This command does not permit changes to a profile's name or type. If you wish
-    to rename a profile, you must delete the profile and then re-create
-    it using a new name.
+    This command does not permit changes to a profile's type. To rename a
+    profile, use `blackfish profile rename` instead.
     """
 
     success = _update_profile_(ctx.obj.get("home_dir"), "default", name)
@@ -732,6 +733,46 @@ def set_default_profile(ctx: Context, name: str) -> None:  # pragma: no cover
     with open(os.path.join(home_dir, "profiles.cfg"), "w") as f:
         profiles.write(f)
     print(f"{LogSymbols.SUCCESS.value} '{name}' is now the default profile.")
+
+
+@click.command(name="rename")
+@click.argument("old_name", type=str, required=True)
+@click.argument("new_name", type=str, required=True)
+def rename_profile(old_name: str, new_name: str) -> None:  # pragma: no cover
+    """Rename a profile from OLD_NAME to NEW_NAME.
+
+    Renames the profile and updates the stored profile name on every
+    associated model, download, service and job. This requires the Blackfish
+    server to be running.
+    """
+
+    try:
+        res = requests.put(
+            f"http://{config.HOST}:{config.PORT}/api/profiles/{old_name}/rename",
+            json={"new_name": new_name},
+        )
+    except requests.exceptions.ConnectionError:
+        print(
+            f"{LogSymbols.ERROR.value} Failed to connect to the Blackfish API. Is"
+            f" Blackfish running on port {config.PORT}?"
+        )
+        raise SystemExit(1)
+
+    if res.ok:
+        print(
+            f"{LogSymbols.SUCCESS.value} Renamed profile '{old_name}' to '{new_name}'."
+        )
+        return
+
+    detail = f"Failed to rename profile ({res.status_code})."
+    try:
+        body = res.json()
+        if isinstance(body, dict) and body.get("detail"):
+            detail = body["detail"]
+    except ValueError:
+        pass
+    print(f"{LogSymbols.ERROR.value} {detail}")
+    raise SystemExit(1)
 
 
 @click.command()

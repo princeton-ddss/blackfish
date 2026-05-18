@@ -106,7 +106,33 @@ blackfish profile update --name <profile>
 ```
 
 This command updates the default profile if no `--name` is specified. Note that you cannot change
-the `name` or `schema` attributes of a profile.
+the `schema` of a profile. To change a profile's name, use `blackfish profile rename`.
+
+#### rename - Rename a profile
+
+To rename a profile, use the `blackfish profile rename` command, passing the current name followed
+by the new name. For example, to rename the profile `default` to `della`:
+
+```shell
+blackfish profile rename default della
+```
+
+```
+✔ Renamed profile 'default' to 'della'.
+```
+
+A profile name is referenced by the models, downloads, services, and jobs associated with it, so
+renaming cascades the new name to all of them in a single transaction. Because that cascade touches
+the database, this command **requires the Blackfish server to be running** (unlike other `profile`
+subcommands). Renaming fails if the new name is already in use:
+
+```shell
+blackfish profile rename della macbook
+```
+
+```
+✖ Profile 'macbook' already exists.
+```
 
 #### default - Set the default profile
 

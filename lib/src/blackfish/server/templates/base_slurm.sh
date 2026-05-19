@@ -20,7 +20,6 @@
 {%- endif %}
 {%- endblock %}
 {% block prelude %}
-export APPTAINER_CACHEDIR=/scratch/gpfs/{{ profile.user }}/APPTAINER_CACHE
 export APPTAINER_TMPDIR=/tmp
 {%- if job_config.gres > 0 %}
 export APPTAINERENV_CUDA_VISIBLE_DEVICES={{ range(job_config.gres) | join(',') }}

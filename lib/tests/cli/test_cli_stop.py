@@ -1,4 +1,5 @@
 from unittest.mock import patch, MagicMock
+import requests
 from click.testing import CliRunner
 
 
@@ -178,3 +179,30 @@ class TestStopCLI:
             mock_put.assert_called_once_with(
                 f"http://localhost:8000/api/services/{full_uuid}/stop", json={}
             )
+
+    def test_stop_lookup_connection_error(self):
+        """Connection failures while looking up a service are handled gracefully."""
+        runner = CliRunner()
+
+        with patch(
+            "blackfish.cli.__main__.requests.get",
+            side_effect=requests.exceptions.ConnectionError("refused"),
+        ):
+            result = runner.invoke(stop, ["4c22"])
+
+            assert result.exit_code == 0
+            assert "Failed to connect" in result.output
+
+    def test_stop_connection_error(self):
+        """Connection failures while stopping a service are handled gracefully."""
+        runner = CliRunner()
+        full_uuid = "4c2216ea-df22-4bf6-bcea-56964df12af5"
+
+        with patch(
+            "blackfish.cli.__main__.requests.put",
+            side_effect=requests.exceptions.ConnectionError("refused"),
+        ):
+            result = runner.invoke(stop, [full_uuid])
+
+            assert result.exit_code == 0
+            assert "Failed to connect" in result.output

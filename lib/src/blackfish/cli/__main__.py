@@ -449,7 +449,12 @@ def stop(service_id: str) -> None:  # pragma: no cover
     except ValueError:
         # If it's not a valid UUID, try to find a matching service by abbreviated ID
         with yaspin(text="Looking up service...") as spinner:
-            res = requests.get(f"http://{config.HOST}:{config.PORT}/api/services")
+            try:
+                res = requests.get(f"http://{config.HOST}:{config.PORT}/api/services")
+            except requests.exceptions.ConnectionError:
+                spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+                spinner.fail(f"{LogSymbols.ERROR.value}")
+                return
             if not res.ok:
                 spinner.text = f"Failed to fetch services (status={res.status_code})."
                 spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -472,10 +477,15 @@ def stop(service_id: str) -> None:  # pragma: no cover
                 spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
     with yaspin(text="Stopping service...") as spinner:
-        res = requests.put(
-            f"http://{config.HOST}:{config.PORT}/api/services/{full_service_id}/stop",
-            json={},
-        )
+        try:
+            res = requests.put(
+                f"http://{config.HOST}:{config.PORT}/api/services/{full_service_id}/stop",
+                json={},
+            )
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+            return
         if not res.ok:
             spinner.text = f"Failed to stop service {full_service_id[:DISPLAY_ID_LENGTH]} (status={res.status_code})."
             spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -508,10 +518,15 @@ def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
         params = None
 
     with yaspin(text="Deleting service...") as spinner:
-        res = requests.delete(
-            f"http://{config.HOST}:{config.PORT}/api/services",
-            params=params,
-        )
+        try:
+            res = requests.delete(
+                f"http://{config.HOST}:{config.PORT}/api/services",
+                params=params,
+            )
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+            return
         if not res.ok:
             spinner.text = f"Failed to remove services (status={res.status_code})."
             spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -546,7 +561,14 @@ def prune() -> None:  # pragma: no cover
         return
 
     with yaspin(text="Deleting service...") as spinner:
-        res = requests.delete(f"http://{config.HOST}:{config.PORT}/api/services/prune")
+        try:
+            res = requests.delete(
+                f"http://{config.HOST}:{config.PORT}/api/services/prune"
+            )
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+            return
         if not res.ok:
             spinner.text = f"Failed to prune services (status={res.status_code})"
             spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -570,10 +592,15 @@ def details(service_id: str) -> None:  # pragma: no cover
     from blackfish.server.job import SlurmJob, LocalJob
 
     with yaspin(text="Fetching service...") as spinner:
-        res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/api/services/{service_id}",
-            params={"refresh": "true"},
-        )  # fresh data 🥬
+        try:
+            res = requests.get(
+                f"http://{config.HOST}:{config.PORT}/api/services/{service_id}",
+                params={"refresh": "true"},
+            )  # fresh data 🥬
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+            return
         if not res.ok:
             spinner.text = (
                 f"Failed to fetch service {service_id} (status={res.status_code})."
@@ -694,9 +721,14 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
 
     with yaspin(text="Fetching services...") as spinner:
         params["refresh"] = "true"
-        res = requests.get(
-            f"http://{config.HOST}:{config.PORT}/api/services", params=params
-        )  # fresh data 🥬
+        try:
+            res = requests.get(
+                f"http://{config.HOST}:{config.PORT}/api/services", params=params
+            )  # fresh data 🥬
+        except requests.exceptions.ConnectionError:
+            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+            return
         if not res.ok:
             spinner.text = f"Failed to fetch services. Status code: {res.status_code}."
             spinner.fail(f"{LogSymbols.ERROR.value}")

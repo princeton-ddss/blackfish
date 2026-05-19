@@ -601,6 +601,134 @@ class TestUpdateProfileAPI:
             assert response.status_code == 400
 
 
+class TestScopedProvisioning:
+    """`PUT /api/profiles/{name}` runs only the setup steps whose inputs changed."""
+
+    SLURM = {
+        "schema": "slurm",
+        "host": "cluster.edu",
+        "user": "alice",
+        "home_dir": "/home/alice/.blackfish",
+        "cache_dir": "/scratch/alice",
+        "python_path": "python3",
+        "default": "true",
+    }
+    LOCAL = {
+        "schema": "local",
+        "home_dir": "/home/alice/.blackfish",
+        "cache_dir": "/tmp/cache",
+        "default": "true",
+    }
+
+    @classmethod
+    def _config(cls, name, section):
+        cfg = configparser.ConfigParser()
+        cfg[name] = dict(section)
+        return cfg
+
+    @staticmethod
+    def _slurm_body(**overrides):
+        body = {
+            "name": "prof",
+            "schema_type": "slurm",
+            "host": "cluster.edu",
+            "user": "alice",
+            "home_dir": "/home/alice/.blackfish",
+            "cache_dir": "/scratch/alice",
+            "python_path": "python3",
+        }
+        body.update(overrides)
+        return body
+
+    async def _put(self, client, name, section, body, tf_version: str | None = "0.1.0"):
+        """PUT with mocked config + provisioning; returns (response, mgr, tf_cls).
+
+        ``tf_version`` is what TigerFlow's ``check_version`` reports — pass
+        ``None`` to simulate TigerFlow being absent (so ``setup`` would run).
+        """
+        with (
+            patch(
+                "blackfish.server.asgi._get_profiles_config",
+                return_value=self._config(name, section),
+            ),
+            patch("blackfish.server.asgi._save_profiles_config"),
+            patch("blackfish.server.asgi.ProfileManager") as mgr_cls,
+            patch("blackfish.server.asgi.TigerFlowClient") as tf_cls,
+        ):
+            mgr = AsyncMock()
+            mgr_cls.return_value = mgr
+            tf = AsyncMock()
+            tf.check_version.return_value = (tf_version is not None, tf_version)
+            tf_cls.return_value = tf
+            response = await client.put(f"/api/profiles/{name}", json=body)
+        return response, mgr, tf_cls
+
+    async def test_cache_only_change_skips_dirs_and_tigerflow(self, client):
+        response, mgr, tf_cls = await self._put(
+            client, "prof", self.SLURM, self._slurm_body(cache_dir="/scratch/new")
+        )
+        assert response.status_code == 200
+        mgr.check_cache.assert_called_once()
+        mgr.create_directories.assert_not_called()
+        tf_cls.assert_not_called()
+
+    async def test_home_change_reinstalls_tigerflow(self, client):
+        # TigerFlow lives under home_dir, so a home_dir change must reinstall it
+        # at the new location. The new home has no TigerFlow (tf_version=None),
+        # so setup() must run.
+        response, mgr, tf_cls = await self._put(
+            client,
+            "prof",
+            self.SLURM,
+            self._slurm_body(home_dir="/home/alice/bf"),
+            tf_version=None,
+        )
+        assert response.status_code == 200
+        mgr.create_directories.assert_called_once()
+        tf_cls.return_value.check_version.assert_called_once()
+        tf_cls.return_value.setup.assert_called_once()
+        mgr.check_cache.assert_not_called()
+
+    async def test_python_path_change_runs_tigerflow_only(self, client):
+        response, mgr, tf_cls = await self._put(
+            client, "prof", self.SLURM, self._slurm_body(python_path="python3.12")
+        )
+        assert response.status_code == 200
+        tf_cls.return_value.check_version.assert_called_once()
+        mgr.create_directories.assert_not_called()
+        mgr.check_cache.assert_not_called()
+
+    async def test_no_change_skips_all_provisioning(self, client):
+        response, mgr, tf_cls = await self._put(
+            client, "prof", self.SLURM, self._slurm_body()
+        )
+        assert response.status_code == 200
+        mgr.create_directories.assert_not_called()
+        mgr.check_cache.assert_not_called()
+        tf_cls.assert_not_called()
+
+    async def test_host_change_runs_full_chain(self, client):
+        response, mgr, tf_cls = await self._put(
+            client, "prof", self.SLURM, self._slurm_body(host="other.edu")
+        )
+        assert response.status_code == 200
+        mgr.create_directories.assert_called_once()
+        mgr.check_cache.assert_called_once()
+        tf_cls.return_value.check_version.assert_called_once()
+
+    async def test_local_cache_only_change_skips_dirs(self, client):
+        body = {
+            "name": "prof",
+            "schema_type": "local",
+            "home_dir": "/home/alice/.blackfish",
+            "cache_dir": "/tmp/other",
+        }
+        response, mgr, _ = await self._put(client, "prof", self.LOCAL, body)
+        assert response.status_code == 200
+        mgr.check_cache.assert_called_once()
+        mgr.create_directories.assert_not_called()
+
+
 class TestDeleteProfileAPI:
     """Test cases for the DELETE /api/profiles/{name} endpoint."""
 

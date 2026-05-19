@@ -2767,13 +2767,28 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
     # Preserve the existing default flag across the rewrite.
     was_default = section_is_default(config, name)
 
+    # Scoped provisioning: only run setup steps whose inputs actually changed,
+    # so a metadata-only edit doesn't re-run the full remote setup chain.
+    existing = config[name]
+    prev_schema = existing.get("schema") or existing.get("type")
+    schema_changed = data.schema_type != prev_schema
+    home_changed = data.home_dir != existing.get("home_dir")
+    cache_changed = data.cache_dir != existing.get("cache_dir")
+
     if data.schema_type == "slurm":
         if not data.host or not data.user:
             raise ValidationException(
                 detail="'host' and 'user' are required for Slurm profiles."
             )
 
-        # Set up directories and TigerFlow if missing
+        host_changed = data.host != existing.get("host")
+        user_changed = data.user != existing.get("user")
+        python_changed = (data.python_path or "python3") != existing.get(
+            "python_path", "python3"
+        )
+        # Changing the target machine invalidates everything provisioned for it.
+        full = schema_changed or host_changed or user_changed
+
         runner: SSHRunner | LocalRunner
         if data.host == "localhost":
             runner = LocalRunner()
@@ -2786,18 +2801,23 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
                 home_dir=data.home_dir,
                 cache_dir=data.cache_dir,
             )
-            await profile_mgr.create_directories()
-            await profile_mgr.check_cache()
+            if full or home_changed:
+                await profile_mgr.create_directories()
+            if full or cache_changed:
+                await profile_mgr.check_cache()
 
-            # Install TigerFlow if not present
-            tigerflow = TigerFlowClient(
-                runner=runner,
-                home_dir=data.home_dir,
-                python_path=data.python_path or "python3",
-            )
-            version_ok, current_version = await tigerflow.check_version()
-            if current_version is None:
-                await tigerflow.setup()
+            # TigerFlow is installed under home_dir, so a home_dir change needs
+            # it (re)installed at the new location; python_path changes which
+            # interpreter builds its venv.
+            if full or home_changed or python_changed:
+                tigerflow = TigerFlowClient(
+                    runner=runner,
+                    home_dir=data.home_dir,
+                    python_path=data.python_path or "python3",
+                )
+                _, current_version = await tigerflow.check_version()
+                if current_version is None:
+                    await tigerflow.setup()
         except ProfileSetupError as e:
             raise InternalServerException(detail=e.user_message())
         except TigerFlowError as e:
@@ -2826,7 +2846,6 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
         )
 
     elif data.schema_type == "local":
-        # Set up directories
         try:
             runner = LocalRunner()
             profile_mgr = ProfileManager(
@@ -2834,8 +2853,10 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
                 home_dir=data.home_dir,
                 cache_dir=data.cache_dir,
             )
-            await profile_mgr.create_directories()
-            await profile_mgr.check_cache()
+            if schema_changed or home_changed:
+                await profile_mgr.create_directories()
+            if schema_changed or cache_changed:
+                await profile_mgr.check_cache()
         except ProfileSetupError as e:
             raise InternalServerException(detail=e.user_message())
 

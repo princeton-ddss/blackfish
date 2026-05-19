@@ -141,6 +141,20 @@ class TestCreateProfileAPI:
         )
         assert response.status_code in [401, 403] or response.is_redirect
 
+    async def test_create_profile_invalid_name(self, client: AsyncTestClient):
+        """A profile name with ConfigParser-meaningful characters is rejected."""
+        response = await client.post(
+            "/api/profiles",
+            json={
+                "name": "bad[name",
+                "schema_type": "local",
+                "home_dir": "/tmp/test",
+                "cache_dir": "/tmp/cache",
+            },
+        )
+        assert response.status_code == 400
+        assert "Invalid profile name" in response.json()["detail"]
+
     async def test_create_local_profile_success(self, client: AsyncTestClient):
         """Test creating a local profile successfully."""
         with (
@@ -942,6 +956,17 @@ class TestRenameProfileAPI:
                 "/api/profiles/test/rename", json={"new_name": "test"}
             )
         assert response.status_code == 400
+
+    async def test_rename_to_invalid_name_returns_400(self, client: AsyncTestClient):
+        with patch(
+            "blackfish.server.asgi._get_profiles_config",
+            return_value=self._config("test"),
+        ):
+            response = await client.put(
+                "/api/profiles/test/rename", json={"new_name": "bad[name"}
+            )
+        assert response.status_code == 400
+        assert "Invalid profile name" in response.json()["detail"]
 
     async def test_rename_collision_does_not_sweep_db(
         self, client: AsyncTestClient, session

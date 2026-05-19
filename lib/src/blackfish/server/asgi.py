@@ -100,6 +100,7 @@ from blackfish.server.models.profile import (
     resolve_default_section,
     section_is_default,
     set_exclusive_default,
+    validate_profile_name,
     SlurmProfile,
     LocalProfile,
     BlackfishProfile as Profile,
@@ -2649,6 +2650,11 @@ async def create_profile(data: ProfileRequest) -> Profile:
     """
     config = _get_profiles_config()
 
+    try:
+        validate_profile_name(data.name)
+    except ValueError as e:
+        raise ValidationException(detail=str(e))
+
     if data.name in config:
         raise ClientException(
             status_code=HTTP_409_CONFLICT,
@@ -2946,8 +2952,10 @@ async def rename_profile(
     if name not in config:
         raise NotFoundException(detail=f"Profile '{name}' not found.")
 
-    if not new_name:
-        raise ValidationException(detail="New profile name must not be empty.")
+    try:
+        validate_profile_name(new_name)
+    except ValueError as e:
+        raise ValidationException(detail=str(e))
 
     if new_name == name:
         raise ValidationException(

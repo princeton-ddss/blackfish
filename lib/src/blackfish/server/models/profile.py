@@ -4,6 +4,26 @@ from dataclasses import dataclass
 from typing import Union
 from configparser import ConfigParser
 import os
+import re
+
+
+_VALID_PROFILE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
+_PROFILE_NAME_RULE = (
+    "Profile names may only contain letters, digits, dots, hyphens, and underscores."
+)
+
+
+def validate_profile_name(name: str) -> None:
+    """Raise ``ValueError`` if ``name`` is not a safe profiles.cfg section name.
+
+    Profile names become INI section headers, so characters meaningful to
+    ConfigParser (``[``, ``]``, ``=``, ``:``, newlines) would corrupt the file.
+    ``DEFAULT`` is also rejected as ConfigParser's reserved section name.
+    """
+    if name == "DEFAULT":
+        raise ValueError("'DEFAULT' is reserved and cannot be used as a profile name.")
+    if not _VALID_PROFILE_NAME.match(name):
+        raise ValueError(f"Invalid profile name '{name}'. {_PROFILE_NAME_RULE}")
 
 
 @dataclass

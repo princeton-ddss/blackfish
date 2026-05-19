@@ -5,6 +5,7 @@ import requests
 from unittest.mock import patch, Mock
 from click.testing import CliRunner
 from blackfish.cli.__main__ import main
+from blackfish.server.models.profile import validate_profile_name
 
 
 @pytest.fixture
@@ -250,6 +251,22 @@ class TestProfileAdd:
 
             assert result.exit_code == 1
             assert "Profile named default already exists" in result.output
+
+    @patch("blackfish.cli.profile.input")
+    def test_add_profile_invalid_name(self, mock_input, cli_runner, temp_home_dir):
+        """Test that an invalid profile name is rejected."""
+        mock_input.side_effect = ["bad[name"]
+        profiles_path = os.path.join(temp_home_dir, "profiles.cfg")
+
+        with patch("blackfish.cli.__main__.config") as mock_config:
+            mock_config.HOME_DIR = temp_home_dir
+            with open(profiles_path, "w") as f:
+                f.write("")
+
+            result = cli_runner.invoke(main, ["profile", "add"])
+
+            assert result.exit_code == 1
+            assert "Invalid profile name" in result.output
 
     @patch("blackfish.cli.profile.input")
     @patch("blackfish.cli.profile._setup_profile")
@@ -544,6 +561,25 @@ class TestDefaultResolution:
         profiles = {p.name: p for p in deserialize_profiles(temp_home_dir)}
         assert profiles["alpha"].default is True
         assert profiles["beta"].default is False
+
+
+class TestValidateProfileName:
+    """Unit tests for `validate_profile_name`."""
+
+    @pytest.mark.parametrize(
+        "name",
+        ["default", "della", "my-profile", "my_profile", "della.princeton.edu", "p1"],
+    )
+    def test_accepts_valid_names(self, name):
+        validate_profile_name(name)  # does not raise
+
+    @pytest.mark.parametrize(
+        "name",
+        ["bad[name", "bad]name", "a=b", "a:b", "has space", "", "DEFAULT", "tab\tx"],
+    )
+    def test_rejects_invalid_names(self, name):
+        with pytest.raises(ValueError):
+            validate_profile_name(name)
 
 
 class TestResolveProfileOrExit:

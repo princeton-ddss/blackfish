@@ -93,6 +93,10 @@ Work is tracked in GitHub Projects (Kanban boards). Run `/project-setup` to add 
 
 1. Ensure a tracking issue exists (create one if needed)
 2. Move issue to "In progress" status using the option ID from config
+3. Set the "Start date" field to today's date, unless it is already set:
+   ```bash
+   gh project item-edit --id "$ITEM_ID" --project-id "<project_id>" --field-id "<start_date.id>" --date "<YYYY-MM-DD>"
+   ```
 
 ### When opening a PR
 

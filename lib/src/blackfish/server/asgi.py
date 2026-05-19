@@ -2966,11 +2966,17 @@ async def rename_profile(
             sa.update(model).where(model.profile == name).values(profile=new_name)
         )
 
-    # Rewrite the section header, preserving all keys. A failure here raises,
-    # rolling back the DB updates above via the request transaction.
-    config[new_name] = {k: v for k, v in config[name].items()}
-    del config[name]
-    _save_profiles_config(config)
+    # Rewrite the section, preserving its position in the file. configparser
+    # appends new sections, so a naive add-then-delete would move the renamed
+    # profile to the end of the list; rebuild in original order instead. A
+    # failure here raises, rolling back the DB updates above via the request
+    # transaction. profiles.cfg uses no [DEFAULT] section, so sections() is
+    # exhaustive here.
+    renamed = configparser.ConfigParser()
+    for section in config.sections():
+        target = new_name if section == name else section
+        renamed[target] = {k: v for k, v in config[section].items()}
+    _save_profiles_config(renamed)
 
     return {
         "status": "ok",

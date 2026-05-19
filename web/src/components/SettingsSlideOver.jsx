@@ -23,6 +23,7 @@ import {
   CheckIcon,
   ChevronUpDownIcon,
   StarIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { useSettings } from "@/providers/SettingsProvider";
@@ -30,12 +31,19 @@ import { useTheme } from "@/providers/ThemeProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useProfiles } from "@/lib/loaders";
 import Notification from "@/components/Notification";
-import { createProfile, updateProfile, deleteProfile, setDefaultProfile, fetchHfTokenStatus, setHfToken, deleteHfToken, fetchAppInfo } from "@/lib/requests";
+import Alert from "@/components/Alert";
+import { createProfile, updateProfile, renameProfile, deleteProfile, setDefaultProfile, fetchHfTokenStatus, setHfToken, deleteHfToken, fetchAppInfo } from "@/lib/requests";
 import { blackfishApiURL } from "@/config";
 
 // Context for toast notifications within Settings
 const NotificationContext = createContext({ showError: () => {}, showSuccess: () => {} });
 const useNotification = () => useContext(NotificationContext);
+
+// Tracks whether a blocking operation (e.g. profile provisioning) is running.
+// While busy, the slide-over refuses to close so the in-flight request can't
+// be orphaned with its result (success or failure) discarded.
+const SettingsBusyContext = createContext({ busy: false, setBusy: () => {} });
+const useSettingsBusy = () => useContext(SettingsBusyContext);
 
 // Theme selector tabs
 const themeOptions = [
@@ -82,9 +90,13 @@ const schemaTypes = [
   { id: "slurm", name: "Slurm" },
 ];
 
-function ProfileForm({ profile, onSave, onCancel }) {
+function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
   const isNew = !profile;
-  const [formData, setFormData] = useState({
+  const { setBusy } = useSettingsBusy();
+  // Mount-time snapshot of the loaded profile — the baseline for dirty
+  // tracking. `profile` is stable for the form's lifetime (the parent
+  // unmounts the form on save/cancel rather than mutating the prop).
+  const [initialFormData] = useState(() => ({
     name: profile?.name || "",
     schema_type: profile?.schema || "local",
     home_dir: profile?.home_dir || "",
@@ -92,18 +104,30 @@ function ProfileForm({ profile, onSave, onCancel }) {
     host: profile?.host || "",
     user: profile?.user || "",
     python_path: profile?.python_path || "",
-  });
+  }));
+  const [formData, setFormData] = useState(initialFormData);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   const selectedType = schemaTypes.find((t) => t.id === formData.schema_type) || schemaTypes[0];
+  // Single source of truth for what changed, so the Save-button `isDirty`
+  // guard and the `configChanged` API gate below cannot drift apart.
+  const changedKeys = Object.keys(formData).filter(
+    (key) => formData[key] !== initialFormData[key]
+  );
+  const isDirty = changedKeys.length > 0;
 
   const validateForm = () => {
     const errors = {};
 
     // Required fields
-    if (!formData.name.trim()) errors.name = "Name is required";
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
+      errors.name = "Name is required";
+    } else if (trimmedName !== profile?.name && existingNames.includes(trimmedName)) {
+      errors.name = "A profile with that name already exists";
+    }
     if (!formData.home_dir.trim()) errors.home_dir = "Home directory is required";
     if (!formData.cache_dir.trim()) errors.cache_dir = "Cache directory is required";
 
@@ -136,32 +160,66 @@ function ProfileForm({ profile, onSave, onCancel }) {
 
     if (!validateForm()) return;
 
+    const nextName = formData.name.trim();
+    const data = {
+      name: nextName,
+      schema_type: formData.schema_type,
+      home_dir: formData.home_dir,
+      cache_dir: formData.cache_dir,
+    };
+    if (formData.schema_type === "slurm") {
+      data.host = formData.host;
+      data.user = formData.user;
+      if (formData.python_path) data.python_path = formData.python_path;
+    }
+
+    // Renaming is a separate endpoint from the config update — the PUT route
+    // rejects name changes — so an edit can involve two independent calls.
+    const nameChanged = !isNew && nextName !== profile.name;
+    const configChanged = !isNew && changedKeys.some((key) => key !== "name");
+
     setSaving(true);
-
+    setBusy(true);
+    let phase = isNew ? "create" : "update";
+    let configSaved = false;
+    let succeeded = false;
     try {
-      const data = {
-        name: formData.name,
-        schema_type: formData.schema_type,
-        home_dir: formData.home_dir,
-        cache_dir: formData.cache_dir,
-      };
-
-      if (formData.schema_type === "slurm") {
-        data.host = formData.host;
-        data.user = formData.user;
-        if (formData.python_path) data.python_path = formData.python_path;
-      }
-
       if (isNew) {
         await createProfile(data);
       } else {
-        await updateProfile(profile.name, data);
+        if (configChanged) {
+          await updateProfile(profile.name, { ...data, name: profile.name });
+          configSaved = true;
+        }
+        if (nameChanged) {
+          phase = "rename";
+          await renameProfile(profile.name, nextName);
+        }
       }
-      onSave();
+      succeeded = true;
     } catch (err) {
-      setError(err.message);
+      let title;
+      let detail = err.message;
+      if (phase === "rename") {
+        title = "Failed to rename profile.";
+        if (configSaved) {
+          detail = `${err.message} Your configuration changes were saved; only the name change failed.`;
+        }
+      } else if (isNew) {
+        title = "Failed to create profile.";
+      } else {
+        title = "Failed to save profile changes.";
+      }
+      setError({ title, detail });
     } finally {
       setSaving(false);
+      setBusy(false);
+    }
+
+    // Called outside the try/catch: a throw inside onSave (e.g. mutate())
+    // must not be reported as a save failure when the save itself succeeded.
+    if (succeeded) {
+      onSave(isNew ? { name: nextName } : { previousName: profile.name, name: nextName });
     }
   };
 
@@ -170,11 +228,14 @@ function ProfileForm({ profile, onSave, onCancel }) {
   const errorClasses = "mt-1 text-xs text-red-600 dark:text-red-400";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit}>
+      {/* Disabling the fieldset freezes every control while a save is in
+          flight, so the form can't be edited, cancelled, or re-submitted. */}
+      <fieldset disabled={saving} className="space-y-3 m-0 p-0 border-0 min-w-0">
       {error && (
-        <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-2 text-sm text-red-700 dark:text-red-400">
-          {error}
-        </div>
+        <Alert variant="error" title={error.title}>
+          {error.detail}
+        </Alert>
       )}
 
       {/* Name */}
@@ -184,7 +245,6 @@ function ProfileForm({ profile, onSave, onCancel }) {
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          disabled={!isNew}
           className={`mt-1 ${inputClasses(fieldErrors.name)}`}
         />
         {fieldErrors.name && <p className={errorClasses}>{fieldErrors.name}</p>}
@@ -314,22 +374,31 @@ function ProfileForm({ profile, onSave, onCancel }) {
         </div>
       )}
 
+      {saving && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Setting up the profile. Installing dependencies can take a few
+          minutes — please keep this panel open until it finishes.
+        </p>
+      )}
+
       <div className="flex justify-end gap-3 pt-1">
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+          className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="submit"
-          disabled={saving}
-          className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 disabled:opacity-50"
+          disabled={saving || !isDirty}
+          className="inline-flex items-center gap-1.5 rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 disabled:opacity-50"
         >
-          {saving ? "Saving..." : isNew ? "Create" : "Save"}
+          {saving && <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {saving ? "Provisioning…" : isNew ? "Create" : "Save"}
         </button>
       </div>
+      </fieldset>
     </form>
   );
 }
@@ -344,6 +413,7 @@ ProfileForm.propTypes = {
     user: PropTypes.string,
     python_path: PropTypes.string,
   }),
+  existingNames: PropTypes.arrayOf(PropTypes.string),
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
 };
@@ -394,11 +464,27 @@ function ProfilesSection() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = ({ previousName, name } = {}) => {
+    // If the currently-selected profile was renamed, keep the selection
+    // pointed at it under its new name.
+    if (previousName && name && previousName !== name && selectedProfile?.name === previousName) {
+      setProfile({ ...selectedProfile, name });
+    }
     mutate();
     setEditingProfile(null);
     setIsAdding(false);
+    if (name) {
+      if (!previousName) {
+        showSuccess(`Profile "${name}" created`);
+      } else if (previousName !== name) {
+        showSuccess(`Profile renamed to "${name}"`);
+      } else {
+        showSuccess(`Profile "${name}" updated`);
+      }
+    }
   };
+
+  const existingNames = profiles?.map((p) => p.name) ?? [];
 
   const handleSetDefault = async (profileName) => {
     if (settingDefault) return;
@@ -444,7 +530,7 @@ function ProfilesSection() {
       <div>
         {renderHeader()}
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-          <ProfileForm onSave={handleSave} onCancel={() => setIsAdding(false)} />
+          <ProfileForm existingNames={existingNames} onSave={handleSave} onCancel={() => setIsAdding(false)} />
         </div>
       </div>
     );
@@ -455,7 +541,7 @@ function ProfilesSection() {
       <div>
         {renderHeader()}
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-          <ProfileForm profile={editingProfile} onSave={handleSave} onCancel={() => setEditingProfile(null)} />
+          <ProfileForm profile={editingProfile} existingNames={existingNames} onSave={handleSave} onCancel={() => setEditingProfile(null)} />
         </div>
       </div>
     );
@@ -856,6 +942,7 @@ function AppConfigSection() {
 function SettingsSlideOver() {
   const { isOpen, closeSettings } = useSettings();
   const [notification, setNotification] = useState({ show: false, variant: "error", message: "" });
+  const [busy, setBusy] = useState(false);
 
   // Auto-dismiss notification after 5 seconds
   useEffect(() => {
@@ -877,7 +964,8 @@ function SettingsSlideOver() {
 
   return (
     <NotificationContext.Provider value={{ showError, showSuccess }}>
-      <Dialog open={isOpen} onClose={closeSettings} className="relative z-50">
+      <SettingsBusyContext.Provider value={{ busy, setBusy }}>
+      <Dialog open={isOpen} onClose={busy ? () => {} : closeSettings} className="relative z-50">
       <DialogBackdrop
         transition
         className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 transition-opacity duration-300 ease-linear data-[closed]:opacity-0"
@@ -900,7 +988,8 @@ function SettingsSlideOver() {
                       <button
                         type="button"
                         onClick={closeSettings}
-                        className="rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none data-[closed]:opacity-0"
+                        disabled={busy}
+                        className="rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none data-[closed]:opacity-0 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <span className="sr-only">Close panel</span>
                         <XMarkIcon className="h-6 w-6" />
@@ -938,17 +1027,22 @@ function SettingsSlideOver() {
                   </section>
                 </div>
               </div>
+              {/* Rendered inside the DialogPanel: keeps the toast out of the
+                  inert sibling tree (so its dismiss button is clickable) while
+                  also keeping clicks on it from registering as a click-outside
+                  that would close the slide-over. */}
+              <Notification
+                show={notification.show}
+                variant={notification.variant}
+                message={notification.message}
+                onDismiss={() => setNotification((prev) => ({ ...prev, show: false }))}
+              />
             </DialogPanel>
           </div>
         </div>
       </div>
     </Dialog>
-      <Notification
-        show={notification.show}
-        variant={notification.variant}
-        message={notification.message}
-        onDismiss={() => setNotification((prev) => ({ ...prev, show: false }))}
-      />
+      </SettingsBusyContext.Provider>
     </NotificationContext.Provider>
   );
 }

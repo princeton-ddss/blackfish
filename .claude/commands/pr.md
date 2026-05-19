@@ -74,9 +74,10 @@ If the issue is not in any project, no linked issue exists, or no projects confi
 
 ## Step 6: Wait for and triage Claude bot review
 
-A Claude bot runs an automated code review on every PR open. It takes a few
-minutes, so poll for its review/comments rather than checking once (poll every
-~60s, up to ~10 minutes). If no bot review appears, say so and stop.
+A Claude bot runs an automated code review on every PR opened. It posts its
+review as a PR comment from the `claude` user. It takes a few minutes, so poll
+for that comment rather than checking once (poll every ~60s, up to ~10
+minutes). If no bot review appears, say so and stop.
 
 The bot produces many false positives — do NOT blindly apply its suggestions.
 Triage each item:

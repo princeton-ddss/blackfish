@@ -451,7 +451,7 @@ def stop(service_id: str) -> None:  # pragma: no cover
         with yaspin(text="Looking up service...") as spinner:
             try:
                 res = requests.get(f"http://{config.HOST}:{config.PORT}/api/services")
-            except requests.exceptions.ConnectionError:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
                 spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
                 spinner.fail(f"{LogSymbols.ERROR.value}")
                 return
@@ -482,7 +482,7 @@ def stop(service_id: str) -> None:  # pragma: no cover
                 f"http://{config.HOST}:{config.PORT}/api/services/{full_service_id}/stop",
                 json={},
             )
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
@@ -523,7 +523,7 @@ def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
                 f"http://{config.HOST}:{config.PORT}/api/services",
                 params=params,
             )
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
@@ -565,7 +565,7 @@ def prune() -> None:  # pragma: no cover
             res = requests.delete(
                 f"http://{config.HOST}:{config.PORT}/api/services/prune"
             )
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
@@ -597,7 +597,7 @@ def details(service_id: str) -> None:  # pragma: no cover
                 f"http://{config.HOST}:{config.PORT}/api/services/{service_id}",
                 params={"refresh": "true"},
             )  # fresh data 🥬
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
@@ -725,7 +725,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
             res = requests.get(
                 f"http://{config.HOST}:{config.PORT}/api/services", params=params
             )  # fresh data 🥬
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
@@ -836,7 +836,7 @@ def models_ls(
                 spinner.text = f"Blackfish API encountered an error: {res.status_code}"
                 spinner.fail(f"{LogSymbols.ERROR.value}")
                 return
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
@@ -960,7 +960,7 @@ def models_add(
             else:
                 spinner.text = f"Added model {repo_id}."
                 spinner.ok(f"{LogSymbols.SUCCESS.value}")
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
@@ -1055,7 +1055,7 @@ def models_remove(
                     else:
                         spinner.text = "Database update failed. Will retry automatically on next `blackfish model ls --refresh` run."
                         spinner.ok(f"{LogSymbols.SUCCESS.value}")
-            except requests.exceptions.ConnectionError:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
                 spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
                 spinner.fail(f"{LogSymbols.ERROR.value}")
                 return

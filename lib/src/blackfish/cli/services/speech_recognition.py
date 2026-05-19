@@ -175,7 +175,10 @@ def run_speech_recognition(
                             "grace_period": options.grace_period,
                         },
                     )
-                except requests.exceptions.ConnectionError:
+                except (
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout,
+                ):
                     spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
                     spinner.fail(f"{LogSymbols.ERROR.value}")
                     return
@@ -232,7 +235,10 @@ def run_speech_recognition(
                             "grace_period": options.grace_period,
                         },
                     )
-                except requests.exceptions.ConnectionError:
+                except (
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout,
+                ):
                     spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
                     spinner.fail(f"{LogSymbols.ERROR.value}")
                     return

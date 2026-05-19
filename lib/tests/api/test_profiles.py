@@ -895,6 +895,23 @@ class TestRenameProfileAPI:
             assert await self._count(session, model, "test") == 0
             assert await self._count(session, model, "renamed") > 0
 
+    async def test_rename_preserves_profile_order(self, client: AsyncTestClient):
+        """Renaming keeps the profile in its original position in the file."""
+        with (
+            patch(
+                "blackfish.server.asgi._get_profiles_config",
+                return_value=self._config("test", "middle", "default"),
+            ),
+            patch("blackfish.server.asgi._save_profiles_config") as mock_save,
+        ):
+            response = await client.put(
+                "/api/profiles/test/rename", json={"new_name": "renamed"}
+            )
+
+        assert response.status_code == 200
+        saved_config = mock_save.call_args.args[0]
+        assert saved_config.sections() == ["renamed", "middle", "default"]
+
     async def test_rename_collision_returns_409(self, client: AsyncTestClient):
         """Renaming onto an existing profile name is rejected."""
         with patch(

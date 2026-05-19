@@ -2970,7 +2970,8 @@ async def rename_profile(
     # appends new sections, so a naive add-then-delete would move the renamed
     # profile to the end of the list; rebuild in original order instead. A
     # failure here raises, rolling back the DB updates above via the request
-    # transaction.
+    # transaction. profiles.cfg uses no [DEFAULT] section, so sections() is
+    # exhaustive here.
     renamed = configparser.ConfigParser()
     for section in config.sections():
         target = new_name if section == name else section

@@ -92,7 +92,10 @@ const schemaTypes = [
 function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
   const isNew = !profile;
   const { setBusy } = useSettingsBusy();
-  const initialFormData = {
+  // Mount-time snapshot of the loaded profile — the baseline for dirty
+  // tracking. `profile` is stable for the form's lifetime (the parent
+  // unmounts the form on save/cancel rather than mutating the prop).
+  const [initialFormData] = useState(() => ({
     name: profile?.name || "",
     schema_type: profile?.schema || "local",
     home_dir: profile?.home_dir || "",
@@ -100,14 +103,19 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
     host: profile?.host || "",
     user: profile?.user || "",
     python_path: profile?.python_path || "",
-  };
+  }));
   const [formData, setFormData] = useState(initialFormData);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   const selectedType = schemaTypes.find((t) => t.id === formData.schema_type) || schemaTypes[0];
-  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  // Single source of truth for what changed, so the Save-button `isDirty`
+  // guard and the `configChanged` API gate below cannot drift apart.
+  const changedKeys = Object.keys(formData).filter(
+    (key) => formData[key] !== initialFormData[key]
+  );
+  const isDirty = changedKeys.length > 0;
 
   const validateForm = () => {
     const errors = {};
@@ -167,19 +175,13 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
     // Renaming is a separate endpoint from the config update — the PUT route
     // rejects name changes — so an edit can involve two independent calls.
     const nameChanged = !isNew && nextName !== profile.name;
-    const configChanged =
-      !isNew &&
-      (formData.schema_type !== (profile.schema || "local") ||
-        formData.home_dir !== (profile.home_dir || "") ||
-        formData.cache_dir !== (profile.cache_dir || "") ||
-        formData.host !== (profile.host || "") ||
-        formData.user !== (profile.user || "") ||
-        formData.python_path !== (profile.python_path || ""));
+    const configChanged = !isNew && changedKeys.some((key) => key !== "name");
 
     setSaving(true);
     setBusy(true);
     let phase = isNew ? "create" : "update";
     let configSaved = false;
+    let succeeded = false;
     try {
       if (isNew) {
         await createProfile(data);
@@ -193,7 +195,7 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
           await renameProfile(profile.name, nextName);
         }
       }
-      onSave(isNew ? { name: nextName } : { previousName: profile.name, name: nextName });
+      succeeded = true;
     } catch (err) {
       if (phase === "rename") {
         setError(
@@ -210,6 +212,12 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
     } finally {
       setSaving(false);
       setBusy(false);
+    }
+
+    // Called outside the try/catch: a throw inside onSave (e.g. mutate())
+    // must not be reported as a save failure when the save itself succeeded.
+    if (succeeded) {
+      onSave(isNew ? { name: nextName } : { previousName: profile.name, name: nextName });
     }
   };
 
@@ -366,8 +374,8 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
 
       {saving && (
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Setting up the profile. Installing TigerFlow can take a few minutes —
-          please keep this panel open until it finishes.
+          Setting up the profile. Installing dependencies can take a few
+          minutes — please keep this panel open until it finishes.
         </p>
       )}
 

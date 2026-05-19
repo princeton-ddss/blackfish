@@ -268,6 +268,23 @@ class TestProfileAdd:
             assert result.exit_code == 1
             assert "Invalid profile name" in result.output
 
+    def test_auto_profile_rejects_invalid_name(self, temp_home_dir, capsys):
+        """`_auto_profile_` (the `blackfish init --auto` path) rejects bad names."""
+        from blackfish.cli.profile import _auto_profile_
+
+        result = _auto_profile_(
+            app_dir=temp_home_dir,
+            name="bad[name",
+            schema="local",
+            host=None,
+            user=None,
+            home_dir=temp_home_dir,
+            cache_dir="/tmp/cache",
+        )
+
+        assert result is False
+        assert "Invalid profile name" in capsys.readouterr().out
+
     @patch("blackfish.cli.profile.input")
     @patch("blackfish.cli.profile._setup_profile")
     def test_add_profile_invalid_schema(

@@ -22,19 +22,19 @@ uv run pre-commit run --all-files # Lint & format
 uv run blackfish --help           # CLI commands
 ```
 
-### Next.js Frontend (web/)
+### React Frontend (web/)
 ```bash
 cd web
 npm install        # Install dependencies
 npm run dev        # Dev server (localhost:3000)
-npm test           # Run Jest tests
+npm test           # Run vitest tests
 npm run build:lib  # Build and copy to Python package
 ```
 
 ## Architecture Overview
 
 - **Backend**: Litestar async web framework, SQLAlchemy ORM, Alembic migrations
-- **Frontend**: Next.js 14 App Router, React 18, Tailwind CSS, SWR
+- **Frontend**: Vite + React 18, React Router, Tailwind CSS, SWR
 - **Services**: Text Generation, Speech Recognition (extensible base classes)
 - **CLI**: Rich-click powered, profile/service/job management
 
@@ -48,14 +48,14 @@ Scopes: `lib`, `web`, `ci`, `docs` (optional — omit for cross-cutting changes)
 
 - Python 3.12+, strict MyPy type checking enabled
 - All Python code formatted with Ruff
-- Frontend uses ESLint, components in `app/components/`
-- Service-specific pages in `app/{service-name}/`
+- Frontend uses ESLint, components in `web/src/components/`
+- Service-specific routes in `web/src/routes/{service-name}/`
 - Database migrations in `lib/src/blackfish/server/db/migrations/`
 
 ## Testing
 
 - Python: `uv run pytest` (pytest + coverage)
-- Frontend: `npm test` (Jest + React Testing Library)
+- Frontend: `npm test` (vitest + React Testing Library)
 - CI runs path-dependent workflows (lib.yml, web.yml)
 
 ## Pull Requests

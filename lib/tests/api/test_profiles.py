@@ -640,8 +640,12 @@ class TestScopedProvisioning:
         body.update(overrides)
         return body
 
-    async def _put(self, client, name, section, body):
-        """PUT with mocked config + provisioning; returns (response, mgr, tf_cls)."""
+    async def _put(self, client, name, section, body, tf_version: str | None = "0.1.0"):
+        """PUT with mocked config + provisioning; returns (response, mgr, tf_cls).
+
+        ``tf_version`` is what TigerFlow's ``check_version`` reports — pass
+        ``None`` to simulate TigerFlow being absent (so ``setup`` would run).
+        """
         with (
             patch(
                 "blackfish.server.asgi._get_profiles_config",
@@ -654,7 +658,7 @@ class TestScopedProvisioning:
             mgr = AsyncMock()
             mgr_cls.return_value = mgr
             tf = AsyncMock()
-            tf.check_version.return_value = (True, "0.1.0")
+            tf.check_version.return_value = (tf_version is not None, tf_version)
             tf_cls.return_value = tf
             response = await client.put(f"/api/profiles/{name}", json=body)
         return response, mgr, tf_cls
@@ -668,14 +672,22 @@ class TestScopedProvisioning:
         mgr.create_directories.assert_not_called()
         tf_cls.assert_not_called()
 
-    async def test_home_only_change_runs_dirs_only(self, client):
+    async def test_home_change_reinstalls_tigerflow(self, client):
+        # TigerFlow lives under home_dir, so a home_dir change must reinstall it
+        # at the new location. The new home has no TigerFlow (tf_version=None),
+        # so setup() must run.
         response, mgr, tf_cls = await self._put(
-            client, "prof", self.SLURM, self._slurm_body(home_dir="/home/alice/bf")
+            client,
+            "prof",
+            self.SLURM,
+            self._slurm_body(home_dir="/home/alice/bf"),
+            tf_version=None,
         )
         assert response.status_code == 200
         mgr.create_directories.assert_called_once()
+        tf_cls.return_value.check_version.assert_called_once()
+        tf_cls.return_value.setup.assert_called_once()
         mgr.check_cache.assert_not_called()
-        tf_cls.assert_not_called()
 
     async def test_python_path_change_runs_tigerflow_only(self, client):
         response, mgr, tf_cls = await self._put(

@@ -2806,8 +2806,10 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
             if full or cache_changed:
                 await profile_mgr.check_cache()
 
-            # Install TigerFlow if not present.
-            if full or python_changed:
+            # TigerFlow is installed under home_dir, so a home_dir change needs
+            # it (re)installed at the new location; python_path changes which
+            # interpreter builds its venv.
+            if full or home_changed or python_changed:
                 tigerflow = TigerFlowClient(
                     runner=runner,
                     home_dir=data.home_dir,

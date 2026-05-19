@@ -104,6 +104,28 @@ export async function updateProfile(name, data) {
   return res.json();
 }
 
+/** Rename a profile. */
+export async function renameProfile(name, newName) {
+  const res = await fetch(`${blackfishApiURL}/api/profiles/${encodeURIComponent(name)}/rename`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ new_name: newName }),
+  });
+  if (!res.ok) {
+    let message = "Failed to rename profile.";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
 /** Delete a profile. */
 export async function deleteProfile(name) {
   const res = await fetch(`${blackfishApiURL}/api/profiles/${encodeURIComponent(name)}`, {

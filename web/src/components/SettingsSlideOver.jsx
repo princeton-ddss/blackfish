@@ -31,6 +31,7 @@ import { useTheme } from "@/providers/ThemeProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useProfiles } from "@/lib/loaders";
 import Notification from "@/components/Notification";
+import Alert from "@/components/Alert";
 import { createProfile, updateProfile, renameProfile, deleteProfile, setDefaultProfile, fetchHfTokenStatus, setHfToken, deleteHfToken, fetchAppInfo } from "@/lib/requests";
 import { blackfishApiURL } from "@/config";
 
@@ -197,18 +198,19 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
       }
       succeeded = true;
     } catch (err) {
+      let title;
+      let detail = err.message;
       if (phase === "rename") {
-        setError(
-          configSaved
-            ? `${err.message} Configuration changes were saved, but the profile was not renamed.`
-            : `${err.message} The profile name was not changed.`
-        );
+        title = "Failed to rename profile.";
+        if (configSaved) {
+          detail = `${err.message} Your configuration changes were saved; only the name change failed.`;
+        }
+      } else if (isNew) {
+        title = "Failed to create profile.";
       } else {
-        setError(
-          `${err.message} The profile was not ${isNew ? "created" : "saved"} — ` +
-            "your previous configuration is unchanged."
-        );
+        title = "Failed to save profile changes.";
       }
+      setError({ title, detail });
     } finally {
       setSaving(false);
       setBusy(false);
@@ -231,9 +233,9 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
           flight, so the form can't be edited, cancelled, or re-submitted. */}
       <fieldset disabled={saving} className="space-y-3 m-0 p-0 border-0 min-w-0">
       {error && (
-        <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-2 text-sm text-red-700 dark:text-red-400">
-          {error}
-        </div>
+        <Alert variant="error" title={error.title}>
+          {error.detail}
+        </Alert>
       )}
 
       {/* Name */}

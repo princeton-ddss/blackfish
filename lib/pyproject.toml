@@ -80,6 +80,11 @@ contract = [
 build.artifacts = [ "src/blackfish/build/**" ]
 build.targets.wheel.packages = [ "src/blackfish" ]
 
+[tool.coverage.run]
+omit = [
+  "src/blackfish/server/db/migrations/*",
+]
+
 [tool.pyproject-fmt]
 max_supported_python = "3.13"
 

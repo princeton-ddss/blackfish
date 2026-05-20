@@ -1,3 +1,7 @@
+# Registers SQLite PRAGMA listener on SQLAlchemy's Engine class.
+# Must be imported before any engine opens a connection.
+import blackfish.server.db  # noqa: F401
+
 from pathlib import Path
 from dotenv import load_dotenv
 import pytest

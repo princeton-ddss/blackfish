@@ -19,6 +19,7 @@ from blackfish.server.models.profile import (
     has_any_default,
     section_is_default,
     set_exclusive_default,
+    validate_profile_name,
 )
 from blackfish.server.jobs.client import (
     TigerFlowClient,
@@ -228,6 +229,12 @@ def _create_profile_(app_dir: str, default_name: str = "default") -> bool:
     name = input(f"> name [{default_name}]: ")
     name = default_name if name == "" else name
 
+    try:
+        validate_profile_name(name)
+    except ValueError as e:
+        print(f"{LogSymbols.ERROR.value} {e}")
+        return False
+
     if name in profiles:
         print(
             f"{LogSymbols.ERROR.value} Profile named {name} already exists. Try"
@@ -339,6 +346,13 @@ def _auto_profile_(
 ) -> bool:
     profiles = configparser.ConfigParser()
     profiles.read(f"{home_dir}/profiles.cfg")
+
+    if name is not None:
+        try:
+            validate_profile_name(name)
+        except ValueError as e:
+            print(f"{LogSymbols.ERROR.value} {e}")
+            return False
 
     if name in profiles:
         print(

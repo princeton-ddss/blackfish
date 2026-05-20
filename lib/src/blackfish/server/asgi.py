@@ -1241,9 +1241,9 @@ async def delete_service(
 
             # Attempt job clean up; don't fail whole operation if this doesn't work!
             try:
-                job = service.get_job()
+                job = await service.get_job()
                 if job is not None:
-                    job.remove()
+                    await job.remove()
             except Exception as e:
                 logger.warning(f"Unable to remove job for service {service.id}: {e}")
 
@@ -1304,9 +1304,9 @@ async def prune_services(session: AsyncSession, state: State) -> int:
 
         # Attempt job clean up; don't fail whole operation if this doesn't work!
         try:
-            job = service.get_job()
+            job = await service.get_job()
             if job is not None:
-                job.remove()
+                await job.remove()
         except Exception as e:
             logger.warning(f"Unable to remove job for service {service.id.hex}: {e}")
 

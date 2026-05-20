@@ -585,6 +585,7 @@ def prune() -> None:  # pragma: no cover
 def details(service_id: str) -> None:  # pragma: no cover
     """Show detailed service information."""
 
+    import asyncio
     from uuid import UUID
     from datetime import datetime
     import json
@@ -616,7 +617,7 @@ def details(service_id: str) -> None:  # pragma: no cover
     body["updated_at"] = datetime.fromisoformat(body["updated_at"])
     body["id"] = UUID(body["id"])
     service = Service(**body)
-    job = service.get_job()
+    job = asyncio.run(service.get_job())
     profile = service.get_profile()
     data = {
         "name": service.name,

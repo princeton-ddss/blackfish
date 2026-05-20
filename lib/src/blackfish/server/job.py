@@ -1,5 +1,4 @@
 import os
-import time
 import json
 import subprocess
 from dataclasses import dataclass
@@ -74,13 +73,13 @@ JobConfig = Union[LocalJobConfig, SlurmJobConfig]
 class Job:
     """Abstract job class."""
 
-    def cancel(self) -> None:
+    async def cancel(self) -> None:
         raise NotImplementedError()
 
-    def update(self, verbose: bool = False) -> Optional[str]:
+    async def update(self, verbose: bool = False) -> Optional[str]:
         raise NotImplementedError()
 
-    def remove(self) -> None:
+    async def remove(self) -> None:
         raise NotImplementedError()
 
 
@@ -113,7 +112,7 @@ class SlurmJob(Job):
     def is_local(self) -> bool:
         return self.host == "localhost"
 
-    def update(self, verbose: bool = False) -> Optional[str]:
+    async def update(self, verbose: bool = False) -> Optional[str]:
         """Attempt to update the job state from Slurm accounting and return the new
         state (or current state if the update fails).
 
@@ -174,8 +173,8 @@ class SlurmJob(Job):
                         f"Job state updated from {format_state(self.state)} to RUNNING"
                         f" (job_id={self.job_id}). Fetching node and port."
                     )
-                self.fetch_node()
-                self.fetch_port()
+                await self.fetch_node()
+                await self.fetch_port()
             elif self.state is not None and self.state != new_state:
                 if verbose:
                     logger.debug(
@@ -191,7 +190,7 @@ class SlurmJob(Job):
 
         return self.state
 
-    def fetch_node(self) -> Optional[str]:
+    async def fetch_node(self) -> Optional[str]:
         """Attempt to update the job node from Slurm accounting and return the new
         node (or the current node if the update fails).
 
@@ -247,7 +246,7 @@ class SlurmJob(Job):
         return self.node
 
     # TODO: fetch_port doesn't seem to be a SlurmJob method because it only depends on the service.
-    def fetch_port(self) -> Optional[int]:
+    async def fetch_port(self) -> Optional[int]:
         """Attempt to update the job port and return the new port (or the current
         port if the update fails)
 
@@ -284,36 +283,7 @@ class SlurmJob(Job):
 
         return self.port
 
-    def wait(self, period: int = 5) -> dict[str, bool]:
-        """Wait for the job to start, re-checking the job's status every `period` seconds."""
-
-        logger.debug(f"waiting for job {self.job_id} to start")
-        time.sleep(period)  # wait for slurm to accept job
-        while True:
-            self.update()
-            if self.state == JobState.MISSING:
-                logger.debug(
-                    f"job {self.job_id} state is missing. Re-trying in"
-                    f" {period} seconds."
-                )
-            elif self.state == JobState.PENDING:
-                logger.debug(
-                    f"job {self.job_id} is pending. Re-trying in {period} seconds."
-                )
-            elif self.state == JobState.RUNNING:
-                logger.debug(f"job {self.job_id} is running.")
-                self.fetch_node()
-                self.fetch_port()
-                return {"ok": True}
-            else:
-                logger.debug(
-                    f"job {self.job_id} failed (state={format_state(self.state)})."
-                )
-                return {"ok": False}
-
-            time.sleep(period)
-
-    def cancel(self) -> None:
+    async def cancel(self) -> None:
         """Cancel a Slurm job by issuing the `scancel` command on the remote host.
 
         This method logs a warning if the update fails, but does not raise an exception.
@@ -331,7 +301,7 @@ class SlurmJob(Job):
                 f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
             )
 
-    def remove(self) -> None:
+    async def remove(self) -> None:
         pass
 
 
@@ -347,7 +317,7 @@ class LocalJob(Job):
     )
     options: Optional[JobConfig] = None
 
-    def update(self, verbose: bool = False) -> Optional[str]:
+    async def update(self, verbose: bool = False) -> Optional[str]:
         if verbose:
             logger.debug(f"Updating job state (job_id={self.job_id})")
         try:
@@ -401,7 +371,7 @@ class LocalJob(Job):
 
         return self.state
 
-    def cancel(self) -> None:
+    async def cancel(self) -> None:
         try:
             logger.debug(f"Canceling job {self.job_id}")
             if self.provider == ContainerProvider.Docker:
@@ -417,7 +387,7 @@ class LocalJob(Job):
                 f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
             )
 
-    def remove(self) -> None:
+    async def remove(self) -> None:
         try:
             logger.debug(f"Removing job {self.job_id}")
             if self.provider == ContainerProvider.Docker:

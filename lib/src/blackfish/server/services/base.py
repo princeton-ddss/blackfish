@@ -325,9 +325,9 @@ class Service(UUIDAuditBase):
                 f"Unable to stop service {self.id} because `job_id` is missing."
             )
 
-        job = self.get_job(verbose=True)
+        job = await self.get_job(verbose=True)
         if job is not None:
-            job.cancel()
+            await job.cancel()
 
         if self.scheduler == JobScheduler.Slurm:
             await self.close_tunnel(session)
@@ -396,7 +396,7 @@ class Service(UUIDAuditBase):
 
         # The logic for cases below is quite similar and can be extracted into
         # reusable functions in places, e.g., for running and failed jobs.
-        job = self.get_job(verbose=True)
+        job = await self.get_job(verbose=True)
         if isinstance(job, SlurmJob):
             if job.state == JobState.PENDING:
                 logger.debug(
@@ -654,7 +654,7 @@ class Service(UUIDAuditBase):
         )
         self.port = None
 
-    def get_job(self, verbose: bool = False) -> Job | None:
+    async def get_job(self, verbose: bool = False) -> Job | None:
         """Fetch the job backing the service."""
 
         job: Job
@@ -676,7 +676,7 @@ class Service(UUIDAuditBase):
             else:
                 return None
 
-        job.update(verbose=verbose)
+        await job.update(verbose=verbose)
         return job
 
     def render_job_script(

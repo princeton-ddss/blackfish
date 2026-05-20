@@ -7,6 +7,7 @@ This module tests the CLI commands for running inference services:
 
 import shlex
 import pytest
+import requests
 from unittest.mock import patch, Mock, MagicMock
 from blackfish.cli.__main__ import main
 from blackfish.server.models.profile import LocalProfile, SlurmProfile
@@ -282,6 +283,42 @@ class TestRunTextGeneration:
 
         assert result.exit_code == 0
         assert "Failed to start service" in result.output
+
+    def test_connection_error(self, cli_runner, mock_config, local_profile):
+        """Test that API connection failures are handled gracefully."""
+        cmd = ["run", "-p", "default", "text-generation", "openai/gpt-2"]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.text_generation.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.text_generation.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.text_generation.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.text_generation.get_model_dir"
+            ) as mock_get_model_dir,
+            patch(
+                "blackfish.cli.services.text_generation.requests.post",
+                side_effect=requests.exceptions.ConnectionError("refused"),
+            ),
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/gpt-2"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model"
+
+            result = cli_runner.invoke(main, cmd)
+
+        assert result.exit_code == 0
+        assert "Failed to connect" in result.output
 
     def test_missing_repo_id(self, cli_runner, mock_config, local_profile):
         """Test error when repo_id argument is missing."""
@@ -780,6 +817,42 @@ class TestRunSpeechRecognition:
 
         assert result.exit_code == 0
         assert "Failed to start service" in result.output
+
+    def test_connection_error(self, cli_runner, mock_config, local_profile):
+        """Test that API connection failures are handled gracefully."""
+        cmd = ["run", "-p", "default", "speech-recognition", "openai/whisper-tiny"]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_model_dir"
+            ) as mock_get_model_dir,
+            patch(
+                "blackfish.cli.services.speech_recognition.requests.post",
+                side_effect=requests.exceptions.ConnectionError("refused"),
+            ),
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/whisper-tiny"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/models/whisper-tiny"
+
+            result = cli_runner.invoke(main, cmd)
+
+        assert result.exit_code == 0
+        assert "Failed to connect" in result.output
 
     def test_missing_repo_id(self, cli_runner, mock_config, local_profile):
         """Test error when repo_id argument is missing."""

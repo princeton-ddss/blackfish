@@ -191,19 +191,27 @@ def run_text_generation(
             click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
-                res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services",
-                    json={
-                        "name": name,
-                        "image": "text_generation",
-                        "repo_id": repo_id,
-                        "profile": asdict(profile),
-                        "container_config": asdict(container_config),
-                        "job_config": asdict(job_config),
-                        "mount": options.mount,
-                        "grace_period": options.grace_period,
-                    },
-                )
+                try:
+                    res = requests.post(
+                        f"http://{config.HOST}:{config.PORT}/api/services",
+                        json={
+                            "name": name,
+                            "image": "text_generation",
+                            "repo_id": repo_id,
+                            "profile": asdict(profile),
+                            "container_config": asdict(container_config),
+                            "job_config": asdict(job_config),
+                            "mount": options.mount,
+                            "grace_period": options.grace_period,
+                        },
+                    )
+                except (
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout,
+                ):
+                    spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+                    spinner.fail(f"{LogSymbols.ERROR.value}")
+                    return
                 if res.ok:
                     spinner.text = f"Started service: {res.json()['id']}"
                     spinner.ok(f"{LogSymbols.SUCCESS.value}")
@@ -243,19 +251,27 @@ def run_text_generation(
             click.echo(service.render_job_script(container_config, job_config))
         else:
             with yaspin(text="Starting service...") as spinner:
-                res = requests.post(
-                    f"http://{config.HOST}:{config.PORT}/api/services",
-                    json={
-                        "name": name,
-                        "image": "text_generation",
-                        "repo_id": repo_id,
-                        "profile": asdict(profile),
-                        "container_config": asdict(container_config),
-                        "job_config": asdict(job_config),
-                        "mount": options.mount,
-                        "grace_period": options.grace_period,
-                    },
-                )
+                try:
+                    res = requests.post(
+                        f"http://{config.HOST}:{config.PORT}/api/services",
+                        json={
+                            "name": name,
+                            "image": "text_generation",
+                            "repo_id": repo_id,
+                            "profile": asdict(profile),
+                            "container_config": asdict(container_config),
+                            "job_config": asdict(job_config),
+                            "mount": options.mount,
+                            "grace_period": options.grace_period,
+                        },
+                    )
+                except (
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout,
+                ):
+                    spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+                    spinner.fail(f"{LogSymbols.ERROR.value}")
+                    return
                 if res.ok:
                     spinner.text = f"Started service: {res.json()['id']}"
                     spinner.ok(f"{LogSymbols.SUCCESS.value}")

@@ -89,3 +89,8 @@ strict = true
 show_error_codes = true
 warn_unreachable = true
 ignore_missing_imports = true
+
+[tool.coverage]
+run.omit = [
+  "src/blackfish/server/db/migrations/*",
+]

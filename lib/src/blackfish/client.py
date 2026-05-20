@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+# Registers SQLite PRAGMA listener on SQLAlchemy's Engine class.
+# Must be imported before any engine opens a connection.
+import blackfish.server.db  # noqa: F401
+
 import sys
 import asyncio
 import atexit

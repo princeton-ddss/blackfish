@@ -19,6 +19,7 @@ from jinja2 import Environment, PackageLoader
 
 from litestar.datastructures import State
 
+from blackfish.server import remote
 from blackfish.server.job import (
     Job,
     JobState,
@@ -179,15 +180,15 @@ class Service(UUIDAuditBase):
 
             if self.host == "localhost":
                 logger.debug("Submitting slurm job locally.")
-                res = subprocess.check_output(
+                result = await remote.run(
                     [
                         "sbatch",
                         "--chdir",
-                        script_path.parent,
-                        script_path,
+                        str(script_path.parent),
+                        str(script_path),
                     ]
                 )
-                job_id = res.decode("utf-8").strip().split()[-1]
+                job_id = result.stdout.decode("utf-8").strip().split()[-1]
                 self.status = ServiceStatus.SUBMITTED
                 self.job_id = job_id
             else:
@@ -200,26 +201,18 @@ class Service(UUIDAuditBase):
                 remote_script_dir = os.path.join(profile.home_dir, "jobs", self.id.hex)
 
                 try:
-                    _ = subprocess.check_output(
-                        [
-                            "ssh",
-                            f"{self.user}@{self.host}",
-                            "mkdir",
-                            "-p",
-                            remote_script_dir,
-                        ]
+                    await remote.ssh(
+                        f"{self.user}@{self.host}",
+                        ["mkdir", "-p", remote_script_dir],
                     )
                 except Exception as e:
                     logger.error(f"Failed to connect to remote host: {e}")
                     raise ServiceLaunchError("ssh", self.host)
 
                 try:
-                    _ = subprocess.check_output(
-                        [
-                            "scp",
-                            script_path,
-                            (f"{self.user}@{self.host}:{remote_script_dir}"),
-                        ]
+                    await remote.scp(
+                        str(script_path),
+                        f"{self.user}@{self.host}:{remote_script_dir}",
                     )
                 except Exception as e:
                     logger.error(f"Failed to copy job script to remote host: {e}")
@@ -227,17 +220,16 @@ class Service(UUIDAuditBase):
 
                 logger.debug(f"Submitting batch job to {self.host}.")
                 try:
-                    res = subprocess.check_output(
+                    result = await remote.ssh(
+                        f"{self.user}@{self.host}",
                         [
-                            "ssh",
-                            f"{self.user}@{self.host}",
                             "sbatch",
                             "--chdir",
                             remote_script_dir,
                             os.path.join(remote_script_dir, "start.sh"),
-                        ]
+                        ],
                     )
-                    job_id = res.decode("utf-8").strip().split()[-1]
+                    job_id = result.stdout.decode("utf-8").strip().split()[-1]
                     self.status = ServiceStatus.SUBMITTED
                     self.job_id = job_id
                 except Exception as e:
@@ -274,12 +266,12 @@ class Service(UUIDAuditBase):
                     raise ServiceLaunchError("script", "localhost")
             logger.info("Attempting to start service locally...")
             try:
-                res = subprocess.check_output(["bash", script_path.as_posix()])
+                result = await remote.run(["bash", script_path.as_posix()])
             except Exception as e:
                 logger.error(f"Failed to start container: {e}")
                 raise ServiceLaunchError("container", "localhost")
             if self.provider == ContainerProvider.Docker:
-                job_id = res.decode("utf-8").strip().split()[-1][:12]
+                job_id = result.stdout.decode("utf-8").strip().split()[-1][:12]
             self.status = ServiceStatus.SUBMITTED
             self.job_id = job_id
 

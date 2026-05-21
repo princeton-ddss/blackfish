@@ -1,11 +1,11 @@
 import os
 import json
-import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from enum import StrEnum, auto
 from typing import Optional, Union
+from blackfish.server import remote
 from blackfish.server.logger import logger
 from blackfish.server.config import ContainerProvider
 
@@ -124,41 +124,25 @@ class SlurmJob(Job):
         """
         if verbose:
             logger.debug(f"Updating job state (job_id={self.job_id}).")
+        sacct_cmd = [
+            "sacct",
+            "-n",
+            "-P",
+            "-X",
+            "-u",
+            self.user,
+            "-j",
+            str(self.job_id),
+            "-o",
+            "State",
+        ]
         try:
             if self.is_local():
-                res = subprocess.check_output(
-                    [
-                        "sacct",
-                        "-n",
-                        "-P",
-                        "-X",
-                        "-u",
-                        self.user,
-                        "-j",
-                        str(self.job_id),
-                        "-o",
-                        "State",
-                    ]
-                )
+                result = await remote.run(sacct_cmd)
             else:
-                res = subprocess.check_output(
-                    [
-                        "ssh",
-                        f"{self.user}@{self.host}",
-                        "sacct",
-                        "-n",
-                        "-P",
-                        "-X",
-                        "-u",
-                        self.user,
-                        "-j",
-                        str(self.job_id),
-                        "-o",
-                        "State",
-                    ]
-                )
+                result = await remote.ssh(f"{self.user}@{self.host}", sacct_cmd)
 
-            new_state = parse_state(res)
+            new_state = parse_state(result.stdout)
             if verbose:
                 logger.debug(
                     f"The current job state is: {format_state(new_state)} (job_id={self.job_id})"
@@ -183,11 +167,8 @@ class SlurmJob(Job):
                         f" (job_id={self.job_id})."
                     )
             self.state = new_state
-        except subprocess.CalledProcessError as e:
-            logger.warning(
-                f"Failed to update job state (job_id={self.job_id},"
-                f" code={e.returncode})."
-            )
+        except remote.RemoteError as e:
+            logger.warning(f"Failed to update job state (job_id={self.job_id}): {e}")
 
         return self.state
 
@@ -198,51 +179,31 @@ class SlurmJob(Job):
         This method logs a warning if the update fails, but does not raise an exception.
         """
         logger.debug(f"Fetching node for job {self.job_id}.")
+        sacct_cmd = [
+            "sacct",
+            "-n",
+            "-P",
+            "-X",
+            "-u",
+            self.user,
+            "-j",
+            str(self.job_id),
+            "-o",
+            "NodeList",
+        ]
         try:
             if self.is_local():
-                res = subprocess.check_output(
-                    [
-                        "sacct",
-                        "-n",
-                        "-P",
-                        "-X",
-                        "-u",
-                        self.user,
-                        "-j",
-                        str(self.job_id),
-                        "-o",
-                        "NodeList",
-                    ],
-                    timeout=10,
-                )
+                result = await remote.run(sacct_cmd, timeout=10)
             else:
-                res = subprocess.check_output(
-                    [
-                        "ssh",
-                        f"{self.user}@{self.host}",
-                        "sacct",
-                        "-n",
-                        "-P",
-                        "-X",
-                        "-u",
-                        self.user,
-                        "-j",
-                        str(self.job_id),
-                        "-o",
-                        "NodeList",
-                    ],
-                    timeout=10,
+                result = await remote.ssh(
+                    f"{self.user}@{self.host}", sacct_cmd, timeout=10
                 )
 
+            res = result.stdout
             self.node = None if res == b"" else res.decode("utf-8").strip()
             logger.debug(f"Job {self.job_id} node set to {self.node}.")
-        except subprocess.TimeoutExpired:
-            logger.warning(f"Timeout fetching node for job {self.job_id}.")
-        except subprocess.CalledProcessError as e:
-            logger.warning(
-                f"Failed to update job node (job_id={self.job_id},"
-                f" code={e.returncode})."
-            )
+        except remote.RemoteError as e:
+            logger.warning(f"Failed to update job node (job_id={self.job_id}): {e}")
 
         return self.node
 
@@ -257,30 +218,18 @@ class SlurmJob(Job):
         This method logs a warning if the update fails, but does not raise an exception.
         """
         logger.debug(f"Fetching port for job {self.job_id}.")
+        ls_cmd = ["ls", os.path.join(self.data_dir, str(self.job_id))]
         try:
             if self.is_local():
-                res = subprocess.check_output(
-                    [
-                        "ls",
-                        os.path.join(self.data_dir, str(self.job_id)),
-                    ]
-                )
+                result = await remote.run(ls_cmd)
             else:
-                res = subprocess.check_output(
-                    [
-                        "ssh",
-                        f"{self.user}@{self.host}",
-                        "ls",
-                        os.path.join(self.data_dir, str(self.job_id)),
-                    ]
-                )
+                result = await remote.ssh(f"{self.user}@{self.host}", ls_cmd)
+
+            res = result.stdout
             self.port = None if res == b"" else int(res.decode("utf-8").strip())
             logger.debug(f"Job {self.job_id} port set to {self.port}")
-        except subprocess.CalledProcessError as e:
-            logger.warning(
-                f"Failed to update job port (job_id={self.job_id},"
-                f" code={e.returncode})."
-            )
+        except remote.RemoteError as e:
+            logger.warning(f"Failed to update job port (job_id={self.job_id}): {e}")
 
         return self.port
 
@@ -289,18 +238,15 @@ class SlurmJob(Job):
 
         This method logs a warning if the update fails, but does not raise an exception.
         """
+        scancel_cmd = ["scancel", str(self.job_id)]
         try:
             logger.debug(f"Canceling job {self.job_id}")
             if self.is_local():
-                subprocess.check_output(["scancel", str(self.job_id)])
+                await remote.run(scancel_cmd)
             else:
-                subprocess.check_output(
-                    ["ssh", f"{self.user}@{self.host}", "scancel", str(self.job_id)]
-                )
-        except subprocess.CalledProcessError as e:
-            logger.warning(
-                f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
-            )
+                await remote.ssh(f"{self.user}@{self.host}", scancel_cmd)
+        except remote.RemoteError as e:
+            logger.warning(f"Failed to cancel job (job_id={self.job_id}): {e}")
 
     async def remove(self) -> None:
         pass
@@ -323,7 +269,7 @@ class LocalJob(Job):
             logger.debug(f"Updating job state (job_id={self.job_id})")
         try:
             if self.provider == ContainerProvider.Docker:
-                res = subprocess.check_output(
+                result = await remote.run(
                     [
                         "docker",
                         "inspect",
@@ -331,7 +277,7 @@ class LocalJob(Job):
                         "--format='{{ .State.Status }}'",  # or {{ json .State }}
                     ]
                 )
-                new_state = parse_state(res)
+                new_state = parse_state(result.stdout)
                 if verbose:
                     logger.debug(
                         f"The current job state is: {format_state(new_state)} (job_id={self.job_id})"
@@ -344,10 +290,10 @@ class LocalJob(Job):
                         )
                 self.state = new_state
             elif self.provider == ContainerProvider.Apptainer:
-                res = subprocess.check_output(
+                result = await remote.run(
                     ["apptainer", "instance", "list", "--json", f"{self.name}"]
                 )
-                body = json.loads(res)
+                body = json.loads(result.stdout)
                 if body["instances"] == []:
                     new_state = JobState.STOPPED
                 else:
@@ -364,11 +310,8 @@ class LocalJob(Job):
                             f" (job_id={self.job_id})."
                         )
                 self.state = new_state
-        except subprocess.CalledProcessError as e:
-            logger.warning(
-                f"Failed to update job state (job_id={self.job_id},"
-                f" code={e.returncode})."
-            )
+        except remote.RemoteError as e:
+            logger.warning(f"Failed to update job state (job_id={self.job_id}): {e}")
 
         return self.state
 
@@ -376,26 +319,18 @@ class LocalJob(Job):
         try:
             logger.debug(f"Canceling job {self.job_id}")
             if self.provider == ContainerProvider.Docker:
-                subprocess.check_output(
-                    ["docker", "container", "stop", f"{self.job_id}"]
-                )
+                await remote.run(["docker", "container", "stop", f"{self.job_id}"])
             elif self.provider == ContainerProvider.Apptainer:
-                subprocess.check_output(
-                    ["apptainer", "instance", "stop", f"{self.name}"]
-                )
-        except subprocess.CalledProcessError as e:
-            logger.warning(
-                f"Failed to cancel job (job_id={self.job_id}, code={e.returncode})."
-            )
+                await remote.run(["apptainer", "instance", "stop", f"{self.name}"])
+        except remote.RemoteError as e:
+            logger.warning(f"Failed to cancel job (job_id={self.job_id}): {e}")
 
     async def remove(self) -> None:
         try:
             logger.debug(f"Removing job {self.job_id}")
             if self.provider == ContainerProvider.Docker:
-                subprocess.check_output(["docker", "container", "rm", f"{self.job_id}"])
+                await remote.run(["docker", "container", "rm", f"{self.job_id}"])
             elif self.provider == ContainerProvider.Apptainer:
                 logger.info("Nothing to remove (provider is Apptainer). Skipping.")
-        except subprocess.CalledProcessError as e:
-            logger.warning(
-                f"Failed to remove job (job_id={self.job_id}, code={e.returncode})."
-            )
+        except remote.RemoteError as e:
+            logger.warning(f"Failed to remove job (job_id={self.job_id}): {e}")

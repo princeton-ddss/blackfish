@@ -1,8 +1,6 @@
-"""Tests for the shared httpx.AsyncClient module."""
+"""Tests for the shared httpx.AsyncClient factory."""
 
 from __future__ import annotations
-
-from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -10,10 +8,15 @@ import pytest
 from blackfish.server import http_client as hc
 
 
-def test_client_is_configured() -> None:
-    assert isinstance(hc.http_client, httpx.AsyncClient)
-    assert hc.http_client.timeout.connect == 5.0
-    assert hc.http_client.timeout.read == 30.0
+def test_factory_returns_configured_client() -> None:
+    client = hc.create_http_client()
+    assert isinstance(client, httpx.AsyncClient)
+    assert client.timeout.connect == 5.0
+    assert client.timeout.read == 30.0
+
+
+def test_factory_returns_distinct_instances() -> None:
+    assert hc.create_http_client() is not hc.create_http_client()
 
 
 def test_health_check_timeout_fails_fast() -> None:
@@ -26,7 +29,7 @@ def test_stream_timeout_disables_read_deadline() -> None:
 
 
 @pytest.mark.anyio
-async def test_close_http_client_closes_client() -> None:
-    with patch.object(hc.http_client, "aclose", new=AsyncMock()) as mock_aclose:
-        await hc.close_http_client()
-    mock_aclose.assert_awaited_once()
+async def test_client_can_be_closed() -> None:
+    client = hc.create_http_client()
+    await client.aclose()
+    assert client.is_closed

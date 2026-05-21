@@ -1,7 +1,8 @@
-"""Shared httpx.AsyncClient for server-internal HTTP calls.
+"""Factory and timeout configuration for the shared httpx.AsyncClient.
 
-Used by async code paths (service ping, proxy streaming, internal POSTs)
-so a sync `requests` call doesn't block the event loop.
+The server holds one client on `app.state`; the programmatic client holds
+one on the `BlackfishClient` instance. Both are built via `create_http_client`
+so async code paths never make a blocking `requests` call.
 """
 
 import httpx
@@ -16,8 +17,6 @@ HEALTH_CHECK_TIMEOUT = httpx.Timeout(connect=5.0, read=5.0, write=5.0, pool=5.0)
 # between chunks, so the read timeout is disabled for the streaming proxy.
 STREAM_TIMEOUT = httpx.Timeout(connect=5.0, read=None, write=30.0, pool=5.0)
 
-http_client = httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT, limits=_DEFAULT_LIMITS)
 
-
-async def close_http_client() -> None:
-    await http_client.aclose()
+def create_http_client() -> httpx.AsyncClient:
+    return httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT, limits=_DEFAULT_LIMITS)

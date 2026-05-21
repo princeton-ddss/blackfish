@@ -8,11 +8,8 @@ import configparser
 import os
 from os import urandom
 import json
-from blackfish.server.http_client import (
-    http_client,
-    close_http_client,
-    STREAM_TIMEOUT,
-)
+import httpx
+from blackfish.server.http_client import create_http_client, STREAM_TIMEOUT
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
@@ -1133,7 +1130,7 @@ async def fetch_service(
 
     if refresh:
         logger.info("Refreshing service status")
-        await service.refresh(session, state)
+        await service.refresh(session, state.http_client)
 
     return service
 
@@ -1171,7 +1168,7 @@ async def fetch_services(
 
     if refresh:
         logger.info("Refreshing service statuses")
-        await asyncio.gather(*[s.refresh(session, state) for s in services])
+        await asyncio.gather(*[s.refresh(session, state.http_client) for s in services])
 
     return list(services)
 
@@ -1214,7 +1211,7 @@ async def delete_service(
         return []
 
     # Refresh services (async)
-    await asyncio.gather(*[s.refresh(session, state) for s in services])
+    await asyncio.gather(*[s.refresh(session, state.http_client) for s in services])
 
     # Delete running services
     res = []
@@ -1290,7 +1287,7 @@ async def prune_services(session: AsyncSession, state: State) -> int:
         return 0
 
     # Refresh services
-    await asyncio.gather(*[s.refresh(session, state) for s in services])
+    await asyncio.gather(*[s.refresh(session, state.http_client) for s in services])
 
     # Delete services
     count = 0
@@ -1709,8 +1706,10 @@ async def delete_job(
     return res
 
 
-async def asyncpost(url: str, data: Any, headers: Any) -> Any:
-    response = await http_client.post(url, content=data, headers=headers)
+async def asyncpost(
+    client: httpx.AsyncClient, url: str, data: Any, headers: Any
+) -> Any:
+    response = await client.post(url, content=data, headers=headers)
     return response.json()
 
 
@@ -1742,10 +1741,10 @@ async def proxy_service(
 
     if streaming:
         headers = {"Content-Type": "application/json"}
-        req = http_client.build_request(
+        req = state.http_client.build_request(
             "POST", url, json=data, headers=headers, timeout=STREAM_TIMEOUT
         )
-        upstream_res = await http_client.send(req, stream=True)
+        upstream_res = await state.http_client.send(req, stream=True)
 
         if not upstream_res.is_success:
             body = await upstream_res.aread()
@@ -1773,6 +1772,7 @@ async def proxy_service(
         return Stream(generator)
     else:
         res = await asyncpost(
+            state.http_client,
             url,
             json.dumps(data),
             {"Content-Type": "application/json"},
@@ -3572,9 +3572,17 @@ async def resume_incomplete_downloads(app: Litestar) -> None:
         await engine.dispose()
 
 
+async def init_http_client(app: Litestar) -> None:
+    app.state.http_client = create_http_client()
+
+
+async def close_http_client(app: Litestar) -> None:
+    await app.state.http_client.aclose()
+
+
 app = Litestar(
     path=blackfish_config.BASE_PATH,
-    on_startup=[resume_incomplete_downloads],
+    on_startup=[resume_incomplete_downloads, init_http_client],
     on_shutdown=[close_http_client],
     route_handlers=[
         dashboard,

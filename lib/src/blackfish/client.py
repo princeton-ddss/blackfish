@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Optional, Any, Self, AsyncGenerator
 from contextlib import asynccontextmanager
 
+import httpx
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -28,6 +29,7 @@ from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
 from blackfish.server.config import BlackfishConfig
+from blackfish.server.http_client import create_http_client
 from blackfish.server.models.profile import (
     deserialize_profile,
     get_default_profile_name,
@@ -166,6 +168,7 @@ class Blackfish:
         self._engine: Optional[AsyncEngine] = None
         self._sessionmaker: Optional[async_sessionmaker[AsyncSession]] = None
         self._connection_string = connection_string
+        self._http_client: Optional[httpx.AsyncClient] = None
 
         # Convert config to Litestar State for compatibility with base.py methods
         self._state = State(self.config.as_dict())
@@ -191,6 +194,12 @@ class Blackfish:
             )
         return self._engine
 
+    def _ensure_http_client(self) -> httpx.AsyncClient:
+        """Lazily initialize the shared HTTP client."""
+        if self._http_client is None:
+            self._http_client = create_http_client()
+        return self._http_client
+
     def _ensure_sessionmaker(self) -> async_sessionmaker[AsyncSession]:
         """Lazily initialize the session maker."""
         if self._sessionmaker is None:
@@ -214,11 +223,14 @@ class Blackfish:
                 raise
 
     async def _async_close(self) -> None:
-        """Close the database engine."""
+        """Close the database engine and HTTP client."""
         if self._engine is not None:
             await self._engine.dispose()
             self._engine = None
             self._sessionmaker = None
+        if self._http_client is not None:
+            await self._http_client.aclose()
+            self._http_client = None
 
     def close(self) -> None:
         """Close the database connection (sync wrapper)."""
@@ -493,7 +505,7 @@ class Blackfish:
             service = result.scalar_one_or_none()
 
             if service is not None:
-                await service.refresh(session, self._state)
+                await service.refresh(session, self._ensure_http_client())
                 return ManagedService(service, self)
 
             return None
@@ -548,7 +560,7 @@ class Blackfish:
             # Refresh all services and wrap them
             managed_services = []
             for service in services:
-                await service.refresh(session, self._state)
+                await service.refresh(session, self._ensure_http_client())
                 managed_services.append(ManagedService(service, self))
 
             return managed_services

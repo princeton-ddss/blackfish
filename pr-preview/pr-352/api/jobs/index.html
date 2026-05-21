@@ -1204,17 +1204,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#blackfish.server.job.SlurmJob.wait" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        wait
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1390,17 +1379,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#blackfish.server.job.SlurmJob.wait" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        wait
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1503,6 +1481,8 @@
 
 
     <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
 
@@ -1699,6 +1679,10 @@
 <h4 id="blackfish.server.job.SlurmJob.cancel" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">cancel</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 </h4>
 
 
@@ -1717,6 +1701,10 @@
 
 <h4 id="blackfish.server.job.SlurmJob.fetch_node" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">fetch_node</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
 
 </h4>
 
@@ -1737,6 +1725,10 @@ node (or the current node if the update fails).</p>
 
 <h4 id="blackfish.server.job.SlurmJob.fetch_port" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">fetch_port</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
 
 </h4>
 
@@ -1760,6 +1752,10 @@ is assigned to a service container.</p>
 <h4 id="blackfish.server.job.SlurmJob.update" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">update</span><span class="p">(</span><span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 </h4>
 
 
@@ -1770,24 +1766,6 @@ state (or current state if the update fails).</p>
 <p>If the job state switches from PENDING or MISSING to RUNNING, also update
 the job node and port.</p>
 <p>This method logs a warning if the update fails, but does not raise an exception.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="blackfish.server.job.SlurmJob.wait" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">wait</span><span class="p">(</span><span class="n">period</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span></code>
-
-</h4>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Wait for the job to start, re-checking the job's status every <code>period</code> seconds.</p>
 
 
     </div>

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import rich_click as click
 from rich_click import Context
 import configparser
@@ -241,7 +242,6 @@ def start(reload: bool) -> None:  # pragma: no cover
     _warn_if_no_profiles(config.HOME_DIR)
 
     # Check TigerFlow versions on Slurm profiles
-    import asyncio
     from blackfish.server.jobs.client import (
         TigerFlowClient,
         TigerFlowError,
@@ -585,7 +585,6 @@ def prune() -> None:  # pragma: no cover
 def details(service_id: str) -> None:  # pragma: no cover
     """Show detailed service information."""
 
-    import asyncio
     from uuid import UUID
     from datetime import datetime
     import json

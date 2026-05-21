@@ -8,9 +8,7 @@ import configparser
 import os
 from os import urandom
 import json
-import aiohttp
-from aiohttp.typedefs import StrOrURL
-import requests
+from blackfish.server.http_client import http_client, close_http_client
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
@@ -1707,10 +1705,9 @@ async def delete_job(
     return res
 
 
-async def asyncpost(url: StrOrURL, data: Any, headers: Any) -> Any:
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, data=data, headers=headers) as response:
-            return await response.json()
+async def asyncpost(url: str, data: Any, headers: Any) -> Any:
+    response = await http_client.post(url, content=data, headers=headers)
+    return response.json()
 
 
 @post(
@@ -1741,25 +1738,31 @@ async def proxy_service(
 
     if streaming:
         headers = {"Content-Type": "application/json"}
-        upstream_res = requests.post(url, json=data, headers=headers, stream=True)
+        req = http_client.build_request("POST", url, json=data, headers=headers)
+        upstream_res = await http_client.send(req, stream=True)
 
-        if not upstream_res.ok:
+        if not upstream_res.is_success:
+            body = await upstream_res.aread()
+            await upstream_res.aclose()
             try:
-                error_body = upstream_res.json()
+                error_body = json.loads(body)
                 error_message = error_body.get("message", "Upstream service error")
             except Exception:
-                error_message = upstream_res.text or "Upstream service error"
-            upstream_res.close()
+                error_message = (
+                    body.decode(errors="replace") or "Upstream service error"
+                )
             raise HTTPException(
                 status_code=upstream_res.status_code,
                 detail=error_message,
             )
 
         async def generator() -> AsyncGenerator:  # type: ignore
-            with upstream_res:
-                for x in upstream_res.iter_content(chunk_size=None):
-                    if x:
-                        yield x
+            try:
+                async for chunk in upstream_res.aiter_bytes():
+                    if chunk:
+                        yield chunk
+            finally:
+                await upstream_res.aclose()
 
         return Stream(generator)
     else:
@@ -1843,7 +1846,9 @@ async def get_models(
 
             for m in to_add:
                 token = profile_tokens.get(m.profile)
-                hub_image, metadata_dict = fetch_model_info_from_hub(m.repo, token)
+                hub_image, metadata_dict = await asyncio.to_thread(
+                    fetch_model_info_from_hub, m.repo, token
+                )
                 m.image = hub_image
                 m.metadata_ = metadata_dict
 
@@ -1865,7 +1870,9 @@ async def get_models(
 
             for m in to_update:
                 token = profile_tokens.get(m.profile)
-                hub_image, metadata_dict = fetch_model_info_from_hub(m.repo, token)
+                hub_image, metadata_dict = await asyncio.to_thread(
+                    fetch_model_info_from_hub, m.repo, token
+                )
                 # Only update if we got valid data
                 if metadata_dict is not None:
                     m.metadata_ = metadata_dict
@@ -3562,6 +3569,7 @@ async def resume_incomplete_downloads(app: Litestar) -> None:
 app = Litestar(
     path=blackfish_config.BASE_PATH,
     on_startup=[resume_incomplete_downloads],
+    on_shutdown=[close_http_client],
     route_handlers=[
         dashboard,
         dashboard_login,

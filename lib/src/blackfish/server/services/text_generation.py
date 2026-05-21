@@ -1,11 +1,9 @@
-import requests
 from typing import Annotated, Any, Optional, Union
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pydantic import BaseModel, Field
 
 
 from blackfish.server.services.base import Service, BaseConfig
-from blackfish.server.logger import logger
 
 
 @dataclass
@@ -343,23 +341,3 @@ class TextGeneration(Service):
     __mapper_args__ = {
         "polymorphic_identity": "text_generation",
     }
-
-    async def __call__(
-        self, inputs: str, params: TextGenerationParameters
-    ) -> requests.Response:
-        logger.info(f"calling service {self.id}")
-        try:
-            headers = {
-                "Content-Type": "application/json",
-            }
-            body = {
-                "inputs": inputs,
-                "parameters": asdict(params),
-            }
-            res = requests.post(
-                f"http://localhost:{self.port}/generate", json=body, headers=headers
-            )
-        except Exception as e:
-            raise e
-
-        return res

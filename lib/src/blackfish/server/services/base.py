@@ -7,7 +7,7 @@ import uuid
 import psutil
 from datetime import datetime, timezone
 from typing import Optional
-import requests
+import httpx
 from enum import StrEnum, auto
 from dataclasses import dataclass
 
@@ -29,6 +29,7 @@ from blackfish.server.job import (
 )
 from blackfish.server.logger import logger
 from blackfish.server.utils import find_port
+from blackfish.server.http_client import http_client
 from blackfish.server.config import ContainerProvider, config as blackfish_config
 from blackfish.server.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
@@ -428,7 +429,7 @@ class Service(UUIDAuditBase):
                 if self.port is None:
                     await self.open_tunnel(job=job)
                 res = await self.ping()
-                if res is not None and res.ok:
+                if res is not None and res.is_success:
                     logger.debug(
                         f"Service {self.id} responded normally. Setting status to"
                         " HEALTHY."
@@ -499,7 +500,7 @@ class Service(UUIDAuditBase):
                 return ServiceStatus.STOPPED
             elif job.state == JobState.RUNNING:
                 res = await self.ping()
-                if res is not None and res.ok:
+                if res is not None and res.is_success:
                     logger.debug(
                         f"Service {self.id} responded normally. Setting status to"
                         " HEALTHY."
@@ -700,10 +701,10 @@ class Service(UUIDAuditBase):
 
         return job_script
 
-    async def ping(self) -> requests.Response | None:
+    async def ping(self) -> httpx.Response | None:
         logger.debug(f"Pinging service {self.id}")
         try:
-            res = requests.get(f"http://localhost:{self.port}/health")
+            res = await http_client.get(f"http://localhost:{self.port}/health")
             return res
         except Exception as e:
             logger.debug(f"Failed to check health: {e}")

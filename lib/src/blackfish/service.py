@@ -58,7 +58,9 @@ class ManagedService:
                 # Merge the detached service into this session
                 self._service = await session.merge(self._service)
                 if self._service is not None:
-                    await self._service.refresh(session, self._client._state)
+                    await self._service.refresh(
+                        session, self._client._ensure_http_client()
+                    )
                 else:
                     raise RuntimeError("self._service is None")
                 # Don't call session.refresh() - refresh() modifies status and we want to keep that change
@@ -225,7 +227,9 @@ class ManagedService:
                 async with self._client._session() as session:
                     self._service = await session.merge(self._service)
                     if self._service is not None:
-                        await self._service.refresh(session, self._client._state)
+                        await self._service.refresh(
+                            session, self._client._ensure_http_client()
+                        )
                         # Access attributes to ensure they're loaded before session closes
                         current_status = self._service.status
                     else:
@@ -251,7 +255,9 @@ class ManagedService:
             async with self._client._session() as session:
                 self._service = await session.merge(self._service)
                 if self._service is not None:
-                    await self._service.refresh(session, self._client._state)
+                    await self._service.refresh(
+                        session, self._client._ensure_http_client()
+                    )
                 else:
                     raise RuntimeError("self._service is None")
                 final_status = self._service.status

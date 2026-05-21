@@ -7,7 +7,7 @@ import uuid
 import psutil
 from datetime import datetime, timezone
 from typing import Optional
-import requests
+import httpx
 from enum import StrEnum, auto
 from dataclasses import dataclass
 
@@ -29,6 +29,7 @@ from blackfish.server.job import (
 )
 from blackfish.server.logger import logger
 from blackfish.server.utils import find_port
+from blackfish.server.http_client import HEALTH_CHECK_TIMEOUT
 from blackfish.server.config import ContainerProvider, config as blackfish_config
 from blackfish.server.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
@@ -340,7 +341,7 @@ class Service(UUIDAuditBase):
             self.status = ServiceStatus.STOPPED
 
     async def refresh(
-        self, session: AsyncSession, app_config: State
+        self, session: AsyncSession, http_client: httpx.AsyncClient
     ) -> Optional[ServiceStatus]:
         """Update the service status. Assumes running in an attached state.
 
@@ -427,8 +428,8 @@ class Service(UUIDAuditBase):
             elif job.state == JobState.RUNNING:
                 if self.port is None:
                     await self.open_tunnel(job=job)
-                res = await self.ping()
-                if res is not None and res.ok:
+                res = await self.ping(http_client)
+                if res is not None and res.is_success:
                     logger.debug(
                         f"Service {self.id} responded normally. Setting status to"
                         " HEALTHY."
@@ -498,8 +499,8 @@ class Service(UUIDAuditBase):
                 await self.stop(session)
                 return ServiceStatus.STOPPED
             elif job.state == JobState.RUNNING:
-                res = await self.ping()
-                if res is not None and res.ok:
+                res = await self.ping(http_client)
+                if res is not None and res.is_success:
                     logger.debug(
                         f"Service {self.id} responded normally. Setting status to"
                         " HEALTHY."
@@ -700,10 +701,13 @@ class Service(UUIDAuditBase):
 
         return job_script
 
-    async def ping(self) -> requests.Response | None:
+    async def ping(self, http_client: httpx.AsyncClient) -> httpx.Response | None:
         logger.debug(f"Pinging service {self.id}")
         try:
-            res = requests.get(f"http://localhost:{self.port}/health")
+            res = await http_client.get(
+                f"http://localhost:{self.port}/health",
+                timeout=HEALTH_CHECK_TIMEOUT,
+            )
             return res
         except Exception as e:
             logger.debug(f"Failed to check health: {e}")

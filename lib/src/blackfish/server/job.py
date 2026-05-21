@@ -1,6 +1,7 @@
 import os
 import json
 import subprocess
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from enum import StrEnum, auto
@@ -70,17 +71,17 @@ JobConfig = Union[LocalJobConfig, SlurmJobConfig]
 
 
 @dataclass
-class Job:
+class Job(ABC):
     """Abstract job class."""
 
-    async def cancel(self) -> None:
-        raise NotImplementedError()
+    @abstractmethod
+    async def cancel(self) -> None: ...
 
-    async def update(self, verbose: bool = False) -> Optional[str]:
-        raise NotImplementedError()
+    @abstractmethod
+    async def update(self, verbose: bool = False) -> Optional[str]: ...
 
-    async def remove(self) -> None:
-        raise NotImplementedError()
+    @abstractmethod
+    async def remove(self) -> None: ...
 
 
 def parse_state(res: bytes) -> JobState:

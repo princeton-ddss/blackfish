@@ -55,7 +55,7 @@ async def test_update_change(mock_check_output, mock_fetch_node, mock_fetch_port
 async def test_update_warning(
     mock_check_output, mock_fetch_node, mock_fetch_port, mock_warning
 ):
-    mock_check_output.side_effect = subprocess.CalledProcessError(None, None)
+    mock_check_output.side_effect = subprocess.CalledProcessError(1, "ssh")
     job = SlurmJob(job_id=1, user="test", host="test", data_dir="test")
     await job.update()
     mock_warning.assert_called()
@@ -82,7 +82,7 @@ async def test_fetch_node_some(mock_check_output):
 @mock.patch("logging.Logger.warning")
 @mock.patch("subprocess.check_output")
 async def test_fetch_node_warning(mock_check_output, mock_warning):
-    mock_check_output.side_effect = subprocess.CalledProcessError(None, None)
+    mock_check_output.side_effect = subprocess.CalledProcessError(1, "ssh")
     job = SlurmJob(job_id=1, user="test", host="test", data_dir="test")
     await job.fetch_node()
     mock_warning.assert_called()
@@ -107,7 +107,7 @@ async def test_fetch_port_some(mock_check_output):
 @mock.patch("logging.Logger.warning")
 @mock.patch("subprocess.check_output")
 async def test_fetch_port_warning(mock_check_output, mock_warning):
-    mock_check_output.side_effect = subprocess.CalledProcessError(None, None)
+    mock_check_output.side_effect = subprocess.CalledProcessError(1, "ssh")
     job = SlurmJob(job_id=1, user="test", host="test", data_dir="test")
     await job.fetch_port()
     mock_warning.assert_called()
@@ -116,7 +116,7 @@ async def test_fetch_port_warning(mock_check_output, mock_warning):
 @mock.patch("logging.Logger.warning")
 @mock.patch("subprocess.check_output")
 async def test_cancel_warning(mock_check_output, mock_warning):
-    mock_check_output.side_effect = subprocess.CalledProcessError(None, None)
+    mock_check_output.side_effect = subprocess.CalledProcessError(1, "ssh")
     job = SlurmJob(job_id=1, user="test", host="test", data_dir="test")
-    await job.update()
+    await job.cancel()
     mock_warning.assert_called()

@@ -29,7 +29,7 @@ from blackfish.server.job import (
 )
 from blackfish.server.logger import logger
 from blackfish.server.utils import find_port
-from blackfish.server.http_client import http_client
+from blackfish.server.http_client import http_client, HEALTH_CHECK_TIMEOUT
 from blackfish.server.config import ContainerProvider, config as blackfish_config
 from blackfish.server.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
@@ -704,7 +704,10 @@ class Service(UUIDAuditBase):
     async def ping(self) -> httpx.Response | None:
         logger.debug(f"Pinging service {self.id}")
         try:
-            res = await http_client.get(f"http://localhost:{self.port}/health")
+            res = await http_client.get(
+                f"http://localhost:{self.port}/health",
+                timeout=HEALTH_CHECK_TIMEOUT,
+            )
             return res
         except Exception as e:
             logger.debug(f"Failed to check health: {e}")

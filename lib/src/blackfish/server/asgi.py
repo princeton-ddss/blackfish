@@ -8,7 +8,11 @@ import configparser
 import os
 from os import urandom
 import json
-from blackfish.server.http_client import http_client, close_http_client
+from blackfish.server.http_client import (
+    http_client,
+    close_http_client,
+    STREAM_TIMEOUT,
+)
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
@@ -1738,7 +1742,9 @@ async def proxy_service(
 
     if streaming:
         headers = {"Content-Type": "application/json"}
-        req = http_client.build_request("POST", url, json=data, headers=headers)
+        req = http_client.build_request(
+            "POST", url, json=data, headers=headers, timeout=STREAM_TIMEOUT
+        )
         upstream_res = await http_client.send(req, stream=True)
 
         if not upstream_res.is_success:

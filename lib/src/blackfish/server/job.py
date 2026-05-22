@@ -193,11 +193,9 @@ class SlurmJob(Job):
         ]
         try:
             if self.is_local():
-                result = await remote.run(sacct_cmd, timeout=10)
+                result = await remote.run(sacct_cmd)
             else:
-                result = await remote.ssh(
-                    f"{self.user}@{self.host}", sacct_cmd, timeout=10
-                )
+                result = await remote.ssh(f"{self.user}@{self.host}", sacct_cmd)
 
             res = result.stdout
             self.node = None if res == b"" else res.decode("utf-8").strip()

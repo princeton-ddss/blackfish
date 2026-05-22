@@ -201,6 +201,9 @@ def _ssh_transport_error(destination: str, stderr: bytes) -> RemoteError:
     """Classify an SSH exit-255 failure as an auth or connection error."""
     detail = stderr.decode("utf-8", "replace").strip()
     lowered = detail.lower()
-    if "permission denied" in lowered or "publickey" in lowered:
-        return RemoteAuthError(f"SSH authentication to {destination!r} failed: {detail}")
+    auth_markers = ("permission denied", "publickey", "authentication failure")
+    if any(marker in lowered for marker in auth_markers):
+        return RemoteAuthError(
+            f"SSH authentication to {destination!r} failed: {detail}"
+        )
     return RemoteConnectionError(f"Could not connect to {destination!r}: {detail}")

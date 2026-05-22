@@ -91,17 +91,13 @@ async def test_run_cancellation_propagates() -> None:
 # --- ssh: mocked transport ----------------------------------------------------
 
 
-async def test_ssh_success_builds_command_with_options() -> None:
-    proc = FakeProc(returncode=0, stdout=b"RUNNING\n")
-    with _patch_exec(proc) as m:
+async def test_ssh_success_returns_completed_process() -> None:
+    proc = FakeProc(returncode=0, stdout=b"RUNNING\n", stderr=b"")
+    with _patch_exec(proc):
         result = await remote.ssh("user@host", ["sacct", "-j", "1"])
+    assert result.returncode == 0
     assert result.stdout == b"RUNNING\n"
-    argv = m.call_args.args
-    assert argv[0] == "ssh"
-    assert "BatchMode=yes" in argv
-    assert "ConnectTimeout=10" in argv
-    assert "user@host" in argv
-    assert argv[-3:] == ("sacct", "-j", "1")
+    assert result.stderr == b""
 
 
 async def test_ssh_auth_failure() -> None:
@@ -112,7 +108,10 @@ async def test_ssh_auth_failure() -> None:
 
 
 async def test_ssh_connection_failure() -> None:
-    proc = FakeProc(returncode=255, stderr=b"ssh: connect to host port 22: Connection refused")
+    proc = FakeProc(
+        returncode=255,
+        stderr=b"ssh: connect to host port 22: Connection refused",
+    )
     with _patch_exec(proc):
         with pytest.raises(RemoteConnectionError):
             await remote.ssh("user@host", ["sacct"])
@@ -134,21 +133,54 @@ async def test_ssh_timeout() -> None:
     assert proc.killed
 
 
+# --- transport-error classification (SSH exit 255) ----------------------------
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        b"Permission denied (publickey).",
+        b"user@host: Permission denied (publickey,password).",
+        b"Received disconnect from host: 2: Too many authentication failures",
+    ],
+)
+async def test_classify_auth_failure(stderr: bytes) -> None:
+    assert isinstance(remote._ssh_transport_error("host", stderr), RemoteAuthError)
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        b"ssh: connect to host port 22: Connection refused",
+        b"ssh: Could not resolve hostname host: nodename nor servname provided",
+        b"ssh: connect to host port 22: Operation timed out",
+        b"",
+    ],
+)
+async def test_classify_connection_failure(stderr: bytes) -> None:
+    assert isinstance(
+        remote._ssh_transport_error("host", stderr), RemoteConnectionError
+    )
+
+
 # --- scp: mocked transport ----------------------------------------------------
 
 
 async def test_scp_success() -> None:
     proc = FakeProc(returncode=0)
-    with _patch_exec(proc) as m:
+    with _patch_exec(proc):
         await remote.scp("local.sh", "user@host:/remote/local.sh")
-    argv = m.call_args.args
-    assert argv[0] == "scp"
-    assert "BatchMode=yes" in argv
-    assert argv[-2:] == ("local.sh", "user@host:/remote/local.sh")
 
 
 async def test_scp_connection_failure() -> None:
     proc = FakeProc(returncode=255, stderr=b"ssh: Could not resolve hostname host")
     with _patch_exec(proc):
         with pytest.raises(RemoteConnectionError):
+            await remote.scp("local.sh", "user@host:/remote/local.sh")
+
+
+async def test_scp_remote_command_failure() -> None:
+    proc = FakeProc(returncode=1, stderr=b"scp: /remote/local.sh: Permission denied")
+    with _patch_exec(proc):
+        with pytest.raises(RemoteCommandError):
             await remote.scp("local.sh", "user@host:/remote/local.sh")

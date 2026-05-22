@@ -58,9 +58,6 @@ def _patch_exec(proc: FakeProc) -> mock._patch:
     )
 
 
-# --- run: real local subprocesses ---------------------------------------------
-
-
 async def test_run_success() -> None:
     result = await remote.run(["echo", "hello"])
     assert isinstance(result, CompletedProcess)
@@ -86,9 +83,6 @@ async def test_run_cancellation_propagates() -> None:
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
-
-
-# --- ssh: mocked transport ----------------------------------------------------
 
 
 async def test_ssh_success_returns_completed_process() -> None:
@@ -118,11 +112,17 @@ async def test_ssh_connection_failure() -> None:
 
 
 async def test_ssh_remote_command_failure() -> None:
-    proc = FakeProc(returncode=1, stderr=b"sacct: error: invalid job id")
+    proc = FakeProc(
+        returncode=1,
+        stdout=b"partial output",
+        stderr=b"sacct: error: invalid job id",
+    )
     with _patch_exec(proc):
         with pytest.raises(RemoteCommandError) as exc_info:
             await remote.ssh("user@host", ["sacct", "-j", "bad"])
     assert exc_info.value.returncode == 1
+    assert exc_info.value.stdout == b"partial output"
+    assert exc_info.value.stderr == b"sacct: error: invalid job id"
 
 
 async def test_ssh_timeout() -> None:
@@ -133,7 +133,33 @@ async def test_ssh_timeout() -> None:
     assert proc.killed
 
 
-# --- transport-error classification (SSH exit 255) ----------------------------
+async def test_scp_connection_failure() -> None:
+    proc = FakeProc(returncode=255, stderr=b"ssh: Could not resolve hostname host")
+    with _patch_exec(proc):
+        with pytest.raises(RemoteConnectionError):
+            await remote.scp("local.sh", "user@host:/remote/local.sh")
+
+
+async def test_scp_remote_command_failure() -> None:
+    proc = FakeProc(returncode=1, stderr=b"scp: /remote/local.sh: Permission denied")
+    with _patch_exec(proc):
+        with pytest.raises(RemoteCommandError):
+            await remote.scp("local.sh", "user@host:/remote/local.sh")
+
+
+async def test_scp_auth_failure() -> None:
+    proc = FakeProc(returncode=255, stderr=b"Permission denied (publickey).")
+    with _patch_exec(proc):
+        with pytest.raises(RemoteAuthError):
+            await remote.scp("local.sh", "user@host:/remote/local.sh")
+
+
+async def test_scp_timeout() -> None:
+    proc = FakeProc(hang=True)
+    with _patch_exec(proc):
+        with pytest.raises(RemoteTimeout):
+            await remote.scp("local.sh", "user@host:/remote/local.sh", timeout=0.2)
+    assert proc.killed
 
 
 @pytest.mark.parametrize(
@@ -161,20 +187,3 @@ async def test_classify_connection_failure(stderr: bytes) -> None:
     assert isinstance(
         remote._ssh_transport_error("host", stderr), RemoteConnectionError
     )
-
-
-# --- scp: mocked transport ----------------------------------------------------
-
-
-async def test_scp_connection_failure() -> None:
-    proc = FakeProc(returncode=255, stderr=b"ssh: Could not resolve hostname host")
-    with _patch_exec(proc):
-        with pytest.raises(RemoteConnectionError):
-            await remote.scp("local.sh", "user@host:/remote/local.sh")
-
-
-async def test_scp_remote_command_failure() -> None:
-    proc = FakeProc(returncode=1, stderr=b"scp: /remote/local.sh: Permission denied")
-    with _patch_exec(proc):
-        with pytest.raises(RemoteCommandError):
-            await remote.scp("local.sh", "user@host:/remote/local.sh")

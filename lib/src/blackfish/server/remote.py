@@ -192,16 +192,24 @@ async def scp(src: str, dst: str, *, timeout: float = DEFAULT_TIMEOUT) -> None:
             f"scp {src!r} -> {dst!r} timed out after {timeout}s"
         ) from None
     if returncode == _SSH_TRANSPORT_EXIT:
-        raise _ssh_transport_error(dst, stderr)
+        # Either src or dst may be the remote endpoint; name both so the
+        # message is unambiguous regardless of copy direction.
+        raise _ssh_transport_error(f"{src} -> {dst}", stderr)
     if returncode != 0:
         raise RemoteCommandError(cmd, returncode, stdout, stderr)
 
 
 def _ssh_transport_error(destination: str, stderr: bytes) -> RemoteError:
-    """Classify an SSH exit-255 failure as an auth or connection error."""
+    """Classify an SSH exit-255 failure as an auth or connection error.
+
+    Best-effort: SSH error wording varies by version and locale, so this
+    matches on a few stable substrings and defaults to a connection error.
+    """
     detail = stderr.decode("utf-8", "replace").strip()
     lowered = detail.lower()
-    auth_markers = ("permission denied", "publickey", "authentication failure")
+    # "authentication fail" covers "authentication failed" and
+    # "...too many authentication failures".
+    auth_markers = ("permission denied", "publickey", "authentication fail")
     if any(marker in lowered for marker in auth_markers):
         return RemoteAuthError(
             f"SSH authentication to {destination!r} failed: {detail}"

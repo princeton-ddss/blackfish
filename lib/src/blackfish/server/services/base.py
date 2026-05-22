@@ -205,7 +205,7 @@ class Service(UUIDAuditBase):
                         f"{self.user}@{self.host}",
                         ["mkdir", "-p", remote_script_dir],
                     )
-                except Exception as e:
+                except remote.RemoteError as e:
                     logger.error(f"Failed to connect to remote host: {e}")
                     raise ServiceLaunchError("ssh", self.host)
 
@@ -214,7 +214,7 @@ class Service(UUIDAuditBase):
                         str(script_path),
                         f"{self.user}@{self.host}:{remote_script_dir}",
                     )
-                except Exception as e:
+                except remote.RemoteError as e:
                     logger.error(f"Failed to copy job script to remote host: {e}")
                     raise ServiceLaunchError("copy", self.host)
 
@@ -232,7 +232,7 @@ class Service(UUIDAuditBase):
                     job_id = result.stdout.decode("utf-8").strip().split()[-1]
                     self.status = ServiceStatus.SUBMITTED
                     self.job_id = job_id
-                except Exception as e:
+                except remote.RemoteError as e:
                     logger.error(f"Failed to submit Slurm job: {e}")
                     raise ServiceLaunchError("submit", self.host)
         else:
@@ -267,7 +267,7 @@ class Service(UUIDAuditBase):
             logger.info("Attempting to start service locally...")
             try:
                 result = await remote.run(["bash", script_path.as_posix()])
-            except Exception as e:
+            except remote.RemoteError as e:
                 logger.error(f"Failed to start container: {e}")
                 raise ServiceLaunchError("container", "localhost")
             if self.provider == ContainerProvider.Docker:

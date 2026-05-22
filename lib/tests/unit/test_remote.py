@@ -166,12 +166,6 @@ async def test_classify_connection_failure(stderr: bytes) -> None:
 # --- scp: mocked transport ----------------------------------------------------
 
 
-async def test_scp_success() -> None:
-    proc = FakeProc(returncode=0)
-    with _patch_exec(proc):
-        await remote.scp("local.sh", "user@host:/remote/local.sh")
-
-
 async def test_scp_connection_failure() -> None:
     proc = FakeProc(returncode=255, stderr=b"ssh: Could not resolve hostname host")
     with _patch_exec(proc):

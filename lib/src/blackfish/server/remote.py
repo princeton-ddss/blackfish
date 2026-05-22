@@ -40,19 +40,6 @@ DEFAULT_TIMEOUT = 60.0
 # opposed to a non-zero exit from the remote command itself.
 _SSH_TRANSPORT_EXIT = 255
 
-# Baked into every ssh/scp invocation:
-# - ConnectTimeout: cap the TCP/handshake wait so an unreachable host fails fast
-# - ServerAliveInterval: detect a dropped connection mid-command
-# - BatchMode: never prompt for a password/passphrase — fail instead of hanging
-_SSH_OPTIONS = [
-    "-o",
-    "ConnectTimeout=10",
-    "-o",
-    "ServerAliveInterval=15",
-    "-o",
-    "BatchMode=yes",
-]
-
 # How long an idle ControlMaster connection is kept alive after its last use.
 _CONTROL_PERSIST = "10m"
 
@@ -65,17 +52,27 @@ def _ensure_socket_dir() -> Path:
 
 
 def _ssh_options() -> list[str]:
-    """Hardening flags plus ControlMaster connection-multiplexing options.
+    """The ``-o`` options applied to every ssh/scp invocation.
 
-    ControlMaster lets the first SSH to a host open a master connection that
-    later calls reuse over a Unix socket — skipping the TCP connect, key
-    exchange, and auth (~0.5-2s per call). ``ControlPath`` uses ``%C`` (a hash
-    of the connection tuple) to stay within the ~104-char Unix-socket path
-    limit, notably on macOS.
+    Hardening:
+    - ConnectTimeout: cap the TCP/handshake wait so an unreachable host fails fast
+    - ServerAliveInterval: detect a dropped connection mid-command
+    - BatchMode: never prompt for a password/passphrase — fail instead of hanging
+
+    ControlMaster multiplexing: the first SSH to a host opens a master
+    connection that later calls reuse over a Unix socket — skipping the TCP
+    connect, key exchange, and auth (~0.5-2s per call). ``ControlPath`` uses
+    ``%C`` (a hash of the connection tuple) to stay within the ~104-char
+    Unix-socket path limit, notably on macOS.
     """
     control_path = _ensure_socket_dir() / "cm-%C"
     return [
-        *_SSH_OPTIONS,
+        "-o",
+        "ConnectTimeout=10",
+        "-o",
+        "ServerAliveInterval=15",
+        "-o",
+        "BatchMode=yes",
         "-o",
         "ControlMaster=auto",
         "-o",

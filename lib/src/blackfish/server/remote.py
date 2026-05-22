@@ -57,7 +57,10 @@ def _ssh_options() -> list[str]:
     Hardening:
     - ConnectTimeout: cap the TCP/handshake wait so an unreachable host fails fast
     - ServerAliveInterval: detect a dropped connection mid-command
-    - BatchMode: never prompt for a password/passphrase — fail instead of hanging
+    - PasswordAuthentication=no: disable password auth so a host that would
+      prompt for a password (e.g. off-VPN) fails fast instead of blocking on a
+      prompt no one can answer. keyboard-interactive stays enabled, so
+      Kerberos-backed non-interactive auth still works.
 
     ControlMaster multiplexing: the first SSH to a host opens a master
     connection that later calls reuse over a Unix socket — skipping the TCP
@@ -72,7 +75,7 @@ def _ssh_options() -> list[str]:
         "-o",
         "ServerAliveInterval=15",
         "-o",
-        "BatchMode=yes",
+        "PasswordAuthentication=no",
         "-o",
         "ControlMaster=auto",
         "-o",

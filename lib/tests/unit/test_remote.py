@@ -24,6 +24,16 @@ from blackfish.server.remote import (
 pytestmark = pytest.mark.anyio
 
 
+@pytest.fixture(autouse=True)
+def _tmp_socket_dir(tmp_path, monkeypatch):
+    """Point the ControlMaster socket directory at a temp dir.
+
+    ssh/scp build their options via _ensure_socket_dir(), which creates
+    the directory — keep that out of the real ~/.blackfish during tests.
+    """
+    monkeypatch.setattr(remote.config, "HOME_DIR", str(tmp_path))
+
+
 class FakeProc:
     """Stand-in for an asyncio subprocess transport."""
 

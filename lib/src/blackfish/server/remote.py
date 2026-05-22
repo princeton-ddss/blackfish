@@ -28,6 +28,9 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+from pathlib import Path
+
+from blackfish.server.config import config
 
 # Default per-call timeout (seconds). Generous enough for slow login nodes,
 # short enough that a truly hung call surfaces quickly.
@@ -49,6 +52,37 @@ _SSH_OPTIONS = [
     "-o",
     "BatchMode=yes",
 ]
+
+# How long an idle ControlMaster connection is kept alive after its last use.
+_CONTROL_PERSIST = "10m"
+
+
+def _ensure_socket_dir() -> Path:
+    """Return the ControlMaster socket directory, creating it if missing."""
+    socket_dir = Path(config.HOME_DIR) / "ssh-sockets"
+    socket_dir.mkdir(parents=True, exist_ok=True)
+    return socket_dir
+
+
+def _ssh_options() -> list[str]:
+    """Hardening flags plus ControlMaster connection-multiplexing options.
+
+    ControlMaster lets the first SSH to a host open a master connection that
+    later calls reuse over a Unix socket — skipping the TCP connect, key
+    exchange, and auth (~0.5-2s per call). ``ControlPath`` uses ``%C`` (a hash
+    of the connection tuple) to stay within the ~104-char Unix-socket path
+    limit, notably on macOS.
+    """
+    control_path = _ensure_socket_dir() / "cm-%C"
+    return [
+        *_SSH_OPTIONS,
+        "-o",
+        "ControlMaster=auto",
+        "-o",
+        f"ControlPath={control_path}",
+        "-o",
+        f"ControlPersist={_CONTROL_PERSIST}",
+    ]
 
 
 class RemoteError(Exception):
@@ -153,7 +187,7 @@ async def ssh(
         RemoteConnectionError: the host was unreachable or the connection failed.
         RemoteCommandError: the remote command ran and exited non-zero.
     """
-    cmd = ["ssh", *_SSH_OPTIONS, destination, *command]
+    cmd = ["ssh", *_ssh_options(), destination, *command]
     try:
         returncode, stdout, stderr = await _exec(cmd, timeout)
     except asyncio.TimeoutError:
@@ -184,7 +218,7 @@ async def scp(src: str, dst: str, *, timeout: float = DEFAULT_TIMEOUT) -> None:
         RemoteConnectionError: the host was unreachable or the connection failed.
         RemoteCommandError: scp ran and exited non-zero for another reason.
     """
-    cmd = ["scp", *_SSH_OPTIONS, src, dst]
+    cmd = ["scp", *_ssh_options(), src, dst]
     try:
         returncode, stdout, stderr = await _exec(cmd, timeout)
     except asyncio.TimeoutError:

@@ -135,7 +135,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -171,7 +171,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -226,7 +226,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -275,7 +275,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -320,7 +320,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -364,7 +364,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -411,7 +411,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -457,7 +457,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -505,7 +505,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -548,7 +548,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -592,7 +592,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):
@@ -636,7 +636,7 @@ class TestRemoteFileBrowserWebSocket:
                 return_value=remote_profile,
             ),
             mock.patch(
-                "blackfish.server.browser.Connection",
+                "blackfish.server.remote.session.Connection",
                 mock_connection_class,
             ),
         ):

@@ -4,7 +4,7 @@ import datetime
 from typing import Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
-from fabric.connection import Connection
+from blackfish.server import remote
 from blackfish.server.models.profile import BlackfishProfile, SlurmProfile
 from blackfish.server.logger import logger
 from yaspin import yaspin
@@ -27,7 +27,8 @@ def get_models(profile: BlackfishProfile) -> list[str]:
     if isinstance(profile, SlurmProfile) and not profile.is_local():
         models = set()
         with yaspin(text=f"Searching {profile.host} for available models") as spinner:
-            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+            with remote.acquire(profile.host, profile.user) as sess:
+                sftp = sess.sftp
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in cache directory {default_dir}"
                 model_dirs = sftp.listdir(default_dir)
@@ -72,7 +73,8 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
         with yaspin(
             text=f"Searching {profile.host} for model {repo_id} commits"
         ) as spinner:
-            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+            with remote.acquire(profile.host, profile.user) as sess:
+                sftp = sess.sftp
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in cache directory {default_dir}"
                 model_dirs = sftp.listdir(default_dir)
@@ -127,7 +129,8 @@ def get_model_dir(
         with yaspin(
             text=f"Searching {profile.host} for {repo_id}[{revision}]"
         ) as spinner:
-            with Connection(profile.host, profile.user) as conn, conn.sftp() as sftp:
+            with remote.acquire(profile.host, profile.user) as sess:
+                sftp = sess.sftp
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in default directory {default_dir}"
                 if model_dir in sftp.listdir(default_dir):

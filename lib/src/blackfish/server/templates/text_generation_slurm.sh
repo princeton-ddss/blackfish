@@ -1,6 +1,7 @@
 {% extends "base_slurm.sh" %}
 {% block command %}
 apptainer run {{ '--nv' if job_config.gres else '' }} \
+  --env PYTHONNOUSERSITE=1 \
   --bind {{ container_config.model_dir }}:/data \
   {{ profile.cache_dir }}/images/vllm-openai_v0.10.2.sif \
   --model /data/snapshots/{{ container_config['revision'] }} \

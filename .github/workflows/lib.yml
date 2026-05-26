@@ -1,14 +1,14 @@
 name: Python CI
 on:
   push:
-    branches: [main, dev, "*-dev"]
+    branches: [main, dev, "*-dev", "release/*"]
     paths:
       - 'lib/**'
       - '!lib/docs/**'
       - '.pre-commit-config.yaml'
       - '.github/workflows/lib.yml'
   pull_request:
-    branches: [main, dev, "*-dev"]
+    branches: [main, dev, "*-dev", "release/*"]
     paths:
       - 'lib/**'
       - '!lib/docs/**'

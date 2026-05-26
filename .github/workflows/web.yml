@@ -1,12 +1,12 @@
 name: UI CI
 on:
   push:
-    branches: [main, dev, "*-dev"]
+    branches: [main, dev, "*-dev", "release/*"]
     paths:
       - 'web/**'
       - '.github/workflows/web.yml'
   pull_request:
-    branches: [main, dev, "*-dev"]
+    branches: [main, dev, "*-dev", "release/*"]
     paths:
       - 'web/**'
       - '.github/workflows/web.yml'

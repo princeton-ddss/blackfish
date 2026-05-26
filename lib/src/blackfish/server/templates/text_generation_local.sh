@@ -12,6 +12,7 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
   --trust-remote-code \
 {%- elif provider == 'apptainer' %}
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
+  --env PYTHONNOUSERSITE=1 \
   --bind {{ container_config.model_dir }}:/data \
   {{ profile.cache_dir }}/images/vllm-openai_v0.10.2.sif \
   {{ name }} \

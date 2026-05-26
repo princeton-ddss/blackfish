@@ -94,7 +94,10 @@ class RemoteSession:
                 logger.warning(f"Error during connection cleanup: {cleanup_error}")
             raise
         self._connection = conn
-        logger.info(f"Opened SFTP session to {self.user}@{self.host}")
+        # debug, not info: this fires on the CLI path via utils.get_models /
+        # get_revisions / get_model_dir, and CLI command output should stay
+        # quiet by convention.
+        logger.debug(f"Opened SFTP session to {self.user}@{self.host}")
 
     def _close(self) -> None:
         if self._sftp is not None:

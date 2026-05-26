@@ -122,8 +122,11 @@ class RemoteSession:
             raise RuntimeError("RemoteSession is not currently acquired")
         return self._sftp
 
-    def get_home_dir(self) -> str:
-        """Return the absolute path of the remote home directory."""
+    def home_dir(self) -> str:
+        """Return the absolute path of the remote home directory.
+
+        A method, not a property, because it issues an SFTP RPC.
+        """
         return self.sftp.normalize(".")
 
     # --- SFTP primitives -----------------------------------------------------
@@ -239,9 +242,7 @@ def acquire(host: str, user: str) -> Iterator[RemoteSession]:
     session = _pool.get(host, user)
     with session._lock:
         if session._sftp is not None and session._stale():
-            logger.debug(
-                f"Closing idle SFTP session to {session.user}@{session.host}"
-            )
+            logger.debug(f"Closing idle SFTP session to {session.user}@{session.host}")
             session._close()
         if session._sftp is None:
             session._open()

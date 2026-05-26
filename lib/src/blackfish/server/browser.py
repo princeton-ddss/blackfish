@@ -265,7 +265,7 @@ class RemoteFileBrowserSession(WebsocketListener):
         # than on the first user message.
         def _probe() -> str:
             with remote.acquire(profile.host, profile.user) as sess:
-                return sess.get_home_dir()
+                return sess.home_dir()
 
         try:
             home_dir = await asyncio.to_thread(_probe)

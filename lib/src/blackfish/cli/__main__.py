@@ -37,6 +37,14 @@ from blackfish.cli.image import list_images
 from blackfish.server.config import config
 from blackfish.server.logger import logger
 from blackfish.cli.classes import ServiceOptions
+from blackfish.utils import set_logging_level
+
+
+# Each CLI invocation is its own process. Default to WARNING so library
+# code's debug/info logs don't surface in the user's terminal regardless
+# of BLACKFISH_DEBUG (which is a server-runtime concern, see `start`).
+# Mirrors the programmatic client (blackfish.client.Blackfish.__init__).
+set_logging_level("WARNING")
 
 
 DISPLAY_ID_LENGTH = 13
@@ -236,6 +244,11 @@ def start(reload: bool) -> None:  # pragma: no cover
 
     import blackfish.server as server
     from blackfish.server.bootstrap import bootstrap
+
+    # `start` is the one CLI command that runs the server in-process, so
+    # this is where the BLACKFISH_DEBUG env var actually applies. Other
+    # CLI commands stay at the module-level WARNING default.
+    set_logging_level("DEBUG" if config.DEBUG else "INFO")
 
     bootstrap(config.HOME_DIR)
 

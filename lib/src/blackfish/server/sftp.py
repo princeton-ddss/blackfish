@@ -1,6 +1,13 @@
 """Remote file management utilities via SFTP.
 
-This module provides SFTP-based file operations for remote server access.
+Thin domain wrappers around :mod:`blackfish.server.remote`'s pooled SFTP
+sessions: each function acquires the shared session for the profile,
+performs one SFTP operation, and translates filesystem errors into the
+Litestar HTTP exceptions the route handlers expect.
+
+``stream_file`` is the exception — its generator outlives the function
+call, so it keeps its own non-pooled :class:`fabric.connection.Connection`
+rather than holding the shared session for the duration of the read.
 """
 
 from __future__ import annotations
@@ -19,6 +26,7 @@ from litestar.exceptions import (
     ValidationException,
 )
 
+from blackfish.server import remote
 from blackfish.server.logger import logger
 from blackfish.server.models.profile import SlurmProfile
 
@@ -51,15 +59,12 @@ def get_file_size(profile: SlurmProfile, path: str) -> int:
         InternalServerException: If connection fails
     """
     try:
-        with Connection(host=profile.host, user=profile.user) as conn:
-            with conn.sftp() as sftp:
-                stat = sftp.stat(path)
-                size: int | None = stat.st_size
-                if size is None:
-                    raise InternalServerException(
-                        f"Could not determine file size: {path}"
-                    )
-                return size
+        with remote.acquire(profile.host, profile.user) as sess:
+            stat = sess.stat(path)
+            size: int | None = stat.st_size
+            if size is None:
+                raise InternalServerException(f"Could not determine file size: {path}")
+            return size
     except FileNotFoundError:
         raise NotFoundException(f"Remote file not found: {path}")
     except PermissionError:
@@ -135,11 +140,8 @@ def read_file(profile: SlurmProfile, path: str) -> bytes:
         InternalServerException: If connection fails
     """
     try:
-        with Connection(host=profile.host, user=profile.user) as conn:
-            with conn.sftp() as sftp:
-                with sftp.open(path, "rb") as f:
-                    content: bytes = f.read()
-                    return content
+        with remote.acquire(profile.host, profile.user) as sess:
+            return sess.read_bytes(path)
     except FileNotFoundError:
         raise NotFoundException(f"Remote file not found: {path}")
     except PermissionError:
@@ -172,32 +174,26 @@ def write_file(
         InternalServerException: If connection fails
     """
     try:
-        with Connection(host=profile.host, user=profile.user) as conn:
-            with conn.sftp() as sftp:
-                exists = True
-                try:
-                    sftp.stat(path)
-                except FileNotFoundError:
-                    exists = False
+        with remote.acquire(profile.host, profile.user) as sess:
+            exists = sess.exists(path)
 
-                if not update and exists:
-                    raise ValidationException(f"Remote file already exists: {path}")
-                if update and not exists:
-                    raise NotFoundException(f"Remote file not found: {path}")
+            if not update and exists:
+                raise ValidationException(f"Remote file already exists: {path}")
+            if update and not exists:
+                raise NotFoundException(f"Remote file not found: {path}")
 
-                if not update:
-                    parent_dir = os.path.dirname(path)
-                    _ensure_remote_dir(sftp, parent_dir)
+            if not update:
+                parent_dir = os.path.dirname(path)
+                _ensure_remote_dir(sess.sftp, parent_dir)
 
-                with sftp.open(path, "wb") as f:
-                    f.write(content)
+            sess.write_bytes(path, content)
 
-                return WriteFileResponse(
-                    filename=os.path.basename(path),
-                    size=len(content),
-                    created_at=datetime.now(),
-                    path=path,
-                )
+            return WriteFileResponse(
+                filename=os.path.basename(path),
+                size=len(content),
+                created_at=datetime.now(),
+                path=path,
+            )
     except (ValidationException, NotFoundException):
         raise
     except PermissionError:
@@ -239,10 +235,10 @@ def delete_file(profile: SlurmProfile, path: str) -> str:
         InternalServerException: If connection fails
     """
     try:
-        with Connection(host=profile.host, user=profile.user) as conn:
-            with conn.sftp() as sftp:
-                sftp.remove(path)
-                return path
+        with remote.acquire(profile.host, profile.user) as sess:
+            # Preserve file-only semantics: refuse to silently rmdir.
+            sess.sftp.remove(path)
+            return path
     except FileNotFoundError:
         raise NotFoundException(f"Remote file not found: {path}")
     except PermissionError:

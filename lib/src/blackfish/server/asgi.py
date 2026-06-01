@@ -22,7 +22,7 @@ from uuid import UUID
 from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 
-from fabric.connection import Connection
+from blackfish.server import remote
 from pydantic import BaseModel, AfterValidator, ConfigDict
 
 import sqlalchemy as sa
@@ -371,14 +371,11 @@ async def find_models(profile: Profile) -> list[Model]:
     if isinstance(profile, SlurmProfile) and not profile.is_local():
         # Remote profile: use SFTP
         logger.debug(f"Connecting to sftp::{profile.user}@{profile.host}")
-        with (
-            Connection(host=profile.host, user=profile.user) as conn,
-            conn.sftp() as sftp,
-        ):
+        with remote.acquire(profile.host, profile.user) as sess:
             cache_dir = os.path.join(profile.cache_dir, "models")
             home_dir = os.path.join(profile.home_dir, "models")
-            scan_directory(cache_dir, sftp.listdir)
-            scan_directory(home_dir, sftp.listdir)
+            scan_directory(cache_dir, sess.sftp.listdir)
+            scan_directory(home_dir, sess.sftp.listdir)
     else:
         # Local profile: use os.listdir
         cache_dir = os.path.join(profile.cache_dir, "models")
@@ -3583,7 +3580,7 @@ async def close_http_client(app: Litestar) -> None:
 app = Litestar(
     path=blackfish_config.BASE_PATH,
     on_startup=[resume_incomplete_downloads, init_http_client],
-    on_shutdown=[close_http_client],
+    on_shutdown=[close_http_client, remote.close_all],
     route_handlers=[
         dashboard,
         dashboard_login,

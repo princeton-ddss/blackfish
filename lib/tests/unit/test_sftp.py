@@ -42,7 +42,9 @@ class TestReadFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             result = read_file(remote_profile, "/home/testuser/file.txt")
             assert result == b"file content"
             mock_sftp.open.assert_called_once_with("/home/testuser/file.txt", "rb")
@@ -58,7 +60,9 @@ class TestReadFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             with pytest.raises(NotFoundException):
                 read_file(remote_profile, "/nonexistent/file.txt")
 
@@ -73,7 +77,9 @@ class TestReadFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             with pytest.raises(NotAuthorizedException):
                 read_file(remote_profile, "/protected/file.txt")
 
@@ -95,7 +101,9 @@ class TestWriteFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             result = write_file(
                 remote_profile, "/home/testuser/new.txt", b"content", update=False
             )
@@ -115,7 +123,9 @@ class TestWriteFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             with pytest.raises(ValidationException):
                 write_file(
                     remote_profile,
@@ -140,7 +150,9 @@ class TestWriteFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             result = write_file(
                 remote_profile, "/home/testuser/existing.txt", b"updated", update=True
             )
@@ -158,7 +170,9 @@ class TestWriteFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             with pytest.raises(NotFoundException):
                 write_file(
                     remote_profile, "/nonexistent/file.txt", b"content", update=True
@@ -176,7 +190,9 @@ class TestDeleteFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             result = delete_file(remote_profile, "/home/testuser/file.txt")
             assert result == "/home/testuser/file.txt"
             mock_sftp.remove.assert_called_once_with("/home/testuser/file.txt")
@@ -192,7 +208,9 @@ class TestDeleteFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             with pytest.raises(NotFoundException):
                 delete_file(remote_profile, "/nonexistent/file.txt")
 
@@ -207,6 +225,8 @@ class TestDeleteFile:
         mock_conn.__enter__ = mock.MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = mock.MagicMock(return_value=False)
 
-        with mock.patch("blackfish.server.sftp.Connection", return_value=mock_conn):
+        with mock.patch(
+            "blackfish.server.remote.session.Connection", return_value=mock_conn
+        ):
             with pytest.raises(NotAuthorizedException):
                 delete_file(remote_profile, "/protected/file.txt")

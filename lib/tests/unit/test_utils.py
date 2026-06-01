@@ -43,19 +43,26 @@ class MockSFTPClient:
     def listdir(key):
         return filesystem[key]
 
-    def __enter__(self):
-        return self
 
-    def __exit__(self, type, value, traceback):
-        pass
+def _mock_connection_class():
+    """Build a fabric.Connection class mock whose .sftp() returns MockSFTPClient.
+
+    Patches the Connection symbol that RemoteSession._open() uses: each
+    Connection(...) call returns an instance with mocked open/close/sftp,
+    so no DNS resolution or real socket open happens during tests.
+    """
+    mock_cls = mock.MagicMock()
+    instance = mock_cls.return_value
+    instance.open = mock.MagicMock()
+    instance.close = mock.MagicMock()
+    instance.sftp.return_value = MockSFTPClient()
+    return mock_cls
 
 
-def mock_sftp(conn):
-    return MockSFTPClient()
-
-
-@mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
-def test_get_models():
+@mock.patch(
+    "blackfish.server.remote.session.Connection", new_callable=_mock_connection_class
+)
+def test_get_models(mock_conn):
     assert set(utils.get_models(profile)) == set(
         [
             "test/model-a",
@@ -66,8 +73,10 @@ def test_get_models():
     )
 
 
-@mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
-def test_get_revisions():
+@mock.patch(
+    "blackfish.server.remote.session.Connection", new_callable=_mock_connection_class
+)
+def test_get_revisions(mock_conn):
     assert set(utils.get_revisions("test/model-a", profile=profile)) == set(
         [
             "test-commit-a",
@@ -76,16 +85,20 @@ def test_get_revisions():
     )
 
 
-@mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
-def test_get_model_dir_some():
+@mock.patch(
+    "blackfish.server.remote.session.Connection", new_callable=_mock_connection_class
+)
+def test_get_model_dir_some(mock_conn):
     assert (
         utils.get_model_dir("test/model-a", revision="test-commit-a", profile=profile)
         == "/test/cache_dir/.blackfish/models/models--test--model-a"
     )
 
 
-@mock.patch.object(utils.Connection, "sftp", new=mock_sftp)
-def test_get_model_dir_none():
+@mock.patch(
+    "blackfish.server.remote.session.Connection", new_callable=_mock_connection_class
+)
+def test_get_model_dir_none(mock_conn):
     assert (
         utils.get_model_dir("test/model-a", revision="test-commit-e", profile=profile)
         is None

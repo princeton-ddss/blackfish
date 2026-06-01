@@ -84,11 +84,11 @@ build.targets.wheel.packages = [ "src/blackfish" ]
 max_supported_python = "3.13"
 
 [tool.mypy]
+ignore_missing_imports = true
 python_version = "3.12"
+warn_unreachable = true
 strict = true
 show_error_codes = true
-warn_unreachable = true
-ignore_missing_imports = true
 
 [tool.coverage]
 run.omit = [

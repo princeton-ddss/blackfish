@@ -37,6 +37,7 @@ from blackfish.cli.image import list_images
 from blackfish.server.config import config
 from blackfish.server.logger import logger
 from blackfish.cli.classes import ServiceOptions
+from blackfish.utils import set_logging_level
 
 
 DISPLAY_ID_LENGTH = 13
@@ -62,7 +63,10 @@ def _warn_if_no_profiles(home_dir: str) -> None:
 @click.group()
 def main() -> None:  # pragma: no cover
     "A CLI to manage ML models."
-    pass
+
+    # Default to WARNING so library code's debug logs don't surface
+    # in the user's terminal regardless of BLACKFISH_DEBUG.
+    set_logging_level("WARNING")
 
 
 @main.command()
@@ -236,6 +240,10 @@ def start(reload: bool) -> None:  # pragma: no cover
 
     import blackfish.server as server
     from blackfish.server.bootstrap import bootstrap
+
+    # `start` runs the server in-process, so this is where the
+    # BLACKFISH_DEBUG env var actually applies.
+    set_logging_level("DEBUG" if config.DEBUG else "INFO")
 
     bootstrap(config.HOME_DIR)
 

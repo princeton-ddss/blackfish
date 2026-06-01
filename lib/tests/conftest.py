@@ -36,6 +36,22 @@ load_dotenv(".env.test", override=True)
 
 
 @pytest.fixture(autouse=True)
+def _reset_remote_session_pool():
+    """Empty the RemoteSession pool around each test.
+
+    The pool is module-level and would otherwise cache sessions (with their
+    mocked Connections) across tests, breaking the test that mocks
+    blackfish.server.remote.session.Connection — the cached session ignores
+    the new patch.
+    """
+    from blackfish.server import remote
+
+    remote.close_all()
+    yield
+    remote.close_all()
+
+
+@pytest.fixture(autouse=True)
 def _patch_config(monkeypatch: MonkeyPatch) -> None:
     """Patch app configuration for testing."""
 

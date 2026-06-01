@@ -1,13 +1,15 @@
 """WebSocket-based remote file browser.
 
 This module provides a WebSocket endpoint for browsing remote file systems
-via SFTP, with persistent connections for efficient file operations.
+via SFTP. The underlying SSH+SFTP connection is held by
+:mod:`blackfish.server.remote`'s session pool — the WebSocket handler
+acquires it per message rather than holding a dedicated connection for
+the session's lifetime.
 """
 
 from __future__ import annotations
 
 import asyncio
-import errno
 import json
 import os
 import stat
@@ -16,10 +18,10 @@ from enum import StrEnum
 from datetime import datetime
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
-from fabric.connection import Connection
 from litestar import WebSocket
 from litestar.handlers import WebsocketListener
 
+from blackfish.server import remote
 from blackfish.server.logger import logger
 from blackfish.server.models.profile import (
     SlurmProfile,
@@ -28,7 +30,7 @@ from blackfish.server.models.profile import (
 from blackfish.server.config import config as blackfish_config
 
 if TYPE_CHECKING:
-    from paramiko.sftp_client import SFTPClient
+    from blackfish.server.remote import RemoteSession
 
 # WebSocket close codes (RFC 6455)
 WS_CLOSE_NORMAL = 1000  # Normal closure
@@ -132,151 +134,37 @@ def _map_exception_to_error_code(error: Exception) -> ErrorCode:
         return ErrorCode.CONNECTION_ERROR
 
 
-class RemoteFileBrowser:
-    def __init__(self, profile: SlurmProfile) -> None:
-        self.profile = profile
-        self._connection: Connection | None = None
-        self._sftp: "SFTPClient | None" = None
+def _list_directory_entries(
+    sess: "RemoteSession",
+    path: str,
+    show_hidden: bool = False,
+    limit: int = 1000,
+    offset: int = 0,
+) -> tuple[list[FileEntry], int]:
+    """List directory contents as :class:`FileEntry` models with pagination.
 
-    def connect(self) -> None:
-        """Establish SSH connection and open SFTP session."""
-        if self.profile.is_local():
-            raise ValueError("Profile must be a remote SlurmProfile")
+    Returns ``(entries, total_count)`` — ``total_count`` reflects the count
+    after the ``show_hidden`` filter but before pagination, so the caller
+    can render an accurate "X of Y" indicator.
+    """
+    try:
+        attrs = sess.sftp.listdir_attr(path)
+    except (FileNotFoundError, PermissionError):
+        raise
+    except Exception as e:
+        logger.error(f"SFTP listdir error: {e}")
+        raise OSError(str(e)) from e
 
-        self._connection = Connection(
-            host=self.profile.host,
-            user=self.profile.user,
-            connect_kwargs={
-                "timeout": 15,
-                "banner_timeout": 10,
-            },
-        )
-        try:
-            self._connection.open()
-            self._sftp = self._connection.sftp()
-        except Exception:
-            if self._connection:
-                try:
-                    self._connection.close()
-                except Exception as cleanup_error:
-                    logger.warning(f"Error during connection cleanup: {cleanup_error}")
-                self._connection = None
-            raise
-        logger.info(
-            f"SFTP connection established to {self.profile.user}@{self.profile.host}"
-        )
+    if not show_hidden:
+        attrs = [a for a in attrs if not a.filename.startswith(".")]
 
-    def disconnect(self) -> None:
-        """Close SFTP session and SSH connection."""
-        if self._sftp:
-            try:
-                self._sftp.close()
-            except Exception as e:
-                logger.warning(f"Error closing SFTP session: {e}")
-        if self._connection:
-            try:
-                self._connection.close()
-            except Exception as e:
-                logger.warning(f"Error closing SSH connection: {e}")
-        self._sftp = None
-        self._connection = None
-        logger.info("SFTP connection closed")
+    total_count = len(attrs)
+    page = attrs[offset : offset + limit]
 
-    def __enter__(self) -> "RemoteFileBrowser":
-        self.connect()
-        return self
-
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        self.disconnect()
-
-    @property
-    def sftp(self) -> "SFTPClient":
-        """Get the active SFTP client."""
-        if self._sftp is None:
-            raise RuntimeError("SFTP connection not established")
-        return self._sftp
-
-    def get_home_dir(self) -> str:
-        """Get the home directory on the remote server."""
-        return self.sftp.normalize(".")
-
-    def list_dir(
-        self,
-        path: str,
-        show_hidden: bool = False,
-        limit: int = 1000,
-        offset: int = 0,
-    ) -> tuple[list[FileEntry], int]:
-        """List directory contents with pagination.
-
-        Args:
-            path: Absolute path to directory
-            show_hidden: Include hidden files (starting with .)
-            limit: Maximum number of entries to return
-            offset: Number of entries to skip
-
-        Returns:
-            Tuple of (list of FileEntry models, total count)
-        """
-        try:
-            entries = self.sftp.listdir_attr(path)
-        except (FileNotFoundError, PermissionError):
-            raise
-        except Exception as e:
-            logger.error(f"SFTP listdir error: {e}")
-            raise OSError(str(e)) from e
-
-        # Filter hidden files first
-        if not show_hidden:
-            entries = [e for e in entries if not e.filename.startswith(".")]
-
-        total_count = len(entries)
-
-        # Apply pagination
-        entries = entries[offset : offset + limit]
-
-        results = []
-        for attr in entries:
-            results.append(
-                FileEntry(
-                    name=attr.filename,
-                    path=os.path.join(path, attr.filename),
-                    is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
-                    size=attr.st_size or 0,
-                    modified_at=(
-                        datetime.fromtimestamp(attr.st_mtime)
-                        if attr.st_mtime
-                        else datetime.now()
-                    ),
-                    permissions=(
-                        _format_permissions(attr.st_mode & 0o777)
-                        if attr.st_mode
-                        else "rwxrwxrwx"
-                    ),
-                )
-            )
-        return results, total_count
-
-    def stat(self, path: str) -> FileEntry:
-        """Get file statistics.
-
-        Args:
-            path: Absolute path to file or directory
-
-        Returns:
-            FileEntry model
-        """
-        try:
-            attr = self.sftp.stat(path)
-        except (FileNotFoundError, PermissionError):
-            raise
-        except Exception as e:
-            logger.error(f"SFTP stat error: {e}")
-            raise OSError(str(e)) from e
-
-        return FileEntry(
-            name=os.path.basename(path),
-            path=path,
+    return [
+        FileEntry(
+            name=attr.filename,
+            path=os.path.join(path, attr.filename),
             is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
             size=attr.st_size or 0,
             modified_at=(
@@ -290,101 +178,45 @@ class RemoteFileBrowser:
                 else "rwxrwxrwx"
             ),
         )
+        for attr in page
+    ], total_count
 
-    def exists(self, path: str) -> bool:
-        """Check if path exists.
 
-        Args:
-            path: Absolute path to check
-
-        Returns:
-            True if path exists
-        """
-        try:
-            self.sftp.stat(path)
-            return True
-        except FileNotFoundError:
-            return False
-        except Exception as e:
-            logger.error(f"SFTP exists check error: {e}")
-            raise OSError(str(e)) from e
-
-    def mkdir(self, path: str) -> None:
-        """Create directory.
-
-        Args:
-            path: Absolute path to create
-        """
-        try:
-            self.sftp.mkdir(path)
-        except (FileNotFoundError, PermissionError):
-            raise
-        except IOError as e:
-            # Use errno codes for reliable error detection (locale-independent)
-            if getattr(e, "errno", None) == errno.EEXIST:
-                raise ValueError(f"Directory already exists: {path}") from e
-            logger.error(f"SFTP mkdir error: {e}")
-            raise OSError(str(e)) from e
-        except Exception as e:
-            logger.error(f"SFTP mkdir error: {e}")
-            raise OSError(str(e)) from e
-
-    def delete(self, path: str) -> None:
-        """Delete file or directory.
-
-        Args:
-            path: Absolute path to delete
-        """
-        try:
-            attr = self.sftp.stat(path)
-            if stat.S_ISDIR(attr.st_mode) if attr.st_mode else False:
-                self.sftp.rmdir(path)
-            else:
-                self.sftp.remove(path)
-        except (FileNotFoundError, PermissionError):
-            raise
-        except IOError as e:
-            # Use errno codes for reliable error detection (locale-independent)
-            # ENOTEMPTY indicates directory is not empty
-            if getattr(e, "errno", None) == errno.ENOTEMPTY:
-                raise ValueError(f"Directory not empty: {path}") from e
-            logger.error(f"SFTP delete error: {e}")
-            raise OSError(str(e)) from e
-        except Exception as e:
-            logger.error(f"SFTP delete error: {e}")
-            raise OSError(str(e)) from e
-
-    def rename(self, old_path: str, new_path: str) -> None:
-        """Rename file or directory.
-
-        Args:
-            old_path: Current absolute path
-            new_path: New absolute path
-        """
-        try:
-            self.sftp.rename(old_path, new_path)
-        except (FileNotFoundError, PermissionError):
-            raise
-        except Exception as e:
-            logger.error(f"SFTP rename error: {e}")
-            raise OSError(str(e)) from e
+def _stat_entry(sess: "RemoteSession", path: str) -> FileEntry:
+    """Stat ``path`` and return a :class:`FileEntry`."""
+    attr = sess.stat(path)
+    return FileEntry(
+        name=os.path.basename(path),
+        path=path,
+        is_dir=stat.S_ISDIR(attr.st_mode) if attr.st_mode else False,
+        size=attr.st_size or 0,
+        modified_at=(
+            datetime.fromtimestamp(attr.st_mtime) if attr.st_mtime else datetime.now()
+        ),
+        permissions=(
+            _format_permissions(attr.st_mode & 0o777) if attr.st_mode else "rwxrwxrwx"
+        ),
+    )
 
 
 class RemoteFileBrowserSession(WebsocketListener):
-    """WebSocket handler for remote file browsing with persistent SFTP connection."""
+    """WebSocket handler for remote file browsing.
+
+    The underlying SSH+SFTP connection is held by the shared pool in
+    :mod:`blackfish.server.remote`; each message acquires the pooled
+    session for the duration of one operation. Between user actions
+    the connection sits idle in the pool, available to other consumers.
+    """
 
     path = "/ws/files/{profile_name:str}"
 
-    browser: RemoteFileBrowser | None = None
+    profile: SlurmProfile | None = None
     profile_name: str | None = None
 
     async def on_accept(
         self, socket: WebSocket[Any, Any, Any], profile_name: str
     ) -> None:
-        """Handle WebSocket connection acceptance.
-
-        Validates the profile and establishes SFTP connection.
-        """
+        """Validate the profile and probe the connection."""
         self.profile_name = profile_name
 
         try:
@@ -428,17 +260,15 @@ class RemoteFileBrowserSession(WebsocketListener):
             await socket.close(code=WS_CLOSE_POLICY_VIOLATION)
             return
 
+        # Probe by acquiring the pooled session and reading the home dir;
+        # this surfaces auth/connection errors immediately on connect rather
+        # than on the first user message.
+        def _probe() -> str:
+            with remote.acquire(profile.host, profile.user) as sess:
+                return sess.home_dir()
+
         try:
-            self.browser = RemoteFileBrowser(profile)
-            await asyncio.to_thread(self.browser.connect)
-            home_dir = await asyncio.to_thread(self.browser.get_home_dir)
-            await socket.send_json(
-                {
-                    "status": "connected",
-                    "profile": profile_name,
-                    "home_dir": home_dir,
-                }
-            )
+            home_dir = await asyncio.to_thread(_probe)
         except Exception as e:
             logger.error(f"Failed to establish SFTP connection: {e}")
             await socket.send_json(
@@ -451,16 +281,21 @@ class RemoteFileBrowserSession(WebsocketListener):
                 }
             )
             await socket.close(code=WS_CLOSE_NORMAL)
+            return
+
+        self.profile = profile
+        await socket.send_json(
+            {
+                "status": "connected",
+                "profile": profile_name,
+                "home_dir": home_dir,
+            }
+        )
 
     async def on_disconnect(self, socket: WebSocket[Any, Any, Any]) -> None:
-        """Handle WebSocket disconnection - clean up SFTP connection."""
-        if self.browser:
-            try:
-                await asyncio.to_thread(self.browser.disconnect)
-            except Exception as e:
-                logger.warning(f"Error during disconnect cleanup: {e}")
-            self.browser = None
+        """Pool manages connection lifecycle; nothing to release here."""
         logger.info(f"WebSocket disconnected for profile {self.profile_name}")
+        self.profile = None
 
     async def on_receive(self, data: str) -> str:
         """Handle incoming WebSocket messages.
@@ -537,7 +372,8 @@ class RemoteFileBrowserSession(WebsocketListener):
         Returns:
             Response dict
         """
-        if self.browser is None:
+        profile = self.profile
+        if profile is None:
             return {
                 "status": "error",
                 "error": {
@@ -547,65 +383,67 @@ class RemoteFileBrowserSession(WebsocketListener):
             }
 
         try:
-            match message:
-                case ListMessage():
-                    entries, total = self.browser.list_dir(
-                        message.path,
-                        show_hidden=message.show_hidden,
-                        limit=message.limit,
-                        offset=message.offset,
-                    )
-                    return {
-                        "id": message.id,
-                        "status": "ok",
-                        "action": message.action,
-                        "entries": [e.model_dump(mode="json") for e in entries],
-                        "total": total,
-                        "limit": message.limit,
-                        "offset": message.offset,
-                    }
+            with remote.acquire(profile.host, profile.user) as sess:
+                match message:
+                    case ListMessage():
+                        entries, total = _list_directory_entries(
+                            sess,
+                            message.path,
+                            show_hidden=message.show_hidden,
+                            limit=message.limit,
+                            offset=message.offset,
+                        )
+                        return {
+                            "id": message.id,
+                            "status": "ok",
+                            "action": message.action,
+                            "entries": [e.model_dump(mode="json") for e in entries],
+                            "total": total,
+                            "limit": message.limit,
+                            "offset": message.offset,
+                        }
 
-                case StatMessage():
-                    entry = self.browser.stat(message.path)
-                    return {
-                        "id": message.id,
-                        "status": "ok",
-                        "action": message.action,
-                        "entry": entry.model_dump(mode="json"),
-                    }
+                    case StatMessage():
+                        entry = _stat_entry(sess, message.path)
+                        return {
+                            "id": message.id,
+                            "status": "ok",
+                            "action": message.action,
+                            "entry": entry.model_dump(mode="json"),
+                        }
 
-                case ExistsMessage():
-                    exists = self.browser.exists(message.path)
-                    return {
-                        "id": message.id,
-                        "status": "ok",
-                        "action": message.action,
-                        "data": {"exists": exists},
-                    }
+                    case ExistsMessage():
+                        exists = sess.exists(message.path)
+                        return {
+                            "id": message.id,
+                            "status": "ok",
+                            "action": message.action,
+                            "data": {"exists": exists},
+                        }
 
-                case MkdirMessage():
-                    self.browser.mkdir(message.path)
-                    return {
-                        "id": message.id,
-                        "status": "ok",
-                        "action": message.action,
-                    }
+                    case MkdirMessage():
+                        sess.mkdir(message.path)
+                        return {
+                            "id": message.id,
+                            "status": "ok",
+                            "action": message.action,
+                        }
 
-                case DeleteMessage():
-                    self.browser.delete(message.path)
-                    return {
-                        "id": message.id,
-                        "status": "ok",
-                        "action": message.action,
-                    }
+                    case DeleteMessage():
+                        sess.delete(message.path)
+                        return {
+                            "id": message.id,
+                            "status": "ok",
+                            "action": message.action,
+                        }
 
-                case RenameMessage():
-                    self.browser.rename(message.old_path, message.new_path)
-                    return {
-                        "id": message.id,
-                        "status": "ok",
-                        "action": message.action,
-                    }
+                    case RenameMessage():
+                        sess.rename(message.old_path, message.new_path)
+                        return {
+                            "id": message.id,
+                            "status": "ok",
+                            "action": message.action,
+                        }
 
         except (FileNotFoundError, PermissionError, ValueError, OSError) as e:
             return {

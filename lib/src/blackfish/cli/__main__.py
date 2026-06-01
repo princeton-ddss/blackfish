@@ -212,13 +212,17 @@ profile.add_command(rename_profile, "rename")
 
 @main.command()
 @click.option(
-    "--reload",
+    "--reload/--no-reload",
     "-r",
-    is_flag=True,
-    default=False,
-    help="Automatically reload changes to the application.",
+    default=None,
+    help=(
+        "Automatically reload changes to the application. "
+        "Defaults to on when BLACKFISH_DEBUG=1, off otherwise. "
+        "Pass --no-reload to disable on shared/HPC filesystems where "
+        "the watcher's lstat polling can starve the event loop."
+    ),
 )
-def start(reload: bool) -> None:  # pragma: no cover
+def start(reload: bool | None) -> None:  # pragma: no cover
     """Start the blackfish app.
 
     Application configuration is based on the following local environment variables:
@@ -315,7 +319,8 @@ def start(reload: bool) -> None:  # pragma: no cover
     except Exception as e:
         logger.warning(f"TigerFlow version check failed: {e}")
 
-    reload = True if config.DEBUG else reload
+    if reload is None:
+        reload = config.DEBUG
 
     if __name__ == "blackfish.cli.__main__":
         uvicorn.run(

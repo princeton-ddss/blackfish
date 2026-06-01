@@ -22,6 +22,11 @@ with — for example, by exporting it in your shell profile or sourcing a shared
 
 !!! note
 
+    The CLI communicates with the API over plain HTTP and is only intended
+    to be used with an API running on the same system.
+
+!!! note
+
     The settings for the REST API are determined when the Blackfish application is started via `blackfish start`. Subsequent interactions with the API via the command line assume that the CLI is using the same configuration and will fail if this is not the case. For example, if you start Blackfish with `BLACKFISH_PORT=8081` and then try to run commands in a new terminal where `BLACKFISH_PORT` isn't set, the CLI will not be able to communicate with the API.
 
 ## Profiles

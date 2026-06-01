@@ -18,7 +18,6 @@ you want to shell out to a command; reach for ``acquire`` when you want SFTP
 or repeated operations against the same host.
 """
 
-from blackfish.server.config import config
 from blackfish.server.remote.exec import (
     CompletedProcess,
     DEFAULT_TIMEOUT,
@@ -32,8 +31,12 @@ from blackfish.server.remote.exec import (
     ssh,
 )
 
-# Underscore-prefixed helpers retained at the package level so test code
-# (which patches them) doesn't have to know about the internal submodule split.
+# Re-exported for test compatibility only — not part of the public API.
+# Tests patch `remote.config` (the BlackfishConfig singleton) and
+# `remote._ssh_transport_error` / `remote._ensure_socket_dir`; bind them at
+# the package level so test code doesn't need to know about the internal
+# submodule split.
+from blackfish.server.config import config  # noqa: F401
 from blackfish.server.remote.exec import (  # noqa: F401
     _ensure_socket_dir,
     _ssh_transport_error,
@@ -56,7 +59,6 @@ __all__ = [
     "RemoteTimeout",
     "acquire",
     "close_all",
-    "config",
     "run",
     "scp",
     "ssh",

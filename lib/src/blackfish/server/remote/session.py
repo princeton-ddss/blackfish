@@ -47,6 +47,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Iterator
 
 from fabric.connection import Connection
+from litestar.exceptions import NotFoundException, ValidationException
 
 from blackfish.server.logger import logger
 
@@ -58,6 +59,20 @@ if TYPE_CHECKING:
 # acquire — partly to free resources, partly to preempt connections the SSH
 # server has silently dropped on its end after a long idle period.
 _IDLE_TIMEOUT_SECONDS = 300.0
+
+# Exception types we trust to be "the operation was wrong, but the session
+# is healthy." Anything outside this set is treated as a transport-class
+# failure: the session is closed in acquire()'s except-path so the next
+# acquire opens a fresh connection. Resetting a healthy session is cheap
+# (one extra handshake on next call); reusing a dead one is the costly
+# mistake.
+_DOMAIN_EXCEPTIONS: tuple[type[BaseException], ...] = (
+    FileNotFoundError,
+    PermissionError,
+    ValueError,
+    ValidationException,
+    NotFoundException,
+)
 
 
 class RemoteSession:
@@ -241,6 +256,16 @@ def acquire(host: str, user: str) -> Iterator[RemoteSession]:
     single operation per ``(host, user)`` runs at a time. Opens the
     underlying connection lazily, and reopens it on the next acquire if
     the session has been idle past the idle timeout.
+
+    Exception handling:
+    - On success or a known domain exception (file not found, permission
+      denied, etc.), the idle clock is refreshed and the session is reused
+      for the next acquire.
+    - On any other exception — treated as transport-class — the underlying
+      connection is closed so the next acquire opens a fresh one. We can't
+      reliably distinguish "connection silently dropped" from "paramiko
+      bug" from inside an exception handler, so we err on the side of
+      resetting; a wasted handshake is cheaper than a stuck dead session.
     """
     session = _pool.get(host, user)
     with session._lock:
@@ -251,7 +276,17 @@ def acquire(host: str, user: str) -> Iterator[RemoteSession]:
             session._open()
         try:
             yield session
-        finally:
+        except _DOMAIN_EXCEPTIONS:
+            session._last_used = time.monotonic()
+            raise
+        except Exception:
+            logger.debug(
+                f"Closing SFTP session to {session.user}@{session.host} after "
+                f"unexpected exception (likely transport-class)"
+            )
+            session._close()
+            raise
+        else:
             session._last_used = time.monotonic()
 
 

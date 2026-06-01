@@ -674,7 +674,7 @@ class TestProfileRename:
         mock_response.ok = True
 
         with patch(
-            "blackfish.cli.profile.requests.put", return_value=mock_response
+            "blackfish.cli.profile.api.put", return_value=mock_response
         ) as mock_put:
             result = cli_runner.invoke(main, ["profile", "rename", "old", "new"])
 
@@ -691,7 +691,7 @@ class TestProfileRename:
         mock_response.status_code = 409
         mock_response.json.return_value = {"detail": "Profile 'new' already exists."}
 
-        with patch("blackfish.cli.profile.requests.put", return_value=mock_response):
+        with patch("blackfish.cli.profile.api.put", return_value=mock_response):
             result = cli_runner.invoke(main, ["profile", "rename", "old", "new"])
 
         assert result.exit_code == 1
@@ -699,7 +699,7 @@ class TestProfileRename:
 
     def test_rename_connection_error(self, cli_runner):
         with patch(
-            "blackfish.cli.profile.requests.put",
+            "blackfish.cli.profile.api.put",
             side_effect=requests.exceptions.ConnectionError("refused"),
         ):
             result = cli_runner.invoke(main, ["profile", "rename", "old", "new"])

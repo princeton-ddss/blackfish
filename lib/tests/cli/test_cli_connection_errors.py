@@ -23,7 +23,7 @@ TRANSPORT_ERRORS = [
 def test_ls_connection_error(exc):
     """`ls` reports a friendly error when the API is unreachable."""
     runner = CliRunner()
-    with patch("blackfish.cli.__main__.requests.get", side_effect=exc("boom")):
+    with patch("blackfish.cli.__main__.api.get", side_effect=exc("boom")):
         result = runner.invoke(ls, [])
 
     assert result.exit_code == 0
@@ -34,7 +34,7 @@ def test_ls_connection_error(exc):
 def test_rm_connection_error(exc):
     """`rm` reports a friendly error when the API is unreachable."""
     runner = CliRunner()
-    with patch("blackfish.cli.__main__.requests.delete", side_effect=exc("boom")):
+    with patch("blackfish.cli.__main__.api.delete", side_effect=exc("boom")):
         result = runner.invoke(rm, [])
 
     assert result.exit_code == 0
@@ -45,7 +45,7 @@ def test_rm_connection_error(exc):
 def test_prune_connection_error(exc):
     """`prune` reports a friendly error when the API is unreachable."""
     runner = CliRunner()
-    with patch("blackfish.cli.__main__.requests.delete", side_effect=exc("boom")):
+    with patch("blackfish.cli.__main__.api.delete", side_effect=exc("boom")):
         result = runner.invoke(prune, input="y\n")
 
     assert result.exit_code == 0
@@ -56,7 +56,7 @@ def test_prune_connection_error(exc):
 def test_details_connection_error(exc):
     """`details` reports a friendly error when the API is unreachable."""
     runner = CliRunner()
-    with patch("blackfish.cli.__main__.requests.get", side_effect=exc("boom")):
+    with patch("blackfish.cli.__main__.api.get", side_effect=exc("boom")):
         result = runner.invoke(details, ["abc123"])
 
     assert result.exit_code == 0

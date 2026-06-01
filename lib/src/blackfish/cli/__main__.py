@@ -11,6 +11,7 @@ from log_symbols.symbols import LogSymbols
 from typing import Optional, cast
 from dataclasses import asdict
 
+from blackfish.cli import api
 from blackfish.cli.services.text_generation import run_text_generation
 from blackfish.cli.services.speech_recognition import run_speech_recognition
 from blackfish.cli.batch import (
@@ -463,7 +464,7 @@ def stop(service_id: str) -> None:  # pragma: no cover
         # If it's not a valid UUID, try to find a matching service by abbreviated ID
         with yaspin(text="Looking up service...") as spinner:
             try:
-                res = requests.get(f"http://{config.HOST}:{config.PORT}/api/services")
+                res = api.get("/api/services")
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
                 spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
                 spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -491,10 +492,7 @@ def stop(service_id: str) -> None:  # pragma: no cover
 
     with yaspin(text="Stopping service...") as spinner:
         try:
-            res = requests.put(
-                f"http://{config.HOST}:{config.PORT}/api/services/{full_service_id}/stop",
-                json={},
-            )
+            res = api.put(f"/api/services/{full_service_id}/stop", json={})
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -532,10 +530,7 @@ def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
 
     with yaspin(text="Deleting service...") as spinner:
         try:
-            res = requests.delete(
-                f"http://{config.HOST}:{config.PORT}/api/services",
-                params=params,
-            )
+            res = api.delete("/api/services", params=params)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -575,9 +570,7 @@ def prune() -> None:  # pragma: no cover
 
     with yaspin(text="Deleting service...") as spinner:
         try:
-            res = requests.delete(
-                f"http://{config.HOST}:{config.PORT}/api/services/prune"
-            )
+            res = api.delete("/api/services/prune")
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -606,8 +599,8 @@ def details(service_id: str) -> None:  # pragma: no cover
 
     with yaspin(text="Fetching service...") as spinner:
         try:
-            res = requests.get(
-                f"http://{config.HOST}:{config.PORT}/api/services/{service_id}",
+            res = api.get(
+                f"/api/services/{service_id}",
                 params={"refresh": "true"},
             )  # fresh data 🥬
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
@@ -735,9 +728,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     with yaspin(text="Fetching services...") as spinner:
         params["refresh"] = "true"
         try:
-            res = requests.get(
-                f"http://{config.HOST}:{config.PORT}/api/services", params=params
-            )  # fresh data 🥬
+            res = api.get("/api/services", params=params)  # fresh data 🥬
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
             spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -834,17 +825,15 @@ def models_ls(
 
     from prettytable import PrettyTable, TableStyle
 
-    params = f"refresh={refresh}"
+    params: dict[str, str] = {"refresh": str(refresh)}
     if profile is not None:
-        params += f"&profile={profile}"
+        params["profile"] = profile
     if image is not None:
-        params += f"&image={image}"
+        params["image"] = image
 
     with yaspin(text="Fetching models") as spinner:
         try:
-            res = requests.get(
-                f"http://{config.HOST}:{config.PORT}/api/models?{params}"
-            )
+            res = api.get("/api/models", params=params)
             if not res.ok:
                 spinner.text = f"Blackfish API encountered an error: {res.status_code}"
                 spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -956,8 +945,8 @@ def models_add(
 
     with yaspin(text="Inserting model to database...") as spinner:
         try:
-            res = requests.post(
-                f"http://{config.HOST}:{config.PORT}/api/models",
+            res = api.post(
+                "/api/models",
                 json={
                     "repo": model.repo,
                     "profile": model.profile,
@@ -1050,8 +1039,8 @@ def models_remove(
     if success:
         with yaspin(text="Updating database...") as spinner:
             try:
-                res = requests.delete(
-                    f"http://{config.HOST}:{config.PORT}/api/models",
+                res = api.delete(
+                    "/api/models",
                     params={
                         "repo_id": repo_id,
                         "profile": profile,

@@ -120,7 +120,7 @@ def test_list_models(
     if refresh:
         cmd.append("-r")
 
-    with patch("blackfish.cli.__main__.requests.get") as mock_get:
+    with patch("blackfish.cli.__main__.api.get") as mock_get:
         mock_response_obj = Mock()
         mock_response_obj.ok = mock_response["status_code"] == 200
         mock_response_obj.status_code = mock_response["status_code"]
@@ -129,15 +129,16 @@ def test_list_models(
 
         result = cli_runner.invoke(main, cmd)
 
-    # Verify request was made with correct parameters
+    # Verify request was made with correct path and params
     mock_get.assert_called_once()
-    call_url = mock_get.call_args[0][0]
-    assert f"http://{mock_config.HOST}:{mock_config.PORT}/api/models" in call_url
-    assert f"refresh={refresh}" in call_url
+    call_path = mock_get.call_args[0][0]
+    call_params = mock_get.call_args.kwargs.get("params", {})
+    assert call_path == "/api/models"
+    assert call_params.get("refresh") == str(refresh)
     if profile:
-        assert f"profile={profile}" in call_url
+        assert call_params.get("profile") == profile
     if image:
-        assert f"image={image}" in call_url
+        assert call_params.get("image") == image
 
     assert result.exit_code == expected_exit_code
     assert expected_in_output in result.output
@@ -261,7 +262,7 @@ def test_add_model(
             side_effect=lambda _home, name: name if name is not None else "default",
         ),
         patch("blackfish.server.models.model.add_model") as mock_add_model,
-        patch("blackfish.cli.__main__.requests.post") as mock_post,
+        patch("blackfish.cli.__main__.api.post") as mock_post,
     ):
         # Mock profile deserialization
         if not profile_exists:
@@ -452,7 +453,7 @@ def test_remove_model(
             side_effect=lambda _home, name: name if name is not None else "default",
         ),
         patch("blackfish.server.models.model.remove_model") as mock_remove_model,
-        patch("blackfish.cli.__main__.requests.delete") as mock_delete,
+        patch("blackfish.cli.__main__.api.delete") as mock_delete,
     ):
         # Mock profile deserialization
         if not profile_exists:
@@ -499,10 +500,7 @@ def test_remove_model(
                 # Verify database deletion was attempted
                 mock_delete.assert_called_once()
                 call_args = mock_delete.call_args
-                assert (
-                    f"http://{mock_config.HOST}:{mock_config.PORT}/api/models"
-                    in call_args[0][0]
-                )
+                assert call_args[0][0] == "/api/models"
                 assert call_args[1]["params"]["repo_id"] == repo_id
                 assert call_args[1]["params"]["profile"] == profile
                 assert call_args[1]["params"]["revision"] == revision
@@ -540,7 +538,7 @@ def test_list_models_connection_error(cli_runner):
 
     with (
         patch("blackfish.server.config.config") as mock_config,
-        patch("blackfish.cli.__main__.requests.get") as mock_get,
+        patch("blackfish.cli.__main__.api.get") as mock_get,
     ):
         # Mock config
         mock_config.HOST = "localhost"
@@ -565,7 +563,7 @@ def test_add_model_connection_error(cli_runner):
             side_effect=lambda _home, name: name if name is not None else "default",
         ),
         patch("blackfish.server.models.model.add_model") as mock_add_model,
-        patch("blackfish.cli.__main__.requests.post") as mock_post,
+        patch("blackfish.cli.__main__.api.post") as mock_post,
         patch("blackfish.server.config.config") as mock_config,
     ):
         # Mock config
@@ -606,7 +604,7 @@ def test_remove_model_connection_error(cli_runner):
             side_effect=lambda _home, name: name if name is not None else "default",
         ),
         patch("blackfish.server.models.model.remove_model") as mock_remove_model,
-        patch("blackfish.cli.__main__.requests.delete") as mock_delete,
+        patch("blackfish.cli.__main__.api.delete") as mock_delete,
         patch("blackfish.server.config.config") as mock_config,
     ):
         # Mock config

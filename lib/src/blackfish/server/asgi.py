@@ -203,6 +203,16 @@ def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:  # type
     if AUTH_TOKEN is None:
         logger.error("AUTH_TOKEN is not set. Cannot authenticate user.")
         raise InternalServerException(detail="Authentication token is not set.")
+    # Bearer header takes precedence — used by the CLI and other scripted
+    # clients. Falls back to the session cookie, which is what the dashboard
+    # sets via /api/login.
+    auth_header = connection.headers.get("authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        bearer = auth_header.split(" ", 1)[1].strip()
+        if bcrypt.checkpw(bearer.encode(), AUTH_TOKEN):
+            return
+        logger.debug("Invalid bearer token. Raising NotAuthorizedException.")
+        raise NotAuthorizedException
     token = connection.session.get("token")
     if token is None:
         logger.debug("Session token is None. Raising NotAuthorizedException.")

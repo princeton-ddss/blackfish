@@ -160,7 +160,7 @@ def test_cli_batch_stop(
 
     # Mock the requests.put call
     with (
-        patch("blackfish.cli.__main__.requests.put") as mock_put,
+        patch("blackfish.cli.__main__.api.put") as mock_put,
         patch("blackfish.cli.__main__.config") as mock_config,
         patch(
             "blackfish.server.models.profile.deserialize_profile"
@@ -287,7 +287,7 @@ def test_cli_batch_rm(
 
     # Mock the requests.delete call for valid cases
     with (
-        patch("blackfish.cli.__main__.requests.delete") as mock_delete,
+        patch("blackfish.cli.__main__.api.delete") as mock_delete,
         patch("blackfish.cli.__main__.config") as mock_config,
         patch(
             "blackfish.server.models.profile.deserialize_profile"
@@ -345,7 +345,7 @@ def test_cli_batch_rm_with_errors_displayed(cli_runner):
     ]
 
     with (
-        patch("blackfish.cli.__main__.requests.delete") as mock_delete,
+        patch("blackfish.cli.__main__.api.delete") as mock_delete,
         patch("blackfish.cli.__main__.config") as mock_config,
         patch(
             "blackfish.server.models.profile.deserialize_profile"

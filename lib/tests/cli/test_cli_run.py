@@ -189,7 +189,7 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -227,7 +227,7 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = slurm_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -265,7 +265,7 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -305,7 +305,7 @@ class TestRunTextGeneration:
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
             patch(
-                "blackfish.cli.services.text_generation.requests.post",
+                "blackfish.cli.services.text_generation.api.post",
                 side_effect=requests.exceptions.ConnectionError("refused"),
             ),
         ):
@@ -360,7 +360,7 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -411,7 +411,7 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -467,7 +467,7 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -511,7 +511,7 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -717,9 +717,7 @@ class TestRunSpeechRecognition:
             patch(
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.speech_recognition.requests.post"
-            ) as mock_post,
+            patch("blackfish.cli.services.speech_recognition.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/whisper-tiny"]
@@ -757,9 +755,7 @@ class TestRunSpeechRecognition:
             patch(
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.speech_recognition.requests.post"
-            ) as mock_post,
+            patch("blackfish.cli.services.speech_recognition.api.post") as mock_post,
         ):
             mock_deserialize.return_value = slurm_profile
             mock_get_models.return_value = ["openai/whisper-tiny"]
@@ -797,9 +793,7 @@ class TestRunSpeechRecognition:
             patch(
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.speech_recognition.requests.post"
-            ) as mock_post,
+            patch("blackfish.cli.services.speech_recognition.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/whisper-tiny"]
@@ -839,7 +833,7 @@ class TestRunSpeechRecognition:
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
             patch(
-                "blackfish.cli.services.speech_recognition.requests.post",
+                "blackfish.cli.services.speech_recognition.api.post",
                 side_effect=requests.exceptions.ConnectionError("refused"),
             ),
         ):
@@ -894,9 +888,7 @@ class TestRunSpeechRecognition:
             patch(
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.speech_recognition.requests.post"
-            ) as mock_post,
+            patch("blackfish.cli.services.speech_recognition.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/whisper-tiny"]
@@ -936,9 +928,7 @@ class TestRunSpeechRecognition:
             patch(
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.speech_recognition.requests.post"
-            ) as mock_post,
+            patch("blackfish.cli.services.speech_recognition.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/whisper-tiny"]
@@ -1009,9 +999,7 @@ class TestRunSpeechRecognition:
             patch(
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.speech_recognition.requests.post"
-            ) as mock_post,
+            patch("blackfish.cli.services.speech_recognition.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/whisper-tiny"]
@@ -1077,7 +1065,7 @@ class TestRunGroupOptions:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = slurm_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -1132,7 +1120,7 @@ class TestRunGroupOptions:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -1179,7 +1167,7 @@ class TestRunGroupOptions:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch("blackfish.cli.services.text_generation.requests.post") as mock_post,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]

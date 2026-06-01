@@ -15,16 +15,14 @@ class TestStopCLI:
         full_uuid = "4c2216ea-df22-4bf6-bcea-56964df12af5"
 
         # Mock the PUT request to the stop endpoint
-        with patch("blackfish.cli.__main__.requests.put") as mock_put:
+        with patch("blackfish.cli.__main__.api.put") as mock_put:
             mock_put.return_value.ok = True
             mock_put.return_value.status_code = 200
 
             result = runner.invoke(stop, [full_uuid])
 
             assert result.exit_code == 0
-            mock_put.assert_called_once_with(
-                f"http://localhost:8000/api/services/{full_uuid}/stop", json={}
-            )
+            mock_put.assert_called_once_with(f"/api/services/{full_uuid}/stop", json={})
 
     def test_stop_with_abbreviated_id_single_match(self):
         """Test stopping a service with an abbreviated ID that matches exactly one service."""
@@ -46,19 +44,17 @@ class TestStopCLI:
 
         with (
             patch(
-                "blackfish.cli.__main__.requests.get", return_value=mock_get_response
+                "blackfish.cli.__main__.api.get", return_value=mock_get_response
             ) as mock_get,
             patch(
-                "blackfish.cli.__main__.requests.put", return_value=mock_put_response
+                "blackfish.cli.__main__.api.put", return_value=mock_put_response
             ) as mock_put,
         ):
             result = runner.invoke(stop, [abbreviated_id])
 
             assert result.exit_code == 0
-            mock_get.assert_called_once_with("http://localhost:8000/api/services")
-            mock_put.assert_called_once_with(
-                f"http://localhost:8000/api/services/{full_uuid}/stop", json={}
-            )
+            mock_get.assert_called_once_with("/api/services")
+            mock_put.assert_called_once_with(f"/api/services/{full_uuid}/stop", json={})
 
     def test_stop_with_abbreviated_id_multiple_matches(self):
         """Test stopping a service with an abbreviated ID that matches multiple services."""
@@ -74,12 +70,12 @@ class TestStopCLI:
         ]
 
         with patch(
-            "blackfish.cli.__main__.requests.get", return_value=mock_get_response
+            "blackfish.cli.__main__.api.get", return_value=mock_get_response
         ) as mock_get:
             result = runner.invoke(stop, [abbreviated_id])
 
             assert result.exit_code == 0
-            mock_get.assert_called_once_with("http://localhost:8000/api/services")
+            mock_get.assert_called_once_with("/api/services")
             # Should show an error message about multiple matches
             assert "Multiple services match" in result.output
 
@@ -94,12 +90,12 @@ class TestStopCLI:
         mock_get_response.json.return_value = []
 
         with patch(
-            "blackfish.cli.__main__.requests.get", return_value=mock_get_response
+            "blackfish.cli.__main__.api.get", return_value=mock_get_response
         ) as mock_get:
             result = runner.invoke(stop, [abbreviated_id])
 
             assert result.exit_code == 0
-            mock_get.assert_called_once_with("http://localhost:8000/api/services")
+            mock_get.assert_called_once_with("/api/services")
             # Should show an error message about no matches
             assert "No service found matching" in result.output
 
@@ -114,12 +110,12 @@ class TestStopCLI:
         mock_get_response.status_code = 500
 
         with patch(
-            "blackfish.cli.__main__.requests.get", return_value=mock_get_response
+            "blackfish.cli.__main__.api.get", return_value=mock_get_response
         ) as mock_get:
             result = runner.invoke(stop, [abbreviated_id])
 
             assert result.exit_code == 0
-            mock_get.assert_called_once_with("http://localhost:8000/api/services")
+            mock_get.assert_called_once_with("/api/services")
             # Should show an error message about fetching services
             assert "Failed to fetch services" in result.output
 
@@ -134,14 +130,12 @@ class TestStopCLI:
         mock_put_response.status_code = 404
 
         with patch(
-            "blackfish.cli.__main__.requests.put", return_value=mock_put_response
+            "blackfish.cli.__main__.api.put", return_value=mock_put_response
         ) as mock_put:
             result = runner.invoke(stop, [full_uuid])
 
             assert result.exit_code == 0
-            mock_put.assert_called_once_with(
-                f"http://localhost:8000/api/services/{full_uuid}/stop", json={}
-            )
+            mock_put.assert_called_once_with(f"/api/services/{full_uuid}/stop", json={})
             # Should show an error message about stopping the service
             assert "Failed to stop service" in result.output
 
@@ -166,26 +160,24 @@ class TestStopCLI:
 
         with (
             patch(
-                "blackfish.cli.__main__.requests.get", return_value=mock_get_response
+                "blackfish.cli.__main__.api.get", return_value=mock_get_response
             ) as mock_get,
             patch(
-                "blackfish.cli.__main__.requests.put", return_value=mock_put_response
+                "blackfish.cli.__main__.api.put", return_value=mock_put_response
             ) as mock_put,
         ):
             result = runner.invoke(stop, [abbreviated_id])
 
             assert result.exit_code == 0
-            mock_get.assert_called_once_with("http://localhost:8000/api/services")
-            mock_put.assert_called_once_with(
-                f"http://localhost:8000/api/services/{full_uuid}/stop", json={}
-            )
+            mock_get.assert_called_once_with("/api/services")
+            mock_put.assert_called_once_with(f"/api/services/{full_uuid}/stop", json={})
 
     def test_stop_lookup_connection_error(self):
         """Connection failures while looking up a service are handled gracefully."""
         runner = CliRunner()
 
         with patch(
-            "blackfish.cli.__main__.requests.get",
+            "blackfish.cli.__main__.api.get",
             side_effect=requests.exceptions.ConnectionError("refused"),
         ):
             result = runner.invoke(stop, ["4c22"])
@@ -199,7 +191,7 @@ class TestStopCLI:
         full_uuid = "4c2216ea-df22-4bf6-bcea-56964df12af5"
 
         with patch(
-            "blackfish.cli.__main__.requests.put",
+            "blackfish.cli.__main__.api.put",
             side_effect=requests.exceptions.ConnectionError("refused"),
         ):
             result = runner.invoke(stop, [full_uuid])

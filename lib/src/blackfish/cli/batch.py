@@ -11,6 +11,8 @@ from typing import Any, Optional
 
 import requests
 import rich_click as click
+
+from blackfish.cli import api
 from log_symbols.symbols import LogSymbols
 from prettytable import PrettyTable, TableStyle
 from yaspin import yaspin
@@ -61,7 +63,7 @@ def _resolve_job_id(partial_id: str) -> str | None:
     # Query API to find matching jobs
     with yaspin(text="Looking up job...") as spinner:
         try:
-            res = requests.get(f"http://{config.HOST}:{config.PORT}/api/jobs")
+            res = api.get("/api/jobs")
         except requests.exceptions.ConnectionError:
             spinner.text = f"Failed to connect to Blackfish API on port {config.PORT}."
             spinner.fail(f"{LogSymbols.ERROR.value}")
@@ -160,10 +162,7 @@ def list_batch_jobs(
 
     with yaspin(text="Fetching batch jobs...") as spinner:
         try:
-            res = requests.get(
-                f"http://{config.HOST}:{config.PORT}/api/jobs",
-                params=params if params else None,
-            )
+            res = api.get("/api/jobs", params=params if params else None)
         except requests.exceptions.ConnectionError:
             spinner.text = (
                 f"Failed to connect to Blackfish API on port {config.PORT}. "
@@ -237,10 +236,7 @@ def stop_batch_job(job_id: str) -> None:  # pragma: no cover
 
     with yaspin(text="Stopping batch job...") as spinner:
         try:
-            res = requests.put(
-                f"http://{config.HOST}:{config.PORT}/api/jobs/{full_job_id}/stop",
-                json={},
-            )
+            res = api.put(f"/api/jobs/{full_job_id}/stop", json={})
         except requests.exceptions.ConnectionError:
             spinner.text = (
                 f"Failed to connect to Blackfish API on port {config.PORT}. "
@@ -334,10 +330,7 @@ def remove_batch_job(
 
     with yaspin(text="Deleting batch jobs...") as spinner:
         try:
-            res = requests.delete(
-                f"http://{config.HOST}:{config.PORT}/api/jobs",
-                params=params,
-            )
+            res = api.delete("/api/jobs", params=params)
         except requests.exceptions.ConnectionError:
             spinner.text = (
                 f"Failed to connect to Blackfish API on port {config.PORT}. "
@@ -583,8 +576,8 @@ def run_batch_job(
     # Build and submit the job
     with yaspin(text="Starting batch job...") as spinner:
         try:
-            res = requests.post(
-                f"http://{config.HOST}:{config.PORT}/api/jobs",
+            res = api.post(
+                "/api/jobs",
                 json={
                     "name": name,
                     "task": task,

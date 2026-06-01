@@ -104,3 +104,32 @@ class TestAuthenticationAPI:
 
         # Should require authentication (401)
         assert response.status_code == 401
+
+    async def test_bearer_token_authorizes_guarded_endpoint(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """A valid Bearer token should authorize a guarded endpoint without a cookie."""
+        response = await no_auth_client.get(
+            "/api/services",
+            headers={"Authorization": "Bearer sealsaretasty"},
+        )
+        assert response.status_code == 200
+
+    async def test_bearer_token_invalid_is_rejected(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """An invalid Bearer token should be rejected, not fall through to cookie auth."""
+        response = await no_auth_client.get(
+            "/api/services",
+            headers={"Authorization": "Bearer wrong_token"},
+        )
+        assert response.status_code == 401
+
+    async def test_bearer_takes_precedence_over_cookie(self, client: AsyncTestClient):
+        """A bad Bearer header should reject even if a valid session cookie is set."""
+        # `client` is already cookie-authenticated; a bad bearer must still 401.
+        response = await client.get(
+            "/api/services",
+            headers={"Authorization": "Bearer wrong_token"},
+        )
+        assert response.status_code == 401

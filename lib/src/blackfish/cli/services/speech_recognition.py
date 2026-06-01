@@ -6,6 +6,8 @@ import rich_click as click
 from rich_click import Context
 import requests
 from random import randint
+
+from blackfish.cli import api
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 from dataclasses import asdict
@@ -162,8 +164,8 @@ def run_speech_recognition(
         else:
             with yaspin(text="Starting service...") as spinner:
                 try:
-                    res = requests.post(
-                        f"http://{config.HOST}:{config.PORT}/api/services",
+                    res = api.post(
+                        "/api/services",
                         json={
                             "name": name,
                             "image": "speech_recognition",
@@ -222,8 +224,8 @@ def run_speech_recognition(
         else:
             with yaspin(text="Starting service...") as spinner:
                 try:
-                    res = requests.post(
-                        f"http://{config.HOST}:{config.PORT}/api/services",
+                    res = api.post(
+                        "/api/services",
                         json={
                             "name": name,
                             "image": "speech_recognition",

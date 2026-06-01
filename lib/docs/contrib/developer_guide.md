@@ -71,7 +71,7 @@ The application and CLI pull settings from environment variables:
 | `BLACKFISH_HOME_DIR` | `~/.blackfish` | Application data directory |
 | `BLACKFISH_DEBUG` | `true` | Run in debug mode (no auth) |
 | `BLACKFISH_CONTAINER_PROVIDER` | `docker` | Container runtime (`docker` or `apptainer`) |
-| `BLACKFISH_AUTH_TOKEN` | — | Authentication token (ignored in debug mode) |
+| `BLACKFISH_AUTH_TOKEN` | — | Authentication token. In non-debug mode, the CLI sends it as `Authorization: Bearer <token>`; the dashboard exchanges it for a session cookie via `/api/login`. Ignored in debug mode. |
 
 ### Database Migrations
 

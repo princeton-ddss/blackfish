@@ -10,6 +10,7 @@ from log_symbols.symbols import LogSymbols
 from yaspin import yaspin
 import requests
 
+from blackfish.cli import api
 from blackfish.server.config import config
 from blackfish.server.setup import ProfileManager, ProfileSetupError
 from blackfish.server.models.profile import (
@@ -761,8 +762,8 @@ def rename_profile(old_name: str, new_name: str) -> None:  # pragma: no cover
     """
 
     try:
-        res = requests.put(
-            f"http://{config.HOST}:{config.PORT}/api/profiles/{old_name}/rename",
+        res = api.put(
+            f"/api/profiles/{old_name}/rename",
             json={"new_name": new_name},
         )
     except requests.exceptions.ConnectionError:

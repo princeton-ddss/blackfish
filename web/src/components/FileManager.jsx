@@ -156,7 +156,7 @@ function FileManager({
                             </div>
                         )}
                     </div>
-                    {enableUpload && isRemote ? (
+                    {enableUpload ? (
                         <button
                             onClick={() => setUploadDialogOpen(true)}
                             disabled={status.disabled || operationInProgress}

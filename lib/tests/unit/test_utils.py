@@ -41,7 +41,10 @@ filesystem = {
 class MockSFTPClient:
     @staticmethod
     def listdir(key):
-        return filesystem[key]
+        try:
+            return filesystem[key]
+        except KeyError:
+            raise FileNotFoundError(key)
 
 
 def _mock_connection_class():
@@ -103,6 +106,42 @@ def test_get_model_dir_none(mock_conn):
         utils.get_model_dir("test/model-a", revision="test-commit-e", profile=profile)
         is None
     )
+
+
+@mock.patch(
+    "blackfish.server.remote.session.Connection", new_callable=_mock_connection_class
+)
+def test_get_models_missing_cache_dir_warns_and_returns_partial(mock_conn, capsys):
+    """If cache_dir is missing, return models from home_dir and warn the user."""
+    bad_profile = SlurmProfile(
+        name="test",
+        host="test",
+        user="test",
+        cache_dir="/missing/cache_dir/.blackfish",
+        home_dir="/test/home_dir/.blackfish",
+    )
+    assert set(utils.get_models(bad_profile)) == {"test/model-c", "test/model-d"}
+    captured = capsys.readouterr()
+    assert "/missing/cache_dir/.blackfish/models" in captured.out
+    assert "not found" in captured.out
+
+
+@mock.patch(
+    "blackfish.server.remote.session.Connection", new_callable=_mock_connection_class
+)
+def test_get_models_both_dirs_missing_warns_for_each(mock_conn, capsys):
+    """If both directories are missing, return [] and warn once per directory."""
+    bad_profile = SlurmProfile(
+        name="test",
+        host="test",
+        user="test",
+        cache_dir="/missing/cache_dir/.blackfish",
+        home_dir="/missing/home_dir/.blackfish",
+    )
+    assert utils.get_models(bad_profile) == []
+    captured = capsys.readouterr()
+    assert "/missing/cache_dir/.blackfish/models" in captured.out
+    assert "/missing/home_dir/.blackfish/models" in captured.out
 
 
 # TODO

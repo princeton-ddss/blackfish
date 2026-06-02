@@ -1,7 +1,7 @@
 import os
 import socket
 import datetime
-from typing import Optional
+from typing import Any, Callable, Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
 from blackfish.server import remote
@@ -9,6 +9,34 @@ from blackfish.server.models.profile import BlackfishProfile, SlurmProfile
 from blackfish.server.logger import logger
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
+
+
+def _safe_listdir(
+    listdir: Callable[[str], list[str]],
+    path: str,
+    spinner: Any,
+    host: str,
+) -> list[str]:
+    """``listdir(path)`` that returns ``[]`` for missing/unreadable directories.
+
+    The model search functions walk two directories (cache + home) per
+    profile; if a user deletes one out from under us, we'd rather warn and
+    skip than abort the whole command. ``spinner.write`` prints above the
+    running spinner line so the warning isn't overwritten by the next
+    ``spinner.text = ...`` update.
+    """
+    try:
+        return listdir(path)
+    except FileNotFoundError:
+        spinner.write(
+            f"  {LogSymbols.WARNING.value} Directory {path} not found on {host}, skipping."
+        )
+        return []
+    except PermissionError:
+        spinner.write(
+            f"  {LogSymbols.WARNING.value} Cannot read {path} on {host}, skipping."
+        )
+        return []
 
 
 def get_latest_commit(repo_id: str, revisions: list[str]) -> str:  # pragma: no cover
@@ -28,16 +56,19 @@ def get_models(profile: BlackfishProfile) -> list[str]:
         models = set()
         with yaspin(text=f"Searching {profile.host} for available models") as spinner:
             with remote.acquire(profile.host, profile.user) as sess:
-                sftp = sess.sftp
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in cache directory {default_dir}"
-                model_dirs = sftp.listdir(default_dir)
+                model_dirs = _safe_listdir(
+                    sess.listdir, default_dir, spinner, profile.host
+                )
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     models.add(f"{namespace}/{model}")
                 backup_dir = os.path.join(profile.home_dir, "models")
                 spinner.text = f"Looking in home directory {backup_dir}"
-                model_dirs = sftp.listdir(backup_dir)
+                model_dirs = _safe_listdir(
+                    sess.listdir, backup_dir, spinner, profile.host
+                )
                 for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     _, namespace, model = model_dir.split("--")
                     models.add(f"{namespace}/{model}")
@@ -49,13 +80,13 @@ def get_models(profile: BlackfishProfile) -> list[str]:
         with yaspin(text="Searching localhost for available models") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
             spinner.text = f"Looking in cache directory {default_dir}"
-            model_dirs = os.listdir(default_dir)
+            model_dirs = _safe_listdir(os.listdir, default_dir, spinner, "localhost")
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 models.add(f"{namespace}/{model}")
             backup_dir = os.path.join(profile.home_dir, "models")
             spinner.text = f"Looking in home directory {backup_dir}"
-            model_dirs = os.listdir(backup_dir)
+            model_dirs = _safe_listdir(os.listdir, backup_dir, spinner, "localhost")
             for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 _, namespace, model = model_dir.split("--")
                 models.add(f"{namespace}/{model}")
@@ -74,20 +105,33 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
             text=f"Searching {profile.host} for model {repo_id} commits"
         ) as spinner:
             with remote.acquire(profile.host, profile.user) as sess:
-                sftp = sess.sftp
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in cache directory {default_dir}"
-                model_dirs = sftp.listdir(default_dir)
+                model_dirs = _safe_listdir(
+                    sess.listdir, default_dir, spinner, profile.host
+                )
                 if model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     revisions.update(
-                        sftp.listdir(os.path.join(default_dir, model_dir, "snapshots"))
+                        _safe_listdir(
+                            sess.listdir,
+                            os.path.join(default_dir, model_dir, "snapshots"),
+                            spinner,
+                            profile.host,
+                        )
                     )
                 backup_dir = os.path.join(profile.home_dir, "models")
                 spinner.text = f"Looking in home directory {backup_dir}"
-                model_dirs = sftp.listdir(backup_dir)
+                model_dirs = _safe_listdir(
+                    sess.listdir, backup_dir, spinner, profile.host
+                )
                 if model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                     revisions.update(
-                        sftp.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
+                        _safe_listdir(
+                            sess.listdir,
+                            os.path.join(backup_dir, model_dir, "snapshots"),
+                            spinner,
+                            profile.host,
+                        )
                     )
             spinner.text = f"Found {len(revisions)} snapshots."
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
@@ -99,17 +143,27 @@ def get_revisions(repo_id: str, profile: BlackfishProfile) -> list[str]:
         with yaspin(text=f"Searching localhost for model {repo_id} commits") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
             spinner.text = f"Looking in cache directory {default_dir}"
-            model_dirs = os.listdir(default_dir)
+            model_dirs = _safe_listdir(os.listdir, default_dir, spinner, "localhost")
             if model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 revisions.update(
-                    os.listdir(os.path.join(default_dir, model_dir, "snapshots"))
+                    _safe_listdir(
+                        os.listdir,
+                        os.path.join(default_dir, model_dir, "snapshots"),
+                        spinner,
+                        "localhost",
+                    )
                 )
             backup_dir = os.path.join(profile.home_dir, "models")
             spinner.text = f"Looking in home directory {backup_dir}"
-            model_dirs = os.listdir(backup_dir)
+            model_dirs = _safe_listdir(os.listdir, backup_dir, spinner, "localhost")
             if model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
                 revisions.update(
-                    os.listdir(os.path.join(backup_dir, model_dir, "snapshots"))
+                    _safe_listdir(
+                        os.listdir,
+                        os.path.join(backup_dir, model_dir, "snapshots"),
+                        spinner,
+                        "localhost",
+                    )
                 )
             spinner.text = f"Found {len(revisions)} snapshots."
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
@@ -130,21 +184,30 @@ def get_model_dir(
             text=f"Searching {profile.host} for {repo_id}[{revision}]"
         ) as spinner:
             with remote.acquire(profile.host, profile.user) as sess:
-                sftp = sess.sftp
                 default_dir = os.path.join(profile.cache_dir, "models")
                 spinner.text = f"Looking in default directory {default_dir}"
-                if model_dir in sftp.listdir(default_dir):
-                    if revision in sftp.listdir(
-                        os.path.join(default_dir, model_dir, "snapshots")
+                if model_dir in _safe_listdir(
+                    sess.listdir, default_dir, spinner, profile.host
+                ):
+                    if revision in _safe_listdir(
+                        sess.listdir,
+                        os.path.join(default_dir, model_dir, "snapshots"),
+                        spinner,
+                        profile.host,
                     ):
                         spinner.text = f"Found model {repo_id}!"
                         spinner.ok(f"{LogSymbols.SUCCESS.value}")
                         return os.path.join(default_dir, model_dir)
                 backup_dir = os.path.join(profile.home_dir, "models")
                 spinner.text = f"Looking in backup directory {backup_dir}"
-                if model_dir in sftp.listdir(backup_dir):
-                    if revision in sftp.listdir(
-                        os.path.join(backup_dir, model_dir, "snapshots")
+                if model_dir in _safe_listdir(
+                    sess.listdir, backup_dir, spinner, profile.host
+                ):
+                    if revision in _safe_listdir(
+                        sess.listdir,
+                        os.path.join(backup_dir, model_dir, "snapshots"),
+                        spinner,
+                        profile.host,
                     ):
                         spinner.text = f"Found model {repo_id}!"
                         spinner.ok(f"{LogSymbols.SUCCESS.value}")
@@ -156,18 +219,26 @@ def get_model_dir(
         with yaspin(text=f"Searching localhost for {repo_id}[{revision}]") as spinner:
             default_dir = os.path.join(profile.cache_dir, "models")
             spinner.text = f"Looking in default directory {default_dir}"
-            if model_dir in os.listdir(default_dir):
-                if revision in os.listdir(
-                    os.path.join(default_dir, model_dir, "snapshots")
+            if model_dir in _safe_listdir(
+                os.listdir, default_dir, spinner, "localhost"
+            ):
+                if revision in _safe_listdir(
+                    os.listdir,
+                    os.path.join(default_dir, model_dir, "snapshots"),
+                    spinner,
+                    "localhost",
                 ):
                     spinner.text = f"Found model {repo_id}!"
                     spinner.ok(f"{LogSymbols.SUCCESS.value}")
                     return os.path.join(default_dir, model_dir)
             backup_dir = os.path.join(profile.home_dir, "models")
             spinner.text = f"Looking in backup directory {backup_dir}"
-            if model_dir in os.listdir(backup_dir):
-                if revision in os.listdir(
-                    os.path.join(backup_dir, model_dir, "snapshots")
+            if model_dir in _safe_listdir(os.listdir, backup_dir, spinner, "localhost"):
+                if revision in _safe_listdir(
+                    os.listdir,
+                    os.path.join(backup_dir, model_dir, "snapshots"),
+                    spinner,
+                    "localhost",
                 ):
                     spinner.text = f"Found model {repo_id}!"
                     spinner.ok(f"{LogSymbols.SUCCESS.value}")

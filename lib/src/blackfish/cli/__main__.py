@@ -861,7 +861,10 @@ def models_ls(
             ok = True
             for p in deserialize_profiles(config.HOME_DIR):
                 spinner.text = f"Fetching models for profile '{p.name}'"
-                ok = fetch(p.name) and ok
+                if not fetch(p.name):
+                    # Connection failure: every subsequent call will fail too.
+                    ok = False
+                    break
         else:
             spinner.text = "Fetching models"
             ok = fetch()

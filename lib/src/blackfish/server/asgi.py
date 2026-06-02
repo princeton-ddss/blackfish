@@ -1817,7 +1817,7 @@ async def get_models(
             fs_models = await find_models(matched)
         except (FileNotFoundError, PermissionError, OSError) as e:
             raise ValidationException(
-                detail=f"Profile '{profile}': model directories not accessible: {e}"
+                detail=f"Model directories not accessible: {e}"
             ) from e
 
         # 2. Fetch existing models from DB (scoped to this profile — refresh

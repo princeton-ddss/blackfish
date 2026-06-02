@@ -873,8 +873,12 @@ def models_ls(
             )
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
-        spinner.text = f"Found {len(all_models)} models."
-        spinner.ok(f"{LogSymbols.SUCCESS.value}")
+        suffix = f" ({len(profile_errors)} error(s))" if profile_errors else ""
+        spinner.text = f"Found {len(all_models)} models{suffix}."
+        if profile_errors and not all_models:
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+        else:
+            spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
     for name, message in profile_errors:
         click.echo(f"{LogSymbols.ERROR.value} Profile '{name}': {message}")
@@ -885,7 +889,7 @@ def models_ls(
         tab.align[field] = "l"
     tab.right_padding_width = 3
 
-    if not all_models:
+    if not all_models and not profile_errors:
         click.echo(
             f"{LogSymbols.WARNING.value} No models found. You can try using the"
             " `--refresh` flag to find newly added models."

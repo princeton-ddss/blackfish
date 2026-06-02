@@ -31,24 +31,31 @@ from blackfish.cli.classes import ServiceOptions
 def try_get_model_info(
     profile: BlackfishProfile, repo_id: str, revision: Optional[str] = None
 ) -> Optional[Tuple[str, str]]:
-    if repo_id in get_models(profile):
-        if revision is None:
-            revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
-            click.echo(
-                f"{LogSymbols.WARNING.value} No revision provided. Using latest"
-                f" available commit: {revision}."
-            )
+    try:
+        if repo_id in get_models(profile):
+            if revision is None:
+                revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
+                click.echo(
+                    f"{LogSymbols.WARNING.value} No revision provided. Using latest"
+                    f" available commit: {revision}."
+                )
 
-        model_dir = get_model_dir(repo_id, revision, profile)
-        if model_dir is None:
+            model_dir = get_model_dir(repo_id, revision, profile)
+            if model_dir is None:
+                click.echo(
+                    f"{LogSymbols.ERROR.value} Model directory not found 😔. The requested revision ({revision}) is missing."
+                )
+                return None
+        else:
             click.echo(
-                f"{LogSymbols.ERROR.value} Model directory not found 😔. The requested revision ({revision}) is missing."
+                f"{LogSymbols.ERROR.value} Model {repo_id} is unavailable for profile"
+                f" '{profile.name}'. You can try adding it using `blackfish model add`."
             )
             return None
-    else:
+    except (FileNotFoundError, PermissionError, OSError) as e:
         click.echo(
-            f"{LogSymbols.ERROR.value} Model {repo_id} is unavailable for profile"
-            f" '{profile.name}'. You can try adding it using `blackfish model add`."
+            f"{LogSymbols.ERROR.value} Profile '{profile.name}': model directories"
+            f" not accessible: {e}"
         )
         return None
 
@@ -124,25 +131,32 @@ def run_text_generation(
         )
         return
 
-    if repo_id in get_models(profile):
-        if revision is None:
-            revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
-            click.echo(
-                f"{LogSymbols.WARNING.value} No revision provided. Using latest"
-                f" available commit: {revision}."
-            )
-            model_dir = get_model_dir(repo_id, revision, profile)
-        else:
-            model_dir = get_model_dir(repo_id, revision, profile)
-            if model_dir is None:
+    try:
+        if repo_id in get_models(profile):
+            if revision is None:
+                revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
                 click.echo(
-                    f"{LogSymbols.ERROR.value} Model directory not found 😔. The requested revision ({revision}) is missing."
+                    f"{LogSymbols.WARNING.value} No revision provided. Using latest"
+                    f" available commit: {revision}."
                 )
-                return
-    else:
+                model_dir = get_model_dir(repo_id, revision, profile)
+            else:
+                model_dir = get_model_dir(repo_id, revision, profile)
+                if model_dir is None:
+                    click.echo(
+                        f"{LogSymbols.ERROR.value} Model directory not found 😔. The requested revision ({revision}) is missing."
+                    )
+                    return
+        else:
+            click.echo(
+                f"{LogSymbols.ERROR.value} Unable to find {repo_id} for profile"
+                f" '{profile.name}'."
+            )
+            return
+    except (FileNotFoundError, PermissionError, OSError) as e:
         click.echo(
-            f"{LogSymbols.ERROR.value} Unable to find {repo_id} for profile"
-            f" '{profile.name}'."
+            f"{LogSymbols.ERROR.value} Profile '{profile.name}': model directories"
+            f" not accessible: {e}"
         )
         return
 

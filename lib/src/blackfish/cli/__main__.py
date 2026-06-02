@@ -824,51 +824,76 @@ def models_ls(
     """Show available (downloaded) models."""
 
     from prettytable import PrettyTable, TableStyle
+    from blackfish.server.models.profile import deserialize_profiles
 
-    params: dict[str, str] = {"refresh": str(refresh)}
-    if profile is not None:
-        params["profile"] = profile
+    common_params: dict[str, str] = {"refresh": str(refresh)}
     if image is not None:
-        params["image"] = image
+        common_params["image"] = image
 
-    with yaspin(text="Fetching models") as spinner:
+    all_models: list[dict[str, str]] = []
+    profile_errors: list[tuple[str, str]] = []  # (profile_name, message)
+
+    def fetch(name: str | None = None) -> bool:
+        """Issue one request and accumulate results. Returns False on connection failure."""
+        params = {**common_params}
+        if name is not None:
+            params["profile"] = name
         try:
             res = api.get("/api/models", params=params)
-            if not res.ok:
-                spinner.text = f"Blackfish API encountered an error: {res.status_code}"
-                spinner.fail(f"{LogSymbols.ERROR.value}")
-                return
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-            spinner.text = f"Failed to connect to the Blackfish API. Is Blackfish running on port {config.PORT}?"
+            return False
+        if not res.ok:
+            detail = ""
+            try:
+                detail = res.json().get("detail", "")
+            except Exception:
+                pass
+            profile_errors.append((name or "(all)", detail or res.reason))
+            return True
+        all_models.extend(res.json())
+        return True
+
+    with yaspin(text="Fetching models") as spinner:
+        if profile is not None:
+            spinner.text = f"Fetching models for profile '{profile}'"
+            ok = fetch(profile)
+        elif refresh:
+            ok = True
+            for p in deserialize_profiles(config.HOME_DIR):
+                spinner.text = f"Fetching models for profile '{p.name}'"
+                ok = fetch(p.name) and ok
+        else:
+            spinner.text = "Fetching models"
+            ok = fetch()
+
+        if not ok:
+            spinner.text = (
+                f"Failed to connect to the Blackfish API. "
+                f"Is Blackfish running on port {config.PORT}?"
+            )
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
+        spinner.text = f"Found {len(all_models)} models."
+        spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
-    tab = PrettyTable(
-        field_names=[
-            "REPO",
-            "REVISION",
-            "PROFILE",
-            "IMAGE",
-        ]
-    )
+    for name, message in profile_errors:
+        click.echo(f"{LogSymbols.ERROR.value} Profile '{name}': {message}")
+
+    tab = PrettyTable(field_names=["REPO", "REVISION", "PROFILE", "IMAGE"])
     tab.set_style(TableStyle.PLAIN_COLUMNS)
     for field in tab.field_names:
         tab.align[field] = "l"
     tab.right_padding_width = 3
 
-    if len(res.json()) == 0:
+    if not all_models:
         click.echo(
-            f"{LogSymbols.WARNING.value} No models found. You can try using the `--refresh` flag to find newly added models."
+            f"{LogSymbols.WARNING.value} No models found. You can try using the"
+            " `--refresh` flag to find newly added models."
         )
 
-    for model in res.json():
+    for model in all_models:
         tab.add_row(
-            [
-                model["repo"],
-                model["revision"],
-                model["profile"],
-                model["image"],
-            ]
+            [model["repo"], model["revision"], model["profile"], model["image"]]
         )
     click.echo(tab)
 

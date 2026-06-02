@@ -5,31 +5,28 @@ from blackfish.cli.__main__ import main
 
 
 @pytest.mark.parametrize(
-    "profile, image, refresh, mock_response, expected_exit_code, expected_in_output",
+    "profile, image, refresh, mock_response_models, mock_response_status, expected_in_output",
     [
-        # Basic successful request with models
+        # Basic successful request with models, no filters
         (
             None,
             None,
             False,
-            {
-                "json": [
-                    {
-                        "repo": "openai/whisper-large-v3",
-                        "revision": "main",
-                        "profile": "default",
-                        "image": "speech-recognition",
-                    },
-                    {
-                        "repo": "microsoft/DialoGPT-medium",
-                        "revision": "main",
-                        "profile": "default",
-                        "image": "text-generation",
-                    },
-                ],
-                "status_code": 200,
-            },
-            0,
+            [
+                {
+                    "repo": "openai/whisper-large-v3",
+                    "revision": "main",
+                    "profile": "default",
+                    "image": "speech-recognition",
+                },
+                {
+                    "repo": "microsoft/DialoGPT-medium",
+                    "revision": "main",
+                    "profile": "default",
+                    "image": "text-generation",
+                },
+            ],
+            200,
             "openai/whisper-large-v3",
         ),
         # Empty response - no models found
@@ -37,8 +34,8 @@ from blackfish.cli.__main__ import main
             "default",
             None,
             False,
-            {"json": [], "status_code": 200},
-            0,
+            [],
+            200,
             "No models found",
         ),
         # Server error
@@ -46,56 +43,41 @@ from blackfish.cli.__main__ import main
             None,
             "text-generation",
             False,
-            {"json": {}, "status_code": 500},
-            0,
-            "Blackfish API encountered an error: 500",
+            None,
+            500,
+            "Profile",  # error message mentions the profile in question
         ),
         # With profile filter
         (
             "test-profile",
             None,
             False,
-            {
-                "json": [
-                    {
-                        "repo": "microsoft/DialoGPT-medium",
-                        "revision": "main",
-                        "profile": "test-profile",
-                        "image": "text-generation",
-                    }
-                ],
-                "status_code": 200,
-            },
-            0,
+            [
+                {
+                    "repo": "microsoft/DialoGPT-medium",
+                    "revision": "main",
+                    "profile": "test-profile",
+                    "image": "text-generation",
+                }
+            ],
+            200,
             "microsoft/DialoGPT-medium",
         ),
-        # With image filter and refresh
+        # With profile + image filter + refresh
         (
-            None,
+            "default",
             "speech-recognition",
             True,
-            {
-                "json": [
-                    {
-                        "repo": "openai/whisper-base",
-                        "revision": "main",
-                        "profile": "default",
-                        "image": "speech-recognition",
-                    }
-                ],
-                "status_code": 200,
-            },
-            0,
+            [
+                {
+                    "repo": "openai/whisper-base",
+                    "revision": "main",
+                    "profile": "default",
+                    "image": "speech-recognition",
+                }
+            ],
+            200,
             "openai/whisper-base",
-        ),
-        # Profile warning when no models found for specific profile
-        (
-            "admin",  # not in profile.cfg
-            None,
-            False,
-            {"json": [], "status_code": 200},
-            0,
-            "No models found.",
         ),
     ],
 )
@@ -105,13 +87,12 @@ def test_list_models(
     profile: str,
     image: str,
     refresh: bool,
-    mock_response: dict,
-    expected_exit_code: int,
+    mock_response_models,
+    mock_response_status: int,
     expected_in_output: str,
 ) -> None:
     """Test `blackfish model ls` command."""
 
-    # Prepare command
     cmd = ["model", "ls"]
     if profile:
         cmd.extend(["-p", profile])
@@ -122,15 +103,19 @@ def test_list_models(
 
     with patch("blackfish.cli.__main__.api.get") as mock_get:
         mock_response_obj = Mock()
-        mock_response_obj.ok = mock_response["status_code"] == 200
-        mock_response_obj.status_code = mock_response["status_code"]
-        mock_response_obj.json.return_value = mock_response["json"]
+        mock_response_obj.ok = mock_response_status == 200
+        mock_response_obj.status_code = mock_response_status
+        mock_response_obj.reason = "Internal Server Error"
+        mock_response_obj.json.return_value = (
+            mock_response_models
+            if mock_response_models is not None
+            else {"detail": "Boom"}
+        )
         mock_get.return_value = mock_response_obj
 
         result = cli_runner.invoke(main, cmd)
 
-    # Verify request was made with correct path and params
-    mock_get.assert_called_once()
+    mock_get.assert_called()
     call_path = mock_get.call_args[0][0]
     call_params = mock_get.call_args.kwargs.get("params", {})
     assert call_path == "/api/models"
@@ -140,7 +125,7 @@ def test_list_models(
     if image:
         assert call_params.get("image") == image
 
-    assert result.exit_code == expected_exit_code
+    assert result.exit_code == 0
     assert expected_in_output in result.output
 
 

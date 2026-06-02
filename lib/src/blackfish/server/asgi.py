@@ -330,20 +330,17 @@ async def find_models(profile: Profile) -> list[Model]:
     and profile set. Image and metadata are not set here - they should be
     populated from the database or fetched from HuggingFace Hub.
 
-    Returns:
-        List of Model objects found on filesystem (image and metadata_ are None)
+    Raises:
+        FileNotFoundError, PermissionError, OSError: if either model
+        directory can't be read. The endpoint surfaces these as a 400.
     """
-    models = []
+    models: list[Model] = []
     seen_revisions: set[str] = set()
 
     def scan_directory(base_dir: str, listdir_fn: Callable[[str], list[str]]) -> None:
         """Scan a directory for model folders and revisions."""
         logger.debug(f"Scanning directory: {base_dir}")
-        try:
-            model_dirs = listdir_fn(base_dir)
-        except (FileNotFoundError, OSError) as e:
-            logger.debug(f"Directory not found or inaccessible: {base_dir} ({e})")
-            return
+        model_dirs = listdir_fn(base_dir)
 
         for model_dir in filter(lambda x: x.startswith("models--"), model_dirs):
             try:
@@ -384,8 +381,8 @@ async def find_models(profile: Profile) -> list[Model]:
         with remote.acquire(profile.host, profile.user) as sess:
             cache_dir = os.path.join(profile.cache_dir, "models")
             home_dir = os.path.join(profile.home_dir, "models")
-            scan_directory(cache_dir, sess.sftp.listdir)
-            scan_directory(home_dir, sess.sftp.listdir)
+            scan_directory(cache_dir, sess.listdir)
+            scan_directory(home_dir, sess.listdir)
     else:
         # Local profile: use os.listdir
         cache_dir = os.path.join(profile.cache_dir, "models")
@@ -1799,33 +1796,33 @@ async def get_models(
 
     res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
-        # 1. Scan filesystem to get current models
-        if profile is not None:
-            matched = next((p for p in profiles if p.name == profile), None)
-            if matched is None:
-                logger.warning(
-                    f"Profile '{profile}' not found. Returning an empty list."
-                )
-                return list()
-            fs_models = await find_models(matched)
-        else:
-            gathered = await asyncio.gather(
-                *[find_models(p) for p in profiles], return_exceptions=True
+        # Refresh requires a profile — we need to know which one to scan,
+        # and per-profile errors only make sense when the caller picked
+        # one. Multi-profile refresh is handled CLI-side by fanning out
+        # one request per profile.
+        if profile is None:
+            raise ValidationException(
+                detail="`profile` is required when `refresh=true`."
             )
-            fs_models = []
-            for p, result in zip(profiles, gathered):
-                if isinstance(result, Exception):
-                    logger.error(
-                        f"Failed to find models for profile '{p.name}': {result}"
-                    )
-                elif isinstance(result, list):
-                    fs_models.extend(result)
 
-        # 2. Fetch existing models from DB
-        if profile is not None:
-            existing_query = sa.select(Model).where(Model.profile == profile)
-        else:
-            existing_query = sa.select(Model)
+        # 1. Scan filesystem to get current models
+        matched = next((p for p in profiles if p.name == profile), None)
+        if matched is None:
+            raise NotFoundException(detail=f"Profile '{profile}' not found.")
+
+        # If either model directory can't be read, refuse the refresh
+        # rather than returning a partial result. Most often this means
+        # the user deleted cache_dir or home_dir out from under us.
+        try:
+            fs_models = await find_models(matched)
+        except (FileNotFoundError, PermissionError, OSError) as e:
+            raise ValidationException(
+                detail=f"Profile '{profile}': model directories not accessible: {e}"
+            ) from e
+
+        # 2. Fetch existing models from DB (scoped to this profile — refresh
+        # is single-profile, see the validation at the top of this branch).
+        existing_query = sa.select(Model).where(Model.profile == profile)
         existing_result = await session.execute(existing_query)
         db_models = list(existing_result.scalars().all())
 

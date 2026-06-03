@@ -13,6 +13,7 @@ import {
   CodeBracketIcon,
 } from "@heroicons/react/24/outline";
 
+import { STORAGE_KEYS } from "@/lib/storage";
 import { Page } from "@/components/Page";
 import { TaskContainer } from "@/components/TaskContainer";
 import { SidebarContainer } from "@/components/SidebarContainer";
@@ -207,12 +208,12 @@ export default function TextGenerationPage() {
   // System message state (for Chat mode)
   const [systemMessage, setSystemMessage] = useState({
     role: "system",
-    content: sessionStorage.getItem("tgcc-sm") || "",
+    content: sessionStorage.getItem(STORAGE_KEYS.TG_CHAT_SYSTEM_MESSAGE) || "",
   });
 
   const handleSystemMessageChange = (value) => {
     setSystemMessage((prev) => ({ ...prev, content: value }));
-    sessionStorage.setItem("tgcc-sm", value);
+    sessionStorage.setItem(STORAGE_KEYS.TG_CHAT_SYSTEM_MESSAGE, value);
   };
 
   const [isReady, setIsReady] = useState(false);

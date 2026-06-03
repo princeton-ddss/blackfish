@@ -6,6 +6,7 @@ import ProfileSelect, {
   ProfileProvider
 } from "@/components/ProfileSelect";
 import { useProfiles } from "@/lib/loaders";
+import { STORAGE_KEYS } from "@/lib/storage";
 
 const defaultProfiles = [
   {name: "test-profile", host: "example.com"},
@@ -52,7 +53,7 @@ describe("ProfileProvider", () => {
   });
 
   it("resolves profile from storage by name", () => {
-    localStorage.setItem("profileName", "test-profile");
+    localStorage.setItem(STORAGE_KEYS.PROFILE, "test-profile");
 
     let contextValue = null;
     const TestComponent = () => {
@@ -79,7 +80,7 @@ describe("ProfileProvider", () => {
   });
 
   it("resolves to null when the stored name is not in /api/profiles", () => {
-    localStorage.setItem("profileName", "unknown-profile");
+    localStorage.setItem(STORAGE_KEYS.PROFILE, "unknown-profile");
 
     let contextValue = null;
     const TestComponent = () => {
@@ -131,7 +132,7 @@ describe("ProfileProvider", () => {
   });
 
   it("falls back to the default-flagged profile when the stored name is stale", () => {
-    localStorage.setItem("profileName", "deleted-profile");
+    localStorage.setItem(STORAGE_KEYS.PROFILE, "deleted-profile");
     const profilesWithDefault = [
       {name: "test-profile", host: "example.com"},
       {name: "default-profile", host: "defaulthost.com", default: true},
@@ -160,7 +161,7 @@ describe("ProfileProvider", () => {
   });
 
   it("prefers an explicit stored selection over the default-flagged profile", () => {
-    localStorage.setItem("profileName", "test-profile");
+    localStorage.setItem(STORAGE_KEYS.PROFILE, "test-profile");
     const profilesWithDefault = [
       {name: "test-profile", host: "example.com"},
       {name: "default-profile", host: "defaulthost.com", default: true},
@@ -225,14 +226,14 @@ describe("ProfileProvider", () => {
       contextValue.setProfile({name: "new-profile", type: "slurm", host: "stale"});
     });
 
-    expect(localStorage.getItem("profileName")).toEqual("new-profile");
+    expect(localStorage.getItem(STORAGE_KEYS.PROFILE)).toEqual("new-profile");
     expect(contextValue.profile).toEqual(
       defaultProfiles.find((p) => p.name === "new-profile")
     );
   });
 
   it("setProfile with null clears the stored name", () => {
-    localStorage.setItem("profileName", "test-profile");
+    localStorage.setItem(STORAGE_KEYS.PROFILE, "test-profile");
 
     let contextValue = null;
     const TestComponent = () => {
@@ -256,7 +257,7 @@ describe("ProfileProvider", () => {
       contextValue.setProfile(null);
     });
 
-    expect(localStorage.getItem("profileName")).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.PROFILE)).toBeNull();
     expect(contextValue.profile).toBeNull();
   });
 });

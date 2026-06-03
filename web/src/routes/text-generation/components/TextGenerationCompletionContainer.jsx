@@ -21,6 +21,7 @@ import FileAttachmentList from "./FileAttachmentList";
 import FileSelectModal from "@/components/FileSelectModal";
 import Notification from "@/components/Notification";
 import { ServiceStatus } from "@/lib/util";
+import { STORAGE_KEYS } from "@/lib/storage";
 import PropTypes from "prop-types";
 
 
@@ -59,7 +60,7 @@ function TextGenerationPromptInput({
    */
   function handleChange(value) {
     setPrompt(value || "");
-    sessionStorage.setItem("tgci", value || "");
+    sessionStorage.setItem(STORAGE_KEYS.TG_COMPLETION_INPUT, value || "");
   }
 
   return (
@@ -179,7 +180,7 @@ function TextGenerationResponseOutput({
 }) {
   if (content && content.length > 0) {
     try {
-      sessionStorage.setItem("tgco", content);
+      sessionStorage.setItem(STORAGE_KEYS.TG_COMPLETION_OUTPUT, content);
     } catch(error) {
       console.error(error);
     };
@@ -233,10 +234,10 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
   const { selectedService } = useContext(ServiceContext);
   const { profile } = useContext(ProfileContext);
   const [prompt, setPrompt] = useState(
-    sessionStorage.getItem("tgci") || ""
+    sessionStorage.getItem(STORAGE_KEYS.TG_COMPLETION_INPUT) || ""
   );
   const [response, setResponse] = useState(
-    sessionStorage.getItem("tgco") || ""
+    sessionStorage.getItem(STORAGE_KEYS.TG_COMPLETION_OUTPUT) || ""
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -262,7 +263,7 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
 
     setIsLoading(true);
     setResponse("");
-    sessionStorage.setItem("tgco", "");
+    sessionStorage.setItem(STORAGE_KEYS.TG_COMPLETION_OUTPUT, "");
 
     const stream = streamCompletionInference(
       selectedService,

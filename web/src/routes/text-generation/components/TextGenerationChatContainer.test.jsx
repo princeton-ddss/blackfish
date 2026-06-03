@@ -8,6 +8,7 @@ import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { streamChatCompletionInference } from "../lib/requests";
 import { ServiceStatus } from "@/lib/util";
+import { STORAGE_KEYS } from "@/lib/storage";
 
 vi.mock("../lib/requests", () => ({
   streamChatCompletionInference: vi.fn(),
@@ -612,7 +613,7 @@ describe("TextGenerationChatContainer", () => {
         { role: "assistant", content: "Original response" },
       ]);
       sessionStorage.getItem.mockImplementation((key) => {
-        if (key === "tgcc-ml") return storedMessages;
+        if (key === STORAGE_KEYS.TG_CHAT_MESSAGES) return storedMessages;
         return null;
       });
       const {getByRole, getByText} = render(

@@ -14,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
+import { STORAGE_KEYS } from "@/lib/storage";
 import { streamChatCompletionInference } from "../lib/requests";
 import {
   fileToBase64,
@@ -584,7 +585,7 @@ Message.propTypes = {
  */
 function MessageList({ messages, setMessages, handleResubmit, elementRef, isWaitingForResponse, canRegenerate }) {
   try {
-    sessionStorage.setItem("tgcc-ml", JSON.stringify(messages));
+    sessionStorage.setItem(STORAGE_KEYS.TG_CHAT_MESSAGES, JSON.stringify(messages));
   } catch (error) {
     console.error(error);
   };
@@ -676,13 +677,13 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   const { selectedService } = useContext(ServiceContext);
   const { profile } = useContext(ProfileContext);
   const isServiceHealthy = selectedService?.status === ServiceStatus.HEALTHY;
-  const storedMessages = sessionStorage.getItem("tgcc-ml");
+  const storedMessages = sessionStorage.getItem(STORAGE_KEYS.TG_CHAT_MESSAGES);
   const [messages, setMessages] = useState(
     storedMessages ? JSON.parse(storedMessages) : []
   );
   const [userMessage, setUserMessage] = useState({
     role: Role.USER,
-    content: sessionStorage.getItem("tgcc-um") || "",
+    content: sessionStorage.getItem(STORAGE_KEYS.TG_CHAT_USER_MESSAGE) || "",
   });
   const [attachedImages, setAttachedImages] = useState([]);
   const [imageBrowserOpen, setImageBrowserOpen] = useState(false);
@@ -810,7 +811,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     // Clear input and attached items after sending
     setUserMessage({ role: Role.USER, content: "" });
-    sessionStorage.removeItem("tgcc-um");
+    sessionStorage.removeItem(STORAGE_KEYS.TG_CHAT_USER_MESSAGE);
     setAttachedImages([]);
     clearFiles();
 
@@ -872,7 +873,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         return prev;
       });
       setUserMessage({ role: Role.USER, content: savedInput });
-      sessionStorage.setItem("tgcc-um", savedInput);
+      sessionStorage.setItem(STORAGE_KEYS.TG_CHAT_USER_MESSAGE, savedInput);
       setApiError(classifyApiError(error));
     } finally {
       setIsWaitingForResponse(false);
@@ -963,7 +964,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       ...userMessage,
       content: value
     });
-    sessionStorage.setItem("tgcc-um", value);
+    sessionStorage.setItem(STORAGE_KEYS.TG_CHAT_USER_MESSAGE, value);
   }
 
   function handleClearConversation() {
@@ -975,8 +976,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     setIsWaitingForResponse(false);
     setIsStreaming(false);
     setApiError(null);
-    sessionStorage.removeItem("tgcc-ml");
-    sessionStorage.removeItem("tgcc-um");
+    sessionStorage.removeItem(STORAGE_KEYS.TG_CHAT_MESSAGES);
+    sessionStorage.removeItem(STORAGE_KEYS.TG_CHAT_USER_MESSAGE);
   }
 
   /**
@@ -1023,7 +1024,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       <UserMessageInput
         message={userMessage.content ? userMessage : {
           ...userMessage,
-          content: sessionStorage.getItem("tgcc-um")
+          content: sessionStorage.getItem(STORAGE_KEYS.TG_CHAT_USER_MESSAGE)
         }}
         onChange={(event) => handleUserMessageChange(event.target.value)}
         onSubmit={handleSubmit}

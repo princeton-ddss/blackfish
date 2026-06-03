@@ -7,6 +7,7 @@ import {
 } from "@headlessui/react";
 import { CheckIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
 import { useProfiles } from "@/lib/loaders";
+import { STORAGE_KEYS } from "@/lib/storage";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
 import PropTypes from "prop-types";
 
@@ -21,7 +22,7 @@ const ProfileContext = createContext();
 const ProfileProvider = ({ children }) => {
   const { profiles } = useProfiles();
   const [profileName, setProfileName] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem("profileName") : null
+    typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEYS.PROFILE) : null
   );
 
   // Discard the legacy full-object payload so stale shapes from older
@@ -45,9 +46,9 @@ const ProfileProvider = ({ children }) => {
   const setProfile = useCallback((nextProfile) => {
     const name = nextProfile?.name ?? null;
     if (name) {
-      localStorage.setItem("profileName", name);
+      localStorage.setItem(STORAGE_KEYS.PROFILE, name);
     } else {
-      localStorage.removeItem("profileName");
+      localStorage.removeItem(STORAGE_KEYS.PROFILE);
     }
     setProfileName(name);
   }, []);

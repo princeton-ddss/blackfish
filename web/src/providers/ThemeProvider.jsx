@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { STORAGE_KEYS } from "@/lib/storage";
 import PropTypes from "prop-types";
 
 const ThemeContext = createContext();
@@ -14,7 +15,7 @@ function ThemeProvider({ children }) {
   // theme can be "light", "dark", or "system"
   const [theme, setThemeState] = useState(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("theme");
+      const stored = localStorage.getItem(STORAGE_KEYS.THEME);
       if (stored === "light" || stored === "dark" || stored === "system") {
         return stored;
       }
@@ -43,7 +44,7 @@ function ThemeProvider({ children }) {
     } else {
       document.documentElement.classList.remove("dark");
     }
-    localStorage.setItem("theme", theme);
+    localStorage.setItem(STORAGE_KEYS.THEME, theme);
   }, [isDark, theme]);
 
   const setTheme = (newTheme) => {

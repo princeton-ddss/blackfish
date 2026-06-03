@@ -202,6 +202,14 @@ class RemoteSession:
         except Exception as e:
             raise OSError(str(e)) from e
 
+    def listdir(self, path: str) -> list[str]:
+        try:
+            return self.sftp.listdir(path)
+        except (FileNotFoundError, PermissionError):
+            raise
+        except Exception as e:
+            raise OSError(str(e)) from e
+
     def read_bytes(self, path: str) -> bytes:
         try:
             with self.sftp.open(path, "rb") as f:

@@ -2,6 +2,8 @@ import os
 from unittest import mock
 import datetime
 
+import pytest
+
 from blackfish.server import utils
 from blackfish.server.models.profile import SlurmProfile
 
@@ -41,7 +43,10 @@ filesystem = {
 class MockSFTPClient:
     @staticmethod
     def listdir(key):
-        return filesystem[key]
+        try:
+            return filesystem[key]
+        except KeyError:
+            raise FileNotFoundError(key)
 
 
 def _mock_connection_class():
@@ -103,6 +108,22 @@ def test_get_model_dir_none(mock_conn):
         utils.get_model_dir("test/model-a", revision="test-commit-e", profile=profile)
         is None
     )
+
+
+@mock.patch(
+    "blackfish.server.remote.session.Connection", new_callable=_mock_connection_class
+)
+def test_get_models_missing_cache_dir_raises(mock_conn):
+    """If cache_dir is missing, raise FileNotFoundError so callers can react."""
+    bad_profile = SlurmProfile(
+        name="test",
+        host="test",
+        user="test",
+        cache_dir="/missing/cache_dir/.blackfish",
+        home_dir="/test/home_dir/.blackfish",
+    )
+    with pytest.raises(FileNotFoundError):
+        utils.get_models(bad_profile)
 
 
 # TODO

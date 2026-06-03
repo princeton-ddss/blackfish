@@ -484,30 +484,36 @@ def run_batch_job(
         )
         return
 
-    # 2. Validate model exists for profile
-    if model not in get_models(matched_profile):
-        click.echo(
-            f"{LogSymbols.ERROR.value} Model '{model}' is unavailable for profile "
-            f"'{profile}'. Use `blackfish model add` to download it first."
-        )
-        return
-
-    # 3. Resolve revision (use latest if not provided)
-    if revision is None:
-        revisions = get_revisions(model, matched_profile)
-        if not revisions:
+    # 2. Validate model exists, resolve revision, and locate the model
+    # directory. Any of these can fail with FileNotFoundError /
+    # PermissionError if the profile's cache_dir or home_dir is gone.
+    try:
+        if model not in get_models(matched_profile):
             click.echo(
-                f"{LogSymbols.ERROR.value} No revisions found for model '{model}'."
+                f"{LogSymbols.ERROR.value} Model '{model}' is unavailable for profile "
+                f"'{profile}'. Use `blackfish model add` to download it first."
             )
             return
-        revision = get_latest_commit(model, revisions)
-        click.echo(
-            f"{LogSymbols.WARNING.value} No revision provided. "
-            f"Using latest available: {revision}"
-        )
 
-    # 4. Get model directory and derive cache_dir
-    model_dir = get_model_dir(model, revision, matched_profile)
+        if revision is None:
+            revisions = get_revisions(model, matched_profile)
+            if not revisions:
+                click.echo(
+                    f"{LogSymbols.ERROR.value} No revisions found for model '{model}'."
+                )
+                return
+            revision = get_latest_commit(model, revisions)
+            click.echo(
+                f"{LogSymbols.WARNING.value} No revision provided. "
+                f"Using latest available: {revision}"
+            )
+
+        model_dir = get_model_dir(model, revision, matched_profile)
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        click.echo(
+            f"{LogSymbols.ERROR.value} Profile '{profile}': model directories not accessible: {e}"
+        )
+        sys.exit(1)
     if model_dir is None:
         click.echo(
             f"{LogSymbols.ERROR.value} Model directory not found. "

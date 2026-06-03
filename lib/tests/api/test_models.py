@@ -98,7 +98,7 @@ class TestFetchModelsAPI:
                     repo=existing_repo,
                     profile="default",
                     revision=existing_revision,
-                    image="unknown",  # find_models now returns "unknown"
+                    image="unknown",
                     model_dir="/home/test/.blackfish/models/test",
                     metadata_=None,
                 ),
@@ -216,23 +216,28 @@ class TestFetchModelsAPI:
             for model in result:
                 assert model.get("profile") == "default"
 
-    @pytest.mark.parametrize("refresh", [True, False])
-    async def test_fetch_models_nonexistent_profile(
-        self, refresh, client: AsyncTestClient
-    ):
-        """Test fetching models for nonexistent profile with refresh."""
+    async def test_refresh_without_profile_is_rejected(self, client: AsyncTestClient):
+        """Refresh without ?profile= should 400 — the CLI fans out per-profile."""
+        response = await client.get("/api/models", params={"refresh": True})
+        assert response.status_code == 400
+
+    async def test_refresh_nonexistent_profile_is_404(self, client: AsyncTestClient):
+        """Refresh against an unknown profile name should 404."""
         response = await client.get(
             "/api/models",
-            params={
-                "profile": "nonexistent-profile",
-                "refresh": refresh,
-            },
+            params={"profile": "nonexistent-profile", "refresh": True},
         )
+        assert response.status_code == 404
 
+    async def test_fetch_nonexistent_profile_without_refresh_returns_empty(
+        self, client: AsyncTestClient
+    ):
+        """Non-refresh DB query for an unknown profile name returns empty."""
+        response = await client.get(
+            "/api/models", params={"profile": "nonexistent-profile"}
+        )
         assert response.status_code == 200
-        result = response.json()
-        # Should return empty list for nonexistent profile
-        assert result == []
+        assert response.json() == []
 
     async def test_fetch_models_multiple_parameters(self, client: AsyncTestClient):
         """Test fetching models with multiple filter parameters."""

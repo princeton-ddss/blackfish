@@ -1897,9 +1897,7 @@ async def get_models(
 
         # Re-query to get fresh state after all modifications
         logger.debug(f"Re-querying models (profile={profile}, image={image})")
-        final_query = sa.select(Model)
-        if profile is not None:
-            final_query = final_query.where(Model.profile == profile)
+        final_query = sa.select(Model).where(Model.profile == profile)
         if image is not None:
             compatible = COMPATIBLE_PIPELINES.get(image, [image])
             final_query = final_query.where(Model.image.in_(compatible))

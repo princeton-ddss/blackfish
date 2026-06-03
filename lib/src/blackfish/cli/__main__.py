@@ -831,7 +831,7 @@ def models_ls(
         common_params["image"] = image
 
     all_models: list[dict[str, str]] = []
-    profile_errors: list[tuple[str, str]] = []  # (profile_name, message)
+    profile_errors: list[tuple[str | None, str]] = []  # (profile_name, message)
 
     def fetch(name: str | None = None) -> bool:
         """Issue one request and accumulate results. Returns False on connection failure."""
@@ -848,7 +848,7 @@ def models_ls(
                 detail = res.json().get("detail", "")
             except Exception:
                 pass
-            profile_errors.append((name or "(all)", detail or res.reason))
+            profile_errors.append((name, detail or res.reason))
             return True
         all_models.extend(res.json())
         return True
@@ -884,19 +884,24 @@ def models_ls(
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
     for name, message in profile_errors:
-        click.echo(f"{LogSymbols.ERROR.value} Profile '{name}': {message}")
+        if name is None:
+            click.echo(f"{LogSymbols.ERROR.value} {message}")
+        else:
+            click.echo(f"{LogSymbols.ERROR.value} Profile '{name}': {message}")
+
+    if not all_models:
+        if not profile_errors:
+            click.echo(
+                f"{LogSymbols.WARNING.value} No models found. You can try using the"
+                " `--refresh` flag to find newly added models."
+            )
+        return
 
     tab = PrettyTable(field_names=["REPO", "REVISION", "PROFILE", "IMAGE"])
     tab.set_style(TableStyle.PLAIN_COLUMNS)
     for field in tab.field_names:
         tab.align[field] = "l"
     tab.right_padding_width = 3
-
-    if not all_models and not profile_errors:
-        click.echo(
-            f"{LogSymbols.WARNING.value} No models found. You can try using the"
-            " `--refresh` flag to find newly added models."
-        )
 
     for model in all_models:
         tab.add_row(

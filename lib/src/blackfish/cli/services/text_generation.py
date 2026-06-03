@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import shlex
-from typing import Optional, Tuple
+from typing import Optional
 import rich_click as click
 from rich_click import Context
 import requests
@@ -26,40 +26,6 @@ from blackfish.server.utils import (
 from blackfish.server.config import BlackfishConfig
 from blackfish.server.job import JobScheduler, JobConfig, SlurmJobConfig, LocalJobConfig
 from blackfish.cli.classes import ServiceOptions
-
-
-def try_get_model_info(
-    profile: BlackfishProfile, repo_id: str, revision: Optional[str] = None
-) -> Optional[Tuple[str, str]]:
-    try:
-        if repo_id in get_models(profile):
-            if revision is None:
-                revision = get_latest_commit(repo_id, get_revisions(repo_id, profile))
-                click.echo(
-                    f"{LogSymbols.WARNING.value} No revision provided. Using latest"
-                    f" available commit: {revision}."
-                )
-
-            model_dir = get_model_dir(repo_id, revision, profile)
-            if model_dir is None:
-                click.echo(
-                    f"{LogSymbols.ERROR.value} Model directory not found 😔. The requested revision ({revision}) is missing."
-                )
-                return None
-        else:
-            click.echo(
-                f"{LogSymbols.ERROR.value} Model {repo_id} is unavailable for profile"
-                f" '{profile.name}'. You can try adding it using `blackfish model add`."
-            )
-            return None
-    except (FileNotFoundError, PermissionError, OSError) as e:
-        click.echo(
-            f"{LogSymbols.ERROR.value} Profile '{profile.name}': model directories"
-            f" not accessible: {e}"
-        )
-        return None
-
-    return model_dir, revision
 
 
 # blackfish run [OPTIONS] text-generation [OPTIONS]

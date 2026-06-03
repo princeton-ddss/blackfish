@@ -45,7 +45,7 @@ from blackfish.cli.__main__ import main
             False,
             None,
             500,
-            "Profile",  # error message mentions the profile in question
+            "Boom",  # error detail from mocked 500 response
         ),
         # With profile filter
         (

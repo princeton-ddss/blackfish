@@ -13,6 +13,7 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
 {%- elif provider == 'apptainer' %}
 export SINGULARITY_NO_EVAL=1
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
+  --env PYTHONNOUSERSITE=1 \
   --bind {{ container_config.model_dir }}:/data \
   {{ profile.cache_dir }}/images/{{ image.sif }} \
   {{ name }} \

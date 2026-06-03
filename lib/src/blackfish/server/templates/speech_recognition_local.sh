@@ -15,6 +15,7 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
   --port {{ container_config.port }}
 {%- elif provider == 'apptainer' %}
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
+  --env PYTHONNOUSERSITE=1 \
   --bind {{ mount }}:/data/audio \
   --bind {{ container_config.model_dir }}:/data/models \
   {{ profile.cache_dir }}/images/{{ image.sif }} \

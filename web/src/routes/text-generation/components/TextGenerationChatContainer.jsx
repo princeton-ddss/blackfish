@@ -7,6 +7,7 @@ import {
   DocumentTextIcon,
   PaperAirplaneIcon,
   PencilIcon,
+  StopIcon,
   TrashIcon,
   XMarkIcon,
   PhotoIcon,
@@ -87,7 +88,9 @@ function classifyApiError(error) {
  * @param {Function} options.onImageRemoteSelect
  * @param {Function} options.onFileBrowserUpload
  * @param {Function} options.onFileRemoteSelect
- * @param {boolean} options.isServiceHealthy
+ * @param {boolean} options.canSubmit
+ * @param {boolean} options.isStreaming
+ * @param {Function} options.onStop
  * @return {JSX.Element}
  */
 function UserMessageInput({
@@ -106,14 +109,10 @@ function UserMessageInput({
   onImageRemoteSelect,
   onFileBrowserUpload,
   onFileRemoteSelect,
-  isServiceHealthy,
+  canSubmit,
+  isStreaming,
+  onStop,
 }) {
-  const hasMessageContent = Boolean(
-    (message && message.content && message.content.length > 0) ||
-    attachedImages.length > 0 ||
-    attachedFiles.length > 0
-  );
-  const canSubmit = isServiceHealthy && hasMessageContent;
 
   return (
     <div className="flex items-start space-x-4 mt-auto pt-4">
@@ -203,14 +202,25 @@ function UserMessageInput({
               </div>
             </div>
             <div className="shrink-0">
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
-              >
-                <PaperAirplaneIcon className="size-5" />
-                <span className="sr-only">Submit</span>
-              </button>
+              {isStreaming ? (
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+                >
+                  <StopIcon className="size-5" />
+                  <span className="sr-only">Stop generating</span>
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
+                >
+                  <PaperAirplaneIcon className="size-5" />
+                  <span className="sr-only">Submit</span>
+                </button>
+              )}
             </div>
           </div>
         </form>
@@ -235,7 +245,9 @@ UserMessageInput.propTypes = {
   onImageRemoteSelect: PropTypes.func,
   onFileBrowserUpload: PropTypes.func,
   onFileRemoteSelect: PropTypes.func,
-  isServiceHealthy: PropTypes.bool,
+  canSubmit: PropTypes.bool,
+  isStreaming: PropTypes.bool,
+  onStop: PropTypes.func,
 };
 
 /**
@@ -677,6 +689,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   const [imageError, setImageError] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef(null);
 
   // File attachment state and handlers
@@ -735,14 +748,15 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   }, []);
 
   
+  const hasUserInput =
+    userMessage.content.length > 0 ||
+    attachedImages.length > 0 ||
+    attachedFiles.length > 0;
+  const canSubmit = isServiceHealthy && hasUserInput && !isStreaming;
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const hasUserInput = Boolean(
-      userMessage.content.length > 0 ||
-      attachedImages.length > 0 ||
-      attachedFiles.length > 0
-    );
-    if (!isServiceHealthy || !hasUserInput) return;
+    if (!canSubmit) return;
 
     console.debug("user message submitted");
 
@@ -802,6 +816,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
+    setIsStreaming(true);
 
     try {
       abortRef.current = new AbortController();
@@ -845,10 +860,10 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         ]);
       }
     } catch (error) {
-      // handleClearConversation already reset state; skip rollback
+      // Aborts (cancel button or conversation clear) leave the partial
+      // assistant turn in place; skip rollback and error reporting.
       if (error.name === "AbortError") return;
       console.error("Chat submission error:", error);
-      setIsWaitingForResponse(false);
       // Roll back the optimistically-added user message if no assistant response was started
       setMessages((prev) => {
         if (prev.length > 0 && prev[prev.length - 1].role === Role.USER) {
@@ -859,6 +874,9 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       setUserMessage({ role: Role.USER, content: savedInput });
       sessionStorage.setItem("tgcc-um", savedInput);
       setApiError(classifyApiError(error));
+    } finally {
+      setIsWaitingForResponse(false);
+      setIsStreaming(false);
     }
   };
 
@@ -880,6 +898,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
+    setIsStreaming(true);
 
     try {
       abortRef.current = new AbortController();
@@ -923,12 +942,15 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         ]);
       }
     } catch (error) {
-      // handleClearConversation already reset state; skip rollback
+      // Aborts (cancel button or conversation clear) leave the partial
+      // assistant turn in place; skip rollback and error reporting.
       if (error.name === "AbortError") return;
       console.error("Chat resubmit error:", error);
-      setIsWaitingForResponse(false);
       setMessages(savedMessages.slice(0, index + 1));
       setApiError(classifyApiError(error));
+    } finally {
+      setIsWaitingForResponse(false);
+      setIsStreaming(false);
     }
   };
 
@@ -951,9 +973,22 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     setUserMessage({ role: Role.USER, content: "" });
     setAttachedImages([]);
     setIsWaitingForResponse(false);
+    setIsStreaming(false);
     setApiError(null);
     sessionStorage.removeItem("tgcc-ml");
     sessionStorage.removeItem("tgcc-um");
+  }
+
+  /**
+   * Cancel an in-flight chat completion mid-stream. Aborts the active request
+   * and leaves the partial assistant message in place as a finalized turn.
+   */
+  function handleStop() {
+    abortRef.current?.abort();
+    // Reset eagerly so the UI responds immediately; the finally block in the
+    // submit/resubmit handlers mirrors this once the abort propagates.
+    setIsWaitingForResponse(false);
+    setIsStreaming(false);
   }
 
   return (
@@ -1004,7 +1039,9 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         onImageRemoteSelect={() => setImageBrowserOpen(true)}
         onFileBrowserUpload={handleFileBrowserUpload}
         onFileRemoteSelect={() => setFileBrowserOpen(true)}
-        isServiceHealthy={isServiceHealthy}
+        canSubmit={canSubmit}
+        isStreaming={isStreaming}
+        onStop={handleStop}
       />
 
       {/* Image file browser modal */}

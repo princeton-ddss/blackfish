@@ -44,6 +44,9 @@ vi.mock("@heroicons/react/24/outline", () => ({
   PencilIcon: ({ className, ...props }) => {
     return <div data-testid="pencil-icon" className={className} {...props} />;
   },
+  StopIcon: ({ className, ...props }) => {
+    return <div data-testid="stop-icon" className={className} {...props} />;
+  },
   XCircleIcon: ({ className, ...props }) => {
     return <div data-testid="x-circle-icon" className={className} {...props} />;
   },
@@ -510,6 +513,50 @@ describe("TextGenerationChatContainer", () => {
         expect(queryByText("Partial response")).not.toBeInTheDocument();
         expect(queryByText("Test message")).not.toBeInTheDocument();
       });
+    });
+
+    it("shows a Stop control while streaming and cancels the in-flight response", async () => {
+      const user = userEvent.setup();
+      const abortError = new DOMException("The operation was aborted.", "AbortError");
+      let abortSignal;
+      const mockStream = {
+        next: vi.fn().mockResolvedValue({
+          value: [{ choices: [{ delta: { content: "Partial response" } }] }]
+        }),
+        [Symbol.asyncIterator]: vi.fn().mockReturnValue({
+          // Mimic fetch: the next chunk never arrives until the request is aborted.
+          next: () =>
+            new Promise((_, reject) => {
+              abortSignal?.addEventListener("abort", () => reject(abortError));
+            })
+        })
+      };
+      streamChatCompletionInference.mockImplementation(
+        (service, messages, params, useProxy, signal) => {
+          abortSignal = signal;
+          return mockStream;
+        }
+      );
+      const { getByPlaceholderText, getByRole, queryByText } = render(
+        <MockProviders>
+          <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
+        </MockProviders>
+      );
+      const textarea = getByPlaceholderText("Why are orcas so awesome?");
+      await user.type(textarea, "Test message");
+      await user.click(getByRole("button", { name: "Submit" }));
+      // Partial response streams in and the Stop control replaces Submit.
+      await waitFor(() => {
+        expect(queryByText("Partial response")).toBeInTheDocument();
+      });
+      const stopButton = getByRole("button", { name: "Stop generating" });
+      await user.click(stopButton);
+      // Control reverts to Submit and the partial turn is preserved.
+      await waitFor(() => {
+        expect(getByRole("button", { name: "Submit" })).toBeInTheDocument();
+      });
+      expect(queryByText("Partial response")).toBeInTheDocument();
+      expect(queryByText("Test message")).toBeInTheDocument();
     });
   });
 

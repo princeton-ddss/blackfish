@@ -264,7 +264,7 @@ def _get_validated_remote_profile(profile_name: str) -> SlurmProfile:
 
     Raises:
         NotFoundException: If profile doesn't exist
-        ValidationException: If profile is not a remote SlurmProfile
+        ValidationException: If profile is not a remote profile
     """
     try:
         profile = deserialize_profile(blackfish_config.HOME_DIR, profile_name)

@@ -7,6 +7,7 @@ import {
   DocumentTextIcon,
   PaperAirplaneIcon,
   PencilIcon,
+  StopIcon,
   TrashIcon,
   XMarkIcon,
   PhotoIcon,
@@ -88,6 +89,8 @@ function classifyApiError(error) {
  * @param {Function} options.onFileBrowserUpload
  * @param {Function} options.onFileRemoteSelect
  * @param {boolean} options.isServiceHealthy
+ * @param {boolean} options.isStreaming
+ * @param {Function} options.onStop
  * @return {JSX.Element}
  */
 function UserMessageInput({
@@ -107,6 +110,8 @@ function UserMessageInput({
   onFileBrowserUpload,
   onFileRemoteSelect,
   isServiceHealthy,
+  isStreaming,
+  onStop,
 }) {
   const hasMessageContent = Boolean(
     (message && message.content && message.content.length > 0) ||
@@ -158,7 +163,7 @@ function UserMessageInput({
                   return;
                 } else if (event.key === "Enter") {
                   event.preventDefault();
-                  if (canSubmit) {
+                  if (canSubmit && !isStreaming) {
                     onSubmit(event);
                   }
                 }
@@ -203,14 +208,26 @@ function UserMessageInput({
               </div>
             </div>
             <div className="shrink-0">
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
-              >
-                <PaperAirplaneIcon className="size-5" />
-                <span className="sr-only">Submit</span>
-              </button>
+              {isStreaming ? (
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+                  aria-label="Stop generating"
+                >
+                  <StopIcon className="size-5" />
+                  <span className="sr-only">Stop</span>
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
+                >
+                  <PaperAirplaneIcon className="size-5" />
+                  <span className="sr-only">Submit</span>
+                </button>
+              )}
             </div>
           </div>
         </form>
@@ -236,6 +253,8 @@ UserMessageInput.propTypes = {
   onFileBrowserUpload: PropTypes.func,
   onFileRemoteSelect: PropTypes.func,
   isServiceHealthy: PropTypes.bool,
+  isStreaming: PropTypes.bool,
+  onStop: PropTypes.func,
 };
 
 /**
@@ -677,6 +696,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   const [imageError, setImageError] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef(null);
 
   // File attachment state and handlers
@@ -742,7 +762,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       attachedImages.length > 0 ||
       attachedFiles.length > 0
     );
-    if (!isServiceHealthy || !hasUserInput) return;
+    if (!isServiceHealthy || !hasUserInput || isStreaming) return;
 
     console.debug("user message submitted");
 
@@ -802,6 +822,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
+    setIsStreaming(true);
 
     try {
       abortRef.current = new AbortController();
@@ -845,10 +866,10 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         ]);
       }
     } catch (error) {
-      // handleClearConversation already reset state; skip rollback
+      // Aborts (cancel button or conversation clear) leave the partial
+      // assistant turn in place; skip rollback and error reporting.
       if (error.name === "AbortError") return;
       console.error("Chat submission error:", error);
-      setIsWaitingForResponse(false);
       // Roll back the optimistically-added user message if no assistant response was started
       setMessages((prev) => {
         if (prev.length > 0 && prev[prev.length - 1].role === Role.USER) {
@@ -859,6 +880,9 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       setUserMessage({ role: Role.USER, content: savedInput });
       sessionStorage.setItem("tgcc-um", savedInput);
       setApiError(classifyApiError(error));
+    } finally {
+      setIsWaitingForResponse(false);
+      setIsStreaming(false);
     }
   };
 
@@ -880,6 +904,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
     // Show loading state while waiting for first response chunk
     setIsWaitingForResponse(true);
+    setIsStreaming(true);
 
     try {
       abortRef.current = new AbortController();
@@ -923,12 +948,15 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         ]);
       }
     } catch (error) {
-      // handleClearConversation already reset state; skip rollback
+      // Aborts (cancel button or conversation clear) leave the partial
+      // assistant turn in place; skip rollback and error reporting.
       if (error.name === "AbortError") return;
       console.error("Chat resubmit error:", error);
-      setIsWaitingForResponse(false);
       setMessages(savedMessages.slice(0, index + 1));
       setApiError(classifyApiError(error));
+    } finally {
+      setIsWaitingForResponse(false);
+      setIsStreaming(false);
     }
   };
 
@@ -951,9 +979,20 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     setUserMessage({ role: Role.USER, content: "" });
     setAttachedImages([]);
     setIsWaitingForResponse(false);
+    setIsStreaming(false);
     setApiError(null);
     sessionStorage.removeItem("tgcc-ml");
     sessionStorage.removeItem("tgcc-um");
+  }
+
+  /**
+   * Cancel an in-flight chat completion mid-stream. Aborts the active request
+   * and leaves the partial assistant message in place as a finalized turn.
+   */
+  function handleStop() {
+    abortRef.current?.abort();
+    setIsWaitingForResponse(false);
+    setIsStreaming(false);
   }
 
   return (
@@ -1005,6 +1044,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         onFileBrowserUpload={handleFileBrowserUpload}
         onFileRemoteSelect={() => setFileBrowserOpen(true)}
         isServiceHealthy={isServiceHealthy}
+        isStreaming={isStreaming}
+        onStop={handleStop}
       />
 
       {/* Image file browser modal */}

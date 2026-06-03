@@ -88,7 +88,7 @@ function classifyApiError(error) {
  * @param {Function} options.onImageRemoteSelect
  * @param {Function} options.onFileBrowserUpload
  * @param {Function} options.onFileRemoteSelect
- * @param {boolean} options.isServiceHealthy
+ * @param {boolean} options.canSubmit
  * @param {boolean} options.isStreaming
  * @param {Function} options.onStop
  * @return {JSX.Element}
@@ -109,16 +109,10 @@ function UserMessageInput({
   onImageRemoteSelect,
   onFileBrowserUpload,
   onFileRemoteSelect,
-  isServiceHealthy,
+  canSubmit,
   isStreaming,
   onStop,
 }) {
-  const hasMessageContent = Boolean(
-    (message && message.content && message.content.length > 0) ||
-    attachedImages.length > 0 ||
-    attachedFiles.length > 0
-  );
-  const canSubmit = isServiceHealthy && hasMessageContent;
 
   return (
     <div className="flex items-start space-x-4 mt-auto pt-4">
@@ -163,7 +157,7 @@ function UserMessageInput({
                   return;
                 } else if (event.key === "Enter") {
                   event.preventDefault();
-                  if (canSubmit && !isStreaming) {
+                  if (canSubmit) {
                     onSubmit(event);
                   }
                 }
@@ -251,7 +245,7 @@ UserMessageInput.propTypes = {
   onImageRemoteSelect: PropTypes.func,
   onFileBrowserUpload: PropTypes.func,
   onFileRemoteSelect: PropTypes.func,
-  isServiceHealthy: PropTypes.bool,
+  canSubmit: PropTypes.bool,
   isStreaming: PropTypes.bool,
   onStop: PropTypes.func,
 };
@@ -754,14 +748,15 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
   }, []);
 
   
+  const hasUserInput =
+    userMessage.content.length > 0 ||
+    attachedImages.length > 0 ||
+    attachedFiles.length > 0;
+  const canSubmit = isServiceHealthy && hasUserInput && !isStreaming;
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const hasUserInput = Boolean(
-      userMessage.content.length > 0 ||
-      attachedImages.length > 0 ||
-      attachedFiles.length > 0
-    );
-    if (!isServiceHealthy || !hasUserInput || isStreaming) return;
+    if (!canSubmit) return;
 
     console.debug("user message submitted");
 
@@ -1044,7 +1039,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         onImageRemoteSelect={() => setImageBrowserOpen(true)}
         onFileBrowserUpload={handleFileBrowserUpload}
         onFileRemoteSelect={() => setFileBrowserOpen(true)}
-        isServiceHealthy={isServiceHealthy}
+        canSubmit={canSubmit}
         isStreaming={isStreaming}
         onStop={handleStop}
       />

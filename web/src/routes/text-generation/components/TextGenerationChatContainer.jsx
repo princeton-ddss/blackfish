@@ -213,10 +213,9 @@ function UserMessageInput({
                   type="button"
                   onClick={onStop}
                   className="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-                  aria-label="Stop generating"
                 >
                   <StopIcon className="size-5" />
-                  <span className="sr-only">Stop</span>
+                  <span className="sr-only">Stop generating</span>
                 </button>
               ) : (
                 <button
@@ -991,6 +990,8 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
    */
   function handleStop() {
     abortRef.current?.abort();
+    // Reset eagerly so the UI responds immediately; the finally block in the
+    // submit/resubmit handlers mirrors this once the abort propagates.
     setIsWaitingForResponse(false);
     setIsStreaming(false);
   }

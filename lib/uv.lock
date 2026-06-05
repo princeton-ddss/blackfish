@@ -8,7 +8,7 @@ resolution-markers = [
 
 [[package]]
 name = "advanced-alchemy"
-version = "0.27.1"
+version = "1.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -16,9 +16,9 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/21/e09fe2efb9cec035acf370259e27295763599abc43fd1662f88864cb5610/advanced_alchemy-0.27.1.tar.gz", hash = "sha256:c863ad599928ea8f48e7fafc55be3aaec2ca1312c9367631bcd7ebd680935514", size = 562691, upload-time = "2025-01-11T02:25:14.573Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/54/6d/1e3299a213281454d5b7e4e9242fda255a5d82947b7befdeaf361f398eb2/advanced_alchemy-1.11.0.tar.gz", hash = "sha256:3e42d854b9be6ee37867c490c74d0fdb3894b13e009f5b515e8c24d113011e08", size = 1260879, upload-time = "2026-05-31T18:14:26.664Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/0c/e95166fd53dc1b01ccc7473a267f22b1eb5db3c51b0e81600f6bb5355cd9/advanced_alchemy-0.27.1-py3-none-any.whl", hash = "sha256:c3d5534f998320cc7f7966189304402c9f8bd16a3bd441a751cf743e421a67c4", size = 153415, upload-time = "2025-01-11T02:25:12.756Z" },
+    { url = "https://files.pythonhosted.org/packages/db/1d/fdeb83451261ff933fbea56cae9769c8a3d4908a8d6c4983f1346817fcab/advanced_alchemy-1.11.0-py3-none-any.whl", hash = "sha256:5e9d92e3df5c073565c06f0a401f4b3c24ed1a450834b8dd467239136cd86b5c", size = 342338, upload-time = "2026-05-31T18:14:24.718Z" },
 ]
 
 [[package]]
@@ -299,7 +299,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "advanced-alchemy", specifier = ">=0.27.1,<0.28" },
+    { name = "advanced-alchemy", specifier = ">=1.11,<2" },
     { name = "aiosqlite", specifier = ">=0.21,<0.22" },
     { name = "alembic", specifier = ">=1.14,<2" },
     { name = "colorlog", specifier = ">=6.9,<7" },

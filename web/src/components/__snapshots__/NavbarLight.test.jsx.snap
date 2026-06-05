@@ -20,6 +20,7 @@ exports[`NavbarLight > Login 1`] = `
               class="flex flex-shrink-0 items-center"
             >
               <a
+                data-discover="true"
                 href="/dashboard"
               >
                 <img
@@ -30,6 +31,7 @@ exports[`NavbarLight > Login 1`] = `
                 />
               </a>
               <a
+                data-discover="true"
                 href="/dashboard"
               >
                 <div
@@ -75,6 +77,7 @@ exports[`NavbarLight > Standard 1`] = `
               class="flex flex-shrink-0 items-center"
             >
               <a
+                data-discover="true"
                 href="/dashboard"
               >
                 <img
@@ -85,6 +88,7 @@ exports[`NavbarLight > Standard 1`] = `
                 />
               </a>
               <a
+                data-discover="true"
                 href="/dashboard"
               >
                 <div
@@ -105,6 +109,7 @@ exports[`NavbarLight > Standard 1`] = `
           >
             <a
               class="text-sm font-medium text-gray-700 hover:text-gray-900"
+              data-discover="true"
               href="/dashboard"
             >
               Dashboard
@@ -268,6 +273,7 @@ exports[`NavbarLight > Standard 2`] = `
               class="flex flex-shrink-0 items-center"
             >
               <a
+                data-discover="true"
                 href="/dashboard"
               >
                 <img
@@ -278,6 +284,7 @@ exports[`NavbarLight > Standard 2`] = `
                 />
               </a>
               <a
+                data-discover="true"
                 href="/dashboard"
               >
                 <div
@@ -298,6 +305,7 @@ exports[`NavbarLight > Standard 2`] = `
           >
             <a
               class="text-sm font-medium text-gray-700 hover:text-gray-900"
+              data-discover="true"
               href="/dashboard"
             >
               Dashboard

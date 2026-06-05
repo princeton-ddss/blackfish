@@ -25,7 +25,7 @@
     "react-audio-visualize": "^1.2.0",
     "react-dom": "^18",
     "react-markdown": "^10.1.0",
-    "react-router-dom": "^6.28",
+    "react-router": "^7.17.0",
     "react-simple-typewriter": "^5.0.1",
     "swr": "^2.2.5"
   },

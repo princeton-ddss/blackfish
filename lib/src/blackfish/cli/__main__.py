@@ -8,7 +8,10 @@ import requests
 import os
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
+
+if TYPE_CHECKING:
+    from advanced_alchemy.alembic.commands import AlembicCommands
 from dataclasses import asdict
 
 from blackfish.cli import api
@@ -1100,6 +1103,19 @@ def models_remove(
                 return
 
 
+def _make_alembic_commands() -> AlembicCommands:
+    """Build an AlembicCommands wired to the running app's DB config."""
+    from advanced_alchemy.extensions.litestar import (
+        AlembicCommands,
+        SQLAlchemyInitPlugin,
+    )
+
+    from blackfish.server.asgi import app
+
+    plugin = app.plugins.get(SQLAlchemyInitPlugin)
+    return AlembicCommands(sqlalchemy_config=plugin.config[0])
+
+
 @main.group()
 def database() -> None:  # pragma: no cover
     """Manage database migrations."""
@@ -1164,27 +1180,14 @@ def create_revision(
     rev_id: str | None,
     no_prompt: bool,
 ) -> None:
-    """Create a new database revision. Copied from advanced_alchemy CLI."""
+    """Create a new database revision."""
     from rich.prompt import Prompt
     from rich import get_console
 
-    from advanced_alchemy.extensions.litestar import (
-        AlembicCommands as _AlembicCommands,
-        SQLAlchemyInitPlugin,
-    )
     from alembic.migration import MigrationContext
     from alembic.operations.ops import MigrationScript, UpgradeOps
-    from litestar import Litestar
 
-    from blackfish.server.asgi import app
-
-    class AlembicCommands(_AlembicCommands):
-        def __init__(self, app: Litestar) -> None:
-            self._app = app
-            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # type: ignore # noqa: SLF001
-            self.config = self._get_alembic_command_config()
-
-    alembic_commands = AlembicCommands(app=app)
+    alembic_commands = _make_alembic_commands()
 
     console = get_console()
 
@@ -1239,29 +1242,9 @@ def create_revision(
 )
 def show_revision() -> None:
     """Show the current database revision."""
-
-    from advanced_alchemy.extensions.litestar import (
-        AlembicCommands as _AlembicCommands,
-        SQLAlchemyInitPlugin,
-    )
-    from litestar import Litestar
-
-    from blackfish.server.asgi import app
-
-    class AlembicCommands(_AlembicCommands):
-        def __init__(self, app: Litestar) -> None:
-            self._app = app
-            self.sqlalchemy_config = self._app.plugins.get(SQLAlchemyInitPlugin)._config  # type: ignore # noqa: SLF001
-            self.config = self._get_alembic_command_config()
-
-    alembic_commands = AlembicCommands(app=app)
+    alembic_commands = _make_alembic_commands()
 
     alembic_commands.current()
-    # alembic_commands.check()
-    # alembic_commands.history()
-    # alembic_commands.downgrade()
-    # alembic_commands.upgrade()
-    # alembic_commands.show()
 
 
 if __name__ == "__main__":

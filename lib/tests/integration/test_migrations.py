@@ -11,7 +11,7 @@ from pathlib import Path
 
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.types import TypeDecorator, TypeEngine
 
 # Importing these registers each model's Table in orm_registry.metadata.
@@ -46,18 +46,31 @@ def _compare_type(
 
 def test_migrations_replay_to_head(tmp_path: Path) -> None:
     ensure_db(tmp_path)
+    engine = create_engine(f"sqlite:///{tmp_path / 'app.sqlite'}")
+    try:
+        with engine.connect() as conn:
+            count = conn.execute(text("SELECT COUNT(*) FROM ddl_version")).scalar_one()
+        assert count > 0, "ensure_db returned without applying any migrations"
+    finally:
+        engine.dispose()
 
 
 def test_models_match_head_schema(tmp_path: Path) -> None:
     ensure_db(tmp_path)
     engine = create_engine(f"sqlite:///{tmp_path / 'app.sqlite'}")
-    with engine.connect() as conn:
-        ctx = MigrationContext.configure(
-            conn,
-            opts={
-                "compare_type": _compare_type,
-                "version_table": "ddl_version",
-            },
-        )
-        diff = compare_metadata(ctx, orm_registry.metadata)
+    try:
+        with engine.connect() as conn:
+            # version_table must match the name passed to AlembicAsyncConfig
+            # in bootstrap.ensure_db; otherwise MigrationContext wouldn't see
+            # the migrations as applied and the comparison would be wrong.
+            ctx = MigrationContext.configure(
+                conn,
+                opts={
+                    "compare_type": _compare_type,
+                    "version_table": "ddl_version",
+                },
+            )
+            diff = compare_metadata(ctx, orm_registry.metadata)
+    finally:
+        engine.dispose()
     assert diff == [], f"Schema drift between models and migrations: {diff}"

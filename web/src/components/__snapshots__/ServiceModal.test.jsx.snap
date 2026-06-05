@@ -59,23 +59,34 @@ exports[`ServiceModal > Rendering > renders modal when open is true 1`] = `
                     data-open=""
                     id="headlessui-dialog-title-:r7:"
                   />
-                  bound HTMLFormElement {
-                    "0": <button
-                      data-testid="set-model-button"
+                  <form
+                    class="mt-2"
+                  >
+                    <div
+                      data-testid="service-modal-form"
                     >
-                      Set Model
-                    </button>,
-                    "1": <button
-                      data-testid="set-job-options-button"
-                    >
-                      Set Job Options
-                    </button>,
-                    "2": <button
-                      data-testid="set-validation-errors-button"
-                    >
-                      Set Validation Errors
-                    </button>,
-                  }
+                      <button
+                        data-testid="set-model-button"
+                      >
+                        Set Model
+                      </button>
+                      <button
+                        data-testid="set-job-options-button"
+                      >
+                        Set Job Options
+                      </button>
+                      <button
+                        data-testid="set-validation-errors-button"
+                      >
+                        Set Validation Errors
+                      </button>
+                      <div
+                        data-testid="modal-children"
+                      >
+                        Test Children
+                      </div>
+                    </div>
+                  </form>
                 </div>
                 <div
                   class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 sm:px-6 py-3 rounded-b-lg"

@@ -251,6 +251,7 @@ exports[`Slider > Optional 1`] = `
           class="flex items-center space-x-1"
         >
           <input
+            checked=""
             class="mr-1 ml-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             type="checkbox"
           />
@@ -331,6 +332,7 @@ exports[`Slider > Optional 2`] = `
           class="flex items-center space-x-1"
         >
           <input
+            checked=""
             class="mr-1 ml-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             type="checkbox"
           />

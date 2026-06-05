@@ -2,7 +2,7 @@ import { Disclosure } from "@headlessui/react";
 import { useState, useContext } from "react";
 import { Dialog, DialogTitle, DialogPanel, Description } from "@headlessui/react";
 import { LifebuoyIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link } from "react-router";
 import { assetPath } from "@/config";
 import ProfileSelect, { ProfileContext } from "@/components/ProfileSelect";
 import PropTypes from "prop-types";

@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import { KeyIcon } from "@heroicons/react/24/outline";
 import { blackfishApiURL } from "@/config";
 

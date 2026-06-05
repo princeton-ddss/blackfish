@@ -301,7 +301,7 @@ dev = [
 requires-dist = [
     { name = "advanced-alchemy", specifier = ">=0.27.1,<0.28" },
     { name = "aiosqlite", specifier = ">=0.21,<0.22" },
-    { name = "alembic", specifier = ">=1.14,<1.16" },
+    { name = "alembic", specifier = ">=1.14,<2" },
     { name = "colorlog", specifier = ">=6.9,<7" },
     { name = "fabric", specifier = ">=3.2.2,<4" },
     { name = "httpx", specifier = ">=0.28,<1" },

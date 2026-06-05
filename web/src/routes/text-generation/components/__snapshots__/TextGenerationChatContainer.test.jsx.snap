@@ -46,50 +46,99 @@ exports[`TextGenerationChatContainer > Component rendering > renders the main co
         <div
           class="min-w-0 flex-1"
         >
-          bound HTMLFormElement {
-            "0": <textarea
-              class="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6"
-              id="comment"
-              name="comment"
-              placeholder="Why are orcas so awesome?"
-              rows="3"
-            />,
-            "1": <button
-              data-testid="upload-button"
+          <form
+            action="#"
+            class="relative"
+          >
+            <div
+              class="rounded-lg bg-white dark:bg-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 shadow-md overflow-visible"
             >
-              Upload
-            </button>,
-            "2": <button
-              data-testid="remote-button"
-            >
-              Remote
-            </button>,
-            "3": <button
-              data-testid="upload-button"
-            >
-              Upload
-            </button>,
-            "4": <button
-              data-testid="remote-button"
-            >
-              Remote
-            </button>,
-            "5": <button
-              class="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
-              disabled=""
-              type="submit"
+              <label
+                class="sr-only"
+                for="comment"
+              >
+                Ask anything
+              </label>
+              <textarea
+                class="block w-full resize-none bg-transparent px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-0  focus:border-0 focus:outline-none focus:ring-0 sm:text-sm/6"
+                id="comment"
+                name="comment"
+                placeholder="Why are orcas so awesome?"
+                rows="3"
+              />
+              <div
+                aria-hidden="true"
+                class="py-2"
+              >
+                <div
+                  class="py-px"
+                >
+                  <div
+                    class="h-9"
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2"
             >
               <div
-                class="size-5"
-                data-testid="paper-airplane-icon"
-              />
-              <span
-                class="sr-only"
+                class="flex items-center space-x-5"
               >
-                Submit
-              </span>
-            </button>,
-          }
+                <div
+                  class="flex items-center gap-2"
+                >
+                  <div
+                    data-testid="attachment-menu"
+                  >
+                    <button
+                      data-testid="upload-button"
+                    >
+                      Upload
+                    </button>
+                    <button
+                      data-testid="remote-button"
+                    >
+                      Remote
+                    </button>
+                  </div>
+                  <div
+                    data-testid="attachment-menu"
+                  >
+                    <button
+                      data-testid="upload-button"
+                    >
+                      Upload
+                    </button>
+                    <button
+                      data-testid="remote-button"
+                    >
+                      Remote
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="shrink-0"
+              >
+                <button
+                  class="inline-flex items-center rounded-full bg-white dark:bg-gray-600 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-500 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-600 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
+                  disabled=""
+                  type="submit"
+                >
+                  <div
+                    class="size-5"
+                    data-testid="paper-airplane-icon"
+                  />
+                  <span
+                    class="sr-only"
+                  >
+                    Submit
+                  </span>
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
       <div

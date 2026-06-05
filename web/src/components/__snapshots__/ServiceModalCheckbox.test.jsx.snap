@@ -10,6 +10,7 @@ exports[`ServiceModalCheckbox > renders in checked and disabled state 1`] = `
         class="flex h-6 items-center"
       >
         <input
+          checked=""
           class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700"
           disabled=""
           id="gpu-service-checkbox"
@@ -84,6 +85,7 @@ exports[`ServiceModalCheckbox > renders properly when checked 1`] = `
         class="flex h-6 items-center"
       >
         <input
+          checked=""
           class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700"
           id="gpu-service-checkbox"
           name="gpu-service-checkbox"

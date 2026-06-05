@@ -20,9 +20,9 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-  "advanced-alchemy>=0.27.1,<0.28",
+  "advanced-alchemy>=1.11,<2",
   "aiosqlite>=0.21,<0.22",
-  "alembic>=1.14,<1.16",
+  "alembic>=1.14,<2",
   "colorlog>=6.9,<7",
   "fabric>=3.2.2,<4",
   "httpx>=0.28,<1",

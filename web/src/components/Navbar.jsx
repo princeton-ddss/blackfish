@@ -37,7 +37,6 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
             src={assetPath("/img/orca.png")}
             alt="blackfish"
           />
-          <span className="text-2xl text-gray-900 dark:text-white font-medium leading-none pt-2 tracking-wider font-logo">Blackfish</span>
         </Link>
         <div className="flex items-center gap-4">
           <button
@@ -83,7 +82,6 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
             src={assetPath("/img/orca.png")}
             alt="blackfish"
           />
-          <span className="text-2xl text-gray-900 dark:text-white font-medium leading-none pt-2 tracking-wider font-logo">Blackfish</span>
         </Link>
         <div className="flex items-center gap-4">
           <button

@@ -40,9 +40,6 @@ function NavbarLight({ task }) {
                       alt="blackfish"
                     />
                   </Link>
-                  <Link to="/dashboard">
-                    <div className="pl-4 text-4xl text-gray-900 font-bold font-logo">blackfish</div>
-                  </Link>
                   <div className="pl-4 text-4xl font-extralight text-slate-300 italic">
                     {task}
                   </div>

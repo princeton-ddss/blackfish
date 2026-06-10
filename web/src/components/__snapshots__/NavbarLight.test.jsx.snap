@@ -30,16 +30,6 @@ exports[`NavbarLight > Login 1`] = `
                   width="32"
                 />
               </a>
-              <a
-                data-discover="true"
-                href="/dashboard"
-              >
-                <div
-                  class="pl-4 text-4xl text-gray-900 font-bold font-logo"
-                >
-                  blackfish
-                </div>
-              </a>
               <div
                 class="pl-4 text-4xl font-extralight text-slate-300 italic"
               >
@@ -86,16 +76,6 @@ exports[`NavbarLight > Standard 1`] = `
                   src="./img/orca.png"
                   width="32"
                 />
-              </a>
-              <a
-                data-discover="true"
-                href="/dashboard"
-              >
-                <div
-                  class="pl-4 text-4xl text-gray-900 font-bold font-logo"
-                >
-                  blackfish
-                </div>
               </a>
               <div
                 class="pl-4 text-4xl font-extralight text-slate-300 italic"
@@ -282,16 +262,6 @@ exports[`NavbarLight > Standard 2`] = `
                   src="./img/orca.png"
                   width="32"
                 />
-              </a>
-              <a
-                data-discover="true"
-                href="/dashboard"
-              >
-                <div
-                  class="pl-4 text-4xl text-gray-900 font-bold font-logo"
-                >
-                  blackfish
-                </div>
               </a>
               <div
                 class="pl-4 text-4xl font-extralight text-slate-300 italic"

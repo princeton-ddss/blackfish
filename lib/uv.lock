@@ -239,7 +239,7 @@ wheels = [
 
 [[package]]
 name = "blackfish-ai"
-version = "1.0.0a5"
+version = "1.0.0a6"
 source = { editable = "." }
 dependencies = [
     { name = "advanced-alchemy" },
@@ -307,7 +307,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "huggingface-hub", specifier = ">=1.4.1,<2" },
     { name = "jinja2", specifier = ">=3.1.5,<4" },
-    { name = "litestar", specifier = ">=2.14,<3" },
+    { name = "litestar", specifier = ">=2.16,<3" },
     { name = "log-symbols", specifier = ">=0.0.14,<0.1" },
     { name = "pillow", specifier = ">=12,<13" },
     { name = "prettytable", specifier = ">=3.12,<4" },

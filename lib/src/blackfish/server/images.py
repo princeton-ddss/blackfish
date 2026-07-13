@@ -49,4 +49,10 @@ DEFAULT_IMAGES: dict[str, ImageSpec] = {
         repo="ghcr.io/princeton-ddss/speech-recognition-inference",
         tag="0.1.2",
     ),
+    # Note: the GHCR image tag is "0.1.1" (no leading "v"), unlike the
+    # "v0.1.1" GitHub release tag.
+    "tigerflow_ml": ImageSpec(
+        repo="ghcr.io/princeton-ddss/tigerflow-ml",
+        tag="0.1.1",
+    ),
 }

@@ -21,7 +21,6 @@ import yaml
 
 from blackfish.server.config import config
 from blackfish.server.jobs.base import BatchJobStatus
-from blackfish.server.jobs.client import VENV_PATH
 from blackfish.server.jobs.tasks import (
     SUPPORTED_TASKS,
     build_pipeline_config,
@@ -561,16 +560,10 @@ def run_batch_job(
         if params_dict:
             task_params.update(params_dict)
 
-        venv_path = f"{matched_profile.home_dir}/{VENV_PATH}"
-
         pipeline_config = build_pipeline_config(
             task=task,
             input_ext=resolved_input_ext,
-            venv_path=venv_path,
             params=task_params,
-            resources=resources_dict,
-            max_workers=max_workers,
-            cache_dir=cache_dir,
         )
 
         click.echo("Pipeline config (dry run):\n")

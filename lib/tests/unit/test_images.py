@@ -40,9 +40,22 @@ def test_image_spec_parse_rejects_malformed(bad):
         ImageSpec.parse(bad)
 
 
+def test_default_tigerflow_ml_image():
+    """The tigerflow-ml batch-job image is pinned in DEFAULT_IMAGES."""
+    spec = DEFAULT_IMAGES["tigerflow_ml"]
+    assert spec.repo == "ghcr.io/princeton-ddss/tigerflow-ml"
+    assert spec.tag == "0.1.1"
+    assert spec.sif == "tigerflow-ml_0.1.1.sif"
+    assert spec.docker_ref == "ghcr.io/princeton-ddss/tigerflow-ml:0.1.1"
+
+
 def test_default_images_covers_all_concrete_services():
     """If a Service subclass exists with a polymorphic identity, it must
-    have a pinning. Catches: 'I added a service, forgot the image.'"""
+    have a pinning. Catches: 'I added a service, forgot the image.'
+
+    ``tigerflow_ml`` is a batch-job image (not a Service), so it is excluded
+    from the service-identity comparison.
+    """
     from blackfish.server.services.base import Service
 
     identities = {
@@ -50,7 +63,8 @@ def test_default_images_covers_all_concrete_services():
         for sub in Service.__subclasses__()
         if "polymorphic_identity" in getattr(sub, "__mapper_args__", {})
     }
-    assert identities == set(DEFAULT_IMAGES.keys()), (
+    service_image_keys = set(DEFAULT_IMAGES.keys()) - {"tigerflow_ml"}
+    assert identities == service_image_keys, (
         f"Service identities {identities} do not match "
-        f"DEFAULT_IMAGES keys {set(DEFAULT_IMAGES.keys())}"
+        f"DEFAULT_IMAGES service keys {service_image_keys}"
     )

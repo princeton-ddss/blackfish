@@ -4,6 +4,9 @@ import pytest
 from unittest.mock import AsyncMock, Mock, patch
 from uuid import UUID
 
+from blackfish.server.config import ContainerProvider
+from blackfish.server.images import DEFAULT_IMAGES
+from blackfish.server.job import JobState
 from blackfish.server.jobs.base import (
     BatchJob,
     BatchJobStatus,
@@ -11,7 +14,6 @@ from blackfish.server.jobs.base import (
     create_tigerflow_client_for_profile,
 )
 from blackfish.server.jobs.client import (
-    DEFAULT_IDLE_TIMEOUT,
     TigerFlowClient,
     TigerFlowReport,
     TigerFlowReportStatus,
@@ -30,6 +32,14 @@ from blackfish.server.jobs.tasks import (
 pytestmark = pytest.mark.anyio
 
 
+class MockAppConfig:
+    """Mock app config for testing."""
+
+    HOME_DIR = "/home/test/.blackfish"
+    IMAGES = DEFAULT_IMAGES
+    CONTAINER_PROVIDER = ContainerProvider.Apptainer
+
+
 def create_test_batch_job(**kwargs) -> BatchJob:
     """Create a test batch job with default values."""
     defaults = {
@@ -43,6 +53,13 @@ def create_test_batch_job(**kwargs) -> BatchJob:
         "output_ext": ".json",
         "profile": "default",
         "host": "localhost",
+        # SQLAlchemy column defaults only apply on flush; set them explicitly
+        # so the restart-loop arithmetic in ``update`` has real ints to work with.
+        "restarts": 0,
+        "max_restarts": 20,
+        "stalled_restarts": 0,
+        "max_stalled_restarts": 1,
+        "processed_highwater": 0,
     }
     defaults.update(kwargs)
     return BatchJob(**defaults)
@@ -57,14 +74,15 @@ class TestBatchJobStart:
     """Tests for BatchJob.start()."""
 
     async def test_start_calls_check_health(self) -> None:
-        """start should check tigerflow health before running."""
+        """start should verify the image (check_health) before submitting."""
         job = create_test_batch_job()
         client = create_mock_client()
         client.check_health.return_value = TigerFlowVersions(
             tigerflow="0.1.0", tigerflow_ml="0.1.0"
         )
 
-        await job.start(client)
+        with patch.object(job, "_submit", new=AsyncMock(return_value="99")):
+            await job.start(MockAppConfig(), client)
 
         client.check_health.assert_called_once()
 
@@ -76,55 +94,26 @@ class TestBatchJobStart:
             tigerflow="0.2.0", tigerflow_ml="0.3.0"
         )
 
-        await job.start(client)
+        with patch.object(job, "_submit", new=AsyncMock(return_value="99")):
+            await job.start(MockAppConfig(), client)
 
         assert job.tigerflow_version == "0.2.0"
         assert job.tigerflow_ml_version == "0.3.0"
 
-    async def test_start_builds_config_with_repo_id_in_params(self) -> None:
-        """start should include repo_id as model in config params."""
-        job = create_test_batch_job(repo_id="openai/whisper-large-v3")
+    async def test_start_submits_and_records_slurm_job_id(self) -> None:
+        """start should submit the allocation and record the returned job id."""
+        job = create_test_batch_job()
         client = create_mock_client()
         client.check_health.return_value = TigerFlowVersions(
             tigerflow="0.1.0", tigerflow_ml="0.1.0"
         )
 
-        await job.start(client)
+        submit = AsyncMock(return_value="123456")
+        with patch.object(job, "_submit", new=submit):
+            await job.start(MockAppConfig(), client)
 
-        call_args = client.run.call_args
-        config = call_args.kwargs["config"]
-        assert config["tasks"][0]["params"]["model"] == "openai/whisper-large-v3"
-
-    async def test_start_includes_revision_in_params(self) -> None:
-        """start should include revision in config params when set."""
-        job = create_test_batch_job(revision="main")
-        client = create_mock_client()
-        client.check_health.return_value = TigerFlowVersions(
-            tigerflow="0.1.0", tigerflow_ml="0.1.0"
-        )
-
-        await job.start(client)
-
-        call_args = client.run.call_args
-        config = call_args.kwargs["config"]
-        assert config["tasks"][0]["params"]["revision"] == "main"
-
-    async def test_start_merges_user_params(self) -> None:
-        """start should merge user params with model/revision."""
-        job = create_test_batch_job(params={"language": "en", "beam_size": 5})
-        client = create_mock_client()
-        client.check_health.return_value = TigerFlowVersions(
-            tigerflow="0.1.0", tigerflow_ml="0.1.0"
-        )
-
-        await job.start(client)
-
-        call_args = client.run.call_args
-        config = call_args.kwargs["config"]
-        params = config["tasks"][0]["params"]
-        assert params["language"] == "en"
-        assert params["beam_size"] == 5
-        assert params["model"] == "openai/whisper-large-v3"
+        submit.assert_called_once()
+        assert job.pid == "123456"
 
     async def test_start_sets_status_to_running(self) -> None:
         """start should set status to RUNNING on success."""
@@ -134,47 +123,19 @@ class TestBatchJobStart:
             tigerflow="0.1.0", tigerflow_ml="0.1.0"
         )
 
-        await job.start(client)
+        with patch.object(job, "_submit", new=AsyncMock(return_value="99")):
+            await job.start(MockAppConfig(), client)
 
         assert job.status == BatchJobStatus.RUNNING
 
     async def test_start_propagates_tigerflow_error(self) -> None:
-        """start should propagate TigerFlowError from client."""
+        """start should propagate a missing-image TigerFlowError from check_health."""
         job = create_test_batch_job()
         client = create_mock_client()
-        client.check_health.return_value = TigerFlowVersions(
-            tigerflow="0.1.0", tigerflow_ml="0.1.0"
-        )
-        client.run.side_effect = TigerFlowError("run", "host", "failed")
+        client.check_health.side_effect = TigerFlowError("missing", "host")
 
         with pytest.raises(TigerFlowError):
-            await job.start(client)
-
-    async def test_start_passes_explicit_idle_timeout(self) -> None:
-        """start should pass idle_timeout to client.run when set."""
-        job = create_test_batch_job(idle_timeout=30)
-        client = create_mock_client()
-        client.check_health.return_value = TigerFlowVersions(
-            tigerflow="0.1.0", tigerflow_ml="0.1.0"
-        )
-
-        await job.start(client)
-
-        call_args = client.run.call_args
-        assert call_args.kwargs["idle_timeout"] == 30
-
-    async def test_start_uses_default_idle_timeout_when_none(self) -> None:
-        """start should fall back to DEFAULT_IDLE_TIMEOUT when idle_timeout is None."""
-        job = create_test_batch_job(idle_timeout=None)
-        client = create_mock_client()
-        client.check_health.return_value = TigerFlowVersions(
-            tigerflow="0.1.0", tigerflow_ml="0.1.0"
-        )
-
-        await job.start(client)
-
-        call_args = client.run.call_args
-        assert call_args.kwargs["idle_timeout"] == DEFAULT_IDLE_TIMEOUT
+            await job.start(MockAppConfig(), client)
 
 
 def make_mock_report(
@@ -202,48 +163,132 @@ def make_mock_report(
     )
 
 
-class TestBatchJobUpdate:
-    """Tests for BatchJob.update()."""
+def _drive_update(
+    job: BatchJob,
+    *,
+    total: int,
+    slurm_state: JobState,
+    submit_job_id: str = "654321",
+) -> AsyncMock:
+    """Patch the update collaborators (input count, slurm state, resubmit).
 
-    async def test_update_sets_current_status_when_running(self) -> None:
-        """update should set status to RUNNING when tigerflow reports running."""
+    Returns the ``_submit`` mock so callers can assert on resubmission.
+    """
+    submit = AsyncMock(return_value=submit_job_id)
+    job._count_input_files = AsyncMock(return_value=total)  # type: ignore[method-assign]
+    job._slurm_state = AsyncMock(return_value=slurm_state)  # type: ignore[method-assign]
+    job._submit = submit  # type: ignore[method-assign]
+    return submit
+
+
+class TestBatchJobUpdate:
+    """Tests for BatchJob.update() and its restart policy."""
+
+    async def test_update_records_progress_and_stays_running_when_alive(self) -> None:
+        """Slurm alive with work remaining -> RUNNING, high-water bumped."""
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
         client.report.return_value = make_mock_report(
-            running=True, pid=12345, finished=5, in_progress=3, staged=2, errored=0
+            finished=5, in_progress=3, staged=2, errored=0
         )
+        submit = _drive_update(job, total=10, slurm_state=JobState.RUNNING)
 
-        result = await job.update(client)
+        result = await job.update(client, MockAppConfig())
 
         assert result == BatchJobStatus.RUNNING
         assert job.staged == 5  # in_progress + staged
         assert job.finished == 5
         assert job.errored == 0
-        assert job.pid == "12345"
+        assert job.processed_highwater == 5
+        submit.assert_not_called()
 
-    async def test_update_sets_current_status_when_stopped(self) -> None:
-        """update should set status to STOPPED when tigerflow reports not running."""
+    async def test_update_completes_when_processed_reaches_total(self) -> None:
+        """processed >= total -> STOPPED."""
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
         client.report.return_value = make_mock_report(
-            running=False, pid=None, finished=5, in_progress=0, staged=None, errored=5
+            finished=10, in_progress=0, staged=None, errored=0
         )
+        submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
 
-        result = await job.update(client)
+        result = await job.update(client, MockAppConfig())
 
         assert result == BatchJobStatus.STOPPED
-        assert job.staged == 0  # staged=None maps to 0 for stopped pipelines
-        assert job.finished == 5
-        assert job.errored == 5
+        assert job.finished == 10
+        submit.assert_not_called()
+
+    async def test_update_resubmits_when_ended_with_progress(self) -> None:
+        """Allocation ended, progress advanced, under budget -> resubmit + RUNNING."""
+        job = create_test_batch_job(
+            status=BatchJobStatus.RUNNING,
+            restarts=0,
+            processed_highwater=2,
+            stalled_restarts=3,
+        )
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=5, in_progress=0, staged=None, errored=0
+        )
+        submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
+
+        result = await job.update(client, MockAppConfig())
+
+        assert result == BatchJobStatus.RUNNING
+        submit.assert_called_once()
+        assert job.pid == "654321"
+        assert job.restarts == 1
+        # Forward progress resets the stall counter and raises the high-water mark.
+        assert job.stalled_restarts == 0
+        assert job.processed_highwater == 5
+
+    async def test_update_stalls_when_no_progress(self) -> None:
+        """Ended, no progress, stall budget reached -> STALLED."""
+        job = create_test_batch_job(
+            status=BatchJobStatus.RUNNING,
+            restarts=1,
+            processed_highwater=5,
+            stalled_restarts=0,
+            max_stalled_restarts=1,
+        )
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=5, in_progress=0, staged=None, errored=0
+        )
+        submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
+
+        result = await job.update(client, MockAppConfig())
+
+        assert result == BatchJobStatus.STALLED
+        assert job.stalled_restarts == 1
+        submit.assert_not_called()
+
+    async def test_update_exhausts_when_restart_budget_spent(self) -> None:
+        """restarts >= max_restarts -> EXHAUSTED (checked before stall)."""
+        job = create_test_batch_job(
+            status=BatchJobStatus.RUNNING,
+            restarts=20,
+            max_restarts=20,
+            processed_highwater=5,
+        )
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=6, in_progress=0, staged=None, errored=0
+        )
+        submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
+
+        result = await job.update(client, MockAppConfig())
+
+        assert result == BatchJobStatus.EXHAUSTED
+        submit.assert_not_called()
 
     async def test_update_propagates_tigerflow_error(self) -> None:
-        """update should propagate TigerFlowError from client."""
+        """update should propagate TigerFlowError from client.report."""
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
         client.report.side_effect = TigerFlowError("report", "host", "failed")
 
         with pytest.raises(TigerFlowError):
-            await job.update(client)
+            await job.update(client, MockAppConfig())
 
 
 class TestBatchJobStop:
@@ -303,20 +348,20 @@ class TestCreateTigerflowClient:
             create_tigerflow_client(job, MockAppConfig())
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
-    def test_uses_python_path_from_slurm_profile(self, mock_deserialize: Mock) -> None:
-        """create_tigerflow_client should use python_path from SlurmProfile."""
-        mock_profile = Mock()
-        mock_profile.home_dir = "/home/user"
-        mock_profile.python_path = "/opt/python3.11/bin/python3"
-        # Make isinstance check work for SlurmProfile
-        mock_deserialize.return_value = mock_profile
+    def test_builds_client_with_image_and_provider(
+        self, mock_deserialize: Mock
+    ) -> None:
+        """create_tigerflow_client should resolve image/provider from app config."""
+        mock_deserialize.return_value = None
+        job = create_test_batch_job(
+            host="localhost", home_dir="/home/user", cache_dir="/scratch/cache"
+        )
 
-        job = create_test_batch_job(host="localhost")
+        client = create_tigerflow_client(job, MockAppConfig())
 
-        with patch("blackfish.server.jobs.base.isinstance", return_value=True):
-            client = create_tigerflow_client(job, MockAppConfig())
-
-        assert client.python_path == "/opt/python3.11/bin/python3"
+        assert client.image is DEFAULT_IMAGES["tigerflow_ml"]
+        assert client.provider is ContainerProvider.Apptainer
+        assert client.cache_dir == "/scratch/cache"
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
     def test_creates_ssh_runner_for_remote_job(self, mock_deserialize: Mock) -> None:
@@ -360,7 +405,6 @@ class TestCreateTigerflowClientForProfile:
             host="cluster.edu",
             home_dir="/home/testuser/.blackfish",
             cache_dir="/scratch/cache",
-            python_path="/opt/python/bin/python3",
         )
         mock_deserialize.return_value = mock_profile
 
@@ -369,7 +413,7 @@ class TestCreateTigerflowClientForProfile:
         assert isinstance(client.runner, SSHRunner)
         assert client.runner.user == "testuser"
         assert client.runner.host == "cluster.edu"
-        assert client.python_path == "/opt/python/bin/python3"
+        assert client.cache_dir == "/scratch/cache"
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
     def test_creates_local_runner_for_local_profile(
@@ -389,13 +433,6 @@ class TestCreateTigerflowClientForProfile:
         client = create_tigerflow_client_for_profile("test-local", MockAppConfig())
 
         assert isinstance(client.runner, LocalRunner)
-        assert client.python_path == "python3"  # Default for local
-
-
-class MockAppConfig:
-    """Mock app config for testing."""
-
-    HOME_DIR = "/home/test/.blackfish"
 
 
 class TestBatchJobRepr:
@@ -428,30 +465,46 @@ class TestTasks:
         """is_supported_task should return False for unsupported tasks."""
         assert is_supported_task("nonexistent") is False
 
-    def test_get_task_library_returns_library_for_valid_task(self) -> None:
-        """get_task_library should return the library module for a task."""
-        assert get_task_library("transcribe") == "tigerflow_ml.audio.transcribe.slurm"
+    def test_get_task_library_returns_local_module_for_valid_task(self) -> None:
+        """get_task_library should return the task's ``local`` module."""
+        module = get_task_library("transcribe")
+        assert module == "tigerflow_ml.audio.transcribe.local"
+        assert module.endswith(".local")
 
     def test_get_task_library_raises_for_invalid_task(self) -> None:
         """get_task_library should raise ValueError for unsupported tasks."""
         with pytest.raises(ValueError, match="Unsupported task"):
             get_task_library("nonexistent")
 
-    def test_build_pipeline_config_includes_resources(self) -> None:
-        """build_pipeline_config should include resources when provided."""
-        resources = {"cpus": 4, "memory": "16GB", "gpus": 1}
+    def test_build_pipeline_config_builds_local_task(self) -> None:
+        """build_pipeline_config should emit a single ``local`` task entry."""
+        config = build_pipeline_config(task="transcribe", input_ext=".wav")
 
+        assert list(config.keys()) == ["tasks"]
+        task = config["tasks"][0]
+        assert task["name"] == "transcribe"
+        assert task["kind"] == "local"
+        assert task["module"] == "tigerflow_ml.audio.transcribe.local"
+        assert task["module"].endswith(".local")
+        assert task["input_ext"] == ".wav"
+        # Removed fields from the old venv-based signature are gone.
+        assert "venv_path" not in task
+        assert "resources" not in task
+        assert "worker_resources" not in task
+        assert "setup_commands" not in task
+
+    def test_build_pipeline_config_includes_optional_params_and_output_ext(
+        self,
+    ) -> None:
+        """params and output_ext are included when provided."""
         config = build_pipeline_config(
             task="transcribe",
             input_ext=".wav",
-            venv_path="/home/user/.blackfish/.venv",
-            resources=resources,
+            params={"model": "openai/whisper-large-v3", "language": "en"},
+            output_ext=".json",
         )
 
-        # User-provided resources should override/be included in worker_resources
-        # (defaults from DEFAULT_WORKER_RESOURCES are merged in as well).
-        worker_resources = config["tasks"][0]["worker_resources"]
-        assert resources.items() <= worker_resources.items()
-        assert config["tasks"][0]["setup_commands"] == [
-            "source /home/user/.blackfish/.venv/bin/activate"
-        ]
+        task = config["tasks"][0]
+        assert task["output_ext"] == ".json"
+        assert task["params"]["model"] == "openai/whisper-large-v3"
+        assert task["params"]["language"] == "en"

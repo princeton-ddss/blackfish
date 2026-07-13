@@ -66,8 +66,16 @@ def create_test_batch_job(**kwargs) -> BatchJob:
 
 
 def create_mock_client() -> AsyncMock:
-    """Create a mock TigerFlowClient."""
-    return AsyncMock(spec=TigerFlowClient)
+    """Create a mock TigerFlowClient.
+
+    ``runner.run`` defaults to a success tuple so directory checks
+    (``_ensure_directories``) pass; override per-test as needed.
+    """
+    client = AsyncMock(spec=TigerFlowClient)
+    client.host = "localhost"
+    client.runner = AsyncMock()
+    client.runner.run = AsyncMock(return_value=(0, b"", b""))
+    return client
 
 
 class TestBatchJobStart:
@@ -193,7 +201,7 @@ class TestBatchJobUpdate:
         )
         submit = _drive_update(job, total=10, slurm_state=JobState.RUNNING)
 
-        result = await job.update(client, MockAppConfig())
+        result = await job.poll(client, MockAppConfig())
 
         assert result == BatchJobStatus.RUNNING
         assert job.staged == 5  # in_progress + staged
@@ -211,7 +219,7 @@ class TestBatchJobUpdate:
         )
         submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
 
-        result = await job.update(client, MockAppConfig())
+        result = await job.poll(client, MockAppConfig())
 
         assert result == BatchJobStatus.STOPPED
         assert job.finished == 10
@@ -231,7 +239,7 @@ class TestBatchJobUpdate:
         )
         submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
 
-        result = await job.update(client, MockAppConfig())
+        result = await job.poll(client, MockAppConfig())
 
         assert result == BatchJobStatus.RUNNING
         submit.assert_called_once()
@@ -256,7 +264,7 @@ class TestBatchJobUpdate:
         )
         submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
 
-        result = await job.update(client, MockAppConfig())
+        result = await job.poll(client, MockAppConfig())
 
         assert result == BatchJobStatus.STALLED
         assert job.stalled_restarts == 1
@@ -276,7 +284,7 @@ class TestBatchJobUpdate:
         )
         submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
 
-        result = await job.update(client, MockAppConfig())
+        result = await job.poll(client, MockAppConfig())
 
         assert result == BatchJobStatus.EXHAUSTED
         submit.assert_not_called()
@@ -288,7 +296,62 @@ class TestBatchJobUpdate:
         client.report.side_effect = TigerFlowError("report", "host", "failed")
 
         with pytest.raises(TigerFlowError):
-            await job.update(client, MockAppConfig())
+            await job.poll(client, MockAppConfig())
+
+    @pytest.mark.parametrize(
+        "terminal",
+        [
+            BatchJobStatus.STOPPED,
+            BatchJobStatus.STALLED,
+            BatchJobStatus.EXHAUSTED,
+            BatchJobStatus.BROKEN,
+        ],
+    )
+    async def test_update_short_circuits_terminal_jobs(
+        self, terminal: BatchJobStatus
+    ) -> None:
+        """Terminal jobs return immediately without remote calls or counter churn."""
+        job = create_test_batch_job(status=terminal, stalled_restarts=1)
+        client = create_mock_client()
+        submit = _drive_update(job, total=10, slurm_state=JobState.COMPLETED)
+
+        result = await job.poll(client, MockAppConfig())
+
+        assert result == terminal
+        # No report/count/sacct/resubmit work, and counters are untouched.
+        client.report.assert_not_called()
+        submit.assert_not_called()
+        assert job.stalled_restarts == 1
+
+    async def test_update_stops_when_input_dir_has_no_files(self) -> None:
+        """Ended allocation with zero matching inputs -> STOPPED, not STALLED."""
+        job = create_test_batch_job(status=BatchJobStatus.RUNNING)
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=0, in_progress=0, staged=None, errored=0
+        )
+        submit = _drive_update(job, total=0, slurm_state=JobState.COMPLETED)
+
+        result = await job.poll(client, MockAppConfig())
+
+        assert result == BatchJobStatus.STOPPED
+        submit.assert_not_called()
+
+    async def test_poll_defers_restart_when_input_count_inconclusive(self) -> None:
+        """Allocation ended but the input count is inconclusive (None, e.g. a
+        transient find/SSH failure): don't resubmit. Stay RUNNING and let the
+        next poll retry once the count is readable again."""
+        job = create_test_batch_job(status=BatchJobStatus.RUNNING)
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=5, in_progress=0, staged=None, errored=0
+        )
+        submit = _drive_update(job, total=None, slurm_state=JobState.COMPLETED)
+
+        result = await job.poll(client, MockAppConfig())
+
+        assert result == BatchJobStatus.RUNNING
+        submit.assert_not_called()
 
 
 class TestBatchJobStop:
@@ -320,6 +383,140 @@ class TestBatchJobStop:
 
         with pytest.raises(TigerFlowError):
             await job.stop(client)
+
+    @patch("blackfish.server.jobs.base.remote")
+    async def test_stop_cancels_real_allocation_but_not_local(
+        self, mock_remote: Mock
+    ) -> None:
+        """stop must cancel a Slurm allocation (else it burns GPUs until walltime)
+        and mark the job STOPPED; a LocalProfile (local-<uuid>) has no allocation."""
+        mock_remote.run = AsyncMock()
+
+        slurm_job = create_test_batch_job(
+            status=BatchJobStatus.RUNNING, host="localhost", pid="4242"
+        )
+        await slurm_job.stop(create_mock_client())
+        assert slurm_job.status == BatchJobStatus.STOPPED
+        assert mock_remote.run.await_count == 1  # scancel issued
+
+        mock_remote.run.reset_mock()
+        local_job = create_test_batch_job(
+            status=BatchJobStatus.RUNNING, host="localhost", pid="local-abc"
+        )
+        await local_job.stop(create_mock_client())
+        assert local_job.status == BatchJobStatus.STOPPED
+        mock_remote.run.assert_not_called()  # nothing to cancel
+
+
+class TestBatchJobEnsureDirectories:
+    """Input validation + output setup at job start."""
+
+    async def test_missing_input_dir_fails_fast(self) -> None:
+        """A nonexistent input_dir must raise (fail fast), not be silently created."""
+        job = create_test_batch_job()
+        client = create_mock_client()
+        client.runner.run = AsyncMock(return_value=(1, b"", b""))  # test -d fails
+
+        with pytest.raises(ValueError, match="Input directory does not exist"):
+            await job._ensure_directories(client)
+
+
+class TestBatchJobLaunchByProfileType:
+    """The launch template + mechanism are chosen by profile *type*, not host.
+
+    A SlurmProfile uses sbatch + batch_slurm.sh even when reached over a local
+    runner (host=localhost, the Open OnDemand pattern); a LocalProfile uses
+    bash + batch_local.sh and never sbatch.
+    """
+
+    def _slurm_localhost(self):
+        from blackfish.server.models.profile import SlurmProfile
+
+        return SlurmProfile(
+            name="onburst",
+            host="localhost",
+            user="alice",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/cache",
+        )
+
+    def _local(self):
+        from blackfish.server.models.profile import LocalProfile
+
+        return LocalProfile(
+            name="local",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/cache",
+        )
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_slurm_localhost_renders_slurm_template(
+        self, mock_deserialize: Mock
+    ) -> None:
+        mock_deserialize.return_value = self._slurm_localhost()
+        job = create_test_batch_job(
+            host="localhost", resources={"gres": 1, "time": "02:00:00"}
+        )
+
+        script = job._render_script(MockAppConfig())
+
+        # batch_slurm.sh carries #SBATCH directives with the requested resources.
+        assert "#SBATCH" in script
+        assert "--time=02:00:00" in script
+        assert "--gres=gpu:1" in script
+        assert "apptainer run" in script
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_local_profile_renders_local_template(self, mock_deserialize: Mock) -> None:
+        mock_deserialize.return_value = self._local()
+        job = create_test_batch_job(host="localhost")
+
+        script = job._render_script(MockAppConfig())
+
+        # batch_local.sh has no scheduler directives.
+        assert "#SBATCH" not in script
+
+    @patch("blackfish.server.jobs.base.remote")
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    async def test_slurm_localhost_submits_via_sbatch(
+        self,
+        mock_deserialize: Mock,
+        mock_remote: Mock,
+        tmp_path,
+    ) -> None:
+        mock_deserialize.return_value = self._slurm_localhost()
+        mock_remote.run = AsyncMock(
+            return_value=Mock(stdout=b"Submitted batch job 4242")
+        )
+        job = create_test_batch_job(host="localhost")
+        app_config = Mock(HOME_DIR=str(tmp_path))
+
+        with patch.object(job, "_render_script", return_value="#!/bin/bash\n"):
+            job_id = await job._submit(app_config)
+
+        assert job_id == "4242"
+        # sbatch was used, not bash.
+        assert mock_remote.run.call_args.args[0][0] == "sbatch"
+
+    @patch("blackfish.server.jobs.base.remote")
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    async def test_local_profile_submits_via_bash_not_sbatch(
+        self,
+        mock_deserialize: Mock,
+        mock_remote: Mock,
+        tmp_path,
+    ) -> None:
+        mock_deserialize.return_value = self._local()
+        mock_remote.run = AsyncMock(return_value=Mock(stdout=b""))
+        job = create_test_batch_job(host="localhost")
+        app_config = Mock(HOME_DIR=str(tmp_path))
+
+        with patch.object(job, "_render_script", return_value="#!/bin/bash\n"):
+            job_id = await job._submit(app_config)
+
+        # Ran the container directly with bash; no Slurm job id.
+        assert mock_remote.run.call_args.args[0][0] == "bash"
+        assert job_id.startswith("local-")
 
 
 class TestCreateTigerflowClient:

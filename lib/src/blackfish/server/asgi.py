@@ -1432,6 +1432,13 @@ async def run_job(
     try:
         client = create_tigerflow_client(batch_job, state)
         await batch_job.start(state, client)
+    except ValueError as e:
+        # Bad request (e.g. input_dir does not exist): surface as 4xx and don't
+        # leave a phantom job behind.
+        await session.delete(batch_job)
+        await session.flush()
+        logger.warning(f"Rejected batch job request: {e}")
+        raise ValidationException(detail=str(e))
     except TigerFlowError as e:
         batch_job.status = BatchJobStatus.STOPPED
         detail = f"Unable to start batch job: {e.user_message()}"
@@ -1482,11 +1489,11 @@ async def fetch_jobs(
     jobs = list(res.scalars().all())
     logger.debug(f"Found {len(jobs)} matching batch jobs.")
 
-    # Update status for each job
+    # Update status for each job; poll() advances the restart loop.
     for job in jobs:
         try:
             client = create_tigerflow_client(job, state)
-            await job.update(client, state)
+            await job.poll(client, state)
             session.add(job)
         except Exception as e:
             logger.warning(f"Failed to update job {job.id}: {e}")
@@ -1607,16 +1614,27 @@ async def stop_job(
         await session.flush()
         return job
 
-    # Try to get final status - may fail if metadata was never created
+    # Read-only status refresh (must not resubmit the job we just stopped).
     try:
-        await job.update(client, state)
-    except TigerFlowError as e:
+        await job.refresh(client)
+    except Exception as e:
         logger.warning(f"Status check failed for job {job_id}: {e}")
         job.status = BatchJobStatus.BROKEN
 
     session.add(job)
     await session.flush()
     return job
+
+
+# Batch jobs are only deletable once they've reached a terminal state (or have
+# no metadata). Includes the restart-loop terminal states STALLED/EXHAUSTED.
+_DELETABLE_STATUSES = [
+    BatchJobStatus.STOPPED,
+    BatchJobStatus.STALLED,
+    BatchJobStatus.EXHAUSTED,
+    BatchJobStatus.BROKEN,
+    None,
+]
 
 
 @dataclass
@@ -1666,17 +1684,17 @@ async def delete_job(
         )
         return []
 
-    # Update job statuses before deletion check
+    # Read-only status refresh before the deletion check (must not resubmit).
     for job in jobs:
         try:
             client = create_tigerflow_client(job, state)
-            await job.update(client, state)
+            await job.refresh(client)
         except Exception as e:
             logger.warning(f"Failed to update job {job.id} status: {e}")
 
     res = []
     for batch_job in jobs:
-        if batch_job.status in [BatchJobStatus.STOPPED, BatchJobStatus.BROKEN, None]:
+        if batch_job.status in _DELETABLE_STATUSES:
             logger.debug(f"Queueing batch job {batch_job.id} for deletion")
             deletion = sa.delete(BatchJob).where(BatchJob.id == batch_job.id)
             try:

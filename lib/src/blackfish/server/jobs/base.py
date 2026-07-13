@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 from enum import StrEnum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
@@ -12,7 +13,12 @@ from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from blackfish.server import remote
-from blackfish.server.job import JobState, SlurmJob, SlurmJobConfig, parse_state
+from blackfish.server.job import (
+    JobState,
+    SlurmJobConfig,
+    format_state,
+    parse_state,
+)
 from blackfish.server.jobs.client import (
     DEFAULT_IDLE_TIMEOUT,
     LocalRunner,
@@ -25,7 +31,11 @@ from blackfish.server.jobs.tasks import (
     get_default_output_ext,
 )
 from blackfish.server.logger import logger
-from blackfish.server.models.profile import SlurmProfile, deserialize_profile
+from blackfish.server.models.profile import (
+    BlackfishProfile,
+    SlurmProfile,
+    deserialize_profile,
+)
 
 if TYPE_CHECKING:
     from litestar.datastructures import State
@@ -52,6 +62,19 @@ class BatchJobStatus(StrEnum):
     BROKEN = auto()  # Metadata missing - unable to determine job state
     STALLED = auto()  # Restarts made no forward progress
     EXHAUSTED = auto()  # Restart budget exhausted with work remaining
+
+
+# Statuses from which a job never transitions again — used to short-circuit
+# the polling `update()` so it doesn't do remote work or mutate restart
+# counters after the job has settled.
+_TERMINAL_STATUSES = frozenset(
+    {
+        BatchJobStatus.STOPPED,
+        BatchJobStatus.STALLED,
+        BatchJobStatus.EXHAUSTED,
+        BatchJobStatus.BROKEN,
+    }
+)
 
 
 def format_status(status: BatchJobStatus | None) -> str:
@@ -258,13 +281,23 @@ class BatchJob(UUIDAuditBase):
             account=res.get("account"),
         )
 
+    def _is_slurm(self, profile: "BlackfishProfile | None") -> bool:
+        """Whether this job runs under Slurm (sbatch), independent of transport.
+
+        Determined by profile *type*: a ``SlurmProfile`` uses Slurm even when
+        reached over a local runner (``host == "localhost"``, the Open OnDemand
+        pattern); a ``LocalProfile`` never does. This is orthogonal to the
+        SSH-vs-local transport decision, which keys off ``host``.
+        """
+        return isinstance(profile, SlurmProfile)
+
     def _render_script(self, app_config: "State | BlackfishConfig") -> str:
         """Render the batch launch script for this job."""
         profile = deserialize_profile(app_config.HOME_DIR, self.profile)
         if profile is None:
             raise ValueError(f"Profile '{self.profile}' not found")
 
-        scheduler = "slurm" if not profile.is_local() else "local"
+        scheduler = "slurm" if self._is_slurm(profile) else "local"
         home_dir = self.home_dir or profile.home_dir
         pipeline_path = os.path.join(
             home_dir, "jobs", self.id.hex, f"pipeline-{self.id}.yaml"
@@ -291,7 +324,20 @@ class BatchJob(UUIDAuditBase):
         )
 
     async def _submit(self, app_config: "State | BlackfishConfig") -> str:
-        """Render, stage, and submit the batch script; return the Slurm job ID."""
+        """Render, stage, and launch the batch script.
+
+        The launch mechanism is chosen by profile *type* (Slurm → ``sbatch``,
+        Local → ``bash``), and the transport by ``host`` (local vs SSH):
+        - SlurmProfile, host=localhost (Open OnDemand): ``sbatch`` locally.
+        - SlurmProfile, remote: scp the script, then ``sbatch`` over SSH.
+        - LocalProfile: run the script directly with ``bash`` (no Slurm).
+
+        Returns:
+            The Slurm job id for Slurm profiles, or a ``local-<uuid>`` sentinel
+            for LocalProfile (which has no Slurm allocation).
+        """
+        profile = deserialize_profile(app_config.HOME_DIR, self.profile)
+        is_slurm = self._is_slurm(profile)
         script = self._render_script(app_config)
 
         local_script_path = Path(
@@ -302,18 +348,21 @@ class BatchJob(UUIDAuditBase):
             f.write(script)
 
         if self.host == "localhost":
-            result = await remote.run(
-                [
-                    "sbatch",
-                    "--chdir",
-                    str(local_script_path.parent),
-                    str(local_script_path),
-                ]
-            )
-            return result.stdout.decode("utf-8").strip().split()[-1]
+            if is_slurm:
+                result = await remote.run(
+                    [
+                        "sbatch",
+                        "--chdir",
+                        str(local_script_path.parent),
+                        str(local_script_path),
+                    ]
+                )
+                return result.stdout.decode("utf-8").strip().split()[-1]
+            # LocalProfile: run the container directly; there is no Slurm job id.
+            await remote.run(["bash", str(local_script_path)])
+            return f"local-{self.id.hex}"
 
-        # Remote: copy the script and submit via SSH.
-        profile = deserialize_profile(app_config.HOME_DIR, self.profile)
+        # Remote SlurmProfile: copy the script and submit via SSH.
         home_dir = self.home_dir or (profile.home_dir if profile else "~/.blackfish")
         remote_script_dir = os.path.join(home_dir, "jobs", self.id.hex)
         await remote.ssh(f"{self.user}@{self.host}", ["mkdir", "-p", remote_script_dir])
@@ -348,6 +397,7 @@ class BatchJob(UUIDAuditBase):
 
         Raises:
             TigerFlowError: If the image is not staged.
+            ValueError: If ``input_dir`` does not exist.
         """
         logger.info(
             f"Starting batch job {self.id}: task={self.task}, model={self.repo_id}"
@@ -357,17 +407,45 @@ class BatchJob(UUIDAuditBase):
         self.tigerflow_version = versions.tigerflow
         self.tigerflow_ml_version = versions.tigerflow_ml
 
+        await self._ensure_directories(client)
+
         job_id = await self._submit(app_config)
         self.pid = job_id
         self.status = BatchJobStatus.RUNNING
         logger.info(f"Batch job {self.id} started (Slurm job {job_id})")
+
+    async def _ensure_directories(self, client: TigerFlowClient) -> None:
+        """Validate ``input_dir`` exists and create ``output_dir``.
+
+        ``input_dir`` is the user's assertion of where their data lives — a
+        missing one is a mistake, so fail fast rather than silently create it
+        (which would run a no-op job). ``output_dir`` is a destination we create
+        (also required: apptainer's ``--bind`` needs the source to exist).
+
+        Raises:
+            ValueError: If ``input_dir`` does not exist.
+        """
+        returncode, _, _ = await client.runner.run(
+            f"test -d {shlex.quote(self.input_dir)}"
+        )
+        if returncode != 0:
+            raise ValueError(
+                f"Input directory does not exist on {client.host}: {self.input_dir}"
+            )
+
+        logger.debug(f"Ensuring output directory {self.output_dir}")
+        await client.runner.run(f"mkdir -p {shlex.quote(self.output_dir)}")
 
     # -------------------------------------------------------------------------
     # Stop / update
     # -------------------------------------------------------------------------
 
     async def stop(self, client: TigerFlowClient) -> None:
-        """Stop the batch job's pipeline.
+        """Stop the batch job: halt the pipeline and cancel its allocation.
+
+        ``client.stop`` only halts the in-container tigerflow pipeline; the
+        sbatch allocation (``self.pid``) must also be cancelled or it keeps
+        holding resources until walltime. Sets the job STOPPED.
 
         Args:
             client: TigerFlowClient for remote operations
@@ -379,6 +457,21 @@ class BatchJob(UUIDAuditBase):
             return
 
         await client.stop(self.output_dir)
+        await self._cancel_allocation()
+        self.status = BatchJobStatus.STOPPED
+
+    async def _cancel_allocation(self) -> None:
+        """Cancel the Slurm allocation, if any. Best-effort."""
+        if not self.pid or str(self.pid).startswith("local-"):
+            return
+        scancel_cmd = ["scancel", str(self.pid)]
+        try:
+            if self.host == "localhost":
+                await remote.run(scancel_cmd)
+            else:
+                await remote.ssh(f"{self.user}@{self.host}", scancel_cmd)
+        except Exception as e:  # noqa: BLE001 - cancellation is best-effort
+            logger.warning(f"Failed to scancel job {self.pid} for {self.id}: {e}")
 
     async def _slurm_state(self) -> JobState:
         """Return the current Slurm state of this job's allocation."""
@@ -404,46 +497,46 @@ class BatchJob(UUIDAuditBase):
             logger.warning(f"Failed to read Slurm state for job {self.id}: {e}")
             return JobState.MISSING
 
-    async def _count_input_files(self, client: TigerFlowClient) -> int:
+    async def _count_input_files(self, client: TigerFlowClient) -> int | None:
         """Count input files matching the input extension in ``input_dir``.
 
         This is the restart denominator (the report has no total-input field).
+        Returns ``None`` if the count could not be determined (e.g. a transient
+        SSH/``find`` failure), so callers don't treat it as a genuine zero.
         """
         ext = self._resolved_input_ext()
-        # `find` avoids "argument list too long" that a glob would hit.
-        cmd = f"find {self.input_dir} -maxdepth 1 -type f -name '*{ext}' | wc -l"
+        # `find` avoids the "argument list too long" a shell glob would hit.
+        cmd = (
+            f"find {shlex.quote(self.input_dir)} -maxdepth 1 -type f "
+            f"-name {shlex.quote('*' + ext)} | wc -l"
+        )
         returncode, stdout, _ = await client.runner.run(cmd)
         if returncode != 0:
-            return 0
+            # Command failure (transient SSH/find error) is not a genuine zero;
+            # return None so callers don't mistake it for "no work remaining".
+            return None
         try:
             return int(stdout.decode("utf-8").strip())
         except ValueError:
-            return 0
+            return None
 
-    async def update(
-        self,
-        client: TigerFlowClient,
-        app_config: "State | BlackfishConfig",
-    ) -> BatchJobStatus:
-        """Update job status, resubmitting the allocation until work is done.
+    async def refresh(self, client: TigerFlowClient) -> BatchJobStatus:
+        """Read-only status refresh — never resubmits or mutates restart counters.
 
-        Reads the tigerflow report (durable ``processed`` count) plus Slurm
-        liveness, and applies the restart policy. ``processed`` is the only
-        cross-restart-durable "done" signal; ``.err`` files (``errored``) are
-        wiped each restart, so they are not used in the restart decision.
+        Reads the tigerflow report (durable ``processed`` count) and Slurm
+        liveness and updates progress fields. Safe to call after ``stop()`` or
+        before deletion. Use ``poll()`` to also advance the restart loop.
 
         Caller is responsible for persistence.
-
-        Args:
-            client: TigerFlowClient for the report.
-            app_config: Application configuration (needed to resubmit).
-
-        Returns:
-            Current batch job status.
         """
         logger.debug(
-            f"Updating batch job {self.id} (status={format_status(self.status)})"
+            f"Refreshing batch job {self.id} (status={format_status(self.status)})"
         )
+
+        # Terminal jobs never change again; skip the remote work.
+        current = self.status
+        if current is not None and current in _TERMINAL_STATUSES:
+            return current
 
         report = await client.report(self.output_dir)
         processed = report.progress.pipeline.finished
@@ -454,11 +547,70 @@ class BatchJob(UUIDAuditBase):
         ) + report.progress.pipeline.in_progress
 
         total = await self._count_input_files(client)
+        state = await self._slurm_state()
+        logger.debug(
+            f"Batch job {self.id}: processed={processed}/{total}, "
+            f"errored={self.errored}, slurm_state={format_state(state)}, "
+            f"restarts={self.restarts}, stalled={self.stalled_restarts}"
+        )
 
-        # Completed: every input has a durable .finished marker.
-        if total > 0 and processed >= total:
+        # Done: as many .finished markers as there are inputs.
+        if total is not None and total > 0 and processed >= total:
+            logger.info(f"Batch job {self.id} complete ({processed}/{total}).")
             self.status = BatchJobStatus.STOPPED
             return BatchJobStatus.STOPPED
+
+        alive = state in (
+            JobState.RUNNING,
+            JobState.PENDING,
+            JobState.REQUEUED,
+            JobState.RESIZING,
+            JobState.SUSPENDED,
+        )
+        if alive:
+            if processed > self.processed_highwater:
+                logger.debug(
+                    f"Batch job {self.id}: progress "
+                    f"{self.processed_highwater} -> {processed}."
+                )
+                self.processed_highwater = processed
+            self.status = BatchJobStatus.RUNNING
+            return BatchJobStatus.RUNNING
+
+        # Allocation ended with an empty/misconfigured input dir: nothing to
+        # restart for, so it's done (rather than a misleading STALLED).
+        if total == 0:
+            logger.info(
+                f"Batch job {self.id}: no inputs matching {self._resolved_input_ext()} "
+                f"in {self.input_dir}; marking complete."
+            )
+            self.status = BatchJobStatus.STOPPED
+            return BatchJobStatus.STOPPED
+
+        # Allocation not alive with work remaining (or an inconclusive input
+        # count). Report RUNNING; the restart decision belongs to poll().
+        self.status = BatchJobStatus.RUNNING
+        return BatchJobStatus.RUNNING
+
+    async def poll(
+        self,
+        client: TigerFlowClient,
+        app_config: "State | BlackfishConfig",
+    ) -> BatchJobStatus:
+        """Refresh status and advance the restart loop when the allocation has
+        ended with work remaining.
+
+        This is the caller that may resubmit — used by the periodic status poll,
+        not by stop/delete (those use the read-only ``refresh()``).
+
+        Caller is responsible for persistence.
+        """
+        status = await self.refresh(client)
+
+        # Only a still-RUNNING job whose allocation has actually ended is a
+        # restart candidate; terminal/complete results are returned as-is.
+        if status != BatchJobStatus.RUNNING:
+            return status
 
         state = await self._slurm_state()
         alive = state in (
@@ -469,13 +621,21 @@ class BatchJob(UUIDAuditBase):
             JobState.SUSPENDED,
         )
         if alive:
-            if processed > self.processed_highwater:
-                self.processed_highwater = processed
-            self.status = BatchJobStatus.RUNNING
             return BatchJobStatus.RUNNING
 
-        # The allocation has ended with work remaining. Evaluate the guards at
-        # this allocation boundary.
+        # An inconclusive input count (transient failure) is not a boundary we
+        # act on — leave the job RUNNING and retry on the next poll.
+        total = await self._count_input_files(client)
+        if total is None:
+            logger.warning(
+                f"Batch job {self.id}: could not count inputs; deferring restart."
+            )
+            return BatchJobStatus.RUNNING
+
+        processed = self.finished or 0
+
+        # Allocation ended with work remaining. Evaluate the restart guards at
+        # this boundary.
         if processed > self.processed_highwater:
             self.processed_highwater = processed
             self.stalled_restarts = 0
@@ -483,11 +643,17 @@ class BatchJob(UUIDAuditBase):
             self.stalled_restarts += 1
 
         if self.restarts >= self.max_restarts:
-            logger.warning(f"Batch job {self.id} exhausted restart budget.")
+            logger.warning(
+                f"Batch job {self.id} exhausted restart budget "
+                f"({self.restarts}/{self.max_restarts}) at {processed}/{total} processed."
+            )
             self.status = BatchJobStatus.EXHAUSTED
             return BatchJobStatus.EXHAUSTED
         if self.stalled_restarts >= self.max_stalled_restarts:
-            logger.warning(f"Batch job {self.id} stalled (no forward progress).")
+            logger.warning(
+                f"Batch job {self.id} stalled: no progress for "
+                f"{self.stalled_restarts} restart(s) at {processed}/{total} processed."
+            )
             self.status = BatchJobStatus.STALLED
             return BatchJobStatus.STALLED
 
@@ -500,16 +666,3 @@ class BatchJob(UUIDAuditBase):
         self.restarts += 1
         self.status = BatchJobStatus.RUNNING
         return BatchJobStatus.RUNNING
-
-    async def refresh_slurm_job(self) -> SlurmJob | None:
-        """Return a SlurmJob view of the current allocation (for callers that
-        want raw Slurm state), or None if no allocation is tracked."""
-        if not self.pid or not self.host:
-            return None
-        return SlurmJob(
-            job_id=int(self.pid),
-            user=self.user or "",
-            host=self.host,
-            data_dir=os.path.join(self.home_dir or "", "jobs", self.id.hex),
-            name=self.name,
-        )

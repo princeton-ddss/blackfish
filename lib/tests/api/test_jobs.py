@@ -411,9 +411,10 @@ class TestStopBatchJobAPI:
         assert result["id"] == job_id
         assert result["status"] == "stopped"
 
-        # Verify stop and report were called to update the job
+        # stop() itself sets the job STOPPED, so the follow-up refresh
+        # short-circuits (no report round-trip needed).
         mock_tigerflow.stop.assert_called_once_with(output_dir)
-        mock_tigerflow.report.assert_called_once_with(output_dir)
+        mock_tigerflow.report.assert_not_called()
 
     @patch("blackfish.server.asgi.create_tigerflow_client")
     async def test_stop_job_already_stopped(
@@ -431,7 +432,6 @@ class TestStopBatchJobAPI:
         )
 
         job_id = "391769fc-5a40-43db-bbfa-cec80a8c3710"
-        output_dir = "/data/output2"  # From fixture
 
         # Set up mock TigerFlowClient. ``update`` counts input files via
         # ``client.runner.run``; report all 5 inputs as present so the job
@@ -470,8 +470,8 @@ class TestStopBatchJobAPI:
 
         # stop() should not have been called since job was already stopped
         mock_tigerflow.stop.assert_not_called()
-        # report() should still be called to get final state
-        mock_tigerflow.report.assert_called_once_with(output_dir)
+        # update() short-circuits for terminal jobs, so no report round-trip.
+        mock_tigerflow.report.assert_not_called()
 
     async def test_stop_job_not_found(self, client: AsyncTestClient):
         """Test stopping a job that doesn't exist."""

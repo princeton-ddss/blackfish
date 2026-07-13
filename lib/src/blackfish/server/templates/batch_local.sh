@@ -29,7 +29,7 @@ apptainer run {{ '--nv' if job_config.gres else '' }} \
   --bind {{ input_dir }} \
   --bind {{ output_dir }} \
   --bind {{ pipeline_path }} \
-  {{ profile.cache_dir }}/images/{{ image.sif }} \
+  {{ cache_dir }}/images/{{ image.sif }} \
   run {{ pipeline_path }} {{ input_dir }} {{ output_dir }} \
   --idle-timeout {{ idle_timeout }}
 {%- endif %}

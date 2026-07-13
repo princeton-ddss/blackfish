@@ -423,32 +423,6 @@ class TigerFlowClient:
         else:  # Docker
             return f"docker run --rm --entrypoint python {self.image.docker_ref} {args}"
 
-    async def check_capabilities(self) -> None:
-        """Verify that required tigerflow features are available in the image.
-
-        Raises:
-            TigerFlowError: If required features are not available.
-        """
-        returncode, _, stderr = await self.runner.run(
-            self._tigerflow_cmd("tasks list --json")
-        )
-        if returncode != 0:
-            stderr_str = stderr.decode("utf-8", errors="replace").lower()
-            if "unknown command" in stderr_str or "no such command" in stderr_str:
-                raise TigerFlowError(
-                    "unsupported", self.host, "tigerflow tasks command not available"
-                )
-
-        returncode, _, stderr = await self.runner.run(
-            self._tigerflow_cmd("report --help")
-        )
-        if returncode != 0:
-            stderr_str = stderr.decode("utf-8", errors="replace").lower()
-            if "unknown command" in stderr_str or "no such command" in stderr_str:
-                raise TigerFlowError(
-                    "unsupported", self.host, "tigerflow report command not available"
-                )
-
     # -------------------------------------------------------------------------
     # Job Operations
     # -------------------------------------------------------------------------

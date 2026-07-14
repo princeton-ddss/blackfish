@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import shlex
 from enum import StrEnum, auto
@@ -73,6 +74,17 @@ _TERMINAL_STATUSES = frozenset(
         BatchJobStatus.STALLED,
         BatchJobStatus.EXHAUSTED,
         BatchJobStatus.BROKEN,
+    }
+)
+
+# Slurm states in which the allocation is still holding (or awaiting) resources.
+_ALIVE_STATES = frozenset(
+    {
+        JobState.RUNNING,
+        JobState.PENDING,
+        JobState.REQUEUED,
+        JobState.RESIZING,
+        JobState.SUSPENDED,
     }
 )
 
@@ -520,6 +532,64 @@ class BatchJob(UUIDAuditBase):
         except ValueError:
             return None
 
+    async def _observe(
+        self, client: TigerFlowClient
+    ) -> tuple[int, int | None, JobState]:
+        """Fetch the three independent status inputs concurrently.
+
+        Updates progress fields from the report and returns
+        ``(processed, total, slurm_state)`` for the caller's status decision.
+        ``total`` is ``None`` when the input count could not be determined.
+        """
+        report, total, state = await asyncio.gather(
+            client.report(self.output_dir),
+            self._count_input_files(client),
+            self._slurm_state(),
+        )
+        processed = report.progress.pipeline.finished
+        self.finished = processed
+        self.errored = report.progress.pipeline.errored
+        self.staged = (
+            report.progress.pipeline.staged or 0
+        ) + report.progress.pipeline.in_progress
+        logger.debug(
+            f"Batch job {self.id}: processed={processed}/{total}, "
+            f"errored={self.errored}, slurm_state={format_state(state)}, "
+            f"restarts={self.restarts}, stalled={self.stalled_restarts}"
+        )
+        return processed, total, state
+
+    def _status_from_observation(
+        self, processed: int, total: int | None, state: JobState
+    ) -> BatchJobStatus:
+        """Read-only status decision from an observation (no restart, no I/O)."""
+        # Done: as many .finished markers as there are inputs.
+        if total is not None and total > 0 and processed >= total:
+            logger.info(f"Batch job {self.id} complete ({processed}/{total}).")
+            return BatchJobStatus.STOPPED
+
+        if state in _ALIVE_STATES:
+            if processed > self.processed_highwater:
+                logger.debug(
+                    f"Batch job {self.id}: progress "
+                    f"{self.processed_highwater} -> {processed}."
+                )
+                self.processed_highwater = processed
+            return BatchJobStatus.RUNNING
+
+        # Allocation ended with an empty/misconfigured input dir: nothing to
+        # restart for, so it's done (rather than a misleading STALLED).
+        if total == 0:
+            logger.info(
+                f"Batch job {self.id}: no inputs matching {self._resolved_input_ext()} "
+                f"in {self.input_dir}; marking complete."
+            )
+            return BatchJobStatus.STOPPED
+
+        # Ended with work remaining (or an inconclusive count). Read-only callers
+        # report RUNNING; the restart decision belongs to poll().
+        return BatchJobStatus.RUNNING
+
     async def refresh(self, client: TigerFlowClient) -> BatchJobStatus:
         """Read-only status refresh — never resubmits or mutates restart counters.
 
@@ -538,59 +608,10 @@ class BatchJob(UUIDAuditBase):
         if current is not None and current in _TERMINAL_STATUSES:
             return current
 
-        report = await client.report(self.output_dir)
-        processed = report.progress.pipeline.finished
-        self.finished = processed
-        self.errored = report.progress.pipeline.errored
-        self.staged = (
-            report.progress.pipeline.staged or 0
-        ) + report.progress.pipeline.in_progress
-
-        total = await self._count_input_files(client)
-        state = await self._slurm_state()
-        logger.debug(
-            f"Batch job {self.id}: processed={processed}/{total}, "
-            f"errored={self.errored}, slurm_state={format_state(state)}, "
-            f"restarts={self.restarts}, stalled={self.stalled_restarts}"
-        )
-
-        # Done: as many .finished markers as there are inputs.
-        if total is not None and total > 0 and processed >= total:
-            logger.info(f"Batch job {self.id} complete ({processed}/{total}).")
-            self.status = BatchJobStatus.STOPPED
-            return BatchJobStatus.STOPPED
-
-        alive = state in (
-            JobState.RUNNING,
-            JobState.PENDING,
-            JobState.REQUEUED,
-            JobState.RESIZING,
-            JobState.SUSPENDED,
-        )
-        if alive:
-            if processed > self.processed_highwater:
-                logger.debug(
-                    f"Batch job {self.id}: progress "
-                    f"{self.processed_highwater} -> {processed}."
-                )
-                self.processed_highwater = processed
-            self.status = BatchJobStatus.RUNNING
-            return BatchJobStatus.RUNNING
-
-        # Allocation ended with an empty/misconfigured input dir: nothing to
-        # restart for, so it's done (rather than a misleading STALLED).
-        if total == 0:
-            logger.info(
-                f"Batch job {self.id}: no inputs matching {self._resolved_input_ext()} "
-                f"in {self.input_dir}; marking complete."
-            )
-            self.status = BatchJobStatus.STOPPED
-            return BatchJobStatus.STOPPED
-
-        # Allocation not alive with work remaining (or an inconclusive input
-        # count). Report RUNNING; the restart decision belongs to poll().
-        self.status = BatchJobStatus.RUNNING
-        return BatchJobStatus.RUNNING
+        processed, total, state = await self._observe(client)
+        status = self._status_from_observation(processed, total, state)
+        self.status = status
+        return status
 
     async def poll(
         self,
@@ -605,34 +626,31 @@ class BatchJob(UUIDAuditBase):
 
         Caller is responsible for persistence.
         """
-        status = await self.refresh(client)
-
-        # Only a still-RUNNING job whose allocation has actually ended is a
-        # restart candidate; terminal/complete results are returned as-is.
-        if status != BatchJobStatus.RUNNING:
-            return status
-
-        state = await self._slurm_state()
-        alive = state in (
-            JobState.RUNNING,
-            JobState.PENDING,
-            JobState.REQUEUED,
-            JobState.RESIZING,
-            JobState.SUSPENDED,
+        logger.debug(
+            f"Polling batch job {self.id} (status={format_status(self.status)})"
         )
-        if alive:
-            return BatchJobStatus.RUNNING
+
+        current = self.status
+        if current is not None and current in _TERMINAL_STATUSES:
+            return current
+
+        processed, total, state = await self._observe(client)
+        status = self._status_from_observation(processed, total, state)
+
+        # Only a still-RUNNING job whose allocation has ended is a restart
+        # candidate. Completed/alive jobs are returned as-is.
+        if status != BatchJobStatus.RUNNING or state in _ALIVE_STATES:
+            self.status = status
+            return status
 
         # An inconclusive input count (transient failure) is not a boundary we
         # act on — leave the job RUNNING and retry on the next poll.
-        total = await self._count_input_files(client)
         if total is None:
             logger.warning(
                 f"Batch job {self.id}: could not count inputs; deferring restart."
             )
+            self.status = BatchJobStatus.RUNNING
             return BatchJobStatus.RUNNING
-
-        processed = self.finished or 0
 
         # Allocation ended with work remaining. Evaluate the restart guards at
         # this boundary.

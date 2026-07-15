@@ -88,6 +88,25 @@ _ALIVE_STATES = frozenset(
     }
 )
 
+# Slurm states in which the allocation has *definitely* ended. Only these
+# trigger a restart. A pid that sacct doesn't yet know (just resubmitted) reads
+# as MISSING, which is "unknown" — NOT terminal — so it never resubmits: we wait
+# for the next poll rather than double-allocate.
+_TERMINAL_SLURM_STATES = frozenset(
+    {
+        JobState.COMPLETED,
+        JobState.TIMEOUT,
+        JobState.FAILED,
+        JobState.CANCELLED,
+        JobState.NODE_FAIL,
+        JobState.OUT_OF_MEMORY,
+        JobState.DEADLINE,
+        JobState.BOOT_FAIL,
+        JobState.PREEMPTED,
+        JobState.REVOKED,
+    }
+)
+
 
 def format_status(status: BatchJobStatus | None) -> str:
     """Format job status for display."""
@@ -237,7 +256,7 @@ class BatchJob(UUIDAuditBase):
     pid: Mapped[Optional[str]]  # Slurm job ID of the current allocation
 
     # Progress tracking
-    staged: Mapped[Optional[int]]  # Total items to process
+    staged: Mapped[Optional[int]]  # Items remaining (total - finished - errored)
     finished: Mapped[Optional[int]]  # Successfully processed
     errored: Mapped[Optional[int]]  # Failed items (transient; reset each run)
 
@@ -554,9 +573,10 @@ class BatchJob(UUIDAuditBase):
         processed = report.progress.pipeline.finished
         self.finished = processed
         self.errored = report.progress.pipeline.errored
-        self.staged = (
-            report.progress.pipeline.staged or 0
-        ) + report.progress.pipeline.in_progress
+        # "staged" is what remains, so finished + errored + staged == total (the
+        # CLI progress denominator). Left unchanged when the count is unknown.
+        if total is not None:
+            self.staged = max(0, total - processed - (self.errored or 0))
         logger.debug(
             f"Batch job {self.id}: processed={processed}/{total}, "
             f"errored={self.errored}, slurm_state={format_state(state)}, "
@@ -642,9 +662,11 @@ class BatchJob(UUIDAuditBase):
         processed, total, state = await self._observe(client)
         status = self._status_from_observation(processed, total, state)
 
-        # Only a still-RUNNING job whose allocation has ended is a restart
-        # candidate. Completed/alive jobs are returned as-is.
-        if status != BatchJobStatus.RUNNING or state in _ALIVE_STATES:
+        # Restart only when the allocation has DEFINITELY ended. A non-terminal
+        # state — alive, or "unknown" (MISSING: a just-resubmitted pid sacct
+        # hasn't registered yet) — must not resubmit, or we double-allocate.
+        # Wait for the next poll instead.
+        if status != BatchJobStatus.RUNNING or state not in _TERMINAL_SLURM_STATES:
             self.status = status
             return status
 

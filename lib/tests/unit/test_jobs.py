@@ -204,11 +204,27 @@ class TestBatchJobUpdate:
         result = await job.poll(client, MockAppConfig())
 
         assert result == BatchJobStatus.RUNNING
-        assert job.staged == 5  # in_progress + staged
+        assert job.staged == 5  # remaining: total 10 - finished 5 - errored 0
         assert job.finished == 5
         assert job.errored == 0
         assert job.processed_highwater == 5
         submit.assert_not_called()
+
+    async def test_staged_reflects_true_remaining_when_pipeline_stopped(self) -> None:
+        """Between allocations the report's pipeline.staged is null; staged must
+        still reflect the real remaining against the input total, so the CLI's
+        finished/(staged+finished+errored) shows finished/total."""
+        job = create_test_batch_job(status=BatchJobStatus.RUNNING)
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=866, in_progress=0, staged=None, errored=0
+        )
+        _drive_update(job, total=2703, slurm_state=JobState.COMPLETED)
+
+        await job.poll(client, MockAppConfig())
+
+        assert job.staged == 2703 - 866  # not 0
+        assert (job.staged or 0) + (job.finished or 0) + (job.errored or 0) == 2703
 
     async def test_update_completes_when_processed_reaches_total(self) -> None:
         """processed >= total -> STOPPED."""
@@ -347,6 +363,22 @@ class TestBatchJobUpdate:
             finished=5, in_progress=0, staged=None, errored=0
         )
         submit = _drive_update(job, total=None, slurm_state=JobState.COMPLETED)
+
+        result = await job.poll(client, MockAppConfig())
+
+        assert result == BatchJobStatus.RUNNING
+        submit.assert_not_called()
+
+    async def test_poll_does_not_resubmit_when_slurm_state_unknown(self) -> None:
+        """A just-resubmitted allocation sacct hasn't registered reads MISSING
+        (unknown, not terminal). Poll must NOT treat that as ended and
+        double-allocate; it stays RUNNING until the state is definite."""
+        job = create_test_batch_job(status=BatchJobStatus.RUNNING)
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=5, in_progress=0, staged=None, errored=0
+        )
+        submit = _drive_update(job, total=10, slurm_state=JobState.MISSING)
 
         result = await job.poll(client, MockAppConfig())
 

@@ -7,6 +7,7 @@ import {
     TrashIcon,
 } from "@heroicons/react/24/outline";
 import StatusBadge from "./StatusBadge";
+import { isBatchJobActive } from "@/lib/util";
 import PropTypes from "prop-types";
 
 function ProgressBar({ finished, staged, errored }) {
@@ -77,7 +78,7 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                 </div>
                 <div className="flex items-center gap-2">
                     <StatusBadge status={job.status} errored={job.errored} />
-                    {job.status === "running" && onStopJob && (
+                    {isBatchJobActive(job.status) && onStopJob && (
                         <button
                             type="button"
                             onClick={() => onStopJob(job)}
@@ -88,7 +89,7 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                             <StopIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
                         </button>
                     )}
-                    {job.status !== "running" && onDeleteJob && (
+                    {!isBatchJobActive(job.status) && onDeleteJob && (
                         <button
                             type="button"
                             onClick={() => onDeleteJob(job)}
@@ -108,7 +109,7 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                     <span className="text-gray-500 dark:text-gray-400">Progress</span>
                     <div className="flex items-center gap-3 text-xs">
                         <span className="text-green-600 dark:text-green-400">{done} done</span>
-                        {job.status === "running" && pending > 0 && (
+                        {isBatchJobActive(job.status) && pending > 0 && (
                             <span className="text-gray-500 dark:text-gray-400">{pending} staged</span>
                         )}
                         {failed > 0 && (

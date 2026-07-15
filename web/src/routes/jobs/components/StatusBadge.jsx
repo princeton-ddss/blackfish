@@ -1,20 +1,38 @@
 import PropTypes from "prop-types";
 
 function StatusBadge({ status, errored = 0 }) {
+    const YELLOW = {
+        bg: "bg-yellow-50 dark:bg-yellow-900/30",
+        text: "text-yellow-700 dark:text-yellow-400",
+        ring: "ring-yellow-600/20 dark:ring-yellow-500/30",
+    };
+    const RED = {
+        bg: "bg-red-50 dark:bg-red-900/30",
+        text: "text-red-700 dark:text-red-400",
+        ring: "ring-red-600/20 dark:ring-red-500/30",
+    };
+
     const getStatusConfig = () => {
         switch (status) {
             case "running":
-                return errored > 0 ? {
-                    bg: "bg-yellow-50 dark:bg-yellow-900/30",
-                    text: "text-yellow-700 dark:text-yellow-400",
-                    ring: "ring-yellow-600/20 dark:ring-yellow-500/30",
-                    label: "Running",
-                } : {
-                    bg: "bg-green-50 dark:bg-green-900/30",
-                    text: "text-green-700 dark:text-green-400",
-                    ring: "ring-green-600/20 dark:ring-green-500/30",
-                    label: "Running",
-                };
+                return errored > 0
+                    ? { ...YELLOW, label: "Running" }
+                    : {
+                          bg: "bg-green-50 dark:bg-green-900/30",
+                          text: "text-green-700 dark:text-green-400",
+                          ring: "ring-green-600/20 dark:ring-green-500/30",
+                          label: "Running",
+                      };
+            case "submitted":
+                return { ...YELLOW, label: "Submitted" };
+            case "resubmitted":
+                return { ...YELLOW, label: "Resubmitted" };
+            case "pending":
+                return { ...YELLOW, label: "Pending" };
+            case "stalled":
+                return { ...RED, label: "Stalled" };
+            case "exhausted":
+                return { ...RED, label: "Exhausted" };
             case "broken":
                 return {
                     bg: "bg-orange-50 dark:bg-orange-900/30",

@@ -58,7 +58,10 @@ DEFAULT_MAX_STALLED_RESTARTS = 1
 
 
 class BatchJobStatus(StrEnum):
-    RUNNING = auto()
+    SUBMITTED = auto()  # first sbatch; Slurm hasn't confirmed the allocation yet
+    RESUBMITTED = auto()  # a restart's sbatch; Slurm hasn't confirmed it yet
+    PENDING = auto()  # allocation queued, awaiting resources
+    RUNNING = auto()  # allocation running the pipeline
     STOPPED = auto()
     BROKEN = auto()  # Metadata missing - unable to determine job state
     STALLED = auto()  # Restarts made no forward progress
@@ -447,7 +450,7 @@ class BatchJob(UUIDAuditBase):
 
         job_id = await self._submit(app_config)
         self.pid = job_id
-        self.status = BatchJobStatus.RUNNING
+        self.status = BatchJobStatus.SUBMITTED
         logger.info(f"Batch job {self.id} started (Slurm job {job_id})")
 
     async def _ensure_directories(self, client: TigerFlowClient) -> None:
@@ -588,18 +591,24 @@ class BatchJob(UUIDAuditBase):
         self, processed: int, total: int | None, state: JobState
     ) -> BatchJobStatus:
         """Read-only status decision from an observation (no restart, no I/O)."""
+        # Durable progress from the report is independent of the Slurm state, so
+        # advance the high-water mark on every observation.
+        if processed > self.processed_highwater:
+            logger.debug(
+                f"Batch job {self.id}: progress "
+                f"{self.processed_highwater} -> {processed}."
+            )
+            self.processed_highwater = processed
+
         # Done: as many .finished markers as there are inputs.
         if total is not None and total > 0 and processed >= total:
             logger.info(f"Batch job {self.id} complete ({processed}/{total}).")
             return BatchJobStatus.STOPPED
 
-        if state in _ALIVE_STATES:
-            if processed > self.processed_highwater:
-                logger.debug(
-                    f"Batch job {self.id}: progress "
-                    f"{self.processed_highwater} -> {processed}."
-                )
-                self.processed_highwater = processed
+        if state == JobState.PENDING:
+            return BatchJobStatus.PENDING
+
+        if state in _ALIVE_STATES:  # RUNNING and other holding states
             return BatchJobStatus.RUNNING
 
         # Allocation ended with an empty/misconfigured input dir: nothing to
@@ -611,9 +620,13 @@ class BatchJob(UUIDAuditBase):
             )
             return BatchJobStatus.STOPPED
 
-        # Ended with work remaining (or an inconclusive count). Read-only callers
-        # report RUNNING; the restart decision belongs to poll().
-        return BatchJobStatus.RUNNING
+        # Slurm state is unknown (MISSING — the pid isn't registered yet, e.g. a
+        # just-(re)submitted allocation). Keep the current pre-running status
+        # (SUBMITTED/RESUBMITTED) so it isn't misreported as RUNNING; poll's
+        # restart decision also waits for a definite state.
+        if self.status == BatchJobStatus.RESUBMITTED:
+            return BatchJobStatus.RESUBMITTED
+        return BatchJobStatus.SUBMITTED
 
     async def refresh(self, client: TigerFlowClient) -> BatchJobStatus:
         """Read-only status refresh — never resubmits or mutates restart counters.
@@ -659,30 +672,29 @@ class BatchJob(UUIDAuditBase):
         if current is not None and current in _TERMINAL_STATUSES:
             return current
 
+        # Snapshot the high-water before the observation advances it, so the
+        # stall guard can tell whether *this* allocation made forward progress.
+        prev_highwater = self.processed_highwater
+
         processed, total, state = await self._observe(client)
         status = self._status_from_observation(processed, total, state)
 
-        # Restart only when the allocation has DEFINITELY ended. A non-terminal
-        # state — alive, or "unknown" (MISSING: a just-resubmitted pid sacct
-        # hasn't registered yet) — must not resubmit, or we double-allocate.
-        # Wait for the next poll instead.
-        if status != BatchJobStatus.RUNNING or state not in _TERMINAL_SLURM_STATES:
+        # Restart only when the allocation has DEFINITELY ended and work remains.
+        # A non-terminal state — alive, or "unknown" (MISSING: a just-(re)submitted
+        # pid sacct hasn't registered yet) — must not resubmit, or we
+        # double-allocate; report the derived status and wait for the next poll.
+        # An inconclusive input count (total is None) is likewise not a boundary.
+        if (
+            state not in _TERMINAL_SLURM_STATES
+            or status in _TERMINAL_STATUSES
+            or total is None
+        ):
             self.status = status
             return status
 
-        # An inconclusive input count (transient failure) is not a boundary we
-        # act on — leave the job RUNNING and retry on the next poll.
-        if total is None:
-            logger.warning(
-                f"Batch job {self.id}: could not count inputs; deferring restart."
-            )
-            self.status = BatchJobStatus.RUNNING
-            return BatchJobStatus.RUNNING
-
         # Allocation ended with work remaining. Evaluate the restart guards at
-        # this boundary.
-        if processed > self.processed_highwater:
-            self.processed_highwater = processed
+        # this boundary: did this allocation make progress since the last one?
+        if processed > prev_highwater:
             self.stalled_restarts = 0
         else:
             self.stalled_restarts += 1
@@ -709,5 +721,5 @@ class BatchJob(UUIDAuditBase):
         job_id = await self._submit(app_config)
         self.pid = job_id
         self.restarts += 1
-        self.status = BatchJobStatus.RUNNING
-        return BatchJobStatus.RUNNING
+        self.status = BatchJobStatus.RESUBMITTED
+        return BatchJobStatus.RESUBMITTED

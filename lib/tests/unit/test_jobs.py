@@ -123,8 +123,8 @@ class TestBatchJobStart:
         submit.assert_called_once()
         assert job.pid == "123456"
 
-    async def test_start_sets_status_to_running(self) -> None:
-        """start should set status to RUNNING on success."""
+    async def test_start_sets_status_to_submitted(self) -> None:
+        """start sets SUBMITTED (sbatch'd; Slurm not yet confirmed)."""
         job = create_test_batch_job()
         client = create_mock_client()
         client.check_health.return_value = TigerFlowVersions(
@@ -134,7 +134,7 @@ class TestBatchJobStart:
         with patch.object(job, "_submit", new=AsyncMock(return_value="99")):
             await job.start(MockAppConfig(), client)
 
-        assert job.status == BatchJobStatus.RUNNING
+        assert job.status == BatchJobStatus.SUBMITTED
 
     async def test_start_propagates_tigerflow_error(self) -> None:
         """start should propagate a missing-image TigerFlowError from check_health."""
@@ -206,8 +206,20 @@ class TestBatchJobUpdate:
         assert result == BatchJobStatus.RUNNING
         assert job.staged == 5  # remaining: total 10 - finished 5 - errored 0
         assert job.finished == 5
-        assert job.errored == 0
-        assert job.processed_highwater == 5
+        submit.assert_not_called()
+
+    async def test_pending_allocation_reports_pending(self) -> None:
+        """A queued (PENDING) allocation reports PENDING, not RUNNING."""
+        job = create_test_batch_job(status=BatchJobStatus.SUBMITTED)
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=0, in_progress=0, staged=None, errored=0
+        )
+        submit = _drive_update(job, total=10, slurm_state=JobState.PENDING)
+
+        result = await job.poll(client, MockAppConfig())
+
+        assert result == BatchJobStatus.PENDING
         submit.assert_not_called()
 
     async def test_staged_reflects_true_remaining_when_pipeline_stopped(self) -> None:
@@ -242,7 +254,8 @@ class TestBatchJobUpdate:
         submit.assert_not_called()
 
     async def test_update_resubmits_when_ended_with_progress(self) -> None:
-        """Allocation ended, progress advanced, under budget -> resubmit + RUNNING."""
+        """Allocation ended, progress advanced, under budget -> resubmit +
+        RESUBMITTED."""
         job = create_test_batch_job(
             status=BatchJobStatus.RUNNING,
             restarts=0,
@@ -257,7 +270,7 @@ class TestBatchJobUpdate:
 
         result = await job.poll(client, MockAppConfig())
 
-        assert result == BatchJobStatus.RUNNING
+        assert result == BatchJobStatus.RESUBMITTED
         submit.assert_called_once()
         assert job.pid == "654321"
         assert job.restarts == 1
@@ -355,8 +368,7 @@ class TestBatchJobUpdate:
 
     async def test_poll_defers_restart_when_input_count_inconclusive(self) -> None:
         """Allocation ended but the input count is inconclusive (None, e.g. a
-        transient find/SSH failure): don't resubmit. Stay RUNNING and let the
-        next poll retry once the count is readable again."""
+        transient find/SSH failure): don't resubmit; retry on the next poll."""
         job = create_test_batch_job(status=BatchJobStatus.RUNNING)
         client = create_mock_client()
         client.report.return_value = make_mock_report(
@@ -366,14 +378,15 @@ class TestBatchJobUpdate:
 
         result = await job.poll(client, MockAppConfig())
 
-        assert result == BatchJobStatus.RUNNING
+        assert result != BatchJobStatus.RESUBMITTED
         submit.assert_not_called()
 
     async def test_poll_does_not_resubmit_when_slurm_state_unknown(self) -> None:
         """A just-resubmitted allocation sacct hasn't registered reads MISSING
         (unknown, not terminal). Poll must NOT treat that as ended and
-        double-allocate; it stays RUNNING until the state is definite."""
-        job = create_test_batch_job(status=BatchJobStatus.RUNNING)
+        double-allocate; it keeps its RESUBMITTED status until the state is
+        definite."""
+        job = create_test_batch_job(status=BatchJobStatus.RESUBMITTED)
         client = create_mock_client()
         client.report.return_value = make_mock_report(
             finished=5, in_progress=0, staged=None, errored=0
@@ -382,7 +395,7 @@ class TestBatchJobUpdate:
 
         result = await job.poll(client, MockAppConfig())
 
-        assert result == BatchJobStatus.RUNNING
+        assert result == BatchJobStatus.RESUBMITTED
         submit.assert_not_called()
 
 

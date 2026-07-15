@@ -12,7 +12,8 @@ import {
   formattedTimeInterval,
   isRemoteProfile,
   isServiceRunning,
-  selectTierByModelSize
+  selectTierByModelSize,
+  isBatchJobActive,
 } from "@/lib/util";
 
 describe("Utils", () => {
@@ -402,6 +403,20 @@ describe("Utils", () => {
       ];
       expect(selectTierByModelSize(tiersWithUnlimited, 5)).toBe("Small");
       expect(selectTierByModelSize(tiersWithUnlimited, 15)).toBe("Unlimited");
+    });
+  });
+
+  describe("isBatchJobActive", () => {
+    it("is true for in-flight statuses", () => {
+      for (const s of ["submitted", "resubmitted", "pending", "running"]) {
+        expect(isBatchJobActive(s)).toBe(true);
+      }
+    });
+
+    it("is false for terminal statuses", () => {
+      for (const s of ["stopped", "stalled", "exhausted", "broken"]) {
+        expect(isBatchJobActive(s)).toBe(false);
+      }
     });
   });
 

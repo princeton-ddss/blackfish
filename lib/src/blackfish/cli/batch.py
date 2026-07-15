@@ -182,9 +182,16 @@ def list_batch_jobs(
 
         spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
+    _active = {
+        BatchJobStatus.SUBMITTED,
+        BatchJobStatus.RESUBMITTED,
+        BatchJobStatus.PENDING,
+        BatchJobStatus.RUNNING,
+    }
+
     def is_active(job: Any) -> bool:
         job_status = job.get("status")
-        return bool(job_status == BatchJobStatus.RUNNING or job_status == "running")
+        return job_status in _active or job_status in {s.value for s in _active}
 
     jobs = res.json()
     for job in jobs:

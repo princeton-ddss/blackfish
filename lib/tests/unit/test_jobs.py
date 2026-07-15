@@ -573,6 +573,32 @@ class TestCreateTigerflowClient:
         assert client.sif_path == "/scratch/.blackfish/images/tigerflow-ml_0.1.1.sif"
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_slurm_job_uses_apptainer_even_when_host_detects_docker(
+        self, mock_deserialize: Mock
+    ) -> None:
+        """The cluster runs Apptainer, so a Slurm job's client uses Apptainer
+        regardless of the Blackfish host's locally detected provider."""
+        from blackfish.server.models.profile import SlurmProfile
+
+        mock_deserialize.return_value = SlurmProfile(
+            name="default",
+            host="della",
+            user="alice",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/.blackfish",
+        )
+        job = create_test_batch_job(host="della", user="alice")
+
+        class DockerHostConfig:
+            HOME_DIR = "/home/test/.blackfish"
+            IMAGES = DEFAULT_IMAGES
+            CONTAINER_PROVIDER = ContainerProvider.Docker
+
+        client = create_tigerflow_client(job, DockerHostConfig())
+
+        assert client.provider is ContainerProvider.Apptainer
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
     def test_creates_ssh_runner_for_remote_job(self, mock_deserialize: Mock) -> None:
         """create_tigerflow_client should create SSHRunner for remote job."""
         from blackfish.server.jobs.client import SSHRunner

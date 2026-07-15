@@ -96,23 +96,27 @@ def format_status(status: BatchJobStatus | None) -> str:
 
 def _resolve_image_and_provider(
     app_config: "State | BlackfishConfig",
+    profile: "BlackfishProfile | None",
 ) -> tuple[Any, Any]:
-    """Resolve the tigerflow-ml ImageSpec and container provider from app config.
+    """Resolve the tigerflow-ml ImageSpec and container provider.
 
-    Both litestar ``State`` and ``BlackfishConfig`` expose ``IMAGES`` and
-    ``CONTAINER_PROVIDER``; fall back to the module-level config if not.
+    The cluster runs Apptainer, so only a LocalProfile consults the locally
+    detected ``CONTAINER_PROVIDER``; everything else is Apptainer.
     """
-    from blackfish.server.config import ContainerProvider
+    from blackfish.server.config import ContainerProvider, config as _config
 
-    images = getattr(app_config, "IMAGES", None)
-    provider = getattr(app_config, "CONTAINER_PROVIDER", None)
-    if images is None or provider is None:
-        from blackfish.server.config import config as _config
+    images = getattr(app_config, "IMAGES", None) or _config.IMAGES
 
-        images = images or _config.IMAGES
-        provider = provider or _config.CONTAINER_PROVIDER
-    # Cluster batch jobs default to Apptainer when no provider is detected.
-    return images["tigerflow_ml"], provider or ContainerProvider.Apptainer
+    if isinstance(profile, SlurmProfile):
+        provider = ContainerProvider.Apptainer
+    else:
+        provider = (
+            getattr(app_config, "CONTAINER_PROVIDER", None)
+            or _config.CONTAINER_PROVIDER
+            or ContainerProvider.Apptainer
+        )
+
+    return images["tigerflow_ml"], provider
 
 
 def create_tigerflow_client_for_profile(
@@ -142,7 +146,7 @@ def create_tigerflow_client_for_profile(
     else:
         runner = LocalRunner()
 
-    image, provider = _resolve_image_and_provider(app_config)
+    image, provider = _resolve_image_and_provider(app_config, profile)
     return TigerFlowClient(
         runner=runner,
         home_dir=profile.home_dir,
@@ -178,7 +182,7 @@ def create_tigerflow_client(
     # SIF location uses the profile cache_dir, not job.cache_dir (the HF cache).
     cache_dir = profile.cache_dir if profile else home_dir
 
-    image, provider = _resolve_image_and_provider(app_config)
+    image, provider = _resolve_image_and_provider(app_config, profile)
     return TigerFlowClient(
         runner=runner,
         home_dir=home_dir,
@@ -316,7 +320,7 @@ class BatchJob(UUIDAuditBase):
             home_dir, "jobs", self.id.hex, f"pipeline-{self.id}.yaml"
         )
 
-        image, provider = _resolve_image_and_provider(app_config)
+        image, provider = _resolve_image_and_provider(app_config, profile)
         env = Environment(loader=PackageLoader("blackfish.server", "templates"))
         template = env.get_template(f"batch_{scheduler}.sh")
         return template.render(

@@ -196,9 +196,9 @@ def list_batch_jobs(
     jobs = res.json()
     for job in jobs:
         if is_active(job) or all:
-            staged = job.get("staged") or 0
-            finished = job.get("finished") or 0
-            errored = job.get("errored") or 0
+            staged = int(job.get("staged") or 0)
+            finished = int(job.get("finished") or 0)
+            errored = int(job.get("errored") or 0)
             total = staged + finished + errored
             progress = f"{finished}/{total}" if total else "N/A"
 

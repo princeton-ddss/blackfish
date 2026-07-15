@@ -545,20 +545,32 @@ class TestCreateTigerflowClient:
             create_tigerflow_client(job, MockAppConfig())
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
-    def test_builds_client_with_image_and_provider(
+    def test_locates_sif_via_profile_cache_not_model_cache(
         self, mock_deserialize: Mock
     ) -> None:
-        """create_tigerflow_client should resolve image/provider from app config."""
-        mock_deserialize.return_value = None
+        """The SIF is located under the profile's cache_dir, not job.cache_dir
+        (which is the HF model cache, e.g. <profile.cache_dir>/models)."""
+        from blackfish.server.models.profile import SlurmProfile
+
+        mock_deserialize.return_value = SlurmProfile(
+            name="default",
+            host="della",
+            user="alice",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/.blackfish",
+        )
         job = create_test_batch_job(
-            host="localhost", home_dir="/home/user", cache_dir="/scratch/cache"
+            host="localhost",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/.blackfish/models",
         )
 
         client = create_tigerflow_client(job, MockAppConfig())
 
         assert client.image is DEFAULT_IMAGES["tigerflow_ml"]
         assert client.provider is ContainerProvider.Apptainer
-        assert client.cache_dir == "/scratch/cache"
+        assert client.cache_dir == "/scratch/.blackfish"
+        assert client.sif_path == "/scratch/.blackfish/images/tigerflow-ml_0.1.1.sif"
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
     def test_creates_ssh_runner_for_remote_job(self, mock_deserialize: Mock) -> None:

@@ -175,7 +175,8 @@ def create_tigerflow_client(
         runner = SSHRunner(user=job.user, host=job.host)
 
     home_dir = job.home_dir or (profile.home_dir if profile else "~/.blackfish")
-    cache_dir = job.cache_dir or (profile.cache_dir if profile else home_dir)
+    # SIF location uses the profile cache_dir, not job.cache_dir (the HF cache).
+    cache_dir = profile.cache_dir if profile else home_dir
 
     image, provider = _resolve_image_and_provider(app_config)
     return TigerFlowClient(

@@ -358,14 +358,13 @@ class TigerFlowClient:
     # -------------------------------------------------------------------------
 
     async def _sif_exists(self) -> bool:
-        """Return whether the SIF is present at the cache or home location.
+        """Return whether the SIF is present at the canonical launch location.
 
-        Mirrors ``cli/image.py:_sif_paths`` two-location convention.
+        The launch templates run the SIF from ``{cache_dir}/images/{sif}`` (the
+        same convention as the service templates), so the health check probes
+        that single location.
         """
-        home_sif = f"{self.home_dir}/images/{self.image.sif}"
-        returncode, _, _ = await self.runner.run(
-            f"test -f {self._sif} || test -f {home_sif}"
-        )
+        returncode, _, _ = await self.runner.run(f"test -f {self._sif}")
         return returncode == 0
 
     async def check_health(self) -> TigerFlowVersions:

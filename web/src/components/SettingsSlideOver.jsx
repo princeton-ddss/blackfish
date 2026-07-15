@@ -103,7 +103,6 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
     cache_dir: profile?.cache_dir || "",
     host: profile?.host || "",
     user: profile?.user || "",
-    python_path: profile?.python_path || "",
   }));
   const [formData, setFormData] = useState(initialFormData);
   const [error, setError] = useState(null);
@@ -170,7 +169,6 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
     if (formData.schema_type === "slurm") {
       data.host = formData.host;
       data.user = formData.user;
-      if (formData.python_path) data.python_path = formData.python_path;
     }
 
     // Renaming is a separate endpoint from the config update — the PUT route
@@ -358,22 +356,6 @@ function ProfileForm({ profile, existingNames = [], onSave, onCancel }) {
         {fieldErrors.cache_dir && <p className={errorClasses}>{fieldErrors.cache_dir}</p>}
       </div>
 
-      {/* Python Path (slurm only, optional) */}
-      {formData.schema_type === "slurm" && (
-        <div>
-          <label className={labelClasses}>
-            Python Path <span className="text-xs font-normal text-gray-500 dark:text-gray-400">Optional</span>
-          </label>
-          <input
-            type="text"
-            value={formData.python_path}
-            onChange={(e) => setFormData({ ...formData, python_path: e.target.value })}
-            placeholder="/usr/bin/python3"
-            className={`mt-1 ${inputClasses(false)}`}
-          />
-        </div>
-      )}
-
       {saving && (
         <p className="text-xs text-gray-500 dark:text-gray-400">
           Setting up the profile. Installing dependencies can take a few
@@ -411,7 +393,6 @@ ProfileForm.propTypes = {
     cache_dir: PropTypes.string,
     host: PropTypes.string,
     user: PropTypes.string,
-    python_path: PropTypes.string,
   }),
   existingNames: PropTypes.arrayOf(PropTypes.string),
   onSave: PropTypes.func.isRequired,

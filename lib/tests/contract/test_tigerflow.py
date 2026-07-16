@@ -18,11 +18,6 @@ import os
 import subprocess
 
 import pytest
-from packaging.version import Version
-
-from blackfish.server.jobs.client import (
-    MIN_TIGERFLOW_VERSION,
-)
 
 # Skip all tests in this module unless explicitly enabled
 pytestmark = pytest.mark.skipif(
@@ -63,21 +58,6 @@ class TestTigerflowVersion:
 
         assert returncode == 0, f"--version failed: {stderr}"
         assert stdout.strip(), "Expected version output"
-
-    def test_tigerflow_meets_minimum_version(self) -> None:
-        """tigerflow version should meet minimum requirements."""
-        returncode, stdout, _ = run_tigerflow("--version")
-        assert returncode == 0
-
-        # Parse version from output (format may vary)
-        version_str = stdout.strip().split()[-1]
-        try:
-            version = Version(version_str)
-            assert version >= Version(MIN_TIGERFLOW_VERSION), (
-                f"tigerflow {version} < {MIN_TIGERFLOW_VERSION}"
-            )
-        except Exception:
-            pytest.skip(f"Could not parse version from: {stdout}")
 
 
 class TestTigerflowTasksList:

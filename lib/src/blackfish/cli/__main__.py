@@ -30,7 +30,6 @@ from blackfish.cli.profile import (
     list_profiles,
     update_profile,
     delete_profile,
-    upgrade_tigerflow,
     repair_profile,
     set_default_profile,
     rename_profile,
@@ -208,7 +207,6 @@ profile.add_command(show_profile, "show")
 profile.add_command(create_profile, "add")
 profile.add_command(delete_profile, "rm")
 profile.add_command(update_profile, "update")
-profile.add_command(upgrade_tigerflow, "upgrade")
 profile.add_command(repair_profile, "repair")
 profile.add_command(set_default_profile, "default")
 profile.add_command(rename_profile, "rename")
@@ -257,16 +255,16 @@ def start(reload: bool | None) -> None:  # pragma: no cover
 
     _warn_if_no_profiles(config.HOME_DIR)
 
-    # Check TigerFlow versions on Slurm profiles
+    # Check the tigerflow-ml image is staged on Slurm profiles
+    from blackfish.server.config import ContainerProvider
     from blackfish.server.jobs.client import (
         TigerFlowClient,
         TigerFlowError,
         SSHRunner,
         LocalRunner,
-        MIN_TIGERFLOW_VERSION,
     )
 
-    async def check_tigerflow_versions() -> None:
+    async def check_tigerflow_images() -> None:
         profiles = configparser.ConfigParser()
         profiles.read(os.path.join(config.HOME_DIR, "profiles.cfg"))
 
@@ -279,13 +277,15 @@ def start(reload: bool | None) -> None:  # pragma: no cover
             host = profile.get("host")
             user = profile.get("user")
             home_dir = profile.get("home_dir")
-            python_path = profile.get("python_path", "python3")
+            cache_dir = profile.get("cache_dir")
 
-            if not host or not user or not home_dir:
+            if not host or not user or not home_dir or not cache_dir:
                 continue
 
             try:
-                logger.info(f"Checking TigerFlow on profile '{name}' ({host})...")
+                logger.info(
+                    f"Checking tigerflow-ml image on profile '{name}' ({host})..."
+                )
 
                 runner: SSHRunner | LocalRunner
                 if host == "localhost":
@@ -293,35 +293,33 @@ def start(reload: bool | None) -> None:  # pragma: no cover
                 else:
                     runner = SSHRunner(user=user, host=host)
 
+                # These are Slurm profiles (schema == "slurm"), so the container
+                # runs on the cluster under Apptainer regardless of what the
+                # Blackfish host has locally (which may be Docker).
                 client = TigerFlowClient(
                     runner=runner,
                     home_dir=home_dir,
-                    python_path=python_path,
+                    image=config.IMAGES["tigerflow_ml"],
+                    provider=ContainerProvider.Apptainer,
+                    cache_dir=cache_dir,
                 )
-                version_ok, current_version = await client.check_version()
-
-                if current_version is None:
-                    logger.warning(
-                        f"TigerFlow not installed on profile '{name}'. "
-                        f"Run: blackfish profile upgrade --name {name}"
-                    )
-                elif not version_ok:
-                    logger.warning(
-                        f"TigerFlow {current_version} on profile '{name}' is below "
-                        f"minimum {MIN_TIGERFLOW_VERSION}. "
-                        f"Run: blackfish profile upgrade --name {name}"
-                    )
-                else:
-                    logger.info(
-                        f"TigerFlow {current_version} on profile '{name}' is up to date."
-                    )
+                versions = await client.check_health()
+                logger.info(
+                    f"tigerflow-ml image available on profile '{name}' "
+                    f"(tigerflow {versions.tigerflow}, tigerflow-ml {versions.tigerflow_ml})."
+                )
             except TigerFlowError as e:
-                logger.warning(f"Could not check TigerFlow on profile '{name}': {e}")
+                logger.warning(
+                    f"tigerflow-ml image not available on profile '{name}': "
+                    f"{e.user_message()}"
+                )
+            except Exception as e:
+                logger.warning(f"Could not check tigerflow-ml image on '{name}': {e}")
 
     try:
-        asyncio.run(check_tigerflow_versions())
+        asyncio.run(check_tigerflow_images())
     except Exception as e:
-        logger.warning(f"TigerFlow version check failed: {e}")
+        logger.warning(f"tigerflow-ml image check failed: {e}")
 
     if reload is None:
         reload = config.DEBUG

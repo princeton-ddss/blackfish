@@ -272,31 +272,33 @@ def find_port(
     raise OSError(f"OSError: no ports available in range {lower}-{upper}")
 
 
-def format_datetime(
-    t0: datetime.datetime, t1: datetime.datetime = datetime.datetime.now(datetime.UTC)
-) -> str:
-    """Format datetime for pretty display.
+def format_datetime(t0: datetime.datetime, t1: datetime.datetime | None = None) -> str:
+    """Format a datetime as a human-readable "… ago" string.
 
-    Compute the `timedelta` between the given `datetime` and now and print the largest non-zero
-    unit of time down to seconds, e.g.,
+    Prints the largest non-zero unit down to seconds (e.g. "3 min ago"), or
+    "Now" for anything within the last second (including small clock skew that
+    puts ``t0`` slightly ahead of ``t1``).
 
-    `timedelta(days=0, seconds=180, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0)`
-
-    becomes "3 minutes ago", while
-
-    `timedelta(days=0, seconds=180, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0)`
-
-    becomes "Now".
+    ``t1`` defaults to the current time, evaluated per call. Both times are
+    coerced to UTC so a naive ``t0`` (e.g. parsed from an API timestamp without
+    an offset) is treated as UTC rather than raising on the subtraction.
     """
+    if t1 is None:
+        t1 = datetime.datetime.now(datetime.UTC)
 
-    td = t1 - t0
-    if td.days > 0:
-        return f"{td.days} days ago"
-    elif td.seconds > 3600:
-        return f"{td.seconds // 3600} hours ago"
-    elif td.seconds > 60:
-        return f"{td.seconds // 60} min ago"
-    elif td.seconds > 0:
-        return f"{td.seconds} sec ago"
-    else:
+    # Coerce both to aware-UTC so naive/aware never mix in the subtraction.
+    if t0.tzinfo is None:
+        t0 = t0.replace(tzinfo=datetime.UTC)
+    if t1.tzinfo is None:
+        t1 = t1.replace(tzinfo=datetime.UTC)
+
+    total_seconds = (t1 - t0).total_seconds()
+    if total_seconds < 1:  # now, or t0 slightly ahead due to clock skew
         return "Now"
+    if total_seconds >= 86400:
+        return f"{int(total_seconds // 86400)} days ago"
+    if total_seconds >= 3600:
+        return f"{int(total_seconds // 3600)} hours ago"
+    if total_seconds >= 60:
+        return f"{int(total_seconds // 60)} min ago"
+    return f"{int(total_seconds)} sec ago"

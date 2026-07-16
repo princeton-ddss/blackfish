@@ -157,25 +157,21 @@ async def repair_slurm_profile(
     user: str,
     home_dir: str,
     cache_dir: str,
-    python_path: str = "python3",
-    tigerflow_spec: str = "tigerflow",
-    tigerflow_ml_spec: str = "tigerflow-ml",
     force: bool = False,
     on_progress: Callable[[str], None] | None = None,
 ) -> RepairResult:
-    """Repair a Slurm profile's TigerFlow installation.
+    """Repair a Slurm profile.
 
-    Checks profile health first and skips repair if healthy (unless force=True).
+    Recreates the profile directories and verifies the tigerflow-ml container
+    image is staged. Performs no package installation — the image is the
+    execution environment (stage it via ``blackfish image ls``).
 
     Args:
         host: Hostname (use "localhost" for local execution)
         user: SSH username
         home_dir: Profile home directory on the cluster
         cache_dir: Cache directory on the cluster
-        python_path: Path to Python on the cluster
-        tigerflow_spec: Package spec for tigerflow
-        tigerflow_ml_spec: Package spec for tigerflow-ml
-        force: Force repair even if healthy
+        force: Recreate directories even if the image already looks staged
         on_progress: Optional callback for progress updates
 
     Returns:
@@ -183,9 +179,9 @@ async def repair_slurm_profile(
 
     Raises:
         ProfileSetupError: If directory setup fails
-        TigerFlowError: If TigerFlow operations fail
     """
     # Import here to avoid circular imports
+    from blackfish.server.config import config as app_config
     from blackfish.server.jobs.client import (
         LocalRunner,
         SSHRunner,
@@ -202,28 +198,33 @@ async def repair_slurm_profile(
     else:
         runner = SSHRunner(user=user, host=host)
 
+    from blackfish.server.config import ContainerProvider
+
+    # A Slurm profile's container runs on the cluster under Apptainer, regardless
+    # of the Blackfish host's locally detected provider (which may be Docker).
     client = TigerFlowClient(
         runner=runner,
         home_dir=home_dir,
-        python_path=python_path,
+        image=app_config.IMAGES["tigerflow_ml"],
+        provider=ContainerProvider.Apptainer,
+        cache_dir=cache_dir,
         on_progress=on_progress,
     )
 
-    # Check health first unless force
+    # Check the image is staged first unless force.
     if not force:
-        progress("Verifying TigerFlow installation...")
+        progress("Verifying tigerflow-ml image...")
         try:
             versions = await client.check_health()
-            await client.check_capabilities()
             return RepairResult(
                 repaired=False,
                 message=(
-                    f"TigerFlow is available (tigerflow {versions.tigerflow}, "
+                    f"tigerflow-ml image is available (tigerflow {versions.tigerflow}, "
                     f"tigerflow-ml {versions.tigerflow_ml}). Use --force to repair anyway."
                 ),
             )
         except TigerFlowError as e:
-            progress(f"Health check failed: {e.user_message()}")
+            progress(f"Image check failed: {e.user_message()}")
 
     # Set up directories
     profile_mgr = ProfileManager(
@@ -234,12 +235,6 @@ async def repair_slurm_profile(
     )
     await profile_mgr.create_directories()
     await profile_mgr.check_cache()
-
-    # Repair TigerFlow
-    await client.cleanup(
-        tigerflow_spec=tigerflow_spec,
-        tigerflow_ml_spec=tigerflow_ml_spec,
-    )
 
     return RepairResult(repaired=True, message=f"Profile repaired on {host}.")
 

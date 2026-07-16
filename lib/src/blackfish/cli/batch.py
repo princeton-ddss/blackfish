@@ -21,7 +21,6 @@ import yaml
 
 from blackfish.server.config import config
 from blackfish.server.jobs.base import BatchJobStatus
-from blackfish.server.jobs.client import VENV_PATH
 from blackfish.server.jobs.tasks import (
     SUPPORTED_TASKS,
     build_pipeline_config,
@@ -183,16 +182,23 @@ def list_batch_jobs(
 
         spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
+    _active = {
+        BatchJobStatus.SUBMITTED,
+        BatchJobStatus.RESUBMITTED,
+        BatchJobStatus.PENDING,
+        BatchJobStatus.RUNNING,
+    }
+
     def is_active(job: Any) -> bool:
         job_status = job.get("status")
-        return bool(job_status == BatchJobStatus.RUNNING or job_status == "running")
+        return job_status in _active or job_status in {s.value for s in _active}
 
     jobs = res.json()
     for job in jobs:
         if is_active(job) or all:
-            staged = job.get("staged") or 0
-            finished = job.get("finished") or 0
-            errored = job.get("errored") or 0
+            staged = int(job.get("staged") or 0)
+            finished = int(job.get("finished") or 0)
+            errored = int(job.get("errored") or 0)
             total = staged + finished + errored
             progress = f"{finished}/{total}" if total else "N/A"
 
@@ -561,16 +567,10 @@ def run_batch_job(
         if params_dict:
             task_params.update(params_dict)
 
-        venv_path = f"{matched_profile.home_dir}/{VENV_PATH}"
-
         pipeline_config = build_pipeline_config(
             task=task,
             input_ext=resolved_input_ext,
-            venv_path=venv_path,
             params=task_params,
-            resources=resources_dict,
-            max_workers=max_workers,
-            cache_dir=cache_dir,
         )
 
         click.echo("Pipeline config (dry run):\n")

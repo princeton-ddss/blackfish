@@ -763,13 +763,21 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       // Derive cache_dir from model's model_dir (parent directory)
       const cacheDir = model?.model_dir ? dirname(model.model_dir) : null;
 
-      // Derive output_ext from output_format param if present
-      const outputFormat = taskParams.output_format;
+      // output_format is a UI-only field: it selects the output *extension*
+      // (the tigerflow tasks derive their format from output_ext), so map it to
+      // output_ext and strip it from the params sent to tigerflow.
+      const { output_format: outputFormat, ...pipelineParams } = taskParams;
       const outputExt = outputFormat ? OUTPUT_FORMAT_EXT[outputFormat] : null;
+
+      // Default job name: a compact, Slurm-friendly token like
+      // "detect-detr-resnet-50" (task id + model basename), not the display
+      // name which can contain spaces/slashes.
+      const modelName = (model?.repo_id || repoId || "").split("/").pop() || "job";
+      const defaultName = `${task.id}-${modelName}`;
 
       // Build job request matching BatchJobRequest schema
       const jobRequest = {
-        name: jobName.trim() || `${task.name} - ${model?.repo_id || repoId}`,
+        name: jobName.trim() || defaultName,
         task: task.id,
         repo_id: model?.repo_id || repoId,
         revision: model?.revision || null,
@@ -779,7 +787,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
         input_ext: inputExt || task.defaultInputExt || null,
         output_ext: outputExt,
         cache_dir: cacheDir,
-        params: Object.keys(taskParams).length > 0 ? taskParams : null,
+        params: Object.keys(pipelineParams).length > 0 ? pipelineParams : null,
         resources: Object.keys(jobResources).length > 0 ? jobResources : null,
         max_workers: maxWorkers,
         idle_timeout: idleTimeout ? parseTimeToMinutes(idleTimeout) : undefined,

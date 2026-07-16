@@ -40,6 +40,30 @@ export const ServiceStatus = Object.freeze({
   FAILED: "failed",
 });
 
+export const BatchJobStatus = Object.freeze({
+  SUBMITTED: "submitted",
+  RESUBMITTED: "resubmitted",
+  PENDING: "pending",
+  RUNNING: "running",
+  STOPPED: "stopped",
+  BROKEN: "broken",
+  STALLED: "stalled",
+  EXHAUSTED: "exhausted",
+});
+
+// A batch job is "active" (in flight) while its allocation is submitted,
+// queued, or running — i.e. any non-terminal status. Stop is offered for
+// active jobs; delete only for terminal ones.
+const BATCH_JOB_ACTIVE_STATUSES = new Set([
+  BatchJobStatus.SUBMITTED,
+  BatchJobStatus.RESUBMITTED,
+  BatchJobStatus.PENDING,
+  BatchJobStatus.RUNNING,
+]);
+
+export const isBatchJobActive = (status) =>
+  BATCH_JOB_ACTIVE_STATUSES.has(status);
+
 /**
  * Status color scheme:
  * - green: operational (healthy)

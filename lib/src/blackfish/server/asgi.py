@@ -110,7 +110,6 @@ from blackfish.server.models.profile import (
 )
 from blackfish.server.jobs.client import (
     DEFAULT_IDLE_TIMEOUT,
-    TigerFlowClient,
     TigerFlowError,
     SSHRunner,
     LocalRunner,
@@ -1432,7 +1431,14 @@ async def run_job(
     logger.debug("Attempting to start batch job...")
     try:
         client = create_tigerflow_client(batch_job, state)
-        await batch_job.start(client)
+        await batch_job.start(state, client)
+    except ValueError as e:
+        # Bad request (e.g. input_dir does not exist): surface as 4xx and don't
+        # leave a phantom job behind.
+        await session.delete(batch_job)
+        await session.flush()
+        logger.warning(f"Rejected batch job request: {e}")
+        raise ValidationException(detail=str(e))
     except TigerFlowError as e:
         batch_job.status = BatchJobStatus.STOPPED
         detail = f"Unable to start batch job: {e.user_message()}"
@@ -1483,11 +1489,11 @@ async def fetch_jobs(
     jobs = list(res.scalars().all())
     logger.debug(f"Found {len(jobs)} matching batch jobs.")
 
-    # Update status for each job
+    # Update status for each job; poll() advances the restart loop.
     for job in jobs:
         try:
             client = create_tigerflow_client(job, state)
-            await job.update(client)
+            await job.poll(client, state)
             session.add(job)
         except Exception as e:
             logger.warning(f"Failed to update job {job.id}: {e}")
@@ -1608,16 +1614,27 @@ async def stop_job(
         await session.flush()
         return job
 
-    # Try to get final status - may fail if metadata was never created
+    # Read-only status refresh (must not resubmit the job we just stopped).
     try:
-        await job.update(client)
-    except TigerFlowError as e:
+        await job.refresh(client)
+    except Exception as e:
         logger.warning(f"Status check failed for job {job_id}: {e}")
         job.status = BatchJobStatus.BROKEN
 
     session.add(job)
     await session.flush()
     return job
+
+
+# Batch jobs are only deletable once they've reached a terminal state (or have
+# no metadata). Includes the restart-loop terminal states STALLED/EXHAUSTED.
+_DELETABLE_STATUSES = [
+    BatchJobStatus.STOPPED,
+    BatchJobStatus.STALLED,
+    BatchJobStatus.EXHAUSTED,
+    BatchJobStatus.BROKEN,
+    None,
+]
 
 
 @dataclass
@@ -1667,17 +1684,17 @@ async def delete_job(
         )
         return []
 
-    # Update job statuses before deletion check
+    # Read-only status refresh before the deletion check (must not resubmit).
     for job in jobs:
         try:
             client = create_tigerflow_client(job, state)
-            await job.update(client)
+            await job.refresh(client)
         except Exception as e:
             logger.warning(f"Failed to update job {job.id} status: {e}")
 
     res = []
     for batch_job in jobs:
-        if batch_job.status in [BatchJobStatus.STOPPED, BatchJobStatus.BROKEN, None]:
+        if batch_job.status in _DELETABLE_STATUSES:
             logger.debug(f"Queueing batch job {batch_job.id} for deletion")
             deletion = sa.delete(BatchJob).where(BatchJob.id == batch_job.id)
             try:
@@ -2636,7 +2653,6 @@ class ProfileRequest(BaseModel):
     user: Optional[str] = None  # Required for slurm
     home_dir: str
     cache_dir: str
-    python_path: Optional[str] = None  # For remote TigerFlow setup
 
 
 class RenameProfileRequest(BaseModel):
@@ -2693,7 +2709,9 @@ async def create_profile(data: ProfileRequest) -> Profile:
         else:
             runner = SSHRunner(user=data.user, host=data.host)
 
-        # Set up directories and TigerFlow
+        # Set up directories. The tigerflow-ml container image is staged
+        # separately (see `blackfish image ls`); profile setup performs no
+        # package installation.
         try:
             profile_mgr = ProfileManager(
                 runner=runner,
@@ -2702,16 +2720,7 @@ async def create_profile(data: ProfileRequest) -> Profile:
             )
             await profile_mgr.create_directories()
             await profile_mgr.check_cache()
-
-            tigerflow = TigerFlowClient(
-                runner=runner,
-                home_dir=data.home_dir,
-                python_path=data.python_path or "python3",
-            )
-            await tigerflow.setup()
         except ProfileSetupError as e:
-            raise InternalServerException(detail=e.user_message())
-        except TigerFlowError as e:
             raise InternalServerException(detail=e.user_message())
 
         is_default = not has_any_default(config)
@@ -2724,8 +2733,6 @@ async def create_profile(data: ProfileRequest) -> Profile:
             "cache_dir": data.cache_dir,
             "default": "true" if is_default else "false",
         }
-        if data.python_path:
-            config[data.name]["python_path"] = data.python_path
 
         _save_profiles_config(config)
 
@@ -2808,9 +2815,6 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
 
         host_changed = data.host != existing.get("host")
         user_changed = data.user != existing.get("user")
-        python_changed = (data.python_path or "python3") != existing.get(
-            "python_path", "python3"
-        )
         # Changing the target machine invalidates everything provisioned for it.
         full = schema_changed or host_changed or user_changed
 
@@ -2830,22 +2834,7 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
                 await profile_mgr.create_directories()
             if full or cache_changed:
                 await profile_mgr.check_cache()
-
-            # TigerFlow is installed under home_dir, so a home_dir change needs
-            # it (re)installed at the new location; python_path changes which
-            # interpreter builds its venv.
-            if full or home_changed or python_changed:
-                tigerflow = TigerFlowClient(
-                    runner=runner,
-                    home_dir=data.home_dir,
-                    python_path=data.python_path or "python3",
-                )
-                _, current_version = await tigerflow.check_version()
-                if current_version is None:
-                    await tigerflow.setup()
         except ProfileSetupError as e:
-            raise InternalServerException(detail=e.user_message())
-        except TigerFlowError as e:
             raise InternalServerException(detail=e.user_message())
 
         config[data.name] = {
@@ -2856,8 +2845,6 @@ async def update_profile(name: str, data: ProfileRequest) -> Profile:
             "cache_dir": data.cache_dir,
             "default": "true" if was_default else "false",
         }
-        if data.python_path:
-            config[data.name]["python_path"] = data.python_path
 
         _save_profiles_config(config)
 
@@ -3014,15 +3001,13 @@ async def rename_profile(
 @put("/api/profiles/{name:str}/repair", guards=ENDPOINT_GUARDS)
 async def repair_profile(
     name: str,
-    tigerflow_spec: str = "tigerflow",
-    tigerflow_ml_spec: str = "tigerflow-ml",
     force: bool = False,
 ) -> dict[str, str]:
     """Repair a Slurm profile.
 
-    Checks profile health first and skips repair if everything is working.
-    Use force=true to repair anyway.
-    Use query params to specify custom package specs (e.g., git URLs).
+    Recreates the profile directories, checks the cache, and verifies the
+    tigerflow-ml image is staged. Use force=true to recreate directories even
+    when the profile looks healthy.
     """
     config = _get_profiles_config()
 
@@ -3039,7 +3024,6 @@ async def repair_profile(
     user = profile_data.get("user")
     home_dir = profile_data.get("home_dir")
     cache_dir = profile_data.get("cache_dir")
-    python_path = profile_data.get("python_path", "python3")
 
     if not host or not user or not home_dir or not cache_dir:
         raise ValidationException(
@@ -3052,9 +3036,6 @@ async def repair_profile(
             user=user,
             home_dir=home_dir,
             cache_dir=cache_dir,
-            python_path=python_path,
-            tigerflow_spec=tigerflow_spec,
-            tigerflow_ml_spec=tigerflow_ml_spec,
             force=force,
         )
     except ProfileSetupError as e:
@@ -3063,63 +3044,6 @@ async def repair_profile(
         raise InternalServerException(detail=e.user_message())
 
     return {"status": "ok", "message": result.message}
-
-
-@put("/api/profiles/{name:str}/upgrade", guards=ENDPOINT_GUARDS)
-async def upgrade_profile(
-    name: str,
-    tigerflow_spec: str = "tigerflow",
-    tigerflow_ml_spec: str = "tigerflow-ml",
-) -> dict[str, str]:
-    """Upgrade TigerFlow on a Slurm profile.
-
-    Upgrades tigerflow and tigerflow-ml packages to the latest version.
-    Use query params to specify custom package specs (e.g., git URLs).
-    """
-    config = _get_profiles_config()
-
-    if name not in config:
-        raise NotFoundException(detail=f"Profile '{name}' not found.")
-
-    profile_data = dict(config[name])
-    schema = profile_data.get("schema") or profile_data.get("type")
-
-    if schema != "slurm":
-        raise ValidationException(
-            detail="Upgrade is only available for Slurm profiles."
-        )
-
-    host = profile_data.get("host")
-    user = profile_data.get("user")
-    home_dir = profile_data.get("home_dir")
-    python_path = profile_data.get("python_path", "python3")
-
-    if not host or not user or not home_dir:
-        raise ValidationException(
-            detail="Profile is missing required fields (host, user, home_dir)."
-        )
-
-    # Choose runner based on host
-    runner: SSHRunner | LocalRunner
-    if host == "localhost":
-        runner = LocalRunner()
-    else:
-        runner = SSHRunner(user=user, host=host)
-
-    try:
-        client = TigerFlowClient(
-            runner=runner,
-            home_dir=home_dir,
-            python_path=python_path,
-        )
-        await client.upgrade(
-            tigerflow_spec=tigerflow_spec,
-            tigerflow_ml_spec=tigerflow_ml_spec,
-        )
-    except TigerFlowError as e:
-        raise InternalServerException(detail=e.user_message())
-
-    return {"status": "ok", "message": f"TigerFlow upgraded on {host}."}
 
 
 # --- Cluster Status ---
@@ -3643,7 +3567,6 @@ app = Litestar(
         set_profile_default,
         rename_profile,
         repair_profile,
-        upgrade_profile,
         get_cluster_status,
         get_hf_token_status,
         set_hf_token,

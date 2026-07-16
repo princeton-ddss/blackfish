@@ -155,3 +155,12 @@ def test_format_datetime():
         2025, 1, 12, 14, 55, 29, 646404, tzinfo=datetime.timezone.utc
     )
     assert utils.format_datetime(t0, t1) == "3 min ago"
+
+    # Clock skew: t0 slightly ahead of t1 must read "Now", not wrap to hours.
+    t0 = datetime.datetime(2025, 1, 12, 14, 58, 30, 0, tzinfo=datetime.timezone.utc)
+    assert utils.format_datetime(t0, t1) == "Now"
+
+    # A naive t0 (e.g. an API timestamp without an offset) is treated as UTC,
+    # not a crash on aware/naive subtraction.
+    naive_t0 = datetime.datetime(2025, 1, 12, 14, 55, 29, 646404)
+    assert utils.format_datetime(naive_t0, t1) == "3 min ago"

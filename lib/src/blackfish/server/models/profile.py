@@ -33,7 +33,6 @@ class SlurmProfile:
     user: str
     home_dir: str
     cache_dir: str
-    python_path: str = "python3"
     schema: str = "slurm"
     default: bool = False
 
@@ -116,7 +115,6 @@ def _build_profile(name: str, raw: dict[str, str]) -> BlackfishProfile | None:
             user=raw["user"],
             home_dir=raw["home_dir"],
             cache_dir=raw["cache_dir"],
-            python_path=raw.get("python_path", "python3"),
             default=is_default,
         )
     if schema == "local":

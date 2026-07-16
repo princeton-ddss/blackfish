@@ -445,7 +445,7 @@ blackfish batch run \
   --model openai/whisper-large-v3 \
   --input-dir /scratch/shamu/audio \
   --output-dir /scratch/shamu/transcripts \
-  --max-workers 4
+  --resources '{"gpus": 1, "time": "02:00:00"}'
 ```
 
 The `--name`, `--task`, `--model`, `--input-dir`, and `--output-dir` flags are required. Other useful flags:
@@ -454,12 +454,26 @@ The `--name`, `--task`, `--model`, `--input-dir`, and `--output-dir` flags are r
 - `--revision`: specific model commit (defaults to the latest downloaded revision).
 - `--input-ext`: input file extension filter. Defaults to the task's typical extension.
 - `--params`: task-specific parameters as a JSON string, e.g. `'{"language": "en"}'` for transcribe.
-- `--resources`: per-worker Slurm resources as a JSON string, e.g. `'{"gpus": 1, "cpus": 4, "memory": "32GB", "time": "02:00:00"}'`.
-- `--max-workers`: maximum number of concurrent Slurm workers.
+- `--resources`: Slurm resources for the job's allocation as a JSON string, e.g. `'{"gpus": 1, "cpus": 4, "memory": "32GB", "time": "02:00:00"}'`.
 
 !!! tip
 
-    Add `--dry-run` to print the generated TigerFlow pipeline config without submitting the job. Useful for validating settings before a long-running batch.
+    Add `--dry-run` to print the generated pipeline config without submitting the job. Useful for validating settings before a long-running batch.
+
+#### Walltime and restarts
+
+A batch job runs as a Slurm allocation sized by `--resources`. If that allocation is killed at its
+walltime with files still unprocessed, Blackfish can resubmit it and resume where it left off —
+already-finished files are skipped — so the `time` you request need not cover the entire input
+directory.
+
+The resubmit is not automatic in the background: it happens when the job's status is
+refreshed by listing jobs. The Blackfish UI lists jobs on an interval, so under the UI restarts
+happen on their own. From the CLI, run `blackfish batch ls` to refresh — that check is what
+resubmits a walltime-killed job that still has work to do.
+
+A job that stops making progress across restarts (e.g. an input that always fails to process) is
+halted and reported as `STALLED`; one that exhausts its restart budget is reported as `EXHAUSTED`.
 
 ### `ls` - List batch jobs
 
@@ -467,7 +481,9 @@ The `--name`, `--task`, `--model`, `--input-dir`, and `--output-dir` flags are r
 blackfish batch ls
 ```
 
-Lists all batch jobs with their current status, task, model, and per-file progress.
+Lists all batch jobs with their current status, task, model, and per-file progress. Listing also
+refreshes each job's status, which is what resubmits a walltime-killed job that still has work
+remaining (see [Walltime and restarts](#walltime-and-restarts)).
 
 ### `stop` - Stop a batch job
 
@@ -475,7 +491,14 @@ Lists all batch jobs with their current status, task, model, and per-file progre
 blackfish batch stop <job-id>
 ```
 
-Stops a running batch job. Partial results already written to the output directory are preserved.
+Stops a running batch job and cancels its Slurm allocation. Partial results already written to the
+output directory are preserved.
+
+!!! warning
+
+    Stopping a job is final. A stopped job is never resubmitted, even if files remain unprocessed —
+    there is no resume-after-stop. To finish the remaining files, submit a new job pointed at the
+    same output directory; already-finished files are skipped.
 
 ### `rm` - Delete a batch job
 

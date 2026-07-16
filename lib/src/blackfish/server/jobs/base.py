@@ -590,16 +590,14 @@ class BatchJob(UUIDAuditBase):
     def _status_from_observation(
         self, processed: int, total: int | None, state: JobState
     ) -> BatchJobStatus:
-        """Read-only status decision from an observation (no restart, no I/O)."""
-        # Durable progress from the report is independent of the Slurm state, so
-        # advance the high-water mark on every observation.
-        if processed > self.processed_highwater:
-            logger.debug(
-                f"Batch job {self.id}: progress "
-                f"{self.processed_highwater} -> {processed}."
-            )
-            self.processed_highwater = processed
+        """Read-only status decision from an observation (no restart, no I/O).
 
+        Does NOT touch ``processed_highwater``: that mark is the ``processed``
+        count as of the last restart *boundary*, advanced only in ``poll`` when
+        an allocation ends. Bumping it on every running poll would make the stall
+        guard always see "no progress since high-water" (the running polls would
+        have already raised it to the current count), stalling every restart.
+        """
         # Done: as many .finished markers as there are inputs.
         if total is not None and total > 0 and processed >= total:
             logger.info(f"Batch job {self.id} complete ({processed}/{total}).")
@@ -672,8 +670,9 @@ class BatchJob(UUIDAuditBase):
         if current is not None and current in _TERMINAL_STATUSES:
             return current
 
-        # Snapshot the high-water before the observation advances it, so the
-        # stall guard can tell whether *this* allocation made forward progress.
+        # The high-water is the processed count as of the last restart boundary.
+        # Comparing this allocation's processed count against it tells the stall
+        # guard whether *this* allocation made forward progress.
         prev_highwater = self.processed_highwater
 
         processed, total, state = await self._observe(client)
@@ -694,8 +693,11 @@ class BatchJob(UUIDAuditBase):
 
         # Allocation ended with work remaining. Evaluate the restart guards at
         # this boundary: did this allocation make progress since the last one?
+        # Advance the high-water only here, at the boundary, so the next
+        # allocation is measured against where this one finished.
         if processed > prev_highwater:
             self.stalled_restarts = 0
+            self.processed_highwater = processed
         else:
             self.stalled_restarts += 1
 

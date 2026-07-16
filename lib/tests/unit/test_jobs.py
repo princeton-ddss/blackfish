@@ -278,6 +278,47 @@ class TestBatchJobUpdate:
         assert job.stalled_restarts == 0
         assert job.processed_highwater == 5
 
+    async def test_running_polls_do_not_stall_next_boundary(self) -> None:
+        """Running polls must not advance the stall high-water.
+
+        Regression: the high-water is the ``processed`` count as of the last
+        restart *boundary*. If ordinary RUNNING polls raised it to the live
+        count, the boundary would compare that count against itself, see "no
+        progress", and STALL every first restart. Reproduces a mid-run
+        ``scancel`` after progress: several running polls, then a CANCELLED
+        boundary that must RESUBMIT.
+        """
+        job = create_test_batch_job(
+            status=BatchJobStatus.RUNNING,
+            restarts=0,
+            processed_highwater=0,
+            stalled_restarts=0,
+            max_stalled_restarts=1,
+        )
+        client = create_mock_client()
+
+        # Two running polls that show real progress (0 -> 3 -> 6 of 10).
+        for finished in (3, 6):
+            client.report.return_value = make_mock_report(
+                finished=finished, in_progress=1, staged=None, errored=0
+            )
+            _drive_update(job, total=10, slurm_state=JobState.RUNNING)
+            assert await job.poll(client, MockAppConfig()) == BatchJobStatus.RUNNING
+
+        # The allocation is cancelled mid-run with 6/10 done: resubmit, not stall.
+        client.report.return_value = make_mock_report(
+            finished=6, in_progress=0, staged=None, errored=0
+        )
+        submit = _drive_update(job, total=10, slurm_state=JobState.CANCELLED)
+
+        result = await job.poll(client, MockAppConfig())
+
+        assert result == BatchJobStatus.RESUBMITTED
+        submit.assert_called_once()
+        assert job.restarts == 1
+        assert job.stalled_restarts == 0
+        assert job.processed_highwater == 6  # advanced at the boundary
+
     async def test_update_stalls_when_no_progress(self) -> None:
         """Ended, no progress, stall budget reached -> STALLED."""
         job = create_test_batch_job(

@@ -1,7 +1,7 @@
 {% block sbatch -%}
 #!/bin/bash
 
-#SBATCH --job-name={{ name }}
+#SBATCH --job-name="{{ name }}"
 #SBATCH --nodes={{ job_config.nodes }}
 #SBATCH --ntasks-per-node={{ job_config.ntasks_per_node }}
 #SBATCH --mem={{ job_config.mem }}G

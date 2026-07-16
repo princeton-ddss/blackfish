@@ -115,8 +115,9 @@ def test_batch_slurm_renders_apptainer_run():
     # tigerflow pipeline run and resume behavior
     assert f"run {PIPELINE_PATH} {INPUT_DIR} {OUTPUT_DIR}" in rendered
     assert f"--idle-timeout {IDLE_TIMEOUT}" in rendered
-    # sbatch directives from base template
-    assert "#SBATCH --job-name=batch-job" in rendered
+    # sbatch directives from base template; job-name is quoted so names with
+    # spaces (e.g. a task display name) don't break sbatch parsing.
+    assert '#SBATCH --job-name="batch-job"' in rendered
     assert "#SBATCH --gres=gpu:1" in rendered
     # pipeline YAML written into the script
     assert "tasks:" in rendered

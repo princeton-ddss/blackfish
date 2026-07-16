@@ -769,9 +769,15 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       const { output_format: outputFormat, ...pipelineParams } = taskParams;
       const outputExt = outputFormat ? OUTPUT_FORMAT_EXT[outputFormat] : null;
 
+      // Default job name: a compact, Slurm-friendly token like
+      // "detect-detr-resnet-50" (task id + model basename), not the display
+      // name which can contain spaces/slashes.
+      const modelName = (model?.repo_id || repoId || "").split("/").pop() || "job";
+      const defaultName = `${task.id}-${modelName}`;
+
       // Build job request matching BatchJobRequest schema
       const jobRequest = {
-        name: jobName.trim() || `${task.name} - ${model?.repo_id || repoId}`,
+        name: jobName.trim() || defaultName,
         task: task.id,
         repo_id: model?.repo_id || repoId,
         revision: model?.revision || null,

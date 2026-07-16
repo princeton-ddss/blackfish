@@ -768,7 +768,9 @@ def repair_profile(
             home_dir=profile_home_dir,
             cache_dir=cache_dir,
             image=blackfish_config.IMAGES["tigerflow_ml"],
-            provider=blackfish_config.CONTAINER_PROVIDER or ContainerProvider.Apptainer,
+            # Repair only runs for Slurm profiles (guarded above); the cluster
+            # runs Apptainer regardless of the local provider.
+            provider=ContainerProvider.Apptainer,
             force=force,
         )
     except ProfileSetupError as e:

@@ -200,11 +200,13 @@ async def repair_slurm_profile(
 
     from blackfish.server.config import ContainerProvider
 
+    # A Slurm profile's container runs on the cluster under Apptainer, regardless
+    # of the Blackfish host's locally detected provider (which may be Docker).
     client = TigerFlowClient(
         runner=runner,
         home_dir=home_dir,
         image=app_config.IMAGES["tigerflow_ml"],
-        provider=app_config.CONTAINER_PROVIDER or ContainerProvider.Apptainer,
+        provider=ContainerProvider.Apptainer,
         cache_dir=cache_dir,
         on_progress=on_progress,
     )

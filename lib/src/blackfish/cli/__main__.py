@@ -293,11 +293,14 @@ def start(reload: bool | None) -> None:  # pragma: no cover
                 else:
                     runner = SSHRunner(user=user, host=host)
 
+                # These are Slurm profiles (schema == "slurm"), so the container
+                # runs on the cluster under Apptainer regardless of what the
+                # Blackfish host has locally (which may be Docker).
                 client = TigerFlowClient(
                     runner=runner,
                     home_dir=home_dir,
                     image=config.IMAGES["tigerflow_ml"],
-                    provider=config.CONTAINER_PROVIDER or ContainerProvider.Apptainer,
+                    provider=ContainerProvider.Apptainer,
                     cache_dir=cache_dir,
                 )
                 versions = await client.check_health()

@@ -31,13 +31,13 @@ Let's consider what happens when a user launches a service from their laptop tar
 
 ## Images
 
-Blackfish does **not** ship with the container images required to run services. These images should be downloaded before running services[^1]. To see the images required by your installed version of Blackfish, run:
+Blackfish does **not** ship with the container images required to run services and batch jobs. These images should be downloaded before use[^1]. To see the images required by your installed version of Blackfish, run:
 
 ```shell
 blackfish image ls
 ```
 
-This lists each service's pinned image and whether it is available in the configured cache. Pinned versions change over time as Blackfish releases bump the underlying runtimes.
+This lists each pinned image — one per service, plus the tigerflow-ml image used for batch jobs — and whether it is available in the configured cache. Pinned versions change over time as Blackfish releases bump the underlying runtimes.
 
 ### Obtaining Images
 
@@ -47,7 +47,13 @@ Services deployed on HPC systems require Apptainer, which uses Single Image Form
 apptainer pull docker://ghcr.io/princeton-ddss/speech-recognition-inference:0.1.2
 ```
 
-This command generates a file `speech-recognition-inference_0.1.2.sif` in the directory where it is run. Blackfish looks for images in the `cache_dir/images` directory specified by your profile. If you are an HPC admin setting up a shared environment, move images to the shared cache directory (e.g., `/shared/.blackfish/images`). If you are an individual user and your cache directory is read-only, ask your admin to add the required images or set your profile's `cache_dir` to a directory you can write to.
+This command generates a file `speech-recognition-inference_0.1.2.sif` in the directory where it is run. The tigerflow-ml image used for batch jobs is staged the same way — pull the version reported by `blackfish image ls`, e.g.
+
+```shell
+apptainer pull docker://ghcr.io/princeton-ddss/tigerflow-ml:0.1.1
+```
+
+Blackfish looks for images in the `cache_dir/images` directory specified by your profile. If you are an HPC admin setting up a shared environment, move images to the shared cache directory (e.g., `/shared/.blackfish/images`). If you are an individual user and your cache directory is read-only, ask your admin to add the required images or set your profile's `cache_dir` to a directory you can write to.
 
 ## Models
 
@@ -99,7 +105,7 @@ The `snapshot_download` method stores model files to `~/.cache/huggingface/hub/`
 
 ## Batch Jobs
 
-Blackfish delegates batch job execution to [TigerFlow](https://github.com/princeton-ddss/tigerflow), a companion project for running task-based pipelines on Slurm clusters. TigerFlow is installed automatically the first time you create a Slurm profile, so users typically don't need to manage it directly. If the install fails, users can re-run it via `blackfish profile repair`, and upgrade an existing install via `blackfish profile upgrade`.
+Blackfish runs batch jobs inside the [tigerflow-ml](https://github.com/princeton-ddss/tigerflow-ml) container image, a companion project for running task-based pipelines on Slurm clusters. Like service images, the tigerflow-ml image must be available in the profile's cache — see [Images](#images) for how to stage it. Once the image is present, any Slurm profile can run batch jobs; `blackfish profile repair` verifies the image is in place.
 
 ## Resource Tiers
 

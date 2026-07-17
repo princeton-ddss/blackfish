@@ -306,15 +306,23 @@ class BatchJob(UUIDAuditBase):
         return yaml.dump(config, default_flow_style=False)
 
     def _job_config(self) -> SlurmJobConfig:
-        """Build the sbatch resource config from ``self.resources``."""
-        res = {**DEFAULT_JOB_RESOURCES, **(self.resources or {})}
+        """Build the sbatch resource config from ``self.resources``.
+
+        GPU count accepts either ``gpus`` (what the launcher/services send) or
+        ``gres``. This is resolved against the *raw* request resources, not a
+        dict pre-merged with ``DEFAULT_JOB_RESOURCES`` — otherwise the default
+        ``gres`` would always shadow an explicit ``gpus``.
+        """
+        req = self.resources or {}
+        gpu_count = req.get("gres", req.get("gpus", DEFAULT_JOB_RESOURCES["gres"]))
+        res = {**DEFAULT_JOB_RESOURCES, **req}
         return SlurmJobConfig(
             name=self.name,
             time=str(res.get("time", DEFAULT_JOB_RESOURCES["time"])),
             nodes=int(res.get("nodes", 1)),
             ntasks_per_node=int(res.get("cpus", DEFAULT_JOB_RESOURCES["cpus"])),
             mem=int(res.get("mem", DEFAULT_JOB_RESOURCES["mem"])),
-            gres=int(res.get("gres", res.get("gpus", DEFAULT_JOB_RESOURCES["gres"]))),
+            gres=int(gpu_count),
             partition=res.get("partition"),
             constraint=res.get("constraint"),
             account=res.get("account"),

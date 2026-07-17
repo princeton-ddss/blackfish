@@ -961,16 +961,19 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       const selectedTierObj = tiers.find(t => t.name === selectedTier);
       const jobResources = {};
 
-      // Map tier fields to backend format
+      // Map tier fields to the backend resource keys read by _job_config
+      // (cpus, mem in GB, gpus). Note the key is `mem` (an integer number of
+      // GB), not `memory` — the backend renders `--mem={mem}G`.
       if (selectedTierObj?.cpu_cores) jobResources.cpus = selectedTierObj.cpu_cores;
-      if (selectedTierObj?.memory_gb) jobResources.memory = `${selectedTierObj.memory_gb}GB`;
+      if (selectedTierObj?.memory_gb) jobResources.mem = selectedTierObj.memory_gb;
       if (selectedTierObj?.gpu_count) jobResources.gpus = selectedTierObj.gpu_count;
 
-      // Add optional advanced options as sbatch_options
-      const sbatchOptions = [];
-      if (account) sbatchOptions.push(`--account=${account}`);
+      // Slurm account: the batch job's sbatch script renders --account from
+      // job_config.account (a top-level resources field), so send it there —
+      // not as a free-form sbatch_options entry, which the batch templates
+      // don't render (matching how services pass the account).
+      if (account) jobResources.account = account;
       if (workerTimeout) jobResources.time = `${workerTimeout}:00`;
-      if (sbatchOptions.length > 0) jobResources.sbatch_options = sbatchOptions;
 
       // Derive cache_dir from model's model_dir (parent directory)
       const cacheDir = model?.model_dir ? dirname(model.model_dir) : null;

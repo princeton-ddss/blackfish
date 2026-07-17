@@ -829,3 +829,37 @@ class TestTasks:
         assert task["output_ext"] == ".json"
         assert task["params"]["model"] == "openai/whisper-large-v3"
         assert task["params"]["language"] == "en"
+
+    def test_job_config_maps_account_from_resources(self) -> None:
+        """A Slurm account passed in resources reaches SlurmJobConfig.account.
+
+        The launcher sends the account as a top-level resources field (not a
+        free-form sbatch option), and clusters that require --account reject
+        jobs without it.
+        """
+        job = create_test_batch_job(resources={"account": "cses"})
+        assert job._job_config().account == "cses"
+
+    def test_job_config_account_is_none_when_absent(self) -> None:
+        """No account in resources -> None (no --account directive rendered)."""
+        job = create_test_batch_job(resources={})
+        assert job._job_config().account is None
+
+    def test_job_config_maps_resources_to_sbatch_fields(self) -> None:
+        """Tier resources map to the sbatch config the launcher must send:
+        cpus->ntasks_per_node, mem (GB int), gpus->gres, time, partition."""
+        job = create_test_batch_job(
+            resources={
+                "cpus": 8,
+                "mem": 64,
+                "gpus": 2,
+                "time": "02:00:00",
+                "partition": "gpu",
+            }
+        )
+        cfg = job._job_config()
+        assert cfg.ntasks_per_node == 8
+        assert cfg.mem == 64
+        assert cfg.gres == 2
+        assert cfg.time == "02:00:00"
+        assert cfg.partition == "gpu"

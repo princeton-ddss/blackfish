@@ -36,6 +36,7 @@ DEFAULT_INPUT_EXT: dict[str, str] = {
 DEFAULT_OUTPUT_EXT: dict[str, str] = {
     "detect": ".json",  # Object detection always outputs JSON
     "translate": ".txt",  # Translation outputs text files
+    "chat": ".txt",  # Chat writes the model response as text
 }
 
 

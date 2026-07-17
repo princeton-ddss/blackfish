@@ -102,6 +102,30 @@ describe("isParamVisible — videoOnly", () => {
       expect(p.videoOnly).toBe(true);
     }
   });
+
+  test("dtype applies to both image and video (not video-only)", () => {
+    const dtype = detect.params.find((p) => p.name === "dtype");
+    expect(dtype.videoOnly).toBeUndefined();
+    expect(isParamVisible(dtype, { inputExt: ".jpg" })).toBe(true);
+    expect(isParamVisible(dtype, { inputExt: ".mp4" })).toBe(true);
+  });
+});
+
+describe("isParamVisible — showWhen.modelType", () => {
+  // detect's `labels` is zero-shot only. A stale value must not leak through
+  // any call site when the model type no longer matches.
+  const labels = detect.params.find((p) => p.name === "labels");
+
+  test("model-type-gated params show only for the matching model type", () => {
+    expect(
+      isParamVisible(labels, { modelType: "zero-shot-object-detection" })
+    ).toBe(true);
+    expect(isParamVisible(labels, { modelType: "object-detection" })).toBe(
+      false
+    );
+    // No model type known yet -> hidden (can't confirm the match).
+    expect(isParamVisible(labels, {})).toBe(false);
+  });
 });
 
 describe("isParamVisible — showWhenParam", () => {

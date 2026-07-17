@@ -474,10 +474,16 @@ const VIDEO_INPUT_EXTS = new Set([
 ]);
 
 // Whether a param applies given the current form state. Hides params the task
-// would ignore: `videoOnly` params for image inputs (e.g. detect's batch_size),
-// and params gated on another param's value via `showWhenParam` (e.g.
-// transcribe's batch_size only applies when windowing is "batched").
-export function isParamVisible(param, { inputExt, taskParams } = {}) {
+// would ignore: `showWhen.modelType` params for a mismatched model (e.g.
+// detect's labels, zero-shot only), `videoOnly` params for image inputs (e.g.
+// detect's batch_size), and params gated on another param's value via
+// `showWhenParam` (e.g. transcribe's batch_size only applies when windowing is
+// "batched"). All three call sites (render, validation, submit) go through this
+// one predicate so a hidden param's stale value is never sent.
+export function isParamVisible(param, { inputExt, taskParams, modelType } = {}) {
+  if (param.showWhen?.modelType && modelType !== param.showWhen.modelType) {
+    return false;
+  }
   if (param.videoOnly && !VIDEO_INPUT_EXTS.has(inputExt)) {
     return false;
   }
@@ -979,16 +985,24 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       // strings, but tigerflow tasks consume params by their real type (e.g.
       // `batch_size > 1`), so a string would crash the task. Numbers/booleans
       // are converted; empty optional fields are dropped rather than sent blank.
-      // Params hidden for the selected input (e.g. video-only params on an image
-      // input) are also dropped, so a stale value from switching format isn't sent.
+      // A param hidden for the current form state (mismatched model type,
+      // video-only on an image input, or value-gated) is dropped, so a stale
+      // value left over from switching model/format/strategy isn't sent.
       const resolvedInputExt = inputExt || task.defaultInputExt;
       const pipelineParams = {};
       for (const [key, value] of Object.entries(rawParams)) {
-        if (value === "" || value === undefined || value === null) continue;
+        // Drop empty / whitespace-only values so an untouched optional field
+        // isn't submitted (a bare " " must not coerce to 0 for a number param).
+        if (value === undefined || value === null) continue;
+        if (typeof value === "string" && value.trim() === "") continue;
         const spec = task.params.find((p) => p.name === key);
         if (
           spec &&
-          !isParamVisible(spec, { inputExt: resolvedInputExt, taskParams })
+          !isParamVisible(spec, {
+            inputExt: resolvedInputExt,
+            taskParams,
+            modelType,
+          })
         ) {
           continue;
         }
@@ -1059,15 +1073,13 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
           return false;
         }
         for (const param of task.params) {
-          // Skip params that don't apply to current model type
-          if (param.showWhen?.modelType && modelType !== param.showWhen.modelType) {
-            continue;
-          }
-          // Skip params hidden for the current form state (video-only, gated)
+          // Skip params hidden for the current form state (mismatched model
+          // type, video-only, or value-gated).
           if (
             !isParamVisible(param, {
               inputExt: inputExt || task.defaultInputExt,
               taskParams,
+              modelType,
             })
           ) {
             continue;
@@ -1228,18 +1240,15 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
             )}
 
             {task.params
-              .filter((param) => {
-                // Filter out params with showWhen conditions that don't match
-                if (param.showWhen?.modelType) {
-                  return modelType === param.showWhen.modelType;
-                }
-                // Hide params the task would ignore (video-only for images,
-                // or gated on another param's value).
-                return isParamVisible(param, {
+              .filter((param) =>
+                // Hide params the task would ignore (mismatched model type,
+                // video-only for images, or gated on another param's value).
+                isParamVisible(param, {
                   inputExt: inputExt || task.defaultInputExt,
                   taskParams,
-                });
-              })
+                  modelType,
+                })
+              )
               .map((param) => {
                 // Params with showWhen are required when shown
                 const paramRequired = param.showWhen ? true : param.required;

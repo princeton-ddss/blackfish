@@ -23,6 +23,7 @@ import RevisionSelect from "@/components/RevisionSelect";
 import PartitionSelect from "@/components/PartitionSelect";
 import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
+import ServiceModalCheckBox from "@/components/ServiceModalCheckbox";
 import Alert from "@/components/Alert";
 import Stepper from "@/components/Stepper";
 import DirectoryBrowser from "@/components/DirectoryBrowser";
@@ -67,6 +68,7 @@ export const TASKS = [
       {
         name: "threshold",
         type: "text",
+        valueType: "number",
         required: false,
         label: "Confidence Threshold",
         help: "Minimum confidence score (0-1). Default: 0.3",
@@ -75,18 +77,46 @@ export const TASKS = [
       {
         name: "batch_size",
         type: "text",
+        valueType: "number",
+        videoOnly: true,
         required: false,
         label: "Batch Size",
-        help: "Parallel frame processing count. Default: 4",
+        help: "Frames processed in parallel on the GPU. Default: 4",
         placeholder: "4",
       },
       {
         name: "sample_fps",
         type: "text",
+        valueType: "number",
+        videoOnly: true,
         required: false,
         label: "Sample FPS",
-        help: "Video sampling rate. Use 0 for all frames. Default: 1.0",
+        help: "Frames per second to sample. Use 0 for all frames. Default: 1.0",
         placeholder: "1.0",
+      },
+      {
+        name: "dtype",
+        type: "select",
+        required: false,
+        label: "Model Precision",
+        help: "Model dtype. 'auto' uses float16 on GPU, float32 on CPU.",
+        default: "auto",
+        options: [
+          { value: "auto", label: "Auto" },
+          { value: "float32", label: "float32" },
+          { value: "float16", label: "float16" },
+          { value: "bfloat16", label: "bfloat16" },
+        ],
+      },
+      {
+        name: "compile",
+        type: "checkbox",
+        valueType: "boolean",
+        videoOnly: true,
+        required: false,
+        label: "Compile model (torch.compile)",
+        help: "Adds 30-60s first-call overhead; worthwhile for long videos.",
+        default: false,
       },
     ],
   },
@@ -96,7 +126,11 @@ export const TASKS = [
     description: "Extract text from images",
     service: "image-text-to-text", // Vision models only
     defaultInputExt: ".png",
+    // The image-text-to-text task has no server-side default prompt, so the
+    // prompt is required. `defaultPrompt` seeds the field as an editable value
+    // (not just a placeholder the user can leave blank).
     defaultPrompt: "Extract all text from this image.",
+    promptRequired: true,
     inputExtOptions: [
       { value: ".png", label: "PNG (.png)" },
       { value: ".jpg", label: "JPEG (.jpg)" },
@@ -116,6 +150,15 @@ export const TASKS = [
           { value: "json", label: "JSON (.json)" },
         ],
         default: "text",
+      },
+      {
+        name: "max_tokens",
+        type: "text",
+        valueType: "number",
+        required: false,
+        label: "Max Tokens",
+        help: "Maximum tokens generated per image. Default: 4096",
+        placeholder: "4096",
       },
     ],
   },
@@ -140,7 +183,7 @@ export const TASKS = [
         type: "select",
         required: false,
         label: "Language",
-        help: "Language spoken in the audio. Leave empty to auto-detect.",
+        help: "Language spoken in the audio.",
         options: [
           { value: "", label: "Auto-detect" },
           { value: "en", label: "English" },
@@ -170,6 +213,48 @@ export const TASKS = [
         ],
         default: "text",
       },
+      {
+        name: "windowing",
+        type: "select",
+        required: false,
+        label: "Decode Strategy",
+        help: "Batching cuts audio into parallel 30s windows (faster, less accurate); native decoding uses Whisper's sequential algorithm (slower, more accurate).",
+        default: "batched",
+        options: [
+          { value: "batched", label: "Batched (fastest)" },
+          { value: "native", label: "Native (most accurate)" },
+        ],
+      },
+      {
+        name: "batch_size",
+        type: "text",
+        valueType: "number",
+        required: false,
+        showWhenParam: { name: "windowing", value: "batched", default: "batched" },
+        label: "Batch Size",
+        help: "30s windows decoded per batch. Higher uses more GPU memory. Default: 16",
+        placeholder: "16",
+      },
+      {
+        name: "overlap_s",
+        type: "text",
+        valueType: "number",
+        required: false,
+        showWhenParam: { name: "windowing", value: "batched", default: "batched" },
+        label: "Window Overlap (s)",
+        help: "Overlap between 30s windows, de-duplicated when stitching. Default: 5.0",
+        placeholder: "5.0",
+      },
+      {
+        name: "raw",
+        type: "checkbox",
+        valueType: "boolean",
+        required: false,
+        showWhenParam: { name: "output_format", value: "json", default: "text" },
+        label: "Raw segments",
+        help: "Emit un-merged per-window segments instead of the merged transcript.",
+        default: false,
+      },
     ],
   },
   {
@@ -178,15 +263,18 @@ export const TASKS = [
     description: "Translate text between languages",
     service: "text-generation", // Uses LLM models
     defaultInputExt: ".txt",
-    defaultPrompt: "Translate the following text to {target_language}. Preserve the original formatting.",
+    // No generic prompt field: the translate task takes a `prompt_template`
+    // (below), not a `prompt`. A defaultPrompt here would render a spurious
+    // "Prompt" field whose value the task ignores.
+    defaultPrompt: null,
     params: [
       {
         name: "source_lang",
         type: "select",
-        required: true,
+        required: false,
         label: "Source Language",
         default: "auto",
-        help: "Language of the input text.",
+        help: "Language of the input text, or auto-detect per file.",
         options: [
           { value: "auto", label: "Auto-detect" },
           { value: "af", label: "Afrikaans" },
@@ -249,8 +337,9 @@ export const TASKS = [
       {
         name: "target_lang",
         type: "select",
-        required: true,
+        required: false,
         label: "Target Language",
+        default: "en",
         help: "Language to translate into.",
         options: [
           { value: "af", label: "Afrikaans" },
@@ -310,6 +399,56 @@ export const TASKS = [
           { value: "zh-tw", label: "Chinese (Traditional)" },
         ],
       },
+      {
+        name: "model_backend",
+        type: "select",
+        required: false,
+        label: "Model Backend",
+        help: "Translation backend. 'auto' picks from the model name.",
+        default: "auto",
+        options: [
+          { value: "auto", label: "Auto" },
+          { value: "chat", label: "Chat" },
+          { value: "tgemma", label: "TranslateGemma" },
+        ],
+      },
+      {
+        name: "chunk_size",
+        type: "text",
+        valueType: "number",
+        required: false,
+        label: "Chunk Size",
+        help: "Maximum tokens per batch (250–8182). Default: 900.",
+        placeholder: "900",
+      },
+      {
+        name: "prompt_template",
+        type: "textarea",
+        required: false,
+        showWhenParam: {
+          name: "model_backend",
+          values: ["auto", "chat"],
+          default: "auto",
+        },
+        label: "Prompt Template",
+        help: "Overrides the default prompt for chat models. Use {source_lang}, {target_lang}, and {text} placeholders.",
+        placeholder:
+          "Translate the following text from {source_lang} to {target_lang}. Output only the translated text, nothing else. Text: {text}",
+      },
+      {
+        name: "use_fallback_prompt",
+        type: "checkbox",
+        valueType: "boolean",
+        required: false,
+        showWhenParam: {
+          name: "model_backend",
+          values: ["auto", "chat"],
+          default: "auto",
+        },
+        label: "Use fallback prompt",
+        help: "When the source language can't be determined, use a fallback prompt that omits {source_lang}.",
+        default: false,
+      },
     ],
   },
 ];
@@ -321,6 +460,73 @@ const OUTPUT_FORMAT_EXT = {
   json: ".json",
   srt: ".srt",
 };
+
+// Input extensions the detect task treats as video (matches tigerflow-ml's
+// _VIDEO_EXTENSIONS). Params flagged `videoOnly` only apply to these.
+const VIDEO_INPUT_EXTS = new Set([
+  ".mp4",
+  ".avi",
+  ".mov",
+  ".mkv",
+  ".webm",
+  ".flv",
+  ".wmv",
+]);
+
+// Whether a param applies given the current form state. Hides params the task
+// would ignore: `showWhen.modelType` params for a mismatched model (e.g.
+// detect's labels, zero-shot only), `videoOnly` params for image inputs (e.g.
+// detect's batch_size), and params gated on another param's value via
+// `showWhenParam` (e.g. transcribe's batch_size only applies when windowing is
+// "batched"). All three call sites (render, validation, submit) go through this
+// one predicate so a hidden param's stale value is never sent.
+export function isParamVisible(param, { inputExt, taskParams, modelType } = {}) {
+  if (param.showWhen?.modelType && modelType !== param.showWhen.modelType) {
+    return false;
+  }
+  if (param.videoOnly && !VIDEO_INPUT_EXTS.has(inputExt)) {
+    return false;
+  }
+  if (param.showWhenParam) {
+    const { name, value, values, default: fallback } = param.showWhenParam;
+    const current = taskParams?.[name] ?? fallback;
+    const allowed = values ?? [value];
+    if (!allowed.includes(current)) return false;
+  }
+  return true;
+}
+
+// Coerce a form value (always a string) to the JSON type its param declares,
+// so tigerflow tasks receive a real number/boolean rather than a string. Falls
+// back to the raw value for string params or an unparseable number.
+export function coerceParamValue(task, paramName, value) {
+  const spec = task?.params?.find((p) => p.name === paramName);
+  if (!spec || spec.valueType === undefined || spec.valueType === "string") {
+    return value;
+  }
+  if (spec.valueType === "boolean") {
+    return value === true || value === "true";
+  }
+  if (spec.valueType === "number") {
+    const n = Number(value);
+    return Number.isNaN(n) ? value : n;
+  }
+  return value;
+}
+
+// Translate exposes a single "Source Language" dropdown, but the image has two
+// params: an optional explicit source_lang and an auto_lang_detect boolean.
+// "auto" (not a valid language code) means "detect per file"; a real code is
+// explicit. Mutates the params object in place.
+export function applyTranslateSourceLang(params) {
+  if (params.source_lang === "auto") {
+    delete params.source_lang;
+    params.auto_lang_detect = true;
+  } else if (params.source_lang) {
+    params.auto_lang_detect = false;
+  }
+  return params;
+}
 
 // ISO language codes supported by langdetect
 const ISO_LANGUAGE_CODES = new Set([
@@ -606,6 +812,12 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
         defaults[param.name] = param.default;
       }
     });
+    // A required prompt has no server-side default, so seed the field with the
+    // task's default prompt rather than leaving it blank (which would submit an
+    // empty required param).
+    if (task.promptRequired && task.defaultPrompt) {
+      defaults.prompt = task.defaultPrompt;
+    }
     setTaskParams(defaults);
   }, [task]);
 
@@ -766,8 +978,42 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       // output_format is a UI-only field: it selects the output *extension*
       // (the tigerflow tasks derive their format from output_ext), so map it to
       // output_ext and strip it from the params sent to tigerflow.
-      const { output_format: outputFormat, ...pipelineParams } = taskParams;
+      const { output_format: outputFormat, ...rawParams } = taskParams;
       const outputExt = outputFormat ? OUTPUT_FORMAT_EXT[outputFormat] : null;
+
+      // Coerce params to their declared JSON types. Form inputs are always
+      // strings, but tigerflow tasks consume params by their real type (e.g.
+      // `batch_size > 1`), so a string would crash the task. Numbers/booleans
+      // are converted; empty optional fields are dropped rather than sent blank.
+      // A param hidden for the current form state (mismatched model type,
+      // video-only on an image input, or value-gated) is dropped, so a stale
+      // value left over from switching model/format/strategy isn't sent.
+      const resolvedInputExt = inputExt || task.defaultInputExt;
+      const pipelineParams = {};
+      for (const [key, value] of Object.entries(rawParams)) {
+        // Drop empty / whitespace-only values so an untouched optional field
+        // isn't submitted (a bare " " must not coerce to 0 for a number param).
+        if (value === undefined || value === null) continue;
+        if (typeof value === "string" && value.trim() === "") continue;
+        const spec = task.params.find((p) => p.name === key);
+        if (
+          spec &&
+          !isParamVisible(spec, {
+            inputExt: resolvedInputExt,
+            taskParams,
+            modelType,
+          })
+        ) {
+          continue;
+        }
+        pipelineParams[key] = coerceParamValue(task, key, value);
+      }
+
+      // The translate "Source Language" dropdown drives the image's two
+      // separate params (see applyTranslateSourceLang).
+      if (task.id === "translate") {
+        applyTranslateSourceLang(pipelineParams);
+      }
 
       // Default job name: a compact, Slurm-friendly token like
       // "detect-detr-resnet-50" (task id + model basename), not the display
@@ -822,9 +1068,20 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       case "options":
         // Check required params (including dynamically required ones based on model type)
         if (!task) return false;
+        // A required prompt (task has no server-side default) must be non-empty.
+        if (task.promptRequired && !String(taskParams.prompt || "").trim()) {
+          return false;
+        }
         for (const param of task.params) {
-          // Skip params that don't apply to current model type
-          if (param.showWhen?.modelType && modelType !== param.showWhen.modelType) {
+          // Skip params hidden for the current form state (mismatched model
+          // type, video-only, or value-gated).
+          if (
+            !isParamVisible(param, {
+              inputExt: inputExt || task.defaultInputExt,
+              taskParams,
+              modelType,
+            })
+          ) {
             continue;
           }
           // Params with showWhen are required when shown
@@ -983,21 +1240,47 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
             )}
 
             {task.params
-              .filter((param) => {
-                // Filter out params with showWhen conditions that don't match
-                if (param.showWhen?.modelType) {
-                  return modelType === param.showWhen.modelType;
-                }
-                return true;
-              })
+              .filter((param) =>
+                // Hide params the task would ignore (mismatched model type,
+                // video-only for images, or gated on another param's value).
+                isParamVisible(param, {
+                  inputExt: inputExt || task.defaultInputExt,
+                  taskParams,
+                  modelType,
+                })
+              )
               .map((param) => {
                 // Params with showWhen are required when shown
-                const isRequired = param.showWhen ? true : param.required;
+                const paramRequired = param.showWhen ? true : param.required;
+                // A select always resolves to a value (default / first option),
+                // so a "required" marker on it is misleading — only show it for
+                // free-entry fields the user could actually leave blank.
+                const showRequiredMark =
+                  paramRequired && param.type !== "select";
+                // Booleans use the shared checkbox component (label + help built in).
+                if (param.type === "checkbox") {
+                  const checked =
+                    taskParams[param.name] === true ||
+                    taskParams[param.name] === "true";
+                  return (
+                    <ServiceModalCheckBox
+                      key={param.name}
+                      id={`param-${param.name}`}
+                      checked={checked}
+                      onChange={(e) =>
+                        handleTaskParamChange(param.name, e.target.checked)
+                      }
+                      disabled={isSubmitting}
+                      label={param.label}
+                      help={param.help}
+                    />
+                  );
+                }
                 return (
               <fieldset key={param.name}>
                 <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100 mb-1">
                   {param.label}
-                  {isRequired && <span className="text-red-500 ml-1">*</span>}
+                  {showRequiredMark && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 {param.type === "select" ? (
                   <Listbox
@@ -1045,6 +1328,15 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                       </ListboxOptions>
                     </div>
                   </Listbox>
+                ) : param.type === "textarea" ? (
+                  <textarea
+                    value={taskParams[param.name] || ""}
+                    onChange={(e) => handleTaskParamChange(param.name, e.target.value)}
+                    placeholder={param.placeholder}
+                    disabled={isSubmitting}
+                    rows={3}
+                    className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 disabled:bg-gray-100 dark:disabled:bg-gray-800"
+                  />
                 ) : (
                   <input
                     type="text"
@@ -1067,6 +1359,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
               <fieldset>
                 <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100 mb-1">
                   Prompt
+                  {task.promptRequired && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 <textarea
                   value={taskParams.prompt || ""}
@@ -1077,7 +1370,9 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                   className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 disabled:bg-gray-100 dark:disabled:bg-gray-800"
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Leave empty to use the default prompt shown above.
+                  {task.promptRequired
+                    ? "A prompt is required for this task."
+                    : "Leave empty to use the default prompt shown above."}
                 </p>
               </fieldset>
             )}

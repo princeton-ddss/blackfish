@@ -34,7 +34,7 @@ import { selectTierByModelSize, isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
 // Task definitions - each task maps to a TigerFlow task type
-// id must match backend SUPPORTED_TASKS keys (detect, ocr, transcribe, translate)
+// id must match backend SUPPORTED_TASKS keys (detect, ocr, transcribe, translate, chat)
 // service can be a string or array of strings for tasks that support multiple model types
 export const TASKS = [
   {
@@ -448,6 +448,35 @@ export const TASKS = [
         label: "Use fallback prompt",
         help: "When the source language can't be determined, use a fallback prompt that omits {source_lang}.",
         default: false,
+      },
+    ],
+  },
+  {
+    id: "chat",
+    name: "Chat",
+    description: "Apply a prompt to each text file",
+    service: "text-generation", // Uses LLM models
+    defaultInputExt: ".txt",
+    // Chat has no server-side default prompt, so it is required. Preliminary
+    // support is text-only; image inputs (and max_image_pixels) come later.
+    defaultPrompt: "Summarize the following text:\n\n{text}",
+    promptRequired: true,
+    promptHelp:
+      "Use {text} where each file's contents should go. Without {text}, the file contents follow the prompt.",
+    inputExtOptions: [
+      { value: ".txt", label: "Plain text (.txt)" },
+      { value: ".md", label: "Markdown (.md)" },
+      { value: ".log", label: "Log (.log)" },
+    ],
+    params: [
+      {
+        name: "temperature",
+        type: "text",
+        valueType: "number",
+        required: false,
+        label: "Temperature",
+        help: "Sampling temperature (0–2). Lower is more deterministic. Default: 0.0",
+        placeholder: "0.0",
       },
     ],
   },
@@ -1379,9 +1408,13 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                   className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 disabled:bg-gray-100 dark:disabled:bg-gray-800"
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {task.promptRequired
-                    ? "A prompt is required for this task."
-                    : "Leave empty to use the default prompt shown above."}
+                  {task.promptHelp ? (
+                    task.promptHelp
+                  ) : task.promptRequired ? (
+                    "A prompt is required for this task."
+                  ) : (
+                    "Leave empty to use the default prompt shown above."
+                  )}
                 </p>
               </fieldset>
             )}

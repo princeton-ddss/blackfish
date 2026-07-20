@@ -8,6 +8,7 @@ from blackfish.server.config import ContainerProvider
 from blackfish.server.images import DEFAULT_IMAGES
 from blackfish.server.job import JobState
 from blackfish.server.jobs.base import (
+    DEFAULT_JOB_RESOURCES,
     BatchJob,
     BatchJobStatus,
     create_tigerflow_client,
@@ -863,3 +864,17 @@ class TestTasks:
         assert cfg.gres == 2
         assert cfg.time == "02:00:00"
         assert cfg.partition == "gpu"
+
+    def test_job_config_honors_explicit_zero_gpus(self) -> None:
+        """An explicit gpus: 0 (CPU-only tier) yields gres 0, not the default 1.
+
+        The launcher must send gpus: 0 rather than omit it; omitting lets the
+        default (1) apply and a CPU job would still request a GPU.
+        """
+        job = create_test_batch_job(resources={"cpus": 2, "mem": 4, "gpus": 0})
+        assert job._job_config().gres == 0
+
+    def test_job_config_defaults_gpus_when_unspecified(self) -> None:
+        """No gpus/gres key -> the default gres applies (unchanged behavior)."""
+        job = create_test_batch_job(resources={"cpus": 2, "mem": 4})
+        assert job._job_config().gres == DEFAULT_JOB_RESOURCES["gres"]

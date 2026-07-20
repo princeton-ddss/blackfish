@@ -110,6 +110,9 @@ def test_batch_slurm_renders_apptainer_run():
     # Container invocation
     assert "apptainer run" in rendered
     assert "--env PYTHONNOUSERSITE=1" in rendered
+    # Disable vLLM's flashinfer sampler, whose runtime kernel JIT needs a C
+    # compiler the tigerflow-ml image doesn't ship (breaks vLLM tasks on GPU).
+    assert "--env VLLM_USE_FLASHINFER_SAMPLER=0" in rendered
     assert f"--bind {CACHE_DIR}:/cache" in rendered
     assert f"/images/{sif}" in rendered
     # tigerflow pipeline run and resume behavior
@@ -128,6 +131,7 @@ def test_batch_local_renders_docker_run():
     docker_ref = DEFAULT_IMAGES["tigerflow_ml"].docker_ref
 
     assert "docker run --rm" in rendered
+    assert "-e VLLM_USE_FLASHINFER_SAMPLER=0" in rendered
     assert f"-v {CACHE_DIR}:/cache" in rendered
     assert docker_ref in rendered
     assert f"run {PIPELINE_PATH} {INPUT_DIR} {OUTPUT_DIR}" in rendered
@@ -140,5 +144,6 @@ def test_batch_local_renders_apptainer_run():
 
     assert "apptainer run" in rendered
     assert "--env PYTHONNOUSERSITE=1" in rendered
+    assert "--env VLLM_USE_FLASHINFER_SAMPLER=0" in rendered
     assert f"/images/{sif}" in rendered
     assert "docker run" not in rendered

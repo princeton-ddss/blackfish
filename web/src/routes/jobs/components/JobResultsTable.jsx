@@ -10,6 +10,12 @@ import { assetPath } from "@/config";
 import Pagination from "@/components/Pagination";
 import PropTypes from "prop-types";
 
+// The table shows file basenames (the full paths are in the result preview).
+function basename(path) {
+    if (!path) return "-";
+    return path.split("/").pop();
+}
+
 function formatElapsedTime(startedAt, finishedAt) {
     if (!startedAt || !finishedAt) return "-";
 
@@ -175,7 +181,7 @@ function JobResultsTable({
                                                 }`}
                                             >
                                                 <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-xs font-mono text-gray-900 dark:text-gray-100 sm:pl-6">
-                                                    <div className="overflow-x-scroll">{result.input_file}</div>
+                                                    <div className="overflow-x-scroll">{basename(result.input_file)}</div>
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
                                                     {result.started_at ? lastModified(result.started_at) : "-"}
@@ -190,7 +196,7 @@ function JobResultsTable({
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-left text-xs font-mono text-gray-900 dark:text-gray-100">
                                                     <div className="overflow-x-scroll">
-                                                        {result.output_file ? result.output_file.split("/").pop() : "-"}
+                                                        {basename(result.output_file)}
                                                     </div>
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 px-3 text-right">

@@ -1,7 +1,41 @@
 import { render, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { test, expect, vi } from "vitest";
-import Pagination from "@/components/Pagination";
+import { test, expect, vi, describe } from "vitest";
+import Pagination, { getPageItems } from "@/components/Pagination";
+
+describe("getPageItems", () => {
+  test("returns every page when the range is small", () => {
+    expect(getPageItems(1, 5)).toEqual([1, 2, 3, 4, 5]);
+    expect(getPageItems(3, 7)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  test("elides with a trailing ellipsis near the start", () => {
+    // 20 pages, on page 2: 1 2 3 … 20
+    expect(getPageItems(2, 20)).toEqual([1, 2, 3, "…", 20]);
+  });
+
+  test("elides with a leading ellipsis near the end", () => {
+    // 20 pages, on page 19: 1 … 18 19 20
+    expect(getPageItems(19, 20)).toEqual([1, "…", 18, 19, 20]);
+  });
+
+  test("elides on both sides in the middle", () => {
+    // 20 pages, on page 10: 1 … 9 10 11 … 20
+    expect(getPageItems(10, 20)).toEqual([1, "…", 9, 10, 11, "…", 20]);
+  });
+
+  test("never duplicates the first/last page as a sibling", () => {
+    const items = getPageItems(3, 20);
+    expect(items).toEqual([1, 2, 3, 4, "…", 20]);
+    expect(items.filter((i) => i === 1)).toHaveLength(1);
+    expect(items.filter((i) => i === 20)).toHaveLength(1);
+  });
+
+  test("returns empty for a single page or none", () => {
+    expect(getPageItems(1, 1)).toEqual([]);
+    expect(getPageItems(1, 0)).toEqual([]);
+  });
+});
 
 test("Enabled Pagination", async () => {
   const user = userEvent.setup();

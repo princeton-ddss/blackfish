@@ -213,7 +213,7 @@ function ResultPreview({ result, job, profile = null }) {
                 <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Input File:</span>
                     <span className="text-gray-900 dark:text-gray-100 ml-2">
-                        <TruncatedPath path={result.input_file} />
+                        <TruncatedPath path={result.input_file} maxWidth="max-w-[22rem]" />
                     </span>
                 </div>
                 <div className="flex justify-between">

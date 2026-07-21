@@ -1528,7 +1528,8 @@ async def get_job(
 
 @dataclass
 class JobFileResult:
-    file: str
+    file: str  # input file as tigerflow reports it (basename/relative)
+    input_file: str  # full path to the input file
     task: str
     output_file: str | None
     started_at: str
@@ -1569,6 +1570,14 @@ async def get_job_results(
         for file_metric in task_metrics.files:
             stem = PurePosixPath(file_metric.file).stem
             output_file = f"{job.output_dir}/{task_name}/{stem}{output_ext}"
+            # Full input path, symmetric with output_file. tigerflow reports the
+            # file relative to the input dir, so join unless it's already absolute.
+            input_path = PurePosixPath(file_metric.file)
+            input_file = (
+                str(input_path)
+                if input_path.is_absolute()
+                else f"{job.input_dir}/{file_metric.file}"
+            )
 
             key = (task_name, file_metric.file)
             prev = latest.get(key)
@@ -1577,6 +1586,7 @@ async def get_job_results(
             ) > datetime.fromisoformat(prev.finished_at):
                 latest[key] = JobFileResult(
                     file=file_metric.file,
+                    input_file=input_file,
                     task=task_name,
                     output_file=output_file
                     if file_metric.status == "success"

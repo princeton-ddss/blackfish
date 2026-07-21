@@ -177,6 +177,70 @@ OutputFilePreview.propTypes = {
     profile: PropTypes.object,
 };
 
+// The initial toggle side: output when it exists (success), else input.
+export function defaultPreviewSide(hasOutput) {
+    return hasOutput ? "output" : "input";
+}
+
+// Resolve the side actually shown: fall back to input when output is chosen
+// but unavailable (e.g. a failed file with no output).
+export function resolvePreviewSide(side, hasOutput) {
+    return side === "output" && !hasOutput ? "input" : side;
+}
+
+// Preview pane with an input/output toggle. Output only exists on success, so
+// the toggle defaults to output when available and falls back to input.
+function FilePreviewPanel({ inputFile, outputFile, profile = null }) {
+    const hasOutput = Boolean(outputFile);
+    const [side, setSide] = useState(defaultPreviewSide(hasOutput));
+
+    const activeSide = resolvePreviewSide(side, hasOutput);
+    const file = activeSide === "output" ? outputFile : inputFile;
+
+    const tabClass = (isActive) =>
+        `px-2 py-1 text-xs rounded-md ${isActive
+            ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm font-medium"
+            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        }`;
+
+    return (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    Preview
+                </h4>
+                <div className="inline-flex gap-1 rounded-lg bg-gray-100 dark:bg-gray-900 p-0.5">
+                    <button
+                        type="button"
+                        onClick={() => setSide("input")}
+                        className={tabClass(activeSide === "input")}
+                    >
+                        Input
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSide("output")}
+                        disabled={!hasOutput}
+                        title={hasOutput ? undefined : "No output for this file"}
+                        className={`${tabClass(activeSide === "output")} disabled:opacity-40 disabled:cursor-not-allowed`}
+                    >
+                        Output
+                    </button>
+                </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+                <OutputFilePreview file={file} profile={profile} />
+            </div>
+        </div>
+    );
+}
+
+FilePreviewPanel.propTypes = {
+    inputFile: PropTypes.string,
+    outputFile: PropTypes.string,
+    profile: PropTypes.object,
+};
+
 function ResultPreview({ result, job, profile = null }) {
     if (!result) {
         return (
@@ -292,16 +356,15 @@ function ResultPreview({ result, job, profile = null }) {
                 </div>
             )}
 
-            {/* Output File Preview — at bottom, fills remaining space */}
-            {result.output_file && (
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex-1 min-h-0 flex flex-col">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        Output Preview
-                    </h4>
-                    <div className="flex-1 min-h-0 overflow-y-auto">
-                        <OutputFilePreview file={result.output_file} profile={profile} />
-                    </div>
-                </div>
+            {/* File preview with input/output toggle — fills remaining space.
+                Keyed on the result so the toggle resets per selection. */}
+            {result.input_file && (
+                <FilePreviewPanel
+                    key={result.id}
+                    inputFile={result.input_file}
+                    outputFile={result.output_file}
+                    profile={profile}
+                />
             )}
         </div>
     );

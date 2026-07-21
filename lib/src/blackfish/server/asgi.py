@@ -1541,8 +1541,14 @@ async def get_job(
 
 @dataclass
 class JobFileResult:
-    file: str  # input file as tigerflow reports it (basename/relative)
-    input_file: str  # full path to the input file
+    """A per-file batch result.
+
+    ``file`` is the raw name tigerflow reports (basename/relative) and is used
+    only for identity/dedup; use ``input_file`` (the full path) for display.
+    """
+
+    file: str  # raw name as tigerflow reports it — identity/dedup only
+    input_file: str  # full path to the input file (for display)
     task: str
     output_file: str | None
     started_at: str

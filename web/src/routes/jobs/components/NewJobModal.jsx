@@ -528,6 +528,21 @@ export function applyTranslateSourceLang(params) {
   return params;
 }
 
+// Build the job `resources` payload from the selected tier plus optional
+// account/time. Maps to the keys _job_config reads (cpus, mem in GB, gpus).
+// GPU count uses an explicit null check, not truthiness, so the CPU-only tier
+// (gpu_count 0) sends `gpus: 0` — otherwise the backend's default (1 GPU)
+// would apply and a CPU job would still request a GPU.
+export function buildJobResources(tier, { account, workerTimeout } = {}) {
+  const resources = {};
+  if (tier?.cpu_cores != null) resources.cpus = tier.cpu_cores;
+  if (tier?.memory_gb != null) resources.mem = tier.memory_gb;
+  if (tier?.gpu_count != null) resources.gpus = tier.gpu_count;
+  if (account) resources.account = account;
+  if (workerTimeout) resources.time = `${workerTimeout}:00`;
+  return resources;
+}
+
 // ISO language codes supported by langdetect
 const ISO_LANGUAGE_CODES = new Set([
   "af", "ar", "bg", "bn", "ca", "cs", "cy", "da", "de", "el", "en", "es", "et",
@@ -957,20 +972,14 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     setSubmitError(null);
 
     try {
-      // Build resources object from selected tier
+      // Build the resources payload from the selected tier. See
+      // buildJobResources for the tier -> backend key mapping, the account
+      // handling, and why the CPU-only tier must send an explicit gpus: 0.
       const selectedTierObj = tiers.find(t => t.name === selectedTier);
-      const jobResources = {};
-
-      // Map tier fields to backend format
-      if (selectedTierObj?.cpu_cores) jobResources.cpus = selectedTierObj.cpu_cores;
-      if (selectedTierObj?.memory_gb) jobResources.memory = `${selectedTierObj.memory_gb}GB`;
-      if (selectedTierObj?.gpu_count) jobResources.gpus = selectedTierObj.gpu_count;
-
-      // Add optional advanced options as sbatch_options
-      const sbatchOptions = [];
-      if (account) sbatchOptions.push(`--account=${account}`);
-      if (workerTimeout) jobResources.time = `${workerTimeout}:00`;
-      if (sbatchOptions.length > 0) jobResources.sbatch_options = sbatchOptions;
+      const jobResources = buildJobResources(selectedTierObj, {
+        account,
+        workerTimeout,
+      });
 
       // Derive cache_dir from model's model_dir (parent directory)
       const cacheDir = model?.model_dir ? dirname(model.model_dir) : null;

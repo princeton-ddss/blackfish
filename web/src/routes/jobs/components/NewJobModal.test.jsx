@@ -5,6 +5,7 @@ import {
   coerceParamValue,
   isParamVisible,
   applyTranslateSourceLang,
+  buildJobResources,
 } from "./NewJobModal";
 
 const detect = TASKS.find((t) => t.id === "detect");
@@ -196,5 +197,45 @@ describe("applyTranslateSourceLang", () => {
     // spurious "Prompt" field. prompt_template is the real control.
     expect(translate.defaultPrompt).toBeNull();
     expect(translate.params.map((p) => p.name)).toContain("prompt_template");
+  });
+});
+
+describe("buildJobResources", () => {
+  const cpuTier = { name: "CPU Only", gpu_count: 0, cpu_cores: 2, memory_gb: 4 };
+  const gpuTier = { name: "GPU", gpu_count: 2, cpu_cores: 6, memory_gb: 32 };
+
+  test("CPU-only tier sends an explicit gpus: 0 (not omitted)", () => {
+    // Omitting gpus lets the backend default (1 GPU) apply, so a CPU job would
+    // still request a GPU. gpu_count 0 must be sent through.
+    const res = buildJobResources(cpuTier);
+    expect(res.gpus).toBe(0);
+    expect(res.cpus).toBe(2);
+    expect(res.mem).toBe(4);
+  });
+
+  test("GPU tier maps gpu_count to gpus and memory_gb to mem (int GB)", () => {
+    const res = buildJobResources(gpuTier);
+    expect(res.gpus).toBe(2);
+    expect(res.mem).toBe(32); // key is `mem`, an int, not `memory: \"32GB\"`
+    expect(res).not.toHaveProperty("memory");
+  });
+
+  test("account and worker timeout are included when provided", () => {
+    const res = buildJobResources(gpuTier, {
+      account: "cses",
+      workerTimeout: "02:00",
+    });
+    expect(res.account).toBe("cses");
+    expect(res.time).toBe("02:00:00");
+  });
+
+  test("account and time are omitted when absent", () => {
+    const res = buildJobResources(gpuTier);
+    expect(res).not.toHaveProperty("account");
+    expect(res).not.toHaveProperty("time");
+  });
+
+  test("an undefined tier yields an empty resources object", () => {
+    expect(buildJobResources(undefined)).toEqual({});
   });
 });

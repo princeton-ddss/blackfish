@@ -1,5 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { uploadFile, replaceFile, deleteFile } from "@/lib/fileApi";
+import { uploadFile, replaceFile, deleteFile, getFileType } from "@/lib/fileApi";
+
+describe("getFileType", () => {
+  it("classifies audio formats the transcribe task accepts", () => {
+    for (const ext of [".wav", ".mp3", ".flac", ".m4a", ".ogg", ".webm"]) {
+      expect(getFileType(`recording${ext}`)).toBe("audio");
+    }
+  });
+
+  it("classifies from a full path, not just a bare name", () => {
+    expect(getFileType("/scratch/data/audio_001.flac")).toBe("audio");
+  });
+
+  it("classifies text and image, and returns null for unknown", () => {
+    expect(getFileType("out.txt")).toBe("text");
+    expect(getFileType("frame.png")).toBe("image");
+    expect(getFileType("archive.zip")).toBeNull();
+  });
+});
 
 const BASE_URL = "http://localhost:8000";
 

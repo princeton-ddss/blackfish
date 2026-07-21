@@ -543,7 +543,17 @@ async def get_files(
 
 
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
-AUDIO_EXTENSIONS = [".wav", ".mp3"]
+# Kept in sync with the transcribe task's accepted inputs and the frontend
+# FILE_TYPE_CONFIG audio extensions (web/src/lib/fileApi.js).
+AUDIO_EXTENSIONS = [".wav", ".mp3", ".flac", ".m4a", ".ogg", ".webm"]
+AUDIO_CONTENT_TYPES = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".flac": "audio/flac",
+    ".m4a": "audio/mp4",
+    ".ogg": "audio/ogg",
+    ".webm": "audio/webm",
+}
 
 # Mapping of task/image types to compatible pipeline tags
 # e.g., text-generation services can also run image-text-to-text models (VLMs)
@@ -932,10 +942,7 @@ async def get_audio(path: str, profile: Optional[str] = None) -> File | Response
 
         # Determine content type from extension
         ext = os.path.splitext(path)[1].lower()
-        content_type = {
-            ".wav": "audio/wav",
-            ".mp3": "audio/mpeg",
-        }.get(ext, "application/octet-stream")
+        content_type = AUDIO_CONTENT_TYPES.get(ext, "application/octet-stream")
 
         return Response(
             content=content,
@@ -952,7 +959,13 @@ async def get_audio(path: str, profile: Optional[str] = None) -> File | Response
     validate_file_exists(file_path)
     validate_file_extension(file_path, AUDIO_EXTENSIONS)
 
-    return try_read_file(file_path)
+    # Set an explicit audio media type: mimetypes guesses inconsistently for
+    # .flac/.m4a across platforms, which can leave the browser unable to play.
+    ext = file_path.suffix.lower()
+    return File(
+        path=file_path,
+        media_type=AUDIO_CONTENT_TYPES.get(ext, "application/octet-stream"),
+    )
 
 
 @put("/api/audio", guards=ENDPOINT_GUARDS)

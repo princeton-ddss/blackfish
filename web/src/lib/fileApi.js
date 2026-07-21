@@ -33,7 +33,9 @@ export const FILE_TYPE_CONFIG = {
         endpoint: "/api/text",
     },
     audio: {
-        extensions: [".wav", ".mp3"],
+        // Matches the transcribe task's accepted input formats and the
+        // backend AUDIO_EXTENSIONS in asgi.py — keep the three in sync.
+        extensions: [".wav", ".mp3", ".flac", ".m4a", ".ogg", ".webm"],
         endpoint: "/api/audio",
     },
 };

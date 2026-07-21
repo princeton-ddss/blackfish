@@ -582,6 +582,9 @@ class TestGetJobResultsAPI:
         success = next(r for r in results if r["file"] == "audio_001.wav")
         assert success["status"] == "success"
         assert success["task"] == "transcribe"
+        # input_file is the full path (input_dir + reported file), symmetric
+        # with output_file, so both preview rows can show full paths.
+        assert success["input_file"] == "/data/input/audio_001.wav"
         assert success["output_file"] == "/data/output/transcribe/audio_001.json"
         assert success["error"] is None
 

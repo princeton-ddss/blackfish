@@ -93,7 +93,7 @@ class TestUploadAudioAPI:
     async def test_upload_audio_valid_extensions(self, client: AsyncTestClient):
         """Test that all valid audio extensions are accepted."""
 
-        valid_extensions = [".wav", ".mp3"]
+        valid_extensions = [".wav", ".mp3", ".flac", ".m4a", ".ogg", ".webm"]
         audio_bytes = self._create_test_audio()
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -219,6 +219,19 @@ class TestGetAudioAPI:
             # Should return success with audio data
             assert response.status_code == 200
             assert response.content == original_data
+
+    async def test_get_audio_flac_content_type(self, client: AsyncTestClient):
+        """A .flac file serves with an explicit audio/flac content type so the
+        browser can play it (mimetypes guesses inconsistently for .flac)."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "test.flac")
+            self._create_and_save_audio(file_path)
+
+            response = await client.get("/api/audio", params={"path": file_path})
+
+            assert response.status_code == 200
+            assert response.headers["content-type"].startswith("audio/flac")
 
     async def test_get_audio_not_found(self, client: AsyncTestClient):
         """Test retrieving a non-existent audio file."""

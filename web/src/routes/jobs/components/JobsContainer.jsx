@@ -255,7 +255,7 @@ function JobsContainer() {
         ? (selectedJob ? MOCK_RESULTS[selectedJob.id] || [] : [])
         : apiResults.map((r) => ({
             id: `${r.task}/${r.file}`,
-            input_file: r.file,
+            input_file: r.input_file,
             output_file: r.output_file,
             started_at: r.started_at,
             finished_at: r.finished_at,

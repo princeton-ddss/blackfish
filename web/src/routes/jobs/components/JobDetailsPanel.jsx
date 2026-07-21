@@ -10,6 +10,36 @@ import StatusBadge from "./StatusBadge";
 import { isBatchJobActive } from "@/lib/util";
 import PropTypes from "prop-types";
 
+// Friendly labels for known task params; falls back to a title-cased key.
+const PARAM_LABELS = {
+    batch_size: "Batch size",
+    sample_fps: "Sample FPS",
+    max_tokens: "Max tokens",
+    output_format: "Output format",
+    source_lang: "Source language",
+    target_lang: "Target language",
+    model_backend: "Model backend",
+    prompt_template: "Prompt template",
+    auto_lang_detect: "Auto-detect language",
+    use_fallback_prompt: "Fallback prompt",
+    overlap_s: "Window overlap (s)",
+    sampling_rate: "Sampling rate",
+};
+
+export function formatParamLabel(key) {
+    if (PARAM_LABELS[key]) return PARAM_LABELS[key];
+    // Title-case the first word of a snake_case key: "some_thing" -> "Some thing".
+    const spaced = key.replace(/_/g, " ");
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+export function formatParamValue(key, value) {
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    // The transcribe language param uses "" to mean auto-detect.
+    if (key === "language" && value === "") return "Auto-detect";
+    return String(value);
+}
+
 function ProgressBar({ finished, staged, errored }) {
     const done = Number(finished) || 0;
     const pending = Number(staged) || 0;
@@ -167,10 +197,10 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                         </h4>
                     </div>
                     <div className="space-y-2 text-sm">
-                        {job.resources?.memory && (
+                        {job.resources?.mem != null && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Memory:</span>
-                                <span className="text-gray-900 dark:text-gray-100">{job.resources.memory}</span>
+                                <span className="text-gray-900 dark:text-gray-100">{job.resources.mem} GB</span>
                             </div>
                         )}
                         {job.resources?.cpus != null && (
@@ -187,7 +217,9 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                         )}
                         {job.resources?.time && (
                             <div className="flex justify-between">
-                                <span className="text-gray-500 dark:text-gray-400">Time:</span>
+                                {/* Per-allocation walltime; batch jobs resubmit across
+                                    allocations, so this is not the total job runtime. */}
+                                <span className="text-gray-500 dark:text-gray-400">Walltime (per allocation):</span>
                                 <span className="text-gray-900 dark:text-gray-100">{job.resources.time}</span>
                             </div>
                         )}
@@ -244,9 +276,9 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div key={key} className="flex justify-between">
-                                            <span className="text-gray-500 dark:text-gray-400 capitalize">{key.replace(/_/g, " ")}:</span>
-                                            <span className="text-gray-900 dark:text-gray-100">{String(value)}</span>
+                                        <div key={key} className="flex justify-between gap-2">
+                                            <span className="text-gray-500 dark:text-gray-400">{formatParamLabel(key)}:</span>
+                                            <span className="text-gray-900 dark:text-gray-100 text-right break-all">{formatParamValue(key, value)}</span>
                                         </div>
                                     )
                                 ))}
@@ -274,7 +306,7 @@ JobDetailsPanel.propTypes = {
         output_dir: PropTypes.string,
         max_workers: PropTypes.number,
         resources: PropTypes.shape({
-            memory: PropTypes.string,
+            mem: PropTypes.number,
             cpus: PropTypes.number,
             gpus: PropTypes.number,
             time: PropTypes.string,

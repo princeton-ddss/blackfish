@@ -76,6 +76,24 @@ describe("TASKS param definitions", () => {
     const targetLang = translate.params.find((p) => p.name === "target_lang");
     expect(targetLang.default).toBe("en");
   });
+
+  test("chat is registered, text-only, with a required prompt", () => {
+    const chat = TASKS.find((t) => t.id === "chat");
+    expect(chat).toBeDefined();
+    expect(chat.promptRequired).toBe(true);
+    expect(chat.defaultPrompt).toBeTruthy();
+    // Preliminary support is text-only (no image extensions yet).
+    const exts = chat.inputExtOptions.map((o) => o.value);
+    expect(exts).toContain(".txt");
+    expect(exts).not.toContain(".jpg");
+    // temperature is numeric so it coerces to a real number at submit.
+    const temp = chat.params.find((p) => p.name === "temperature");
+    expect(temp.valueType).toBe("number");
+    // max_image_pixels is deferred with image inputs.
+    expect(chat.params.map((p) => p.name)).not.toContain("max_image_pixels");
+    // The prompt help explains the {text} placeholder.
+    expect(chat.promptHelp).toMatch(/\{text\}/);
+  });
 });
 
 describe("isParamVisible — videoOnly", () => {

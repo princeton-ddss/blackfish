@@ -19,6 +19,7 @@ SUPPORTED_TASKS: dict[str, str] = {
     "ocr": "tigerflow_ml.text.ocr.local",
     "transcribe": "tigerflow_ml.audio.transcribe.local",
     "translate": "tigerflow_ml.text.translate.local",
+    "chat": "tigerflow_ml.text.chat.local",
 }
 
 # Default input file extensions for each task
@@ -27,6 +28,7 @@ DEFAULT_INPUT_EXT: dict[str, str] = {
     "ocr": ".jpg",
     "transcribe": ".wav",
     "translate": ".txt",
+    "chat": ".txt",
 }
 
 # Default output file extensions for each task
@@ -34,6 +36,7 @@ DEFAULT_INPUT_EXT: dict[str, str] = {
 DEFAULT_OUTPUT_EXT: dict[str, str] = {
     "detect": ".json",  # Object detection always outputs JSON
     "translate": ".txt",  # Translation outputs text files
+    "chat": ".txt",  # Chat writes the model response as text
 }
 
 

@@ -26,6 +26,7 @@ BLACKFISH_PIPELINE_EOF
 
 apptainer run {{ '--nv' if job_config.gres else '' }} \
   --env PYTHONNOUSERSITE=1 \
+  --env VLLM_USE_FLASHINFER_SAMPLER=0 \
   --bind {{ cache_dir }}:/cache \
   --bind {{ input_dir }} \
   --bind {{ output_dir }} \

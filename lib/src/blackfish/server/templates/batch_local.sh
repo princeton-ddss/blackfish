@@ -14,6 +14,7 @@ BLACKFISH_PIPELINE_EOF
 
 {%- if provider == "docker" %}
 docker run --rm {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
+  -e VLLM_USE_FLASHINFER_SAMPLER=0 \
   -v {{ cache_dir }}:/cache \
   -v {{ input_dir }}:{{ input_dir }} \
   -v {{ output_dir }}:{{ output_dir }} \
@@ -25,6 +26,7 @@ docker run --rm {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
 export SINGULARITY_NO_EVAL=1
 apptainer run {{ '--nv' if job_config.gres else '' }} \
   --env PYTHONNOUSERSITE=1 \
+  --env VLLM_USE_FLASHINFER_SAMPLER=0 \
   --bind {{ cache_dir }}:/cache \
   --bind {{ input_dir }} \
   --bind {{ output_dir }} \

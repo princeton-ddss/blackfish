@@ -27,6 +27,8 @@ from blackfish.server.jobs.tasks import (
     is_supported_task,
     get_task_library,
     build_pipeline_config,
+    get_default_input_ext,
+    get_default_output_ext,
 )
 
 
@@ -782,6 +784,7 @@ class TestTasks:
         assert is_supported_task("ocr") is True
         assert is_supported_task("transcribe") is True
         assert is_supported_task("translate") is True
+        assert is_supported_task("chat") is True
 
     def test_is_supported_task_returns_false_for_invalid_task(self) -> None:
         """is_supported_task should return False for unsupported tasks."""
@@ -878,3 +881,52 @@ class TestTasks:
         """No gpus/gres key -> the default gres applies (unchanged behavior)."""
         job = create_test_batch_job(resources={"cpus": 2, "mem": 4})
         assert job._job_config().gres == DEFAULT_JOB_RESOURCES["gres"]
+
+    def test_chat_task_is_supported(self) -> None:
+        """The chat task maps to the tigerflow-ml text.chat.local module."""
+        assert is_supported_task("chat") is True
+        assert get_task_library("chat") == "tigerflow_ml.text.chat.local"
+
+    def test_chat_default_input_ext_is_text(self) -> None:
+        """Chat defaults to text input (preliminary support is text-only)."""
+        assert get_default_input_ext("chat") == ".txt"
+
+    def test_chat_default_output_ext_is_text(self) -> None:
+        """Chat writes text output. This default is load-bearing: both the
+        pipeline's output_ext (what tigerflow writes) and the results endpoint's
+        path (what Blackfish fetches) derive from it, so an unset value would
+        make tigerflow write ``.out`` while Blackfish looked for no extension.
+        """
+        assert get_default_output_ext("chat") == ".txt"
+
+    def test_build_pipeline_config_builds_chat_task(self) -> None:
+        """build_pipeline_config emits a local chat task with its prompt param."""
+        config = build_pipeline_config(
+            task="chat",
+            input_ext=".txt",
+            params={
+                "model": "meta-llama/Llama-3.1-8B-Instruct",
+                "prompt": "Summarize: {text}",
+            },
+        )
+
+        task = config["tasks"][0]
+        assert task["name"] == "chat"
+        assert task["kind"] == "local"
+        assert task["module"] == "tigerflow_ml.text.chat.local"
+        assert task["input_ext"] == ".txt"
+        assert task["params"]["prompt"] == "Summarize: {text}"
+
+    def test_chat_pipeline_yaml_sets_text_output_ext(self) -> None:
+        """A chat job with no explicit output_ext falls back to .txt in the
+        pipeline (otherwise tigerflow would write .out and the results endpoint,
+        which resolves the same default, would look for the wrong path).
+        """
+        job = create_test_batch_job(
+            task="chat",
+            input_ext=".txt",
+            output_ext=None,
+            params={"prompt": "Summarize: {text}"},
+        )
+        rendered = job._pipeline_yaml()
+        assert "output_ext: .txt" in rendered

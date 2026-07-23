@@ -231,6 +231,48 @@ If you run `blackfish ls` once more, you should see that the service is no longe
 blackfish rm --filters id=55862e3b-c2c2-428d-ac2d-89bdfa911fa4
 ```
 
+### Running Batch Jobs
+
+Services are great for interactive work, but sometimes you want to run a model across a whole *directory* of files — a corpus of audio to transcribe, documents to translate, or a photo library to run object detection on. **Batch jobs** are the tool for this. Blackfish runs the model on the cluster and processes every file in the input directory, picking up where it left off if it's interrupted, until the whole directory is done.
+
+Batch jobs support several tasks out of the box:
+
+| Task | Description | Input | Output |
+|:--|:--|:--|:--|
+| `transcribe` | Speech-to-text with Whisper | audio (`.wav`, `.mp3`, `.flac`, …) | `.txt` / `.srt` / `.json` |
+| `translate` | Translate text between languages | `.txt` | `.txt` |
+| `detect` | Object detection on images/video | images/video | `.json` |
+| `ocr` | Extract text from images | images | `.txt` / `.md` / `.json` |
+| `chat` | Apply a prompt to each text file | `.txt` | text |
+
+To submit a job, point it at an input directory and an output directory:
+
+```shell
+blackfish batch run \
+  --name my-transcription \
+  --task transcribe \
+  --model openai/whisper-large-v3 \
+  --input-dir /scratch/audio \
+  --output-dir /scratch/transcripts \
+  --resources '{"gpus": 1, "time": "02:00:00"}'
+```
+
+As with services, the model must already be downloaded (`blackfish model add ...`), and batch jobs require a Slurm profile. Track progress with:
+
+```shell
+blackfish batch ls
+```
+
+```
+JOB ID          TASK         MODEL                     CREATED     UPDATED     STATUS    PROGRESS   NAME               PROFILE
+1a38212e-bd93   transcribe   openai/whisper-large-v3   2 min ago   3 sec ago   RUNNING   142/500    my-transcription   default
+```
+
+Each input file produces one output file in the output directory. A job keeps running until every file is processed, so a large directory can span more than one cluster session without any extra work on your part. You can even **drop new files into the input directory while the job is running** — Blackfish notices them and processes them too. Stop a job at any time with `blackfish batch stop <job-id>`.
+
+> [!TIP]
+> The batch job launcher is also available in the web UI, which previews input and output files and shows per-file progress. See the [documentation](https://princeton-ddss.github.io/blackfish/latest/usage/cli/#batch-jobs) for the full list of tasks and options.
+
 ## Profiles
 
 Profiles tell Blackfish where and how to run services. You can create profiles for local execution or remote execution on a Slurm cluster. The `blackfish init` command walks you through creating a default profile, and you can add more at any time. For details, refer to our [documentation](https://princeton-ddss.github.io/blackfish/latest/usage/cli/#profiles).

@@ -239,7 +239,7 @@ wheels = [
 
 [[package]]
 name = "blackfish-ai"
-version = "1.0.0a6"
+version = "1.0.0b1"
 source = { editable = "." }
 dependencies = [
     { name = "advanced-alchemy" },

@@ -264,8 +264,8 @@ blackfish batch ls
 ```
 
 ```
-JOB ID          TASK         MODEL                     STATUS    PROGRESS   NAME               PROFILE
-1a38212e-bd93   transcribe   openai/whisper-large-v3   RUNNING   142/500    my-transcription   default
+JOB ID          TASK         MODEL                     CREATED     UPDATED     STATUS    PROGRESS   NAME               PROFILE
+1a38212e-bd93   transcribe   openai/whisper-large-v3   2 min ago   3 sec ago   RUNNING   142/500    my-transcription   default
 ```
 
 Each input file produces one output file in the output directory. A job keeps running until every file is processed, so a large directory can span more than one cluster session without any extra work on your part. You can even **drop new files into the input directory while the job is running** — Blackfish notices them and processes them too. Stop a job at any time with `blackfish batch stop <job-id>`.

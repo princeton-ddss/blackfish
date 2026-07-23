@@ -360,6 +360,39 @@ class TestAddModel:
         assert model.metadata_ is not None
         assert model.metadata_["model_size_gb"] == 3.5
         assert path == str(tmp_path / "snapshots" / "abc123def")
+        # model_dir is normalized to the repo root (grandparent of the snapshot
+        # path), not the raw snapshot path (regression test for #406).
+        assert model.model_dir == str(tmp_path)
+
+    @patch("blackfish.server.models.model.fetch_model_metadata")
+    @patch("blackfish.server.models.model.model_info")
+    @patch("blackfish.server.models.model.snapshot_download")
+    def test_add_model_normalizes_model_dir(
+        self, mock_download, mock_info, mock_metadata, tmp_path: Path
+    ):
+        """model_dir is the repo root regardless of the snapshot revision.
+
+        Regression test for #406: the update path used to persist the raw
+        snapshot path, so an updated model mounted a directory one level too
+        deep. add_model now normalizes model_dir on the returned Model so every
+        caller (download, update, CLI) stores the same value.
+        """
+        repo_root = tmp_path / "models--openai--whisper-tiny"
+        snapshot_path = repo_root / "snapshots" / "169d4a43deadbeef"
+        mock_download.return_value = str(snapshot_path)
+        mock_info.return_value = MagicMock(
+            pipeline_tag="automatic-speech-recognition", card_data=None
+        )
+        mock_metadata.return_value = ModelMetadata(
+            model_size_gb=0.1, size_source="safetensors"
+        )
+
+        profile = MockProfile(home_dir=str(tmp_path))
+
+        model, path = add_model("openai/whisper-tiny", profile)
+
+        assert model.model_dir == str(repo_root)
+        assert path == str(snapshot_path)
 
     @patch("blackfish.server.models.model.fetch_model_metadata")
     @patch("blackfish.server.models.model.model_info")

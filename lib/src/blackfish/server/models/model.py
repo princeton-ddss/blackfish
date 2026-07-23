@@ -201,7 +201,10 @@ def add_model(
             stored to the profile's home directory. Default: False.
 
     Returns:
-        A tuple of (Model object with metadata, snapshot path)
+        A tuple of (Model object with metadata, snapshot path). The Model's
+        ``model_dir`` is set to the repo root (the grandparent of the snapshot
+        path, e.g. ``.../models--<namespace>--<model>``) so callers can persist
+        it directly without further normalization.
 
     Raises:
         RepositoryNotFoundError
@@ -250,12 +253,19 @@ def add_model(
             f"(source: {metadata.size_source})"
         )
 
+    # model_dir is the repo root, i.e. the grandparent of the snapshot path
+    # (`.../models--<namespace>--<model>/snapshots/<revision>`). Services render
+    # their bind mounts from model_dir, so normalize here to ensure every caller
+    # persists the same value regardless of download vs. update path.
+    model_dir = str(Path(path).parent.parent)
+
     return (
         Model(
             repo=repo_id,
             revision=revision,
             profile=profile.name,
             image=image,
+            model_dir=model_dir,
             metadata_=metadata.to_dict() if metadata else None,
         ),
         path,

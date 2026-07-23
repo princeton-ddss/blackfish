@@ -990,7 +990,7 @@ def models_add(
                     "profile": model.profile,
                     "revision": model.revision,
                     "image": model.image,
-                    "model_dir": path,
+                    "model_dir": model.model_dir,
                     "metadata_": model.metadata_,
                 },
             )

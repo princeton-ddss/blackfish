@@ -1177,11 +1177,14 @@ class TestUpdateModelAPI:
         mock_info.sha = "newrev789"
         mock_model_info.return_value = mock_info
 
-        # Mock successful download
-        mock_add_model.return_value = (
-            AsyncMock(),
-            "/path/to/new/model",
-        )
+        # Mock successful download. add_model normalizes model_dir to the repo
+        # root and sets it on the returned Model; the update path must persist
+        # that value, not the raw snapshot path (regression test for #406).
+        repo_root = "/home/test/.blackfish/models/models--openai--whisper-tiny"
+        snapshot_path = f"{repo_root}/snapshots/newrev789"
+        returned_model = MagicMock()
+        returned_model.model_dir = repo_root
+        mock_add_model.return_value = (returned_model, snapshot_path)
 
         response = await client.put(f"/api/models/{model_id}")
 
@@ -1190,6 +1193,12 @@ class TestUpdateModelAPI:
         assert result["status"] == "updated"
         assert result["old_revision"] == "1"
         assert result["new_revision"] == "newrev789"
+
+        # The persisted model_dir is the repo root, so services mount the
+        # correct directory after an update.
+        get_response = await client.get(f"/api/models/{model_id}")
+        assert get_response.status_code == 200
+        assert get_response.json()["model_dir"] == repo_root
 
     @patch("blackfish.server.models.model.add_model")
     @patch("huggingface_hub.model_info")

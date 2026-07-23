@@ -322,3 +322,89 @@ class TestTigerFlowBatchJobsMigration:
                 assert before[name]["notnull"] == after[name]["notnull"], (
                     f"nullability mismatch on {name!r} after round-trip"
                 )
+
+
+def _create_model_table(conn: sa.Connection) -> None:
+    """Create a minimal `model` table for exercising the data migration."""
+    conn.execute(
+        text(
+            """
+            CREATE TABLE model (
+                id VARCHAR NOT NULL,
+                model_dir VARCHAR NOT NULL,
+                CONSTRAINT pk_model PRIMARY KEY (id)
+            )
+            """
+        )
+    )
+
+
+class TestNormalizeModelDirMigration:
+    """Tests for 2026-07-23_normalize_model_dir_to_repo_root (revision 565bd6201d2a).
+
+    The data migration rewrites any `model_dir` that points inside a snapshots
+    directory (the historical output of the model update path) back to its repo
+    root, while leaving already-correct rows untouched.
+    """
+
+    FILENAME = "2026-07-23_normalize_model_dir_to_repo_root_565bd6201d2a.py"
+
+    def test_data_upgrade_rewrites_snapshot_paths(self, engine: Engine) -> None:
+        """Snapshot-path rows are fixed; repo-root rows are left as-is."""
+        base = "/home/test/.blackfish/models"
+        corrupt = f"{base}/models--openai--whisper-tiny/snapshots/169d4a43deadbeef"
+        fixed = f"{base}/models--openai--whisper-tiny"
+        correct = f"{base}/models--google--gemma-3-1b-it"
+
+        with engine.connect() as conn:
+            _create_model_table(conn)
+            conn.execute(
+                text("INSERT INTO model (id, model_dir) VALUES (:id, :d)"),
+                [
+                    {"id": "corrupt", "d": corrupt},
+                    {"id": "correct", "d": correct},
+                ],
+            )
+            conn.commit()
+
+            migration = load_migration(self.FILENAME)
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.data_upgrades()
+            conn.commit()
+
+            rows = dict(
+                conn.execute(text("SELECT id, model_dir FROM model")).fetchall()
+            )
+
+        # The updated row now points at the repo root, matching download rows.
+        assert rows["corrupt"] == fixed
+        # The already-correct row is untouched.
+        assert rows["correct"] == correct
+
+    def test_data_upgrade_is_idempotent(self, engine: Engine) -> None:
+        """Running the data upgrade twice leaves correct rows unchanged."""
+        base = "/home/test/.blackfish/models"
+        corrupt = f"{base}/models--openai--whisper-tiny/snapshots/169d4a43deadbeef"
+        fixed = f"{base}/models--openai--whisper-tiny"
+
+        with engine.connect() as conn:
+            _create_model_table(conn)
+            conn.execute(
+                text("INSERT INTO model (id, model_dir) VALUES (:id, :d)"),
+                {"id": "corrupt", "d": corrupt},
+            )
+            conn.commit()
+
+            migration = load_migration(self.FILENAME)
+            for _ in range(2):
+                ctx = MigrationContext.configure(conn)
+                with Operations.context(ctx):
+                    migration.data_upgrades()
+                conn.commit()
+
+            result = conn.execute(
+                text("SELECT model_dir FROM model WHERE id = 'corrupt'")
+            ).scalar_one()
+
+        assert result == fixed

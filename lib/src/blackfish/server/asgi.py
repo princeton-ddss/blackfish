@@ -2385,7 +2385,9 @@ async def update_model(
         # 8. Update database record with new revision and path
         old_revision = model.revision
         model.revision = latest_revision
-        model.model_dir = path
+        # add_model normalizes model_dir to the repo root; persist it directly
+        # so updated models mount the same path as freshly downloaded ones.
+        model.model_dir = new_model.model_dir
         session.add(model)
 
         return ModelUpdateResponse(
@@ -2482,14 +2484,12 @@ async def _run_download_task(
         # Update status to DOWNLOADING
         await update_task_status(DownloadStatus.DOWNLOADING)
 
-        # Run the blocking download in a thread pool
+        # Run the blocking download in a thread pool. add_model sets model_dir
+        # to the repo root on the returned Model, so no further normalization
+        # is needed here.
         new_model, snapshot_path = await asyncio.to_thread(
             add_model, repo_id, profile, revision, use_cache
         )
-
-        # model_dir is the parent of snapshots directory (2 levels up from snapshot path)
-        model_dir = str(Path(snapshot_path).parent.parent)
-        new_model.model_dir = model_dir
 
         # Add model to database
         async with async_session_factory() as session:

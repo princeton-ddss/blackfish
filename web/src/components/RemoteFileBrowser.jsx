@@ -9,6 +9,7 @@ import {
 import { useFileSystem } from "@/lib/loaders";
 import { assetPath } from "@/config";
 import { fileSize, lastModified } from "@/lib/util";
+import { dirname, isAtSecurityBoundary } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import DirectoryInput from "@/components/DirectoryInput";
 import FilterInput from "@/components/FilterInput";
@@ -81,14 +82,10 @@ function RemoteFileBrowserTable({
                     >
                       <button
                         onClick={() => {
-                          const parts = path.split("/");
-                          const newPath = parts
-                            .slice(0, parts.length - 1)
-                            .join("/");
-                          setPath(newPath);
+                          setPath(dirname(path));
                         }}
                       >
-                        {path !== root && path != `${root}/` && (
+                        {!isAtSecurityBoundary(path, root) && (
                           <ChevronLeftIcon className="h-4 w-4 mt-1 ml-4 text-gray-900 hover:text-gray-400" />
                         )}{" "}
                       </button>

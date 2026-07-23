@@ -9,21 +9,11 @@ import {
 import { useFileSystem } from "@/lib/loaders";
 import { assetPath } from "@/config";
 import { fileSize, lastModified } from "@/lib/util";
-import { isFileSystemRoot } from "@/lib/pathUtils";
+import { dirname, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import DirectoryInput from "@/components/DirectoryInput";
 import FilterInput from "@/components/FilterInput";
 import PropTypes from "prop-types";
-
-/**
- * Check if path is at the security boundary (cannot navigate above).
- * @param {string} path - Current path
- * @param {string} root - Security boundary root
- * @returns {boolean} True if at boundary
- */
-function isAtSecurityBoundary(path, root) {
-    return path === root || path === `${root}/`;
-}
 
 /**
  * Audio File Picker Table component.
@@ -92,13 +82,12 @@ function AudioFileBrowserTable({
                     >
                       <button
                         onClick={() => {
-                          const parts = path.split("/").filter(p => p !== "");
-                          if (parts.length <= 1) {
-                            // Going back to root
-                            setPath(path === root || path.startsWith(root) ? root : "/");
+                          const parentPath = dirname(path);
+                          // If a root is set, don't navigate above it.
+                          if (root && !parentPath.startsWith(root)) {
+                            setPath(root);
                           } else {
-                            const newPath = parts.slice(0, parts.length - 1).join("/");
-                            setPath(newPath);
+                            setPath(parentPath);
                           }
                         }}
                       >

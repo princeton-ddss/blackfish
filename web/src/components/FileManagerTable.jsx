@@ -13,7 +13,7 @@ import {
 import { assetPath } from "@/config";
 import { fileSize, lastModified } from "@/lib/util";
 import { getFileType } from "@/lib/fileApi";
-import { isFileSystemRoot } from "@/lib/pathUtils";
+import { dirname, clampToRoot, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import PropTypes from "prop-types";
 
@@ -45,17 +45,6 @@ function getFileTypeLabel(filename, isDir) {
     if (!fileType) return "-";
 
     return fileType.charAt(0).toUpperCase() + fileType.slice(1);
-}
-
-/**
- * Check if path is at the security boundary (cannot navigate above).
- * @param {string} path - Current path
- * @param {string|null} root - Security boundary root (null = no boundary)
- * @returns {boolean} True if at boundary
- */
-function isAtSecurityBoundary(path, root) {
-    if (root == null) return false;
-    return path === root || path === `${root}/`;
 }
 
 function FileManagerTable({
@@ -120,15 +109,9 @@ function FileManagerTable({
                                             <button
                                                 onClick={() => {
                                                     if (!path) return; // No path set
-                                                    const parts = path.split("/").filter(p => p !== "");
-                                                    if (parts.length === 0) return; // Already at root
-                                                    const parentPath = parts.length === 1 ? "/" : "/" + parts.slice(0, -1).join("/");
-                                                    // If root is set, don't navigate above it
-                                                    if (root && !parentPath.startsWith(root) && parentPath !== root) {
-                                                        setPath(root);
-                                                        return;
-                                                    }
-                                                    setPath(parentPath);
+                                                    if (isFileSystemRoot(path)) return; // Already at root
+                                                    // Never navigate above the security root.
+                                                    setPath(clampToRoot(dirname(path), root));
                                                 }}
                                                 disabled={isDisabled}
                                             >

@@ -1,4 +1,5 @@
 import { blackfishApiURL } from "../config";
+import { dirname } from "./pathUtils";
 
 /* Return a list of local files with resolved path */
 export async function fetchFiles(path) {
@@ -242,12 +243,6 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
   });
 
   return res
-}
-
-function dirname(path) {
-  const parts = path.split("/")
-  const nparts = parts.length
-  return parts.slice(0, nparts - 1).join("/")
 }
 
 /** Get details of the given service. */

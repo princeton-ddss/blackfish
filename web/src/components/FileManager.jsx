@@ -4,6 +4,7 @@ import {
     ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
 import { useFileSystem } from "@/lib/loaders";
+import { isWithinRoot } from "@/lib/pathUtils";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 import Notification from "@/components/Notification";
 import FileManagerTable from "@/components/FileManagerTable";
@@ -72,7 +73,7 @@ function FileManager({
 
     const handlePathChange = (newPath) => {
         // Only enforce path boundary if root is an explicit path (not ~)
-        if (!isRemote && root?.startsWith("/") && !newPath.startsWith(root)) {
+        if (!isRemote && root?.startsWith("/") && !isWithinRoot(newPath, root)) {
             setOperationError(`Path must be within ${root}`);
             return;
         }

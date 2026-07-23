@@ -27,6 +27,7 @@ import ServiceModalCheckBox from "@/components/ServiceModalCheckbox";
 import Alert from "@/components/Alert";
 import Stepper from "@/components/Stepper";
 import DirectoryBrowser from "@/components/DirectoryBrowser";
+import { dirname } from "@/lib/pathUtils";
 import { useModels } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 import { fetchProfileResources, fetchModelSizeFromHub, createJob } from "@/lib/requests";
@@ -1090,13 +1091,6 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       setIsSubmitting(false);
     }
   };
-
-  // Helper to get parent directory
-  function dirname(path) {
-    if (!path) return null;
-    const parts = path.split("/");
-    return parts.slice(0, -1).join("/");
-  }
 
   // Validation for each step
   const isStepValid = (stepId) => {

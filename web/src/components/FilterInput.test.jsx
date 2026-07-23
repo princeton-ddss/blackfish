@@ -42,7 +42,7 @@ test("Disabled FilterInput", async () => {
   await act(async () => {
     const input = getByRole("textbox");
     input.focus();
-    user.keyboard("Hi there");
+    await user.keyboard("Hi there");
   });
   expect(baseElement).toMatchSnapshot();
 });

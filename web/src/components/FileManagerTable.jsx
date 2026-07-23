@@ -13,7 +13,7 @@ import {
 import { assetPath } from "@/config";
 import { fileSize, lastModified } from "@/lib/util";
 import { getFileType } from "@/lib/fileApi";
-import { dirname, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
+import { dirname, clampToRoot, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import PropTypes from "prop-types";
 
@@ -110,13 +110,8 @@ function FileManagerTable({
                                                 onClick={() => {
                                                     if (!path) return; // No path set
                                                     if (isFileSystemRoot(path)) return; // Already at root
-                                                    const parentPath = dirname(path);
-                                                    // If root is set, don't navigate above it
-                                                    if (root && !parentPath.startsWith(root)) {
-                                                        setPath(root);
-                                                        return;
-                                                    }
-                                                    setPath(parentPath);
+                                                    // Never navigate above the security root.
+                                                    setPath(clampToRoot(dirname(path), root));
                                                 }}
                                                 disabled={isDisabled}
                                             >

@@ -9,7 +9,7 @@ import {
 import { useFileSystem } from "@/lib/loaders";
 import { assetPath } from "@/config";
 import { fileSize, lastModified } from "@/lib/util";
-import { dirname, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
+import { dirname, clampToRoot, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import DirectoryInput from "@/components/DirectoryInput";
 import FilterInput from "@/components/FilterInput";
@@ -82,13 +82,8 @@ function AudioFileBrowserTable({
                     >
                       <button
                         onClick={() => {
-                          const parentPath = dirname(path);
-                          // If a root is set, don't navigate above it.
-                          if (root && !parentPath.startsWith(root)) {
-                            setPath(root);
-                          } else {
-                            setPath(parentPath);
-                          }
+                          // Never navigate above the security root.
+                          setPath(clampToRoot(dirname(path), root));
                         }}
                       >
                         {/* Hide back button at filesystem root or security boundary */}

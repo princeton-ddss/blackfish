@@ -1,5 +1,11 @@
 import { describe, test, expect } from "vitest";
-import { dirname, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
+import {
+  dirname,
+  isFileSystemRoot,
+  isAtSecurityBoundary,
+  isWithinRoot,
+  clampToRoot,
+} from "@/lib/pathUtils";
 
 describe("pathUtils", () => {
   describe("dirname", () => {
@@ -65,6 +71,47 @@ describe("pathUtils", () => {
 
     test("no boundary when root is null", () => {
       expect(isAtSecurityBoundary("/home/user", null)).toBe(false);
+    });
+  });
+
+  describe("isWithinRoot", () => {
+    test("true for the root itself and its descendants", () => {
+      expect(isWithinRoot("/home/user", "/home/user")).toBe(true);
+      expect(isWithinRoot("/home/user/data", "/home/user")).toBe(true);
+      expect(isWithinRoot("/home/user/", "/home/user")).toBe(true);
+    });
+
+    test("is segment-aware: a prefix sibling is NOT within root", () => {
+      // The bug this replaces: "/home/user".startsWith("/home/us") is true.
+      expect(isWithinRoot("/home/user", "/home/us")).toBe(false);
+      expect(isWithinRoot("/home/username", "/home/user")).toBe(false);
+    });
+
+    test("tolerates a trailing slash on root", () => {
+      expect(isWithinRoot("/home/user/data", "/home/user/")).toBe(true);
+    });
+
+    test("everything is within the filesystem root", () => {
+      expect(isWithinRoot("/anything/here", "/")).toBe(true);
+    });
+  });
+
+  describe("clampToRoot", () => {
+    test("returns the path when it is within root", () => {
+      expect(clampToRoot("/home/user/data", "/home/user")).toBe("/home/user/data");
+    });
+
+    test("clamps to root when the path escapes it", () => {
+      // dirname("/home/user") -> "/home"; must clamp back to the root.
+      expect(clampToRoot("/home", "/home/user")).toBe("/home/user");
+    });
+
+    test("clamps a prefix-sibling back to root (not treated as inside)", () => {
+      expect(clampToRoot("/home/us", "/home/user")).toBe("/home/user");
+    });
+
+    test("passes the path through when there is no root", () => {
+      expect(clampToRoot("/home", null)).toBe("/home");
     });
   });
 });

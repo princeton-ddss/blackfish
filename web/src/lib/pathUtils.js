@@ -67,3 +67,29 @@ export function isAtSecurityBoundary(path, root) {
   if (root == null) return false;
   return path === root || path === `${root}/`;
 }
+
+/**
+ * Whether `path` is `root` itself or a descendant of it. Segment-aware: unlike a
+ * raw `path.startsWith(root)`, "/home/user" is NOT within "/home/us".
+ * @param {string} path - Path to test
+ * @param {string} root - Boundary root
+ * @returns {boolean} True if path is root or below it
+ */
+export function isWithinRoot(path, root) {
+  const normalizedRoot = root.replace(/\/+$/, "") || "/";
+  if (path === normalizedRoot) return true;
+  const prefix = normalizedRoot === "/" ? "/" : `${normalizedRoot}/`;
+  return path.startsWith(prefix);
+}
+
+/**
+ * Clamp a path to a security root: return `path` when it's within `root`,
+ * otherwise `root` itself. With no root (null), the path passes through.
+ * @param {string} path - Candidate path (e.g. a computed parent)
+ * @param {string|null} root - Security boundary root (null = no boundary)
+ * @returns {string} `path` if allowed, else `root`
+ */
+export function clampToRoot(path, root) {
+  if (root == null) return path;
+  return isWithinRoot(path, root) ? path : root;
+}

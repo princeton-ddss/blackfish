@@ -438,6 +438,70 @@ test("AudioFileBrowser loading state with files", async () => {
   expect(baseElement).toMatchSnapshot();
 });
 
+function mockFiles(n) {
+  useFileSystem.mockReturnValue({
+    files: Array.from({ length: n }, (_, i) => ({
+      name: `file ${i}`,
+      is_dir: false,
+      path: `path/to/file_${i}.mp3`,
+      size: 64,
+      modified_at: "2025-06-19T14:16:50",
+    })),
+    error: null,
+    isLoading: false,
+    refresh: (e) => e,
+  });
+}
+
+test("renders pagination when there is more than one page", async () => {
+  mockFiles(30); // > FILES_PER_PAGE (20) -> 2 pages
+  const { getByText, queryByText } = await act(async () =>
+    render(<AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }} />)
+  );
+  // Page-number buttons for both pages are shown.
+  expect(getByText("1")).toBeInTheDocument();
+  expect(getByText("2")).toBeInTheDocument();
+  expect(queryByText("3")).not.toBeInTheDocument();
+});
+
+test("hides pagination for a single page", async () => {
+  mockFiles(5); // <= FILES_PER_PAGE -> 1 page
+  const { queryByText } = await act(async () =>
+    render(<AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }} />)
+  );
+  // No page-number buttons rendered for a single page.
+  expect(queryByText("1")).not.toBeInTheDocument();
+});
+
+test("renders the submit control passed as children in the footer", async () => {
+  mockFiles(30);
+  const { getByTestId } = await act(async () =>
+    render(
+      <AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }}>
+        <button data-testid="submit">Go</button>
+      </AudioFileBrowser>
+    )
+  );
+  expect(getByTestId("submit")).toBeInTheDocument();
+});
+
+test("resets to the first page when the filter changes", async () => {
+  mockFiles(50); // 3 pages
+  const user = userEvent.setup();
+  const { getByText, getByPlaceholderText, queryByText } = await act(async () =>
+    render(<AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }} />)
+  );
+  // Go to page 3.
+  await act(async () => {
+    await user.click(getByText("3"));
+  });
+  // Typing a filter should reset back to page 1 (page 3 no longer shown).
+  await act(async () => {
+    await user.type(getByPlaceholderText("*"), "file 1");
+  });
+  expect(queryByText("3")).not.toBeInTheDocument();
+});
+
 afterAll(() => {
   global.Date = originalDate;
 });

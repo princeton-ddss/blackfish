@@ -1,5 +1,4 @@
-import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
-import { callSpeechRecognitionInference } from "../lib/requests";
+import { PaperAirplaneIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -7,37 +6,48 @@ import PropTypes from "prop-types";
 function SpeechRecognitionSubmit({
   selectedService,
   audioPath,
-  setOutput,
-  parameters,
-  setIsLoading,
+  isLoading,
+  onSubmit,
+  onCancel,
 }) {
 
-  const handleSubmit = async (event) => {
+  const handleClick = (event) => {
     event.preventDefault();
-    if (selectedService) {
-      setIsLoading(true);
-      const res = await callSpeechRecognitionInference(
-        selectedService,
-        audioPath,
-        parameters,
-        true
-      );
-      setIsLoading(false);
-      setOutput(res.text.trim());
+    if (isLoading) {
+      onCancel();
+    } else if (selectedService) {
+      onSubmit();
     } else {
-      console.warn("handleSubmit called with no service provided")
+      console.warn("submit clicked with no service provided");
     }
   };
 
+  // While a request is in flight the button cancels (never disabled, so it can
+  // always be pressed). Otherwise it submits and follows the usual guards.
+  const submitDisabled =
+    audioPath === "" ||
+    !selectedService ||
+    selectedService.status !== ServiceStatus.HEALTHY;
+
   return (
-    <form onSubmit={handleSubmit} className="flex justify-end">
+    <form onSubmit={handleClick} className="flex justify-end">
       <button
         type="submit"
-        disabled={audioPath === "" || !selectedService || selectedService.status !== ServiceStatus.HEALTHY}
+        disabled={!isLoading && submitDisabled}
         className="inline-flex items-center rounded-full bg-white dark:bg-gray-700 p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-700 disabled:border-gray-200 dark:disabled:border-gray-600 disabled:shadow-none"
-        aria-label={selectedService ? `Submit to ${selectedService.name}` : "Submit"}
+        aria-label={
+          isLoading
+            ? "Cancel transcription"
+            : selectedService
+              ? `Submit to ${selectedService.name}`
+              : "Submit"
+        }
       >
-        <PaperAirplaneIcon className="size-5" aria-hidden="true" />
+        {isLoading ? (
+          <XMarkIcon className="size-5" aria-hidden="true" />
+        ) : (
+          <PaperAirplaneIcon className="size-5" aria-hidden="true" />
+        )}
       </button>
     </form>
   );
@@ -46,9 +56,9 @@ function SpeechRecognitionSubmit({
 SpeechRecognitionSubmit.propTypes = {
   selectedService: PropTypes.object,
   audioPath: PropTypes.string,
-  setOutput: PropTypes.func,
-  parameters: PropTypes.object,
-  setIsLoading: PropTypes.func,
+  isLoading: PropTypes.bool,
+  onSubmit: PropTypes.func,
+  onCancel: PropTypes.func,
 };
 
 export default SpeechRecognitionSubmit;

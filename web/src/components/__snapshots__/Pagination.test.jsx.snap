@@ -318,59 +318,6 @@ exports[`Enabled Pagination 2`] = `
 
 exports[`Pagination with no files 1`] = `
 <body>
-  <div>
-    <div
-      class="flex justify-center py-1"
-    >
-      <button
-        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
-        disabled=""
-      >
-        <svg
-          aria-hidden="true"
-          class="w-4 h-4"
-          data-slot="icon"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-      <button
-        class="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white dark:bg-gray-800 text-gray-300 dark:text-gray-600"
-        disabled=""
-      >
-        1
-      </button>
-      <button
-        class="text-gray-700 dark:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
-        disabled=""
-      >
-        <svg
-          aria-hidden="true"
-          class="w-4 h-4"
-          data-slot="icon"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-    </div>
-  </div>
+  <div />
 </body>
 `;

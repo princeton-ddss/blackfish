@@ -37,9 +37,7 @@ function AudioFileBrowserTable({
   content,
   path,
   root,
-  filesPerPage,
   setAudioPath,
-  query,
   setPath,
   selected,
   setSelected,
@@ -48,20 +46,8 @@ function AudioFileBrowserTable({
   refresh,
   status
 }) {
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const indexOfLastFile = currentPage * filesPerPage;
-  const indexOfFirstFile = indexOfLastFile - filesPerPage;
-  const filteredContent =
-    query === ""
-      ? content
-      : content?.filter((item) => {
-        return item.name.toLowerCase().includes(query.toLowerCase());
-      });
-  const currentFiles =
-    !filteredContent
-      ? []
-      : filteredContent.slice(indexOfFirstFile, indexOfLastFile);
+  // `content` is the already-filtered, already-paginated page of files.
+  const currentFiles = content ?? [];
 
   return (
     <div
@@ -285,13 +271,6 @@ function AudioFileBrowserTable({
           </div>
         </div>
       </div>
-      <Pagination
-        filesPerPage={filesPerPage}
-        totalFiles={!filteredContent ? 0 : filteredContent.length}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        disabled={status.disabled}
-      />
     </div>
   );
 }
@@ -300,9 +279,7 @@ AudioFileBrowserTable.propTypes = {
   content: PropTypes.array,
   path: PropTypes.string,
   root: PropTypes.string,
-  filesPerPage: PropTypes.number,
   setAudioPath: PropTypes.func,
-  query: PropTypes.string,
   setPath: PropTypes.func,
   selected: PropTypes.string,
   setSelected: PropTypes.func,
@@ -320,16 +297,36 @@ AudioFileBrowserTable.propTypes = {
  * @param {Object} options.status - Health of file browser connection.
  * @return {JSX.Element}
  */
-function AudioFileBrowser({ root, setAudioPath, status }) {
+const FILES_PER_PAGE = 20;
+
+function AudioFileBrowser({ root, setAudioPath, status, children }) {
   const [path, setPath] = useState(root);
   const [pathError, setPathError] = useState(false);
   const [selected, setSelected] = useState("");
   const [query, setQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const { files, error, isLoading, refresh } = useFileSystem(path); // TODO: only fetch files if !status.disabled
 
   useEffect(() => {
     setPath(root);
   }, [root]);
+
+  // Filter and paginate here so the footer (below) can host the pagination
+  // alongside the submit control passed in as `children`.
+  const filteredContent =
+    query === ""
+      ? files
+      : files?.filter((item) => item.name.toLowerCase().includes(query.toLowerCase()));
+  const totalFiles = filteredContent ? filteredContent.length : 0;
+  const indexOfLastFile = currentPage * FILES_PER_PAGE;
+  const currentFiles = filteredContent
+    ? filteredContent.slice(indexOfLastFile - FILES_PER_PAGE, indexOfLastFile)
+    : [];
+
+  // Reset to the first page when the directory or filter changes.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [path, query]);
 
   return (
     <div
@@ -350,12 +347,10 @@ function AudioFileBrowser({ root, setAudioPath, status }) {
       <FilterInput className="sm:flex-auto" query={query} setQuery={setQuery} disabled={status.disabled} />
 
       <AudioFileBrowserTable
-        content={files}
+        content={currentFiles}
         path={path}
         root={root}
-        filesPerPage={20}
         setAudioPath={setAudioPath}
-        query={query}
         setPath={setPath}
         setPathError={setPathError}
         selected={selected}
@@ -365,6 +360,21 @@ function AudioFileBrowser({ root, setAudioPath, status }) {
         refresh={refresh}
         status={status}
       />
+
+      {/* Bare row below the table (matching the File Manager's pagination
+          style): centered pagination with the submit control (children) on
+          the right. Fixed height so the layout doesn't shift when pagination
+          is hidden (single page). */}
+      <div className="relative flex items-center justify-center h-12 mt-2">
+        <Pagination
+          filesPerPage={FILES_PER_PAGE}
+          totalFiles={totalFiles}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          disabled={status.disabled}
+        />
+        <div className="absolute right-0">{children}</div>
+      </div>
     </div>
   );
 }
@@ -373,6 +383,7 @@ AudioFileBrowser.propTypes = {
   root: PropTypes.string,
   setAudioPath: PropTypes.func,
   status: PropTypes.object,
+  children: PropTypes.node,
 };
 
 export default AudioFileBrowser;

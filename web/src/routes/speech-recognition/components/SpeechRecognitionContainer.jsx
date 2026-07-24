@@ -46,13 +46,12 @@ function SpeechRecognitionContainer({
 
   return (
     <div className="bg-white dark:bg-gray-800">
-      <div className="relative w-full lg:w-5/6 max-w-6xl">
+      <div className="w-full lg:w-5/6 max-w-6xl">
         <AudioFileBrowser
           root={selectedService ? selectedService.mount : ""}
           setAudioPath={setAudioPath}
           status={fileBrowserStatus}
-        />
-        <div className="absolute bottom-0 py-2 px-5 bg-gray-50 dark:bg-gray-800 w-full max-w-6xl rounded-es-md rounded-ee-md">
+        >
           <SpeechRecognitionSubmit
             selectedService={selectedService}
             audioPath={audioPath}
@@ -60,7 +59,7 @@ function SpeechRecognitionContainer({
             parameters={parameters}
             setIsLoading={setIsLoading}
           />
-        </div>
+        </AudioFileBrowser>
       </div>
       <SpeechRecognitionAudioPreview
         audioPath={audioPath}

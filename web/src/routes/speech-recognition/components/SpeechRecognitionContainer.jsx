@@ -1,9 +1,11 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useRef, useEffect } from "react";
 import AudioFileBrowser from "@/components/AudioFileBrowser";
 import SpeechRecognitionAudioPreview from "./SpeechRecognitionAudioPreview";
 import SpeechRecognitionOutput from "./SpeechRecognitionOutput";
 import SpeechRecognitionSubmit from "./SpeechRecognitionSubmit";
+import { callSpeechRecognitionInference } from "../lib/requests";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
 
 
@@ -14,7 +16,52 @@ function SpeechRecognitionContainer({
   const [audioPath, setAudioPath] = useState("");
   const [output, setOutput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { selectedService } = useContext(ServiceContext);
+  const { selectedService, registerInFlight } = useContext(ServiceContext);
+  // Tracks the in-flight transcription so it can be cancelled (by the user, by
+  // a service action like Stop, or on unmount).
+  const abortRef = useRef(null);
+
+  const handleSubmit = async () => {
+    if (!selectedService) return;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    // Register so a Stop/Delete on this service aborts the request immediately.
+    const unregister = registerInFlight(() => controller.abort());
+    setIsLoading(true);
+    try {
+      const res = await callSpeechRecognitionInference(
+        selectedService,
+        audioPath,
+        parameters,
+        true,
+        controller.signal,
+      );
+      setOutput(res.text.trim());
+    } catch (err) {
+      // A cancelled request is expected — leave the output untouched.
+      if (err.name !== "AbortError") throw err;
+    } finally {
+      unregister();
+      if (abortRef.current === controller) abortRef.current = null;
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    abortRef.current?.abort();
+  };
+
+  // Also cancel if the service leaves the healthy state by any other path
+  // (e.g. it crashes), and on unmount.
+  useEffect(() => {
+    if (selectedService?.status !== ServiceStatus.HEALTHY) {
+      abortRef.current?.abort();
+    }
+  }, [selectedService?.status]);
+
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
 
   const getFileBrowserStatus = () => {
 
@@ -56,9 +103,9 @@ function SpeechRecognitionContainer({
           <SpeechRecognitionSubmit
             selectedService={selectedService}
             audioPath={audioPath}
-            setOutput={setOutput}
-            parameters={parameters}
-            setIsLoading={setIsLoading}
+            isLoading={isLoading}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
           />
         </div>
       </div>

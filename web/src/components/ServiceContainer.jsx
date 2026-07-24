@@ -59,13 +59,16 @@ function ServiceContainer({
   ParametersFormComponent,
   parametersFormProps,
 }) {
-  const { selectedService } = useContext(ServiceContext);
+  const { selectedService, cancelInFlight } = useContext(ServiceContext);
   const { mutate } = useServices(profile, task);
   const [isUpdating, setIsUpdating] = useState(false);
   const [launchOpen, setLaunchOpen] = useState(false);
 
   const handleStopService = async () => {
     if (selectedService == null) return;
+    // Abort any in-flight request against this service immediately, rather than
+    // waiting for the service status to poll to a terminal state.
+    cancelInFlight?.();
     setIsUpdating(true);
     try {
       await stopService(selectedService.id);
@@ -78,6 +81,7 @@ function ServiceContainer({
 
   const handleDeleteService = async () => {
     if (selectedService == null) return;
+    cancelInFlight?.();
     setIsUpdating(true);
     try {
       await deleteService(selectedService.id);

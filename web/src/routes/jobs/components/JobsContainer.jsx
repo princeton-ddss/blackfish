@@ -11,6 +11,22 @@ import NewJobModal from "./NewJobModal";
 // Mock data for development - matches API BatchJob structure
 const MOCK_JOBS = [
     {
+        // Just submitted: staged is null until the first observation reports an
+        // input count, so progress renders as N/A rather than a collapsed bar.
+        id: "job-000c",
+        name: "Video Captioning",
+        created_at: "2024-01-17T10:00:00Z",
+        status: "submitted",
+        staged: null,
+        finished: 0,
+        errored: 0,
+        task: "transcribe",
+        repo_id: "openai/whisper-large-v3",
+        revision: "main",
+        input_dir: "/scratch/user/audio/input",
+        output_dir: "/scratch/user/audio/output",
+    },
+    {
         // Terminal: restart budget exhausted with work remaining.
         id: "job-000",
         name: "Meeting Transcription",

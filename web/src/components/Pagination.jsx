@@ -40,6 +40,10 @@ export function getPageItems(currentPage, totalPages, siblings = 1) {
 
 function Pagination({ filesPerPage, totalFiles, currentPage, setCurrentPage, disabled }) {
   const totalPages = Math.ceil(totalFiles / filesPerPage);
+
+  // Nothing to paginate (0 or 1 page): render nothing rather than lone arrows.
+  if (totalPages <= 1) return null;
+
   const pageItems = getPageItems(currentPage, totalPages);
 
   return (
@@ -53,16 +57,6 @@ function Pagination({ filesPerPage, totalFiles, currentPage, setCurrentPage, dis
       >
         <ArrowLeftIcon className="w-4 h-4" />
       </button>
-
-      {totalPages === 0 && (
-        <button
-          key={1}
-          disabled
-          className="h-8 w-8 px-1 py-1 mx-1 rounded-md text-center sm:text-sm font-light bg-white dark:bg-gray-800 text-gray-300 dark:text-gray-600"
-        >
-          1
-        </button>
-      )}
 
       {pageItems.map((item, index) =>
         item === "…" ? (

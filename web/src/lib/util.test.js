@@ -14,6 +14,7 @@ import {
   isServiceRunning,
   selectTierByModelSize,
   isBatchJobActive,
+  batchProgress,
 } from "@/lib/util";
 
 describe("Utils", () => {
@@ -417,6 +418,59 @@ describe("Utils", () => {
       for (const s of ["stopped", "stalled", "exhausted", "broken"]) {
         expect(isBatchJobActive(s)).toBe(false);
       }
+    });
+  });
+
+  describe("batchProgress", () => {
+    it("sums finished, staged, and errored into the total", () => {
+      expect(batchProgress({ finished: 23, staged: 77, errored: 0 })).toEqual({
+        done: 23,
+        failed: 0,
+        total: 100,
+      });
+      expect(batchProgress({ finished: 48, staged: 0, errored: 12 })).toEqual({
+        done: 48,
+        failed: 12,
+        total: 60,
+      });
+    });
+
+    it("treats staged=0 as a real total (0 remaining), not unknown", () => {
+      // A finished job: nothing remaining, but the total is still known.
+      expect(batchProgress({ finished: 50, staged: 0, errored: 2 })).toEqual({
+        done: 50,
+        failed: 2,
+        total: 52,
+      });
+    });
+
+    it("returns total=null when staged is null (job not yet observed)", () => {
+      // The between-first-observation case: no denominator to show. Must NOT
+      // collapse to done+errored (which would spike the bar to ~100%).
+      expect(batchProgress({ finished: 0, staged: null, errored: 0 })).toEqual({
+        done: 0,
+        failed: 0,
+        total: null,
+      });
+      expect(batchProgress({ finished: 5, staged: null, errored: 1 })).toEqual({
+        done: 5,
+        failed: 1,
+        total: null,
+      });
+    });
+
+    it("returns total=null when staged is undefined or absent", () => {
+      expect(batchProgress({ finished: 5, errored: 1 }).total).toBeNull();
+      expect(batchProgress({}).total).toBeNull();
+      expect(batchProgress().total).toBeNull();
+    });
+
+    it("coerces string-valued fields to numbers", () => {
+      expect(batchProgress({ finished: "23", staged: "77", errored: "0" })).toEqual({
+        done: 23,
+        failed: 0,
+        total: 100,
+      });
     });
   });
 

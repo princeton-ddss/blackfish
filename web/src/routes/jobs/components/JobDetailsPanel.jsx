@@ -8,7 +8,7 @@ import {
     ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import StatusBadge from "./StatusBadge";
-import { isBatchJobActive } from "@/lib/util";
+import { isBatchJobActive, batchProgress } from "@/lib/util";
 import PropTypes from "prop-types";
 
 // A batch job resubmits its Slurm allocation until the input dir is fully
@@ -84,12 +84,9 @@ export function formatParamValue(key, value) {
     return String(value);
 }
 
-function ProgressBar({ finished, staged, errored }) {
-    const done = Number(finished) || 0;
-    const pending = Number(staged) || 0;
-    const failed = Number(errored) || 0;
-    const total = done + pending + failed;
-    if (total === 0) return null;
+function ProgressBar({ done, failed, total }) {
+    // No denominator (job not yet observed) or no work at all: nothing to draw.
+    if (!total) return null;
 
     const donePct = (done / total) * 100;
     const failedPct = (failed / total) * 100;
@@ -111,9 +108,9 @@ function ProgressBar({ finished, staged, errored }) {
 }
 
 ProgressBar.propTypes = {
-    finished: PropTypes.number,
-    staged: PropTypes.number,
-    errored: PropTypes.number,
+    done: PropTypes.number,
+    failed: PropTypes.number,
+    total: PropTypes.number,
 };
 
 function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
@@ -133,10 +130,9 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
         );
     }
 
-    const done = Number(job.finished) || 0;
-    const pending = Number(job.staged) || 0;
-    const failed = Number(job.errored) || 0;
-    const total = done + pending + failed;
+    const { done, failed, total } = batchProgress(job);
+    // total is null before the job's first observation: no denominator to show.
+    const pending = total === null ? 0 : total - done - failed;
     const reason = terminalReason(job);
     const restarts = Number(job.restarts) || 0;
 
@@ -208,18 +204,14 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                         )}
                     </div>
                 </div>
-                <ProgressBar
-                    finished={job.finished}
-                    staged={job.staged}
-                    errored={job.errored}
-                />
+                <ProgressBar done={done} failed={failed} total={total} />
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {restarts > 0 ? (
                         <span>Restarted {restarts} time{restarts === 1 ? "" : "s"}</span>
                     ) : (
                         <span />
                     )}
-                    <span>{total} total</span>
+                    <span>{total === null ? "N/A" : `${total} total`}</span>
                 </div>
             </div>
 

@@ -5,17 +5,19 @@ import {
     ArrowPathIcon,
     ChevronDownIcon,
 } from "@heroicons/react/24/outline";
-import { lastModified } from "@/lib/util";
+import { lastModified, batchProgress } from "@/lib/util";
 import Pagination from "@/components/Pagination";
 import { TASKS } from "./NewJobModal";
 import StatusBadge from "./StatusBadge";
 import PropTypes from "prop-types";
 
 function ProgressDisplay({ finished, staged, errored }) {
-    const done = Number(finished) || 0;
-    const pending = Number(staged) || 0;
-    const failed = Number(errored) || 0;
-    const total = done + pending + failed;
+    const { done, failed, total } = batchProgress({ finished, staged, errored });
+    // total is null before a job's first observation: no denominator to show.
+    if (total === null) {
+        return <span className="text-xs text-gray-400 dark:text-gray-500">N/A</span>;
+    }
+    const pending = total - done - failed;
     return (
         <div className="flex items-center gap-1.5 text-xs">
             <span className="text-green-600 dark:text-green-400">{done}</span>

@@ -21,17 +21,21 @@ export function terminalReason(job) {
     const processed = Number(job.finished) || 0;
     // "staged" is what remains; it is null between allocations, before the
     // input count is known. total (= processed + remaining + errored) is only
-    // knowable when staged is known.
+    // knowable when staged is known. NB: this deliberately keeps a null staged
+    // distinct (remaining/total stay null) rather than collapsing it to 0 like
+    // the component's own `pending`/`total` — don't merge the two computations.
     const remaining = job.staged != null ? Number(job.staged) || 0 : null;
     const total = remaining != null ? processed + remaining + (Number(job.errored) || 0) : null;
     switch (job.status) {
         case "exhausted": {
             const budget = Number(job.max_restarts);
+            // An exhausted job has work left by definition; guard remaining > 0
+            // so we never claim "0 files still unprocessed" if the count races.
             return {
                 headline: "Exhausted restart budget",
                 detail:
                     `The job used all ${Number.isFinite(budget) ? budget : "its"} restarts` +
-                    (remaining != null ? ` with ${remaining} file${remaining === 1 ? "" : "s"} still unprocessed.` : " before finishing."),
+                    (remaining ? ` with ${remaining} file${remaining === 1 ? "" : "s"} still unprocessed.` : " before finishing."),
             };
         }
         case "stalled": {

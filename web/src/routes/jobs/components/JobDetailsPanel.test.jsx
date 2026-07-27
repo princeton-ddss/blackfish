@@ -54,6 +54,20 @@ describe("terminalReason", () => {
     expect(r.detail).toContain("12 files still unprocessed");
   });
 
+  test("avoids the '0 files unprocessed' non-sequitur for EXHAUSTED", () => {
+    const r = terminalReason({
+      status: "exhausted",
+      finished: 60,
+      staged: 0,
+      errored: 0,
+      max_restarts: 20,
+      processed_highwater: 60,
+    });
+    expect(r.detail).toContain("all 20 restarts");
+    expect(r.detail).not.toContain("0 files");
+    expect(r.detail).toContain("before finishing");
+  });
+
   test("singularizes a single remaining file", () => {
     const r = terminalReason({
       status: "exhausted",

@@ -1,5 +1,6 @@
 import { useState, useContext, useRef, useEffect } from "react";
 import AudioFileBrowser from "@/components/AudioFileBrowser";
+import Notification from "@/components/Notification";
 import SpeechRecognitionAudioPreview from "./SpeechRecognitionAudioPreview";
 import SpeechRecognitionOutput from "./SpeechRecognitionOutput";
 import SpeechRecognitionSubmit from "./SpeechRecognitionSubmit";
@@ -45,7 +46,11 @@ function SpeechRecognitionContainer({
       // A cancelled request is expected — leave the output untouched. Surface a
       // real failure (network error, service returned an error) to the user.
       if (err.name !== "AbortError") {
-        setError("Transcription failed. The service may be unavailable.");
+        console.error("Transcription error:", err);
+        setError({
+          message: "Transcription failed",
+          detail: err.message || "The service may be unavailable.",
+        });
       }
     } finally {
       unregister();
@@ -109,20 +114,19 @@ function SpeechRecognitionContainer({
           />
         </div>
       </div>
-      {error && (
-        <div
-          role="alert"
-          className="w-full lg:w-5/6 max-w-6xl mt-4 rounded-md bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800"
-        >
-          {error}
-        </div>
-      )}
       <SpeechRecognitionAudioPreview
         audioPath={audioPath}
       />
       <SpeechRecognitionOutput
         output={output}
         isLoading={isLoading}
+      />
+      <Notification
+        show={!!error}
+        variant="error"
+        message={error ? error.message : ""}
+        detail={error ? error.detail : ""}
+        onDismiss={() => setError(null)}
       />
     </div>
   );

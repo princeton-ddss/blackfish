@@ -1,4 +1,4 @@
-import { PaperAirplaneIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { PaperAirplaneIcon, StopIcon } from "@heroicons/react/24/outline";
 import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -44,7 +44,7 @@ function SpeechRecognitionSubmit({
         }
       >
         {isLoading ? (
-          <XMarkIcon className="size-5" aria-hidden="true" />
+          <StopIcon className="size-5" aria-hidden="true" />
         ) : (
           <PaperAirplaneIcon className="size-5" aria-hidden="true" />
         )}

@@ -5,7 +5,6 @@ import SpeechRecognitionOutput from "./SpeechRecognitionOutput";
 import SpeechRecognitionSubmit from "./SpeechRecognitionSubmit";
 import { callSpeechRecognitionInference } from "../lib/requests";
 import { ServiceContext } from "@/providers/ServiceProvider";
-import { ServiceStatus } from "@/lib/util";
 import PropTypes from "prop-types";
 
 
@@ -15,22 +14,27 @@ function SpeechRecognitionContainer({
 
   const [audioPath, setAudioPath] = useState("");
   const [output, setOutput] = useState("");
+  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const { selectedService, registerInFlight } = useContext(ServiceContext);
-  // Tracks the in-flight transcription so it can be cancelled (by the user, by
-  // a service action like Stop, or on unmount).
+  // Tracks the in-flight transcription so it can be cancelled by the user or on
+  // unmount. Stop/Delete cancellation goes through the ServiceProvider registry
+  // (keyed by the request's service), so it targets the right request even if a
+  // different service is selected while this one is still running.
   const abortRef = useRef(null);
 
   const handleSubmit = async () => {
     if (!selectedService) return;
+    const service = selectedService; // bind to the service this request runs against
     const controller = new AbortController();
     abortRef.current = controller;
-    // Register so a Stop/Delete on this service aborts the request immediately.
-    const unregister = registerInFlight(() => controller.abort());
+    // Register under this service's id so a Stop/Delete on it aborts the request.
+    const unregister = registerInFlight(service.id, () => controller.abort());
     setIsLoading(true);
+    setError(null);
     try {
       const res = await callSpeechRecognitionInference(
-        selectedService,
+        service,
         audioPath,
         parameters,
         true,
@@ -38,8 +42,11 @@ function SpeechRecognitionContainer({
       );
       setOutput(res.text.trim());
     } catch (err) {
-      // A cancelled request is expected — leave the output untouched.
-      if (err.name !== "AbortError") throw err;
+      // A cancelled request is expected — leave the output untouched. Surface a
+      // real failure (network error, service returned an error) to the user.
+      if (err.name !== "AbortError") {
+        setError("Transcription failed. The service may be unavailable.");
+      }
     } finally {
       unregister();
       if (abortRef.current === controller) abortRef.current = null;
@@ -51,14 +58,7 @@ function SpeechRecognitionContainer({
     abortRef.current?.abort();
   };
 
-  // Also cancel if the service leaves the healthy state by any other path
-  // (e.g. it crashes), and on unmount.
-  useEffect(() => {
-    if (selectedService?.status !== ServiceStatus.HEALTHY) {
-      abortRef.current?.abort();
-    }
-  }, [selectedService?.status]);
-
+  // Cancel an in-flight request when leaving the page.
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
@@ -109,6 +109,14 @@ function SpeechRecognitionContainer({
           />
         </div>
       </div>
+      {error && (
+        <div
+          role="alert"
+          className="w-full lg:w-5/6 max-w-6xl mt-4 rounded-md bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400 ring-1 ring-red-200 dark:ring-red-800"
+        >
+          {error}
+        </div>
+      )}
       <SpeechRecognitionAudioPreview
         audioPath={audioPath}
       />

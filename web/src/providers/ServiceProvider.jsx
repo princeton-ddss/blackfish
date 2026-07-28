@@ -4,19 +4,31 @@ import PropTypes from "prop-types";
 export const ServiceContext = createContext();
 
 function ServiceProvider({ selectedService, setSelectedServiceId, children }) {
-  // Registry of "cancel this in-flight request" callbacks. Lets a service
-  // action (e.g. Stop) immediately abort any request against that service,
-  // rather than waiting for its status to poll to a terminal state.
-  const inFlightRef = useRef(new Set());
+  // Registry of "cancel this in-flight request" callbacks, keyed by the id of
+  // the service the request runs against. Lets a service action (e.g. Stop)
+  // immediately abort requests for *that* service — not requests for another
+  // service that merely happens to be selected — rather than waiting for its
+  // status to poll to a terminal state. A Set per service tolerates multiple
+  // concurrent requests against one service.
+  const inFlightRef = useRef(new Map());
 
-  const registerInFlight = useCallback((cancel) => {
-    inFlightRef.current.add(cancel);
-    return () => inFlightRef.current.delete(cancel);
+  const registerInFlight = useCallback((serviceId, cancel) => {
+    const byService = inFlightRef.current;
+    if (!byService.has(serviceId)) byService.set(serviceId, new Set());
+    byService.get(serviceId).add(cancel);
+    return () => {
+      const set = byService.get(serviceId);
+      if (!set) return;
+      set.delete(cancel);
+      if (set.size === 0) byService.delete(serviceId);
+    };
   }, []);
 
-  const cancelInFlight = useCallback(() => {
-    for (const cancel of inFlightRef.current) cancel();
-    inFlightRef.current.clear();
+  const cancelInFlight = useCallback((serviceId) => {
+    const set = inFlightRef.current.get(serviceId);
+    if (!set) return;
+    for (const cancel of set) cancel();
+    inFlightRef.current.delete(serviceId);
   }, []);
 
   return (

@@ -80,6 +80,17 @@ _TERMINAL_STATUSES = frozenset(
     }
 )
 
+# Terminal statuses a job can be resumed from: resubmit the allocation against
+# the same output_dir to continue processing. Excludes BROKEN (a metadata/config
+# error whose root cause must be fixed first, not something a resubmit resolves).
+_RESUMABLE_STATUSES = frozenset(
+    {
+        BatchJobStatus.STOPPED,
+        BatchJobStatus.STALLED,
+        BatchJobStatus.EXHAUSTED,
+    }
+)
+
 # Slurm states in which the allocation is still holding (or awaiting) resources.
 _ALIVE_STATES = frozenset(
     {
@@ -506,6 +517,44 @@ class BatchJob(UUIDAuditBase):
         await client.stop(self.output_dir)
         await self._cancel_allocation()
         self.status = BatchJobStatus.STOPPED
+
+    async def resume(self, app_config: "State | BlackfishConfig") -> None:
+        """Put a terminal job back into the restart loop.
+
+        Resubmits the allocation against the same ``output_dir`` — the tigerflow
+        pipeline skips already-finished files, so this continues where the job
+        left off (or picks up inputs added since a STOPPED completion). The
+        restart counters are reset so the guards don't immediately re-fire the
+        terminal status the job just came from.
+
+        No-op if the job isn't terminal (mirrors ``stop``'s already-stopped
+        guard). Like ``start``, this does not poll; the periodic ``/api/jobs``
+        poll advances the resubmitted allocation on its next pass.
+
+        Args:
+            app_config: Application configuration (HOME_DIR, IMAGES, provider).
+        """
+        logger.info(
+            f"Resuming batch job {self.id} (status={format_status(self.status)})"
+        )
+
+        if self.status not in _RESUMABLE_STATUSES:
+            logger.debug(
+                f"Batch job {self.id} is not resumable "
+                f"(status={format_status(self.status)}); skipping resume command."
+            )
+            return
+
+        # Reset the guards that produced the terminal status. processed_highwater
+        # is left as-is: a resumed run that makes new progress clears the stall
+        # guard naturally, and the stale mark is the correct baseline for the
+        # first post-resume boundary.
+        self.restarts = 0
+        self.stalled_restarts = 0
+
+        job_id = await self._submit(app_config)
+        self.pid = job_id
+        self.status = BatchJobStatus.RESUBMITTED
 
     async def _cancel_allocation(self) -> None:
         """Cancel the Slurm allocation, if any. Best-effort."""

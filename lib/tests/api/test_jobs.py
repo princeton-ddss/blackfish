@@ -499,6 +499,79 @@ class TestStopBatchJobAPI:
         assert response.status_code == 401
 
 
+class TestResumeBatchJobAPI:
+    """Test cases for the PUT /api/jobs/{job_id}/resume endpoint."""
+
+    @patch("blackfish.server.jobs.base.BatchJob._submit")
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_resume_job_success(
+        self,
+        mock_create_client,
+        mock_submit,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Resuming a terminal job resubmits it and returns it RESUBMITTED."""
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_create_client.return_value = AsyncMock()
+        mock_submit.return_value = "999"
+
+        # Put the job in a resumable terminal state with a spent restart budget.
+        job = await session.get(BatchJob, UUID(job_id))
+        if job:
+            job.status = BatchJobStatus.EXHAUSTED
+            job.restarts = 20
+            job.stalled_restarts = 1
+            await session.commit()
+
+        response = await client.put(f"/api/jobs/{job_id}/resume")
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["id"] == job_id
+        assert result["status"] == "resubmitted"
+        assert result["restarts"] == 0
+        assert result["stalled_restarts"] == 0
+        assert result["pid"] == "999"
+        mock_submit.assert_called_once()
+
+    @patch("blackfish.server.jobs.base.BatchJob._submit")
+    async def test_resume_job_not_resumable(
+        self,
+        mock_submit,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """A running (non-terminal) job cannot be resumed — 400, no resubmit."""
+        job_id = "391769fc-5a40-43db-bbfa-cec80a8c3710"
+
+        job = await session.get(BatchJob, UUID(job_id))
+        if job:
+            job.status = BatchJobStatus.RUNNING
+            await session.commit()
+
+        response = await client.put(f"/api/jobs/{job_id}/resume")
+
+        assert response.status_code == 400
+        # The resumable guard rejects before any resubmit.
+        mock_submit.assert_not_called()
+
+    async def test_resume_job_not_found(self, client: AsyncTestClient):
+        """Resuming a job that doesn't exist returns 404."""
+        nonexistent_id = "550e8400-e29b-41d4-a716-446655440000"
+        response = await client.put(f"/api/jobs/{nonexistent_id}/resume")
+        assert response.status_code == 404
+
+    async def test_resume_job_authentication_required(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Authentication is required for resuming jobs."""
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+        response = await no_auth_client.put(f"/api/jobs/{job_id}/resume")
+        assert response.status_code == 401
+
+
 class TestGetJobResultsAPI:
     """Test cases for the GET /api/jobs/{id}/results endpoint."""
 

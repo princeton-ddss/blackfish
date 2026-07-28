@@ -88,6 +88,7 @@ from blackfish.server.services.text_generation import TextGenerationConfig
 from blackfish.server.jobs.base import (
     BatchJob,
     BatchJobStatus,
+    _RESUMABLE_STATUSES,
     create_tigerflow_client,
     create_tigerflow_client_for_profile,
 )
@@ -1649,6 +1650,43 @@ async def stop_job(
     except Exception as e:
         logger.warning(f"Status check failed for job {job_id}: {e}")
         job.status = BatchJobStatus.BROKEN
+
+    session.add(job)
+    await session.flush()
+    return job
+
+
+@put("/api/jobs/{job_id:str}/resume", guards=ENDPOINT_GUARDS)
+async def resume_job(
+    job_id: str,
+    session: AsyncSession,
+    state: State,
+) -> BatchJob | None:
+    """Resume a terminal job by resubmitting its allocation.
+
+    Only STOPPED/STALLED/EXHAUSTED jobs are resumable — resubmitting continues
+    against the same output dir (finished files are skipped). BROKEN is not
+    resumable. Like starting a job, this does not poll; the periodic job poll
+    picks up the resubmitted allocation.
+    """
+    job = await get_batch_job(job_id, session)
+    if job is None:
+        raise NotFoundException(detail=f"Job {job_id} not found")
+
+    if job.status not in _RESUMABLE_STATUSES:
+        raise ClientException(
+            detail=f"Job {job_id} is not resumable (status: {job.status})"
+        )
+
+    try:
+        await job.resume(state)
+    except TigerFlowError as e:
+        # Resubmit failed (e.g. SSH/sbatch error): mark BROKEN, mirror stop_job.
+        logger.warning(f"Resume command failed for job {job_id}: {e}")
+        job.status = BatchJobStatus.BROKEN
+        session.add(job)
+        await session.flush()
+        return job
 
     session.add(job)
     await session.flush()
@@ -3578,6 +3616,7 @@ app = Litestar(
         get_job,
         get_job_results,
         stop_job,
+        resume_job,
         delete_job,
         get_model,
         get_models,

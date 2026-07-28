@@ -273,6 +273,58 @@ def stop_batch_job(job_id: str) -> None:  # pragma: no cover
                 spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
 
+@click.command(name="resume")
+@click.argument(
+    "job_id",
+    type=str,
+    required=True,
+)
+def resume_batch_job(job_id: str) -> None:  # pragma: no cover
+    """Resume a terminal batch job.
+
+    Resubmits the job's allocation against the same output directory
+    (already-finished files are skipped). Only stopped, stalled, or exhausted
+    jobs can be resumed. JOB_ID can be a full UUID or an abbreviated prefix.
+    """
+
+    # Resolve abbreviated ID if needed
+    full_job_id = _resolve_job_id(job_id)
+    if full_job_id is None:
+        return
+
+    with yaspin(text="Resuming batch job...") as spinner:
+        try:
+            res = api.put(f"/api/jobs/{full_job_id}/resume", json={})
+        except requests.exceptions.ConnectionError:
+            spinner.text = (
+                f"Failed to connect to Blackfish API on port {config.PORT}. "
+                "Is the server running?"
+            )
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+            return
+
+        if not res.ok:
+            spinner.text = (
+                f"Failed to resume batch job {full_job_id[:DISPLAY_ID_LENGTH]} "
+                f"(status={res.status_code})."
+            )
+            spinner.fail(f"{LogSymbols.ERROR.value}")
+            try:
+                detail = res.json().get("detail", res.reason)
+                click.echo(f"Error: {detail}")
+            except Exception:
+                pass
+        else:
+            job_data = res.json()
+            status = job_data.get("status", "").lower()
+            if status == "broken":
+                spinner.text = f"Job {full_job_id[:DISPLAY_ID_LENGTH]} marked as broken due to missing metadata."
+                spinner.ok(f"{LogSymbols.WARNING.value}")
+            else:
+                spinner.text = f"Resumed batch job {full_job_id[:DISPLAY_ID_LENGTH]}."
+                spinner.ok(f"{LogSymbols.SUCCESS.value}")
+
+
 @click.command(name="rm")
 @click.argument(
     "job_id",

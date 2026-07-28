@@ -497,6 +497,73 @@ class TestBatchJobStop:
         mock_remote.run.assert_not_called()  # nothing to cancel
 
 
+class TestBatchJobResume:
+    """Tests for BatchJob.resume()."""
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            BatchJobStatus.STOPPED,
+            BatchJobStatus.STALLED,
+            BatchJobStatus.EXHAUSTED,
+        ],
+    )
+    async def test_resume_resubmits_and_resets_counters(
+        self, status: BatchJobStatus
+    ) -> None:
+        """resume should resubmit and reset the restart guards for any resumable
+        terminal status, leaving the job RESUBMITTED."""
+        job = create_test_batch_job(
+            status=status,
+            restarts=20,
+            stalled_restarts=1,
+            processed_highwater=42,
+        )
+        submit = AsyncMock(return_value="777")
+        with patch.object(job, "_submit", new=submit):
+            await job.resume(MockAppConfig())
+
+        submit.assert_called_once()
+        assert job.pid == "777"
+        assert job.status == BatchJobStatus.RESUBMITTED
+        assert job.restarts == 0
+        assert job.stalled_restarts == 0
+        # processed_highwater is intentionally preserved as the stall baseline.
+        assert job.processed_highwater == 42
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            BatchJobStatus.RUNNING,
+            BatchJobStatus.PENDING,
+            BatchJobStatus.SUBMITTED,
+            BatchJobStatus.RESUBMITTED,
+            BatchJobStatus.BROKEN,
+        ],
+    )
+    async def test_resume_is_noop_when_not_resumable(
+        self, status: BatchJobStatus
+    ) -> None:
+        """resume should skip non-resumable jobs — active statuses and BROKEN
+        (a hard error a resubmit can't fix) — without submitting."""
+        job = create_test_batch_job(status=status, restarts=5)
+        submit = AsyncMock(return_value="777")
+        with patch.object(job, "_submit", new=submit):
+            await job.resume(MockAppConfig())
+
+        submit.assert_not_called()
+        assert job.status == status
+        assert job.restarts == 5  # counters untouched
+
+    async def test_resume_propagates_submit_error(self) -> None:
+        """A failed resubmit surfaces to the caller (the route maps it to BROKEN)."""
+        job = create_test_batch_job(status=BatchJobStatus.EXHAUSTED)
+        submit = AsyncMock(side_effect=TigerFlowError("submit", "host", "failed"))
+        with patch.object(job, "_submit", new=submit):
+            with pytest.raises(TigerFlowError):
+                await job.resume(MockAppConfig())
+
+
 class TestBatchJobEnsureDirectories:
     """Input validation + output setup at job start."""
 

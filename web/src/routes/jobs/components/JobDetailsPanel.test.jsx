@@ -94,6 +94,9 @@ describe("terminalReason", () => {
     expect(r.detail).toContain("across 1 restart");
     expect(r.detail).toContain("stopped at 41/44");
     expect(r.detail).toContain("failing repeatedly");
+    // Warns the user to fix the input before resuming (else it re-stalls).
+    expect(r.detail).toContain("before");
+    expect(r.detail).toContain("resuming");
   });
 
   test("omits the total when staged is unknown (between allocations)", () => {

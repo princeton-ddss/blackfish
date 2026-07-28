@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { ProfileContext } from "@/components/ProfileSelect";
 import { useJobs, useJobResults } from "@/lib/loaders";
-import { stopJob, deleteJob } from "@/lib/requests";
+import { stopJob, resumeJob, deleteJob } from "@/lib/requests";
 import JobsTable from "./JobsTable";
 import JobResultsTable from "./JobResultsTable";
 import JobDetailsPanel from "./JobDetailsPanel";
@@ -307,6 +307,24 @@ function JobsContainer() {
         }
     };
 
+    const handleResumeJob = async (job) => {
+        setJobActionInProgress(job.id);
+        try {
+            await resumeJob(job.id);
+            // Optimistic update: the backend resubmits and sets RESUBMITTED.
+            mutate(
+                (currentJobs) => currentJobs?.map((j) =>
+                    j.id === job.id ? { ...j, status: "resubmitted" } : j
+                ),
+                { revalidate: true }
+            );
+        } catch (err) {
+            console.error("Failed to resume job:", err);
+        } finally {
+            setJobActionInProgress(null);
+        }
+    };
+
     const handleDeleteJob = async (job) => {
         setJobActionInProgress(job.id);
         try {
@@ -392,6 +410,7 @@ function JobsContainer() {
                         <JobDetailsPanel
                             job={selectedJob}
                             onStopJob={handleStopJob}
+                            onResumeJob={handleResumeJob}
                             onDeleteJob={handleDeleteJob}
                             jobActionInProgress={jobActionInProgress}
                         />

@@ -14,6 +14,7 @@ import {
   isServiceRunning,
   selectTierByModelSize,
   isBatchJobActive,
+  isBatchJobResumable,
   batchProgress,
   elapsedMs,
   formatElapsed,
@@ -419,6 +420,20 @@ describe("Utils", () => {
     it("is false for terminal statuses", () => {
       for (const s of ["stopped", "stalled", "exhausted", "broken"]) {
         expect(isBatchJobActive(s)).toBe(false);
+      }
+    });
+  });
+
+  describe("isBatchJobResumable", () => {
+    it("is true for resumable terminal statuses", () => {
+      for (const s of ["stopped", "stalled", "exhausted"]) {
+        expect(isBatchJobResumable(s)).toBe(true);
+      }
+    });
+
+    it("is false for broken (not resumable) and active statuses", () => {
+      for (const s of ["broken", "submitted", "resubmitted", "pending", "running"]) {
+        expect(isBatchJobResumable(s)).toBe(false);
       }
     });
   });

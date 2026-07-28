@@ -5,10 +5,54 @@ import {
     FolderIcon,
     StopIcon,
     TrashIcon,
+    ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import StatusBadge from "./StatusBadge";
-import { isBatchJobActive } from "@/lib/util";
+import { isBatchJobActive, batchProgress } from "@/lib/util";
 import PropTypes from "prop-types";
+
+// A batch job resubmits its Slurm allocation until the input dir is fully
+// processed. It ends terminally as STALLED (restarts stopped making forward
+// progress — likely a repeatedly-failing input) or EXHAUSTED (the restart
+// budget ran out with work remaining). Explain which, with the counters, so a
+// user can see why it stopped. Returns null for any other status.
+export function terminalReason(job) {
+    if (!job) return null;
+    const processed = Number(job.finished) || 0;
+    // "staged" is what remains; it is null between allocations, before the
+    // input count is known. total (= processed + remaining + errored) is only
+    // knowable when staged is known. NB: this deliberately keeps a null staged
+    // distinct (remaining/total stay null) rather than collapsing it to 0 like
+    // the component's own `pending`/`total` — don't merge the two computations.
+    const remaining = job.staged != null ? Number(job.staged) || 0 : null;
+    const total = remaining != null ? processed + remaining + (Number(job.errored) || 0) : null;
+    switch (job.status) {
+        case "exhausted": {
+            const budget = Number(job.max_restarts);
+            // An exhausted job has work left by definition; guard remaining > 0
+            // so we never claim "0 files still unprocessed" if the count races.
+            return {
+                headline: "Exhausted restart budget",
+                detail:
+                    `The job used all ${Number.isFinite(budget) ? budget : "its"} restarts` +
+                    (remaining ? ` with ${remaining} file${remaining === 1 ? "" : "s"} still unprocessed.` : " before finishing."),
+            };
+        }
+        case "stalled": {
+            const n = Number(job.stalled_restarts) || 0;
+            const highwater = Number(job.processed_highwater) || 0;
+            return {
+                headline: "No forward progress",
+                detail:
+                    `No files were processed across ${n} restart${n === 1 ? "" : "s"}` +
+                    (total != null ? `; stopped at ${highwater}/${total}.` : ".") +
+                    " A file may be failing repeatedly.",
+            };
+        }
+        default:
+            return null;
+    }
+}
 
 // Friendly labels for known task params; falls back to a title-cased key.
 const PARAM_LABELS = {
@@ -40,12 +84,9 @@ export function formatParamValue(key, value) {
     return String(value);
 }
 
-function ProgressBar({ finished, staged, errored }) {
-    const done = Number(finished) || 0;
-    const pending = Number(staged) || 0;
-    const failed = Number(errored) || 0;
-    const total = done + pending + failed;
-    if (total === 0) return null;
+function ProgressBar({ done, failed, total }) {
+    // No denominator (job not yet observed) or no work at all: nothing to draw.
+    if (!total) return null;
 
     const donePct = (done / total) * 100;
     const failedPct = (failed / total) * 100;
@@ -67,9 +108,9 @@ function ProgressBar({ finished, staged, errored }) {
 }
 
 ProgressBar.propTypes = {
-    finished: PropTypes.number,
-    staged: PropTypes.number,
-    errored: PropTypes.number,
+    done: PropTypes.number,
+    failed: PropTypes.number,
+    total: PropTypes.number,
 };
 
 function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
@@ -89,10 +130,11 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
         );
     }
 
-    const done = Number(job.finished) || 0;
-    const pending = Number(job.staged) || 0;
-    const failed = Number(job.errored) || 0;
-    const total = done + pending + failed;
+    const { done, failed, total } = batchProgress(job);
+    // total is null before the job's first observation: no denominator to show.
+    const pending = total === null ? 0 : total - done - failed;
+    const reason = terminalReason(job);
+    const restarts = Number(job.restarts) || 0;
 
     return (
         <div className="bg-white dark:bg-gray-800 p-6">
@@ -133,6 +175,21 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                 </div>
             </div>
 
+            {/* Terminal-reason callout (STALLED / EXHAUSTED only) */}
+            {reason && (
+                <div className="mb-4 flex items-start gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 p-3">
+                    <ExclamationTriangleIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-600 dark:text-red-400" />
+                    <div>
+                        <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                            {reason.headline}
+                        </p>
+                        <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
+                            {reason.detail}
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Progress Section */}
             <div className="mb-4">
                 <div className="flex items-center justify-between text-sm mb-2">
@@ -147,14 +204,15 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                         )}
                     </div>
                 </div>
-                <ProgressBar
-                    finished={job.finished}
-                    staged={job.staged}
-                    errored={job.errored}
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
-                    {total} total
-                </p>
+                <ProgressBar done={done} failed={failed} total={total} />
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {restarts > 0 ? (
+                        <span>Restarted {restarts} time{restarts === 1 ? "" : "s"}</span>
+                    ) : (
+                        <span />
+                    )}
+                    <span>{total === null ? "N/A" : `${total} total`}</span>
+                </div>
             </div>
 
             {/* Data Paths Section */}
@@ -299,6 +357,11 @@ JobDetailsPanel.propTypes = {
         staged: PropTypes.number,
         finished: PropTypes.number,
         errored: PropTypes.number,
+        restarts: PropTypes.number,
+        max_restarts: PropTypes.number,
+        stalled_restarts: PropTypes.number,
+        max_stalled_restarts: PropTypes.number,
+        processed_highwater: PropTypes.number,
         task: PropTypes.string,
         repo_id: PropTypes.string,
         revision: PropTypes.string,

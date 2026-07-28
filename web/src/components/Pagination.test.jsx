@@ -37,6 +37,19 @@ describe("getPageItems", () => {
   });
 });
 
+test("renders nothing for a single page", () => {
+  // totalFiles (5) <= filesPerPage (20) -> one page -> no controls at all.
+  const { container } = render(
+    <Pagination
+      filesPerPage={20}
+      totalFiles={5}
+      currentPage={1}
+      setCurrentPage={(e) => e}
+    />
+  );
+  expect(container).toBeEmptyDOMElement();
+});
+
 test("Enabled Pagination", async () => {
   const user = userEvent.setup();
   const {baseElement, getAllByRole} = render(

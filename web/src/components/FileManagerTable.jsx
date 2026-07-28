@@ -339,13 +339,15 @@ function FileManagerTable({
                 </div>
             </div>
             {showPagination && (
-                <Pagination
-                    filesPerPage={filesPerPage}
-                    totalFiles={sortedContent.length}
-                    currentPage={currentPage}
-                    setCurrentPage={setCurrentPage}
-                    disabled={isDisabled}
-                />
+                <div className="flex items-center justify-center h-12 mt-2">
+                    <Pagination
+                        filesPerPage={filesPerPage}
+                        totalFiles={sortedContent.length}
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                        disabled={isDisabled}
+                    />
+                </div>
             )}
         </div>
     );

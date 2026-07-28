@@ -65,6 +65,29 @@ export const isBatchJobActive = (status) =>
   BATCH_JOB_ACTIVE_STATUSES.has(status);
 
 /**
+ * Compute batch-job progress for display.
+ *
+ * The backend leaves `staged` (items remaining) at its last known value while a
+ * job re-allocates, so a numeric `staged` — including 0 — is always a real,
+ * displayable remaining count. `staged` is only null/undefined before a job's
+ * first successful observation, when there is genuinely no total to show. We
+ * must distinguish those two cases: `Number(null) || 0` would collapse a
+ * not-yet-known total to a bogus 0, spiking the bar to 100%.
+ *
+ * @param {object} job - Batch job with `finished`, `staged`, `errored`.
+ * @return {{done: number, failed: number, total: number|null}} `total` is null
+ *   when the remaining count is unknown (render as N/A / indeterminate).
+ */
+export function batchProgress({ finished, staged, errored } = {}) {
+  const done = Number(finished) || 0;
+  const failed = Number(errored) || 0;
+  // null/undefined staged => no total yet. A numeric staged (incl. 0) is real.
+  const hasStaged = staged !== null && staged !== undefined;
+  const total = hasStaged ? done + (Number(staged) || 0) + failed : null;
+  return { done, failed, total };
+}
+
+/**
  * Status color scheme:
  * - green: operational (healthy)
  * - yellow: transitional (starting, pending, submitted) or degraded (unhealthy)

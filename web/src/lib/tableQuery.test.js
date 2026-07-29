@@ -119,6 +119,32 @@ describe("applyQuery", () => {
     expect(applyQuery(rows, "file:THR", config)).toEqual([rows[2]]);
     expect(applyQuery(rows, "status:fail", config)).toEqual([rows[1]]);
   });
+
+  describe("exactFields", () => {
+    const jobs = [
+      { status: "submitted" },
+      { status: "resubmitted" },
+      { status: "running" },
+    ];
+    const cfg = { fields: { status: (r) => r.status }, exactFields: ["status"] };
+
+    test("matches the whole value, not a substring", () => {
+      // "resubmitted".includes("submitted") is true — exact matching must not
+      // let a Submitted filter also catch Resubmitted jobs.
+      expect(applyQuery(jobs, "status:submitted", cfg)).toEqual([jobs[0]]);
+    });
+
+    test("still ORs multiple exact values within a key", () => {
+      expect(applyQuery(jobs, "status:submitted status:running", cfg)).toEqual([
+        jobs[0],
+        jobs[2],
+      ]);
+    });
+
+    test("a partial value matches nothing under exact", () => {
+      expect(applyQuery(jobs, "status:sub", cfg)).toEqual([]);
+    });
+  });
 });
 
 describe("setQueryFilter / getQueryFilter", () => {

@@ -6,6 +6,12 @@
 // ["whisper"]}. Repeating a key ORs its values (`status:failed status:success`).
 // Quoting a value preserves spaces: `name:"my job"`.
 
+// Split a query into tokens on whitespace, keeping quoted spans (single- or
+// double-quoted) together so `name:"my job"` is one token.
+function tokenize(raw) {
+  return (raw || "").match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+}
+
 /**
  * Parse a raw query string into bare text terms and keyed qualifiers.
  * @param {string} raw
@@ -16,9 +22,7 @@ export function parseQuery(raw) {
   const filters = {};
   if (!raw) return { text, filters };
 
-  // Tokenize on whitespace, but keep quoted spans (single- or double-quoted)
-  // together so `name:"my job"` is one token.
-  const tokens = raw.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+  const tokens = tokenize(raw);
 
   for (const token of tokens) {
     const sep = token.indexOf(":");
@@ -62,15 +66,22 @@ function unquote(s) {
  * @param {object} config
  * @param {Record<string, (row: object) => string|null>} config.fields - maps a
  *   qualifier key to a function returning the row's comparable string. Values
- *   match as case-insensitive substrings.
+ *   match as case-insensitive substrings unless the key is in `exactFields`.
+ * @param {string[]} config.exactFields - keys whose values must match the row
+ *   value *exactly* (case-insensitive), not as a substring. Use for
+ *   enum/dropdown-driven filters where one value is a substring of another
+ *   (e.g. status `submitted` vs `resubmitted`), which substring matching would
+ *   otherwise conflate.
  * @returns {Array<object>}
  */
-export function applyQuery(rows, raw, { fields = {} } = {}) {
+export function applyQuery(rows, raw, { fields = {}, exactFields = [] } = {}) {
   const { filters } = parseQuery(raw);
 
   // Keep only qualifiers whose key is known; unknown/partial keys are ignored.
   const active = Object.entries(filters).filter(([key]) => fields[key]);
   if (active.length === 0) return rows;
+
+  const exact = new Set(exactFields.map((k) => k.toLowerCase()));
 
   return rows.filter((row) => {
     // Every active qualifier key must match (AND across keys); within a key,
@@ -78,7 +89,10 @@ export function applyQuery(rows, raw, { fields = {} } = {}) {
     for (const [key, values] of active) {
       const rowVal = fields[key](row);
       const rowStr = rowVal == null ? "" : String(rowVal).toLowerCase();
-      if (!values.some((v) => rowStr.includes(v))) return false;
+      const ok = exact.has(key)
+        ? values.some((v) => rowStr === v)
+        : values.some((v) => rowStr.includes(v));
+      if (!ok) return false;
     }
 
     return true;
@@ -111,7 +125,7 @@ export function setQueryFilter(raw, key, value) {
  * @returns {string}
  */
 export function setQueryFilters(raw, key, values) {
-  const tokens = (raw || "").match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+  const tokens = tokenize(raw);
   const kept = tokens.filter((t) => {
     const sep = t.indexOf(":");
     if (sep <= 0) return true;

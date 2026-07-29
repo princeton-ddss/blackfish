@@ -26,6 +26,10 @@ const JOB_FILTER_FIELDS = {
     id: (j) => j.id,
 };
 
+// status is dropdown-driven and enum-valued; match it exactly so filtering
+// "submitted" doesn't also catch "resubmitted" (substring collision).
+const JOB_EXACT_FILTER_FIELDS = ["status"];
+
 // Only columns with a meaningful ordering are sortable. Status and Progress are
 // categorical/bucketed — they're filtered via dropdowns, not sorted.
 const JOB_SORT_FIELDS = {
@@ -142,6 +146,7 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
         rows: visibleJobs,
     } = useTableControls(jobs, {
         filterFields: JOB_FILTER_FIELDS,
+        exactFilterFields: JOB_EXACT_FILTER_FIELDS,
         predicateFilters: JOB_PREDICATE_FILTERS,
         sortFields: JOB_SORT_FIELDS,
         defaultSort: { key: "created_at", dir: "desc" },

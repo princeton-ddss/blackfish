@@ -1,9 +1,6 @@
 import { useMemo, useState } from "react";
 import { applyQuery, getQueryFilters } from "./tableQuery";
 
-// asc -> desc -> off, cycled by repeated clicks on the same header.
-const NEXT_DIR = { asc: "desc", desc: null, null: "asc" };
-
 /**
  * Compare two non-null values. Numbers compare numerically; date-like strings
  * by timestamp; else lexically. Null handling lives in the sort itself so that
@@ -30,6 +27,8 @@ const isNil = (v) => v == null || v === "";
  * @param {object} config
  * @param {Record<string, (row: object) => string|null>} config.filterFields -
  *   qualifier key -> accessor (see applyQuery)
+ * @param {string[]} config.exactFilterFields - filterFields keys matched by
+ *   exact value rather than substring (see applyQuery's exactFields)
  * @param {Record<string, Record<string, (row: object) => boolean>>}
  *   config.predicateFilters - dropdown-backed shortcut groups that express
  *   intent awkward to type as raw qualifiers. Keyed by the query key the
@@ -44,6 +43,7 @@ export function useTableControls(
   rows,
   {
     filterFields = {},
+    exactFilterFields = [],
     predicateFilters = {},
     sortFields = {},
     defaultSort = null,
@@ -59,17 +59,22 @@ export function useTableControls(
       setSortDir("asc");
       return;
     }
-    const next = NEXT_DIR[String(sortDir)];
-    if (next == null) {
-      setSortKey(null);
-      setSortDir(null);
+    // Same column: asc -> desc -> off. "Off" returns to the default sort rather
+    // than the rows' arbitrary source order, so the table never regresses to an
+    // unsorted state.
+    if (sortDir === "asc") {
+      setSortDir("desc");
     } else {
-      setSortDir(next);
+      setSortKey(defaultSort?.key ?? null);
+      setSortDir(defaultSort?.dir ?? null);
     }
   }
 
   const derived = useMemo(() => {
-    let filtered = applyQuery(rows, query, { fields: filterFields });
+    let filtered = applyQuery(rows, query, {
+      fields: filterFields,
+      exactFields: exactFilterFields,
+    });
 
     // Each predicate group is ANDed with the field qualifiers above and with
     // every other group; within a group the selected options are ORed (a

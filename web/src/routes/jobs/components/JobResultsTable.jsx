@@ -28,6 +28,9 @@ const RESULT_FILTER_FIELDS = {
     out: (r) => r.output_file,
 };
 
+// status is dropdown-driven and enum-valued — match exactly, not by substring.
+const RESULT_EXACT_FILTER_FIELDS = ["status"];
+
 // Status is filtered via its header dropdown, not sorted — so it's absent here.
 const RESULT_SORT_FIELDS = {
     input_file: (r) => basename(r.input_file),
@@ -75,6 +78,7 @@ function JobResultsTable({
         rows: visibleResults,
     } = useTableControls(results, {
         filterFields: RESULT_FILTER_FIELDS,
+        exactFilterFields: RESULT_EXACT_FILTER_FIELDS,
         sortFields: RESULT_SORT_FIELDS,
         defaultSort: { key: "started_at", dir: "desc" },
     });

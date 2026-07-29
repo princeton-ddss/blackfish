@@ -35,6 +35,17 @@ describe("useTableControls", () => {
     expect(result.current.rows).toEqual(rows);
   });
 
+  test("exactFilterFields forwards to exact matching", () => {
+    const data = [{ name: "submitted" }, { name: "resubmitted" }];
+    const cfg = {
+      filterFields: { name: (r) => r.name },
+      exactFilterFields: ["name"],
+    };
+    const { result } = renderHook(() => useTableControls(data, cfg));
+    act(() => result.current.setQuery("name:submitted"));
+    expect(result.current.rows).toEqual([data[0]]);
+  });
+
   test("applies a predicate-filter option selected via <group>:<value>", () => {
     const cfg = {
       ...config,
@@ -122,8 +133,23 @@ describe("useTableControls", () => {
     ]);
 
     act(() => result.current.toggleSort("name"));
+    // No defaultSort here, so "off" clears to the rows' source order.
     expect(result.current.sortDir).toBeNull();
-    expect(result.current.rows).toEqual(rows); // back to original order
+    expect(result.current.rows).toEqual(rows);
+  });
+
+  test("cycling a sorted column off returns to the default sort", () => {
+    const cfg = { ...config, defaultSort: { key: "size", dir: "asc" } };
+    const { result } = renderHook(() => useTableControls(rows, cfg));
+
+    // Sort by name asc, then desc, then off -> should fall back to size asc,
+    // not the rows' arbitrary source order.
+    act(() => result.current.toggleSort("name")); // asc
+    act(() => result.current.toggleSort("name")); // desc
+    act(() => result.current.toggleSort("name")); // off -> default
+    expect(result.current.sortKey).toBe("size");
+    expect(result.current.sortDir).toBe("asc");
+    expect(result.current.rows.map((r) => r.size)).toEqual([2, 10, null]);
   });
 
   test("sorts numbers numerically with nulls last", () => {

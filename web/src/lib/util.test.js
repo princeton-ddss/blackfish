@@ -15,6 +15,8 @@ import {
   selectTierByModelSize,
   isBatchJobActive,
   batchProgress,
+  elapsedMs,
+  formatElapsed,
 } from "@/lib/util";
 
 describe("Utils", () => {
@@ -471,6 +473,38 @@ describe("Utils", () => {
         failed: 0,
         total: 100,
       });
+    });
+  });
+
+  describe("elapsedMs", () => {
+    it("returns the millisecond difference", () => {
+      expect(
+        elapsedMs("2026-01-01T00:00:00Z", "2026-01-01T00:00:03Z"),
+      ).toBe(3000);
+    });
+
+    it("returns null when either timestamp is missing", () => {
+      expect(elapsedMs(null, "2026-01-01T00:00:03Z")).toBeNull();
+      expect(elapsedMs("2026-01-01T00:00:00Z", null)).toBeNull();
+      expect(elapsedMs(null, null)).toBeNull();
+    });
+  });
+
+  describe("formatElapsed", () => {
+    it("formats sub-second as ms", () => {
+      expect(formatElapsed("2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.820Z")).toBe("820ms");
+    });
+
+    it("formats seconds with one decimal", () => {
+      expect(formatElapsed("2026-01-01T00:00:00Z", "2026-01-01T00:00:03Z")).toBe("3.0s");
+    });
+
+    it("formats minutes and seconds", () => {
+      expect(formatElapsed("2026-01-01T00:00:00Z", "2026-01-01T00:02:05Z")).toBe("2m 5s");
+    });
+
+    it("returns '-' when a timestamp is missing", () => {
+      expect(formatElapsed(null, "2026-01-01T00:00:03Z")).toBe("-");
     });
   });
 

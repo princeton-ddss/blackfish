@@ -5,11 +5,99 @@ import {
     ArrowPathIcon,
     ChevronDownIcon,
 } from "@heroicons/react/24/outline";
-import { lastModified, batchProgress } from "@/lib/util";
+import { lastModified, batchProgress, isBatchJobActive, BatchJobStatus } from "@/lib/util";
 import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
+import FilterHeader from "@/components/FilterHeader";
+import FilterMenu from "@/components/FilterMenu";
+import TableSearch from "@/components/TableSearch";
+import { useTableControls } from "@/lib/useTableControls";
 import { TASKS } from "./NewJobModal";
 import StatusBadge from "./StatusBadge";
 import PropTypes from "prop-types";
+
+const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Typed field qualifiers (substring match); see applyQuery.
+const JOB_FILTER_FIELDS = {
+    name: (j) => j.name,
+    status: (j) => j.status,
+    task: (j) => j.task,
+    id: (j) => j.id,
+};
+
+// Only columns with a meaningful ordering are sortable. Status and Progress are
+// categorical/bucketed — they're filtered via dropdowns, not sorted.
+const JOB_SORT_FIELDS = {
+    name: (j) => j.name,
+    id: (j) => j.id,
+    created_at: (j) => j.created_at,
+};
+
+// Dropdown-backed predicate groups (see useTableControls.predicateFilters).
+// Keyed by the query key each dropdown writes, then option value -> predicate.
+const JOB_PREDICATE_FILTERS = {
+    // "Filters": intent awkward to type as raw qualifiers.
+    filter: {
+        active: (j) => isBatchJobActive(j.status),
+        inactive: (j) => !isBatchJobActive(j.status),
+        failed: (j) => (Number(j.errored) || 0) > 0,
+        recent: (j) => {
+            const t = Date.parse(j.created_at);
+            // Compared against render time; a few seconds' drift is immaterial
+            // for a 7-day window.
+            return !Number.isNaN(t) && Date.now() - t < RECENT_WINDOW_MS;
+        },
+    },
+    // "Progress": completion state, derived from batchProgress.
+    progress: {
+        "not-started": (j) => batchProgress(j).done === 0,
+        "in-progress": (j) => {
+            const { done, total } = batchProgress(j);
+            return total != null && done > 0 && done < total;
+        },
+        complete: (j) => {
+            const { done, total } = batchProgress(j);
+            return total != null && done >= total;
+        },
+        failures: (j) => (Number(j.errored) || 0) > 0,
+    },
+};
+
+// The single "Filters" dropdown attached to the search bar: a "Show" section
+// (single-select shortcuts) and a "Tasks" section (multi-select task types).
+const JOB_FILTER_SECTIONS = [
+    {
+        title: "Show",
+        filterKey: "filter",
+        mode: "single",
+        options: [
+            { value: "active", label: "Active jobs" },
+            { value: "inactive", label: "Inactive jobs" },
+            { value: "failed", label: "Jobs with failures" },
+            { value: "recent", label: "Recent jobs (< 7 days)" },
+        ],
+    },
+    {
+        title: "Tasks",
+        filterKey: "task",
+        mode: "multi",
+        options: TASKS.map((t) => ({ value: t.id, label: t.name })),
+    },
+];
+
+// Column-header filter menus (Status, Progress). Each writes its own query key.
+const STATUS_OPTIONS = Object.values(BatchJobStatus).map((s) => ({
+    value: s,
+    label: s.charAt(0).toUpperCase() + s.slice(1),
+}));
+
+const PROGRESS_OPTIONS = [
+    { value: "not-started", label: "Not started" },
+    { value: "in-progress", label: "In progress" },
+    { value: "complete", label: "Complete" },
+    { value: "failures", label: "With failures" },
+];
 
 function ProgressDisplay({ finished, staged, errored }) {
     const { done, failed, total } = batchProgress({ finished, staged, errored });
@@ -45,15 +133,33 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
     const [currentPage, setCurrentPage] = useState(1);
     const jobsPerPage = 20;
 
-    const indexOfLastJob = currentPage * jobsPerPage;
+    const {
+        query,
+        setQuery,
+        sortKey,
+        sortDir,
+        toggleSort,
+        rows: visibleJobs,
+    } = useTableControls(jobs, {
+        filterFields: JOB_FILTER_FIELDS,
+        predicateFilters: JOB_PREDICATE_FILTERS,
+        sortFields: JOB_SORT_FIELDS,
+        defaultSort: { key: "created_at", dir: "desc" },
+    });
+
+    // Filtering can shrink the list under the current page; clamp to a valid page.
+    const pageCount = Math.max(1, Math.ceil(visibleJobs.length / jobsPerPage));
+    const page = Math.min(currentPage, pageCount);
+    const indexOfLastJob = page * jobsPerPage;
     const indexOfFirstJob = indexOfLastJob - jobsPerPage;
 
-    const sortedJobs = [...jobs].sort((a, b) =>
-        new Date(b.created_at) - new Date(a.created_at)
-    );
-
-    const currentJobs = sortedJobs.slice(indexOfFirstJob, indexOfLastJob);
+    const currentJobs = visibleJobs.slice(indexOfFirstJob, indexOfLastJob);
     const heightClass = "lg:h-[calc(100vh-11rem)]";
+
+    const handleQueryChange = (q) => {
+        setQuery(q);
+        setCurrentPage(1);
+    };
 
     return (
         <div id="jobs-table" name="jobs-table" className={`flex-none ${heightClass}`}>
@@ -102,6 +208,16 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                     )}
                 </div>
             </div>
+            <div className="mb-4">
+                <TableSearch query={query} setQuery={handleQueryChange}>
+                    <FilterMenu
+                        label="Filters"
+                        sections={JOB_FILTER_SECTIONS}
+                        query={query}
+                        setQuery={handleQueryChange}
+                    />
+                </TableSearch>
+            </div>
             <div className="flow-root">
                 <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                     <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -109,36 +225,50 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                             <table className="divide-y divide-gray-300 dark:divide-gray-600 table-fixed w-full">
                                 <thead>
                                     <tr>
-                                        <th
-                                            scope="col"
-                                            className="sticky top-0 z-10 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pl-6 w-1/4 backdrop-blur bg-gray-50 dark:bg-gray-800"
-                                        >
-                                            Name
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-24 backdrop-blur bg-gray-50 dark:bg-gray-800"
-                                        >
-                                            ID
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-36 backdrop-blur bg-gray-50 dark:bg-gray-800"
-                                        >
-                                            Submitted
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-24 backdrop-blur bg-gray-50 dark:bg-gray-800"
-                                        >
-                                            Status
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 w-32 backdrop-blur bg-gray-50 dark:bg-gray-800"
-                                        >
-                                            Progress
-                                        </th>
+                                        <SortableHeader
+                                            label="Name"
+                                            sortKey="name"
+                                            activeKey={sortKey}
+                                            direction={sortDir}
+                                            onSort={toggleSort}
+                                            className="pl-4 pr-3 sm:pl-6 w-1/4"
+                                        />
+                                        <SortableHeader
+                                            label="ID"
+                                            sortKey="id"
+                                            activeKey={sortKey}
+                                            direction={sortDir}
+                                            onSort={toggleSort}
+                                            className="px-3 w-24"
+                                        />
+                                        <SortableHeader
+                                            label="Submitted"
+                                            sortKey="created_at"
+                                            activeKey={sortKey}
+                                            direction={sortDir}
+                                            onSort={toggleSort}
+                                            className="px-3 w-36"
+                                        />
+                                        {/* Status & Progress headers are filter
+                                            dropdowns, not sortable columns. */}
+                                        <FilterHeader
+                                            label="Status"
+                                            filterKey="status"
+                                            options={STATUS_OPTIONS}
+                                            clearLabel="Clear statuses"
+                                            query={query}
+                                            setQuery={handleQueryChange}
+                                            className="px-3 text-left w-24"
+                                        />
+                                        <FilterHeader
+                                            label="Progress"
+                                            filterKey="progress"
+                                            options={PROGRESS_OPTIONS}
+                                            clearLabel="Clear"
+                                            query={query}
+                                            setQuery={handleQueryChange}
+                                            className="px-3 text-left w-32"
+                                        />
                                         <th
                                             scope="col"
                                             className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 w-20 backdrop-blur bg-gray-50 dark:bg-gray-800"
@@ -169,11 +299,13 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                                 </tr>
                                             ))}
                                         </>
-                                    ) : jobs.length === 0 ? (
+                                    ) : visibleJobs.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="h-64">
                                                 <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
-                                                    No jobs found
+                                                    {jobs.length === 0
+                                                        ? "No jobs found"
+                                                        : "No jobs match your search"}
                                                 </div>
                                             </td>
                                         </tr>
@@ -237,8 +369,8 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
             </div>
             <Pagination
                 filesPerPage={jobsPerPage}
-                totalFiles={sortedJobs.length}
-                currentPage={currentPage}
+                totalFiles={visibleJobs.length}
+                currentPage={page}
                 setCurrentPage={setCurrentPage}
                 disabled={false}
             />

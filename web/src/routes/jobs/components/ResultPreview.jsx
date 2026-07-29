@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { blackfishApiURL } from "@/config";
 import { getFileType, truncateTextPreview } from "@/lib/fileApi";
-import { isRemoteProfile } from "@/lib/util";
+import { isRemoteProfile, formatElapsed } from "@/lib/util";
 import {
     parseDetections,
     buildLabelColorMap,
@@ -59,24 +59,6 @@ function formatDateTime(isoString) {
     if (!isoString) return "-";
     const date = new Date(isoString);
     return date.toLocaleString();
-}
-
-function formatElapsedTime(startedAt, finishedAt) {
-    if (!startedAt || !finishedAt) return "-";
-
-    const start = new Date(startedAt);
-    const end = new Date(finishedAt);
-    const diffMs = end - start;
-
-    if (diffMs < 1000) {
-        return `${diffMs}ms`;
-    } else if (diffMs < 60000) {
-        return `${(diffMs / 1000).toFixed(1)}s`;
-    } else {
-        const minutes = Math.floor(diffMs / 60000);
-        const seconds = ((diffMs % 60000) / 1000).toFixed(0);
-        return `${minutes}m ${seconds}s`;
-    }
 }
 
 // An object-detection result: an image input with a JSON output file. Used to
@@ -671,7 +653,7 @@ function ResultPreview({ result, job, profile = null }) {
                     <div className="flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">Elapsed:</span>
                         <span className="text-gray-900 dark:text-gray-100">
-                            {formatElapsedTime(result.started_at, result.finished_at)}
+                            {formatElapsed(result.started_at, result.finished_at)}
                         </span>
                     </div>
                 </div>

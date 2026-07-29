@@ -282,6 +282,39 @@ export function formattedTimeInterval(refTime, currentTime) {
 };
 
 /**
+ * Milliseconds elapsed between two timestamps, or null if either is missing.
+ * @param {string|Date|null} startedAt
+ * @param {string|Date|null} finishedAt
+ * @return {number|null}
+ */
+export function elapsedMs(startedAt, finishedAt) {
+  if (!startedAt || !finishedAt) return null;
+  return new Date(finishedAt) - new Date(startedAt);
+}
+
+/**
+ * Format the interval between two timestamps as a short duration
+ * (e.g. "820ms", "3.4s", "2m 5s"). Returns "-" if either timestamp is missing.
+ * @param {string|Date|null} startedAt
+ * @param {string|Date|null} finishedAt
+ * @return {string}
+ */
+export function formatElapsed(startedAt, finishedAt) {
+  const diffMs = elapsedMs(startedAt, finishedAt);
+  if (diffMs == null) return "-";
+
+  if (diffMs < 1000) {
+    return `${diffMs}ms`;
+  } else if (diffMs < 60000) {
+    return `${(diffMs / 1000).toFixed(1)}s`;
+  } else {
+    const minutes = Math.floor(diffMs / 60000);
+    const seconds = ((diffMs % 60000) / 1000).toFixed(0);
+    return `${minutes}m ${seconds}s`;
+  }
+}
+
+/**
  * Whether a profile is a Slurm profile (local, localhost, or remote).
  * @param {object|null} profile
  * @return {boolean}

@@ -1,6 +1,10 @@
 import { describe, test, expect } from "vitest";
 
-import { defaultPreviewSide, resolvePreviewSide } from "./ResultPreview";
+import {
+  defaultPreviewSide,
+  resolvePreviewSide,
+  isDetectionResult,
+} from "./ResultPreview";
 
 describe("defaultPreviewSide", () => {
   test("defaults to output when output exists (success)", () => {
@@ -21,5 +25,23 @@ describe("resolvePreviewSide", () => {
 
   test("falls back to input when output is chosen but unavailable", () => {
     expect(resolvePreviewSide("output", false)).toBe("input");
+  });
+});
+
+describe("isDetectionResult", () => {
+  test("is true for an image input with a JSON output", () => {
+    expect(isDetectionResult("photo.jpg", "photo.json")).toBe(true);
+    expect(isDetectionResult("PHOTO.PNG", "OUT.JSON")).toBe(true);
+  });
+
+  test("is false when the input is not an image", () => {
+    expect(isDetectionResult("clip.mp4", "clip.json")).toBe(false);
+    expect(isDetectionResult("notes.txt", "notes.json")).toBe(false);
+  });
+
+  test("is false when the output is not JSON", () => {
+    expect(isDetectionResult("photo.jpg", "photo.txt")).toBe(false);
+    expect(isDetectionResult("photo.jpg", null)).toBe(false);
+    expect(isDetectionResult("photo.jpg", undefined)).toBe(false);
   });
 });

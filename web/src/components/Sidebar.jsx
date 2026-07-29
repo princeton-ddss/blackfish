@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { assetPath } from "@/config";
 import { ProfileContext } from "@/components/ProfileSelect";
+import PropTypes from "prop-types";
 
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
@@ -28,7 +29,7 @@ function classNames(...classes) {
     return classes.filter(Boolean).join(" ");
 }
 
-function Sidebar() {
+function Sidebar({ collapsed = false }) {
     const location = useLocation();
     const pathname = location.pathname;
     const { profile } = useContext(ProfileContext);
@@ -37,98 +38,109 @@ function Sidebar() {
     const isCurrent = (href) => pathname === href || pathname.startsWith(href + "/");
     const isDisabled = (item) => item.slurmOnly && !isSlurm;
 
+    const renderItem = (item) => {
+        const current = isCurrent(item.href);
+        const disabled = isDisabled(item);
+        const iconClasses = classNames(
+            current
+                ? "text-gray-900 dark:text-white"
+                : "text-gray-700 group-hover:text-gray-400 dark:text-gray-200 dark:group-hover:text-white",
+            "h-6 w-6 shrink-0"
+        );
+        const rowClasses = classNames(
+            "group flex items-center gap-x-3 rounded-md p-2 text-sm",
+            collapsed && "justify-center"
+        );
+
+        if (disabled) {
+            return (
+                <span
+                    className={classNames(
+                        rowClasses,
+                        "text-gray-400 dark:text-white/50 cursor-not-allowed"
+                    )}
+                    title={collapsed ? `${item.name} — requires Slurm profile` : "Requires Slurm profile"}
+                >
+                    <item.icon
+                        aria-hidden="true"
+                        className="h-6 w-6 shrink-0 text-gray-400 dark:text-white/50"
+                    />
+                    {!collapsed && item.name}
+                </span>
+            );
+        }
+
+        return (
+            <Link
+                to={item.href}
+                title={collapsed ? item.name : undefined}
+                className={classNames(
+                    current
+                        ? "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium"
+                        : "text-gray-700 dark:text-gray-200 font-normal hover:text-gray-400 dark:hover:text-white",
+                    rowClasses
+                )}
+            >
+                <item.icon aria-hidden="true" className={iconClasses} />
+                {!collapsed && item.name}
+            </Link>
+        );
+    };
+
     return (
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-blue-500 pl-6 pr-4 pt-4">
-            {/* Logo - only visible in mobile drawer */}
-            <div className="flex h-12 shrink-0 items-center lg:hidden">
-                <Link to="/dashboard" className="flex items-center gap-2">
+        <div
+            className={classNames(
+                "flex grow flex-col gap-y-5 overflow-y-auto overflow-x-hidden border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-blue-500 pt-4",
+                collapsed ? "px-2" : "pl-6 pr-4"
+            )}
+        >
+            {/* Logo header - orca mark, aligned with the nav icons below */}
+            <div className="-mx-2 shrink-0">
+                <div
+                    className={classNames(
+                        "flex items-center p-2",
+                        collapsed ? "justify-center" : "pl-1"
+                    )}
+                >
                     <img
-                        className="h-8 w-8 dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+                        className="h-10 w-10 shrink-0 dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]"
                         src={assetPath("/img/orca.png")}
                         alt="blackfish"
                     />
-                    <span className="text-2xl text-gray-900 dark:text-white font-semibold leading-none pt-2 tracking-wider font-logo">Blackfish</span>
-                </Link>
+                </div>
             </div>
             <nav className="flex flex-1 flex-col">
                 <ul role="list" className="flex flex-1 flex-col gap-y-7 pt-4">
                     <li>
                         <ul role="list" className="-mx-2 space-y-1">
                             {navigation.map((item) => (
-                                <li key={item.name}>
-                                    {isDisabled(item) ? (
-                                        <span
-                                            className="group flex gap-x-3 rounded-md p-2 text-sm text-gray-400 dark:text-white/50 cursor-not-allowed"
-                                            title="Requires Slurm profile"
-                                        >
-                                            <item.icon
-                                                aria-hidden="true"
-                                                className="h-6 w-6 shrink-0 text-gray-400 dark:text-white/50"
-                                            />
-                                            {item.name}
-                                        </span>
-                                    ) : (
-                                        <Link
-                                            to={item.href}
-                                            className={classNames(
-                                                isCurrent(item.href)
-                                                    ? "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium"
-                                                    : "text-gray-700 dark:text-gray-200 font-normal hover:text-gray-400 dark:hover:text-white",
-                                                "group flex gap-x-3 rounded-md p-2 text-sm"
-                                            )}
-                                        >
-                                            <item.icon
-                                                aria-hidden="true"
-                                                className={classNames(
-                                                    isCurrent(item.href)
-                                                        ? "text-gray-900 dark:text-white"
-                                                        : "text-gray-700 group-hover:text-gray-400 dark:text-gray-200 dark:group-hover:text-white",
-                                                    "h-6 w-6 shrink-0"
-                                                )}
-                                            />
-                                            {item.name}
-                                        </Link>
-                                    )}
-                                </li>
+                                <li key={item.name}>{renderItem(item)}</li>
                             ))}
                         </ul>
                     </li>
                     <li>
-                        <div className="text-xs font-semibold text-gray-400 dark:text-gray-100">Services</div>
-                        <ul role="list" className="-mx-2 mt-2 space-y-1">
+                        {!collapsed && (
+                            <div className="text-xs font-semibold text-gray-400 dark:text-gray-100">Services</div>
+                        )}
+                        <ul role="list" className={classNames("-mx-2 space-y-1", !collapsed && "mt-2")}>
                             {secondaryNavigation.map((item) => (
-                                <li key={item.name}>
-                                    <Link
-                                        to={item.href}
-                                        className={classNames(
-                                            isCurrent(item.href)
-                                                ? "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium"
-                                                : "text-gray-700 dark:text-gray-200 font-normal hover:text-gray-400 dark:hover:text-gray-100",
-                                            "group flex gap-x-3 rounded-md p-2 text-sm"
-                                        )}
-                                    >
-                                        <item.icon
-                                            aria-hidden="true"
-                                            className={classNames(
-                                                isCurrent(item.href) ? "text-gray-900 dark:text-white" : "text-gray-700 group-hover:text-gray-400 dark:text-gray-200 dark:group-hover:text-white",
-                                                "h-6 w-6 shrink-0"
-                                            )}
-                                        />
-                                        {item.name}
-                                    </Link>
-                                </li>
+                                <li key={item.name}>{renderItem(item)}</li>
                             ))}
                         </ul>
                     </li>
-                    <li className="-ml-6 -mr-4 mt-auto">
+                    <li className={classNames("mt-auto", collapsed ? "-mx-2" : "-ml-6 -mr-4")}>
                         <a
                             href="https://github.com/princeton-ddss/blackfish/issues"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group flex items-center gap-x-3 pl-6 pr-4 py-3 text-sm font-normal text-gray-700 dark:text-gray-200 hover:text-gray-400 dark:hover:text-white"
+                            title={collapsed ? "Feedback" : undefined}
+                            className={classNames(
+                                "group flex items-center gap-x-3 py-3 text-sm font-normal text-gray-700 dark:text-gray-200 hover:text-gray-400 dark:hover:text-white",
+                                collapsed ? "justify-center px-2" : "pl-6 pr-4"
+                            )}
                         >
-                            <ChatBubbleLeftEllipsisIcon className="h-6 w-6 text-gray-400 dark:text-gray-200 group-hover:text-gray-300 dark:group-hover:text-white" aria-hidden="true" />
-                            Feedback
+                            <ChatBubbleLeftEllipsisIcon className="h-6 w-6 shrink-0 text-gray-400 dark:text-gray-200 group-hover:text-gray-300 dark:group-hover:text-white" aria-hidden="true" />
+                            {!collapsed && "Feedback"}
                         </a>
                     </li>
                 </ul>
@@ -136,5 +148,9 @@ function Sidebar() {
         </div>
     );
 }
+
+Sidebar.propTypes = {
+    collapsed: PropTypes.bool,
+};
 
 export default Sidebar;

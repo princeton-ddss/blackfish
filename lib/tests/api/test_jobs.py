@@ -5,6 +5,7 @@ from litestar.testing import AsyncTestClient
 from unittest.mock import patch, AsyncMock
 
 from blackfish.server.jobs.base import BatchJob, BatchJobStatus
+from blackfish.server.jobs.client import TigerFlowVersions
 
 pytestmark = pytest.mark.anyio
 
@@ -496,6 +497,121 @@ class TestStopBatchJobAPI:
         response = await no_auth_client.put(f"/api/jobs/{job_id}/stop")
 
         # Should redirect to login or return auth error
+        assert response.status_code == 401
+
+
+class TestResumeBatchJobAPI:
+    """Test cases for the PUT /api/jobs/{job_id}/resume endpoint."""
+
+    @patch("blackfish.server.jobs.base.BatchJob._submit")
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_resume_job_success(
+        self,
+        mock_create_client,
+        mock_submit,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """Resuming a terminal job resubmits it and returns it RESUBMITTED."""
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        # resume runs start's pre-flight, so the client must answer both the
+        # health check and the input-dir probe.
+        mock_client = AsyncMock()
+        mock_client.check_health.return_value = TigerFlowVersions(
+            tigerflow="0.1.0", tigerflow_ml="0.1.0"
+        )
+        mock_client.runner.run = AsyncMock(return_value=(0, b"", b""))
+        mock_create_client.return_value = mock_client
+        mock_submit.return_value = "999"
+
+        # Put the job in a resumable terminal state with a spent restart budget.
+        job = await session.get(BatchJob, UUID(job_id))
+        if job:
+            job.status = BatchJobStatus.EXHAUSTED
+            job.restarts = 20
+            job.stalled_restarts = 1
+            await session.commit()
+
+        response = await client.put(f"/api/jobs/{job_id}/resume")
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["id"] == job_id
+        assert result["status"] == "resubmitted"
+        assert result["restarts"] == 0
+        assert result["stalled_restarts"] == 0
+        assert result["pid"] == "999"
+        mock_submit.assert_called_once()
+
+    @patch("blackfish.server.jobs.base.BatchJob._submit")
+    async def test_resume_job_not_resumable(
+        self,
+        mock_submit,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """A running (non-terminal) job cannot be resumed — 400, no resubmit."""
+        job_id = "391769fc-5a40-43db-bbfa-cec80a8c3710"
+
+        job = await session.get(BatchJob, UUID(job_id))
+        if job:
+            job.status = BatchJobStatus.RUNNING
+            await session.commit()
+
+        response = await client.put(f"/api/jobs/{job_id}/resume")
+
+        assert response.status_code == 400
+        # The resumable guard rejects before any resubmit.
+        mock_submit.assert_not_called()
+
+    @patch("blackfish.server.jobs.base.BatchJob._submit")
+    @patch("blackfish.server.asgi.create_tigerflow_client")
+    async def test_resume_job_missing_input_dir(
+        self,
+        mock_create_client,
+        mock_submit,
+        client: AsyncTestClient,
+        session: AsyncSession,
+    ):
+        """An input_dir deleted since the job ran is a bad request, not a broken
+        job: 400, no resubmit, and the job keeps its terminal status."""
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+
+        mock_client = AsyncMock()
+        mock_client.check_health.return_value = TigerFlowVersions(
+            tigerflow="0.1.0", tigerflow_ml="0.1.0"
+        )
+        mock_client.runner.run = AsyncMock(return_value=(1, b"", b""))  # test -d
+        mock_create_client.return_value = mock_client
+
+        job = await session.get(BatchJob, UUID(job_id))
+        if job:
+            job.status = BatchJobStatus.STOPPED
+            await session.commit()
+
+        response = await client.put(f"/api/jobs/{job_id}/resume")
+
+        assert response.status_code == 400
+        mock_submit.assert_not_called()
+
+        session.expire_all()
+        refreshed = await session.get(BatchJob, UUID(job_id))
+        assert refreshed is not None
+        assert refreshed.status == BatchJobStatus.STOPPED
+
+    async def test_resume_job_not_found(self, client: AsyncTestClient):
+        """Resuming a job that doesn't exist returns 404."""
+        nonexistent_id = "550e8400-e29b-41d4-a716-446655440000"
+        response = await client.put(f"/api/jobs/{nonexistent_id}/resume")
+        assert response.status_code == 404
+
+    async def test_resume_job_authentication_required(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """Authentication is required for resuming jobs."""
+        job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
+        response = await no_auth_client.put(f"/api/jobs/{job_id}/resume")
         assert response.status_code == 401
 
 

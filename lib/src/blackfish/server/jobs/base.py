@@ -80,6 +80,17 @@ _TERMINAL_STATUSES = frozenset(
     }
 )
 
+# Terminal statuses a job can be resumed from: resubmit the allocation against
+# the same output_dir to continue processing. Excludes BROKEN (a metadata/config
+# error whose root cause must be fixed first, not something a resubmit resolves).
+_RESUMABLE_STATUSES = frozenset(
+    {
+        BatchJobStatus.STOPPED,
+        BatchJobStatus.STALLED,
+        BatchJobStatus.EXHAUSTED,
+    }
+)
+
 # Slurm states in which the allocation is still holding (or awaiting) resources.
 _ALIVE_STATES = frozenset(
     {
@@ -506,6 +517,78 @@ class BatchJob(UUIDAuditBase):
         await client.stop(self.output_dir)
         await self._cancel_allocation()
         self.status = BatchJobStatus.STOPPED
+
+    def is_resumable(self) -> bool:
+        """Whether the job is in a status a resubmit can continue from.
+
+        STOPPED/STALLED/EXHAUSTED qualify. BROKEN does not: it marks a
+        metadata/config error whose root cause must be fixed first, not
+        something a resubmit resolves.
+        """
+        return self.status in _RESUMABLE_STATUSES
+
+    async def resume(
+        self,
+        app_config: "State | BlackfishConfig",
+        client: TigerFlowClient,
+    ) -> None:
+        """Put a terminal job back into the restart loop.
+
+        Resubmits the allocation against the same ``output_dir`` — the tigerflow
+        pipeline skips already-finished files, so this continues where the job
+        left off (or picks up inputs added since a STOPPED completion). The
+        restart counters are reset so the guards don't immediately re-fire the
+        terminal status the job just came from.
+
+        Runs the same pre-flight as ``start``: a job can sit terminal for days,
+        so the image and ``input_dir`` are re-verified rather than assumed —
+        otherwise a since-deleted input directory fails deep inside the sbatch
+        script instead of here.
+
+        No-op if the job isn't terminal (mirrors ``stop``'s already-stopped
+        guard). Like ``start``, this does not poll; the periodic ``/api/jobs``
+        poll advances the resubmitted allocation on its next pass.
+
+        Args:
+            app_config: Application configuration (HOME_DIR, IMAGES, provider).
+            client: TigerFlowClient for the image/directory pre-flight.
+
+        Raises:
+            TigerFlowError: If the image is not staged, or the resubmit fails.
+            ValueError: If ``input_dir`` no longer exists.
+        """
+        logger.info(
+            f"Resuming batch job {self.id} (status={format_status(self.status)})"
+        )
+
+        if not self.is_resumable():
+            logger.debug(
+                f"Batch job {self.id} is not resumable "
+                f"(status={format_status(self.status)}); skipping resume command."
+            )
+            return
+
+        versions = await client.check_health()
+        self.tigerflow_version = versions.tigerflow
+        self.tigerflow_ml_version = versions.tigerflow_ml
+
+        await self._ensure_directories(client)
+
+        job_id = await self._submit(app_config)
+
+        # Reset the guards that produced the terminal status, but only once the
+        # resubmit has actually landed — a resume that fails anywhere above
+        # leaves the counters describing the run the job really had, rather than
+        # crediting it a restart budget it never got to use. _submit doesn't
+        # read them, so the ordering is free. processed_highwater is left as-is:
+        # a resumed run that makes new progress clears the stall guard naturally,
+        # and the stale mark is the correct baseline for the first post-resume
+        # boundary.
+        self.restarts = 0
+        self.stalled_restarts = 0
+
+        self.pid = job_id
+        self.status = BatchJobStatus.RESUBMITTED
 
     async def _cancel_allocation(self) -> None:
         """Cancel the Slurm allocation, if any. Best-effort."""

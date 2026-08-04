@@ -20,6 +20,7 @@ from blackfish.cli.services.speech_recognition import run_speech_recognition
 from blackfish.cli.batch import (
     list_batch_jobs,
     stop_batch_job,
+    resume_batch_job,
     remove_batch_job,
     run_batch_job,
 )
@@ -784,6 +785,7 @@ def batch() -> None:  # pragma: no cover
 
 batch.add_command(list_batch_jobs, "ls")
 batch.add_command(stop_batch_job, "stop")
+batch.add_command(resume_batch_job, "resume")
 batch.add_command(remove_batch_job, "rm")
 batch.add_command(run_batch_job, "run")
 

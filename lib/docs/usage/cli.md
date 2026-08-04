@@ -474,6 +474,8 @@ resubmits a walltime-killed job that still has work to do.
 
 A job that stops making progress across restarts (e.g. an input that always fails to process) is
 halted and reported as `STALLED`; one that exhausts its restart budget is reported as `EXHAUSTED`.
+Either can be put back into the restart loop with [`resume`](#resume-resume-a-batch-job) once the
+underlying problem is addressed.
 
 ### `ls` - List batch jobs
 
@@ -494,11 +496,28 @@ blackfish batch stop <job-id>
 Stops a running batch job and cancels its Slurm allocation. Partial results already written to the
 output directory are preserved.
 
-!!! warning
+!!! note
 
-    Stopping a job is final. A stopped job is never resubmitted, even if files remain unprocessed —
-    there is no resume-after-stop. To finish the remaining files, submit a new job pointed at the
-    same output directory; already-finished files are skipped.
+    A stopped job is never resubmitted on its own — the restart loop does not pick it back up. To
+    finish the remaining files, use [`resume`](#resume-resume-a-batch-job).
+
+### `resume` - Resume a batch job
+
+```shell
+blackfish batch resume <job-id>
+```
+
+Puts a terminal job back into the restart loop by resubmitting its allocation against the same
+output directory. Already-finished files are skipped, so the job continues where it left off — and
+picks up any inputs added to the input directory in the meantime.
+
+Only **stopped**, **stalled**, and **exhausted** jobs can be resumed. A **broken** job cannot: that
+status marks a metadata or configuration error whose cause has to be fixed first, and resubmitting
+would just reproduce it.
+
+Resuming resets the restart counters, so a job that exhausted its restart budget gets a fresh one.
+The input directory is re-checked first, so resuming a job whose inputs have since been deleted or
+moved fails immediately rather than inside the allocation.
 
 ### `rm` - Delete a batch job
 

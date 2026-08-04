@@ -81,6 +81,15 @@ def create_mock_client() -> AsyncMock:
     return client
 
 
+def create_resume_client() -> AsyncMock:
+    """A mock client whose pre-flight (check_health + `test -d`) succeeds."""
+    client = create_mock_client()
+    client.check_health.return_value = TigerFlowVersions(
+        tigerflow="0.1.0", tigerflow_ml="0.1.0"
+    )
+    return client
+
+
 class TestBatchJobStart:
     """Tests for BatchJob.start()."""
 
@@ -495,6 +504,111 @@ class TestBatchJobStop:
         await local_job.stop(create_mock_client())
         assert local_job.status == BatchJobStatus.STOPPED
         mock_remote.run.assert_not_called()  # nothing to cancel
+
+
+class TestBatchJobResume:
+    """Tests for BatchJob.resume()."""
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            BatchJobStatus.STOPPED,
+            BatchJobStatus.STALLED,
+            BatchJobStatus.EXHAUSTED,
+        ],
+    )
+    async def test_resume_resubmits_and_resets_counters(
+        self, status: BatchJobStatus
+    ) -> None:
+        """resume should resubmit and reset the restart guards for any resumable
+        terminal status, leaving the job RESUBMITTED."""
+        job = create_test_batch_job(
+            status=status,
+            restarts=20,
+            stalled_restarts=1,
+            processed_highwater=42,
+        )
+        submit = AsyncMock(return_value="777")
+        with patch.object(job, "_submit", new=submit):
+            await job.resume(MockAppConfig(), create_resume_client())
+
+        submit.assert_called_once()
+        assert job.pid == "777"
+        assert job.status == BatchJobStatus.RESUBMITTED
+        assert job.restarts == 0
+        assert job.stalled_restarts == 0
+        # processed_highwater is intentionally preserved as the stall baseline.
+        assert job.processed_highwater == 42
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            BatchJobStatus.RUNNING,
+            BatchJobStatus.PENDING,
+            BatchJobStatus.SUBMITTED,
+            BatchJobStatus.RESUBMITTED,
+            BatchJobStatus.BROKEN,
+        ],
+    )
+    async def test_resume_is_noop_when_not_resumable(
+        self, status: BatchJobStatus
+    ) -> None:
+        """resume should skip non-resumable jobs — active statuses and BROKEN
+        (a hard error a resubmit can't fix) — without submitting."""
+        job = create_test_batch_job(status=status, restarts=5)
+        submit = AsyncMock(return_value="777")
+        with patch.object(job, "_submit", new=submit):
+            await job.resume(MockAppConfig(), create_resume_client())
+
+        submit.assert_not_called()
+        assert job.status == status
+        assert job.restarts == 5  # counters untouched
+
+    async def test_resume_propagates_submit_error(self) -> None:
+        """A failed resubmit surfaces to the caller (the route maps it to BROKEN),
+        leaving the restart counters describing the run the job actually had."""
+        job = create_test_batch_job(
+            status=BatchJobStatus.EXHAUSTED, restarts=20, stalled_restarts=1
+        )
+        submit = AsyncMock(side_effect=TigerFlowError("submit", "host", "failed"))
+        with patch.object(job, "_submit", new=submit):
+            with pytest.raises(TigerFlowError):
+                await job.resume(MockAppConfig(), create_resume_client())
+
+        assert job.restarts == 20
+        assert job.stalled_restarts == 1
+
+    async def test_resume_rejects_missing_input_dir(self) -> None:
+        """A job can sit terminal for days; if input_dir has since been deleted,
+        resume must fail fast (as start does) rather than submit an allocation
+        that dies inside the sbatch script."""
+        job = create_test_batch_job(status=BatchJobStatus.STOPPED, restarts=20)
+        client = create_resume_client()
+        client.runner.run = AsyncMock(return_value=(1, b"", b""))  # test -d fails
+
+        submit = AsyncMock(return_value="777")
+        with patch.object(job, "_submit", new=submit):
+            with pytest.raises(ValueError, match="Input directory does not exist"):
+                await job.resume(MockAppConfig(), client)
+
+        submit.assert_not_called()
+        assert job.status == BatchJobStatus.STOPPED
+        # Counters describe the run the job actually had, not the rejected resume.
+        assert job.restarts == 20
+
+    async def test_resume_checks_image_before_submitting(self) -> None:
+        """resume re-verifies the image like start does; an unstaged image must
+        surface before the allocation is submitted."""
+        job = create_test_batch_job(status=BatchJobStatus.EXHAUSTED)
+        client = create_resume_client()
+        client.check_health.side_effect = TigerFlowError("health", "host", "missing")
+
+        submit = AsyncMock(return_value="777")
+        with patch.object(job, "_submit", new=submit):
+            with pytest.raises(TigerFlowError):
+                await job.resume(MockAppConfig(), client)
+
+        submit.assert_not_called()
 
 
 class TestBatchJobEnsureDirectories:

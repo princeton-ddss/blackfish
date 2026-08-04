@@ -68,7 +68,10 @@ function JobResultsTable({
     onRefresh = null,
 }) {
     const [currentPage, setCurrentPage] = useState(1);
-    const resultsPerPage = 20;
+    // Enough rows to overflow a full-height box on any realistic viewport: a
+    // page that fits without scrolling reads as "that's everything", which the
+    // pager below then contradicts.
+    const resultsPerPage = 50;
 
     const {
         query,

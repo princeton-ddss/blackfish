@@ -136,7 +136,9 @@ ProgressDisplay.propTypes = {
 function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false, isRefreshing = false, onRefresh, onNewClick, profile, useMockData, setUseMockData }) {
     const isSlurm = profile?.schema === "slurm";
     const [currentPage, setCurrentPage] = useState(1);
-    const jobsPerPage = 20;
+    // See JobResultsTable: a page short enough to fit without scrolling makes
+    // the pager look wrong.
+    const jobsPerPage = 50;
 
     const {
         query,

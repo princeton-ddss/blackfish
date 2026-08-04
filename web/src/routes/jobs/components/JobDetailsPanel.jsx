@@ -151,7 +151,11 @@ function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActionIn
                     </p>
                 </div>
                 <div className="flex items-center gap-2.5">
-                    <StatusBadge status={job.status} errored={job.errored} />
+                    <StatusBadge
+                        status={job.status}
+                        errored={job.errored}
+                        pulse={jobActionInProgress === job.id}
+                    />
                     <div className="flex items-center gap-0.5">
                         {isBatchJobActive(job.status) && onStopJob && (
                             <button

@@ -1,6 +1,8 @@
 import PropTypes from "prop-types";
 
-function StatusBadge({ status, errored = 0 }) {
+// `pulse` marks a status that isn't settled yet — the badge is showing where
+// the job is headed while a request for it is still in flight.
+function StatusBadge({ status, errored = 0, pulse = false }) {
     const YELLOW = {
         bg: "bg-yellow-50 dark:bg-yellow-900/30",
         text: "text-yellow-700 dark:text-yellow-400",
@@ -54,7 +56,7 @@ function StatusBadge({ status, errored = 0 }) {
     const config = getStatusConfig();
 
     return (
-        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.bg} ${config.text} ${config.ring}`}>
+        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.bg} ${config.text} ${config.ring} ${pulse ? "animate-pulse" : ""}`}>
             {config.label}
         </span>
     );
@@ -63,6 +65,7 @@ function StatusBadge({ status, errored = 0 }) {
 StatusBadge.propTypes = {
     status: PropTypes.string.isRequired,
     errored: PropTypes.number,
+    pulse: PropTypes.bool,
 };
 
 export default StatusBadge;

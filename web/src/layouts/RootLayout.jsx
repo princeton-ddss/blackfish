@@ -13,6 +13,7 @@ import { SettingsProvider } from "@/providers/SettingsProvider";
 function RootLayoutContent() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const pathname = location.pathname;
   const isLoginPage = pathname.endsWith("login");
@@ -62,15 +63,28 @@ function RootLayoutContent() {
           </div>
         </Dialog>
 
-        <Navbar showSidebar onOpenSidebar={() => setSidebarOpen(true)} />
+        <Navbar
+          showSidebar
+          onOpenSidebar={() => setSidebarOpen(true)}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebarCollapse={() => setSidebarCollapsed((v) => !v)}
+        />
 
         {/* Static sidebar for desktop - positioned below header */}
-        <div className="hidden lg:fixed lg:top-12 lg:bottom-0 lg:left-0 lg:z-40 lg:flex lg:w-72 lg:flex-col">
-          <Sidebar />
+        <div
+          className={`hidden lg:fixed lg:top-12 lg:bottom-0 lg:left-0 lg:z-40 lg:flex lg:flex-col transition-[width] duration-200 ease-in-out ${
+            sidebarCollapsed ? "lg:w-16" : "lg:w-72"
+          }`}
+        >
+          <Sidebar collapsed={sidebarCollapsed} />
         </div>
 
         {/* Main content */}
-        <main className="lg:pl-72">
+        <main
+          className={`transition-[padding] duration-200 ease-in-out ${
+            sidebarCollapsed ? "lg:pl-16" : "lg:pl-72"
+          }`}
+        >
           <div className="px-4 py-6 sm:px-6 lg:px-8 lg:pt-16">
             <Outlet />
           </div>

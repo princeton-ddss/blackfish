@@ -16,7 +16,13 @@ import PropTypes from "prop-types";
  * @param {boolean} props.showSidebar - Whether to show hamburger menu (mobile)
  * @param {function} props.onOpenSidebar - Callback for hamburger click
  */
-function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
+function Navbar({
+  variant = "default",
+  showSidebar = false,
+  onOpenSidebar,
+  sidebarCollapsed = false,
+  onToggleSidebarCollapse,
+}) {
   const { profile, setProfile } = useContext(ProfileContext);
   const { theme, toggleTheme } = useTheme();
   const { openSettings } = useSettings();
@@ -76,13 +82,19 @@ function Navbar({ variant = "default", showSidebar = false, onOpenSidebar }) {
     <>
       {/* Desktop header */}
       <div className="hidden lg:fixed lg:inset-x-0 lg:top-0 lg:z-50 lg:flex lg:h-12 lg:items-center lg:justify-between lg:bg-white dark:lg:bg-gray-900 lg:pl-6 lg:pr-4 lg:border-b lg:border-gray-200 dark:lg:border-gray-700">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <img
-            className="h-8 w-8 dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]"
-            src={assetPath("/img/orca.png")}
-            alt="blackfish"
-          />
-        </Link>
+        {onToggleSidebarCollapse ? (
+          <button
+            type="button"
+            onClick={onToggleSidebarCollapse}
+            className="-m-2.5 p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 focus:outline-none"
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
+        ) : (
+          <div /> // Placeholder to keep controls right-aligned
+        )}
         <div className="flex items-center gap-4">
           <button
             onClick={toggleTheme}
@@ -166,6 +178,8 @@ Navbar.propTypes = {
   variant: PropTypes.oneOf(["dashboard", "default"]),
   showSidebar: PropTypes.bool,
   onOpenSidebar: PropTypes.func,
+  sidebarCollapsed: PropTypes.bool,
+  onToggleSidebarCollapse: PropTypes.func,
 };
 
 export default Navbar;

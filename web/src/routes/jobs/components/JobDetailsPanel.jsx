@@ -6,9 +6,10 @@ import {
     StopIcon,
     TrashIcon,
     ExclamationTriangleIcon,
+    PlayIcon,
 } from "@heroicons/react/24/outline";
 import StatusBadge from "./StatusBadge";
-import { isBatchJobActive, batchProgress } from "@/lib/util";
+import { isBatchJobActive, isBatchJobResumable, batchProgress } from "@/lib/util";
 import PropTypes from "prop-types";
 
 // A batch job resubmits its Slurm allocation until the input dir is fully
@@ -46,7 +47,8 @@ export function terminalReason(job) {
                 detail:
                     `No files were processed across ${n} restart${n === 1 ? "" : "s"}` +
                     (total != null ? `; stopped at ${highwater}/${total}.` : ".") +
-                    " A file may be failing repeatedly.",
+                    " A file is likely failing repeatedly — remove or fix it before" +
+                    " resuming, or the job will stall again.",
             };
         }
         default:
@@ -113,7 +115,7 @@ ProgressBar.propTypes = {
     total: PropTypes.number,
 };
 
-function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
+function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActionInProgress }) {
     if (!job) {
         return (
             <div className="bg-white dark:bg-gray-800 p-6 h-full flex flex-col justify-center">
@@ -148,30 +150,48 @@ function JobDetailsPanel({ job, onStopJob, onDeleteJob, jobActionInProgress }) {
                         {job.id}
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <StatusBadge status={job.status} errored={job.errored} />
-                    {isBatchJobActive(job.status) && onStopJob && (
-                        <button
-                            type="button"
-                            onClick={() => onStopJob(job)}
-                            disabled={jobActionInProgress === job.id}
-                            aria-label="Stop job"
-                            className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
-                        >
-                            <StopIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
-                        </button>
-                    )}
-                    {!isBatchJobActive(job.status) && onDeleteJob && (
-                        <button
-                            type="button"
-                            onClick={() => onDeleteJob(job)}
-                            disabled={jobActionInProgress === job.id}
-                            aria-label="Delete job"
-                            className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
-                        >
-                            <TrashIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
-                        </button>
-                    )}
+                <div className="flex items-center gap-2.5">
+                    <StatusBadge
+                        status={job.status}
+                        errored={job.errored}
+                        pulse={jobActionInProgress === job.id}
+                    />
+                    <div className="flex items-center gap-0.5">
+                        {isBatchJobActive(job.status) && onStopJob && (
+                            <button
+                                type="button"
+                                onClick={() => onStopJob(job)}
+                                disabled={jobActionInProgress === job.id}
+                                aria-label="Stop job"
+                                className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
+                            >
+                                <StopIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
+                            </button>
+                        )}
+                        {isBatchJobResumable(job.status) && onResumeJob && (
+                            <button
+                                type="button"
+                                onClick={() => onResumeJob(job)}
+                                disabled={jobActionInProgress === job.id}
+                                aria-label="Resume job"
+                                title="Resume job"
+                                className="p-1.5 rounded-md text-gray-500 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
+                            >
+                                <PlayIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
+                            </button>
+                        )}
+                        {!isBatchJobActive(job.status) && onDeleteJob && (
+                            <button
+                                type="button"
+                                onClick={() => onDeleteJob(job)}
+                                disabled={jobActionInProgress === job.id}
+                                aria-label="Delete job"
+                                className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
+                            >
+                                <TrashIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -377,6 +397,7 @@ JobDetailsPanel.propTypes = {
         params: PropTypes.object,
     }),
     onStopJob: PropTypes.func,
+    onResumeJob: PropTypes.func,
     onDeleteJob: PropTypes.func,
     jobActionInProgress: PropTypes.string,
 };

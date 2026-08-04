@@ -64,6 +64,19 @@ const BATCH_JOB_ACTIVE_STATUSES = new Set([
 export const isBatchJobActive = (status) =>
   BATCH_JOB_ACTIVE_STATUSES.has(status);
 
+// Terminal statuses a job can be resumed from — mirrors the backend's
+// _RESUMABLE_STATUSES. Resubmitting continues against the same output dir
+// (finished files are skipped). BROKEN is excluded: a metadata/config error a
+// resubmit can't fix.
+const BATCH_JOB_RESUMABLE_STATUSES = new Set([
+  BatchJobStatus.STOPPED,
+  BatchJobStatus.STALLED,
+  BatchJobStatus.EXHAUSTED,
+]);
+
+export const isBatchJobResumable = (status) =>
+  BATCH_JOB_RESUMABLE_STATUSES.has(status);
+
 /**
  * Compute batch-job progress for display.
  *

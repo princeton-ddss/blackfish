@@ -664,6 +664,28 @@ export async function stopJob(jobId) {
   return res.json();
 }
 
+/** Resume a terminal batch job (stopped, stalled, or exhausted). */
+export async function resumeJob(jobId) {
+  const res = await fetch(`${blackfishApiURL}/api/jobs/${jobId}/resume`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    let message = "Failed to resume job";
+    try {
+      const body = await res.json();
+      if (body.detail) message = body.detail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
 /** Create a new batch job. */
 export async function createJob(jobData) {
   const res = await fetch(`${blackfishApiURL}/api/jobs`, {

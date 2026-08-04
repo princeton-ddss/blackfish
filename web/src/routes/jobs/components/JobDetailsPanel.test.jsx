@@ -1,6 +1,12 @@
-import { describe, test, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, test, expect, vi } from "vitest";
 
-import { formatParamLabel, formatParamValue, terminalReason } from "./JobDetailsPanel";
+import JobDetailsPanel, {
+  formatParamLabel,
+  formatParamValue,
+  terminalReason,
+} from "./JobDetailsPanel";
 
 describe("formatParamLabel", () => {
   test("uses friendly labels for known params", () => {
@@ -110,5 +116,64 @@ describe("terminalReason", () => {
     });
     expect(r.detail).toContain("across 2 restarts");
     expect(r.detail).not.toContain("stopped at");
+  });
+});
+
+describe("JobDetailsPanel resume action", () => {
+  const job = (status) => ({
+    id: "job-001",
+    name: "Batch Translation",
+    status,
+    finished: 10,
+    staged: 5,
+    errored: 0,
+  });
+
+  function renderPanel(status, props = {}) {
+    return render(
+      <JobDetailsPanel
+        job={job(status)}
+        onResumeJob={vi.fn()}
+        onStopJob={vi.fn()}
+        onDeleteJob={vi.fn()}
+        {...props}
+      />,
+    );
+  }
+
+  test.each(["stopped", "stalled", "exhausted"])(
+    "offers Resume for a %s job",
+    (status) => {
+      renderPanel(status);
+      expect(screen.getByLabelText("Resume job")).toBeInTheDocument();
+    },
+  );
+
+  test.each(["broken", "running", "pending", "submitted", "resubmitted"])(
+    "does not offer Resume for a %s job",
+    (status) => {
+      renderPanel(status);
+      expect(screen.queryByLabelText("Resume job")).not.toBeInTheDocument();
+    },
+  );
+
+  test("calls onResumeJob with the job", async () => {
+    const onResumeJob = vi.fn();
+    renderPanel("exhausted", { onResumeJob });
+
+    await userEvent.click(screen.getByLabelText("Resume job"));
+
+    expect(onResumeJob).toHaveBeenCalledTimes(1);
+    expect(onResumeJob.mock.calls[0][0].id).toBe("job-001");
+  });
+
+  test("disables Resume while an action is in flight for that job", () => {
+    renderPanel("stopped", { jobActionInProgress: "job-001" });
+    expect(screen.getByLabelText("Resume job")).toBeDisabled();
+  });
+
+  test("omits Resume when no handler is supplied", () => {
+    render(<JobDetailsPanel job={job("stopped")} />);
+    expect(screen.queryByLabelText("Resume job")).not.toBeInTheDocument();
   });
 });

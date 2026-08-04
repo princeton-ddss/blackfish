@@ -7,6 +7,7 @@ import JobResultsTable from "./JobResultsTable";
 import JobDetailsPanel from "./JobDetailsPanel";
 import ResultPreview from "./ResultPreview";
 import NewJobModal from "./NewJobModal";
+import Notification from "@/components/Notification";
 import { COLUMN_HEIGHT } from "./layout";
 
 // Mock data for development - matches API BatchJob structure
@@ -243,6 +244,8 @@ function JobsContainer() {
     const [isNewPipelineModalOpen, setIsNewPipelineModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [jobActionInProgress, setJobActionInProgress] = useState(null); // job id being stopped/deleted
+    const [operationSuccess, setOperationSuccess] = useState(null);
+    const [operationError, setOperationError] = useState(null);
 
     // Gate mock data on import.meta.env.DEV so Vite can tree-shake MOCK_JOBS
     // out of production builds. In prod this expression simplifies to `apiJobs`.
@@ -291,17 +294,28 @@ function JobsContainer() {
 
     const handleStopJob = async (job) => {
         setJobActionInProgress(job.id);
+        setOperationError(null);
         try {
-            await stopJob(job.id);
-            // Optimistic update: mark job as stopped immediately
+            const updated = await stopJob(job.id);
+            // Like resume, a failed stop can answer 200 with the job marked
+            // BROKEN (the route maps both a failed scancel and a failed
+            // post-stop refresh to BROKEN), so take the status from the body.
             mutate(
                 (currentJobs) => currentJobs?.map((j) =>
-                    j.id === job.id ? { ...j, status: "stopped" } : j
+                    j.id === job.id ? { ...j, ...updated } : j
                 ),
                 { revalidate: true }
             );
+            if (updated?.status === "broken") {
+                setOperationError(
+                    `Could not stop ${job.name}. The job is now marked broken.`
+                );
+            } else {
+                setOperationSuccess(`Stopped ${job.name}.`);
+            }
         } catch (err) {
             console.error("Failed to stop job:", err);
+            setOperationError(`Could not stop ${job.name}. ${err.message}`);
         } finally {
             setJobActionInProgress(null);
         }
@@ -309,17 +323,33 @@ function JobsContainer() {
 
     const handleResumeJob = async (job) => {
         setJobActionInProgress(job.id);
+        setOperationError(null);
         try {
-            await resumeJob(job.id);
-            // Optimistic update: the backend resubmits and sets RESUBMITTED.
+            const updated = await resumeJob(job.id);
+            // A failed resubmit still answers 200: the route catches the
+            // TigerFlowError and returns the job marked BROKEN. Take the status
+            // from the response rather than assuming RESUBMITTED, or the UI
+            // reports success for a resume that didn't happen.
             mutate(
                 (currentJobs) => currentJobs?.map((j) =>
-                    j.id === job.id ? { ...j, status: "resubmitted" } : j
+                    j.id === job.id ? { ...j, ...updated } : j
                 ),
                 { revalidate: true }
             );
+            if (updated?.status === "broken") {
+                setOperationError(
+                    `Could not resume ${job.name}. The job could not be resubmitted and is now marked broken.`
+                );
+            } else {
+                setOperationSuccess(`Resumed ${job.name}.`);
+            }
         } catch (err) {
+            // No rollback needed: the badge still shows the job's real status,
+            // since nothing is written until the server answers.
+            // The server says why it refused (not resumable, input_dir gone,
+            // image unstaged); surface that instead of failing silently.
             console.error("Failed to resume job:", err);
+            setOperationError(`Could not resume ${job.name}. ${err.message}`);
         } finally {
             setJobActionInProgress(null);
         }
@@ -327,19 +357,23 @@ function JobsContainer() {
 
     const handleDeleteJob = async (job) => {
         setJobActionInProgress(job.id);
+        setOperationError(null);
         try {
             await deleteJob(job.id);
-            // Clear selection if deleted job was selected
+            // Unlike stop/resume this waits for the response before touching
+            // the list: a row that vanishes and then comes back on failure is
+            // worse than one that lingers for the length of the request.
             if (selectedJobId === job.id) {
                 setSelectedJobId(null);
             }
-            // Optimistic update: remove job from list immediately
             mutate(
                 (currentJobs) => currentJobs?.filter((j) => j.id !== job.id),
                 { revalidate: true }
             );
+            setOperationSuccess(`Deleted ${job.name}.`);
         } catch (err) {
             console.error("Failed to delete job:", err);
+            setOperationError(`Could not delete ${job.name}. ${err.message}`);
         } finally {
             setJobActionInProgress(null);
         }
@@ -390,6 +424,7 @@ function JobsContainer() {
                         onRefresh={() => mutate()}
                         useMockData={useMockData}
                         setUseMockData={setUseMockData}
+                        jobActionInProgress={jobActionInProgress}
                     />
                 )}
             </div>
@@ -424,6 +459,19 @@ function JobsContainer() {
                 profile={profile}
                 task={selectedTask}
                 onJobCreated={handleJobCreated}
+            />
+
+            <Notification
+                show={!!operationSuccess}
+                variant="success"
+                message={operationSuccess}
+                onDismiss={() => setOperationSuccess(null)}
+            />
+            <Notification
+                show={!!operationError}
+                variant="error"
+                message={operationError}
+                onDismiss={() => setOperationError(null)}
             />
         </div>
     );

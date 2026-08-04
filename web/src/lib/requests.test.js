@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { buildContainerConfig, setDefaultProfile } from "@/lib/requests";
+import { buildContainerConfig, setDefaultProfile, resumeJob } from "@/lib/requests";
 
 describe("buildContainerConfig", () => {
   it("strips disable_thinking when false and adds no launch_kwargs", () => {
@@ -82,5 +82,58 @@ describe("setDefaultProfile", () => {
       message: "Failed to set default profile.",
       status: 500,
     });
+  });
+});
+
+describe("resumeJob", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("PUTs to the job's resume endpoint and returns the updated job", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "job-001", status: "resubmitted" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await resumeJob("job-001");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toContain("/api/jobs/job-001/resume");
+    expect(options.method).toBe("PUT");
+    expect(result).toEqual({ id: "job-001", status: "resubmitted" });
+  });
+
+  it("throws the server detail so the caller can show why a resume was refused", async () => {
+    // e.g. a job whose input_dir was deleted since it ran, or a BROKEN job.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ detail: "Input directory does not exist" }),
+      })
+    );
+
+    await expect(resumeJob("job-001")).rejects.toThrow(
+      "Input directory does not exist"
+    );
+  });
+
+  it("falls back to a generic message when the body has no detail", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error("not json");
+        },
+      })
+    );
+
+    await expect(resumeJob("job-001")).rejects.toThrow("Failed to resume job");
   });
 });

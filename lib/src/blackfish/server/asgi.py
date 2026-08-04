@@ -88,7 +88,6 @@ from blackfish.server.services.text_generation import TextGenerationConfig
 from blackfish.server.jobs.base import (
     BatchJob,
     BatchJobStatus,
-    _RESUMABLE_STATUSES,
     create_tigerflow_client,
     create_tigerflow_client_for_profile,
 )
@@ -1668,18 +1667,30 @@ async def resume_job(
     against the same output dir (finished files are skipped). BROKEN is not
     resumable. Like starting a job, this does not poll; the periodic job poll
     picks up the resubmitted allocation.
+
+    Runs `start`'s pre-flight (image staged, input_dir still present), so a
+    resume whose inputs have gone away is rejected with a 4xx instead of
+    failing later inside the allocation.
     """
     job = await get_batch_job(job_id, session)
     if job is None:
         raise NotFoundException(detail=f"Job {job_id} not found")
 
-    if job.status not in _RESUMABLE_STATUSES:
+    if not job.is_resumable():
         raise ClientException(
             detail=f"Job {job_id} is not resumable (status: {job.status})"
         )
 
+    client = create_tigerflow_client(job, state)
+
     try:
-        await job.resume(state)
+        await job.resume(state, client)
+    except ValueError as e:
+        # Pre-flight rejection (e.g. input_dir was deleted since the job ran):
+        # the request is bad, not the job — leave it in its terminal status
+        # rather than marking it BROKEN, and surface a 4xx.
+        logger.warning(f"Rejected resume for job {job_id}: {e}")
+        raise ValidationException(detail=str(e))
     except TigerFlowError as e:
         # Resubmit failed (e.g. SSH/sbatch error): mark BROKEN, mirror stop_job.
         logger.warning(f"Resume command failed for job {job_id}: {e}")

@@ -96,7 +96,8 @@ function Sidebar({ collapsed = false }) {
         >
             {/* Logo header - orca mark, aligned with the nav icons below */}
             <div className="-mx-2 shrink-0">
-                <div
+                <Link
+                    to="/dashboard"
                     className={classNames(
                         "flex items-center p-2",
                         collapsed ? "justify-center" : "pl-1"
@@ -107,7 +108,7 @@ function Sidebar({ collapsed = false }) {
                         src={assetPath("/img/orca.png")}
                         alt="blackfish"
                     />
-                </div>
+                </Link>
             </div>
             <nav className="flex flex-1 flex-col">
                 <ul role="list" className="flex flex-1 flex-col gap-y-7 pt-4">

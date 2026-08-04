@@ -294,6 +294,9 @@ function JobsContainer() {
 
     const handleStopJob = async (job) => {
         setJobActionInProgress(job.id);
+        // Clear both: a stale success from a previous action would otherwise
+        // sit alongside this one's error, each describing a different job.
+        setOperationSuccess(null);
         setOperationError(null);
         try {
             const updated = await stopJob(job.id);
@@ -323,6 +326,9 @@ function JobsContainer() {
 
     const handleResumeJob = async (job) => {
         setJobActionInProgress(job.id);
+        // Clear both: a stale success from a previous action would otherwise
+        // sit alongside this one's error, each describing a different job.
+        setOperationSuccess(null);
         setOperationError(null);
         try {
             const updated = await resumeJob(job.id);
@@ -357,6 +363,9 @@ function JobsContainer() {
 
     const handleDeleteJob = async (job) => {
         setJobActionInProgress(job.id);
+        // Clear both: a stale success from a previous action would otherwise
+        // sit alongside this one's error, each describing a different job.
+        setOperationSuccess(null);
         setOperationError(null);
         try {
             await deleteJob(job.id);

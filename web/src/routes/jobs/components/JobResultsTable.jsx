@@ -12,6 +12,7 @@ import SortableHeader from "@/components/SortableHeader";
 import FilterHeader from "@/components/FilterHeader";
 import TableSearch from "@/components/TableSearch";
 import { useTableControls } from "@/lib/useTableControls";
+import { COLUMN_HEIGHT } from "./layout";
 import PropTypes from "prop-types";
 
 // The table shows file basenames (the full paths are in the result preview).
@@ -91,7 +92,6 @@ function JobResultsTable({
     const indexOfFirstResult = indexOfLastResult - resultsPerPage;
 
     const currentResults = visibleResults.slice(indexOfFirstResult, indexOfLastResult);
-    const heightClass = "lg:h-[calc(100vh-11rem)]";
 
     const handleQueryChange = (q) => {
         setQuery(q);
@@ -99,8 +99,12 @@ function JobResultsTable({
     };
 
     return (
-        <div id="job-results-table" name="job-results-table" className={`flex-none ${heightClass}`}>
-            <div className="flex items-center justify-between mb-2 h-9">
+        <div
+            id="job-results-table"
+            name="job-results-table"
+            className={`flex-none lg:flex lg:flex-col ${COLUMN_HEIGHT}`}
+        >
+            <div className="flex-none flex items-center justify-between mb-2 h-9">
                 <div className="flex items-center gap-2">
                     <button
                         onClick={onBack}
@@ -118,165 +122,159 @@ function JobResultsTable({
                     </span>
                 </div>
             </div>
-            <div className="mb-4">
+            <div className="flex-none mb-4">
                 <TableSearch query={query} setQuery={handleQueryChange} />
             </div>
-            <div className="flow-root">
-                <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                    <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                        <div className={`ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg ${heightClass} overflow-y-auto`}>
-                            <table className="divide-y divide-gray-300 dark:divide-gray-600 table-fixed w-full">
-                                <thead>
-                                    <tr>
-                                        <SortableHeader
-                                            label="Input File"
-                                            sortKey="input_file"
-                                            activeKey={sortKey}
-                                            direction={sortDir}
-                                            onSort={toggleSort}
-                                            className="pl-4 pr-3 sm:pl-6 w-1/4"
+            {/* Pagination lives inside the bordered box so the box's bottom edge
+                is the column's bottom edge, aligned with the preview panel. */}
+            <div className="flex flex-col lg:flex-1 lg:min-h-0 ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg overflow-hidden">
+                <div className="lg:flex-1 lg:min-h-0 overflow-auto">
+                <table className="divide-y divide-gray-300 dark:divide-gray-600 table-fixed w-full">
+                    <thead>
+                        <tr>
+                            <SortableHeader
+                                label="Input File"
+                                sortKey="input_file"
+                                activeKey={sortKey}
+                                direction={sortDir}
+                                onSort={toggleSort}
+                                className="pl-4 pr-3 sm:pl-6 w-1/4"
+                            />
+                            <SortableHeader
+                                label="Started"
+                                sortKey="started_at"
+                                activeKey={sortKey}
+                                direction={sortDir}
+                                onSort={toggleSort}
+                                className="px-3 w-36"
+                            />
+                            <SortableHeader
+                                label="Elapsed"
+                                sortKey="elapsed"
+                                activeKey={sortKey}
+                                direction={sortDir}
+                                onSort={toggleSort}
+                                className="px-3 w-24"
+                            />
+                            {/* Status is filtered via its dropdown, not sorted. */}
+                            <FilterHeader
+                                label="Status"
+                                filterKey="status"
+                                options={RESULT_STATUS_OPTIONS}
+                                clearLabel="Clear statuses"
+                                query={query}
+                                setQuery={handleQueryChange}
+                                className="px-3 text-center w-20"
+                            />
+                            <SortableHeader
+                                label="Output File"
+                                sortKey="output_file"
+                                activeKey={sortKey}
+                                direction={sortDir}
+                                onSort={toggleSort}
+                                className="px-3 w-1/4"
+                            />
+                            <th
+                                scope="col"
+                                className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 w-12 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                            >
+                                <div className="flex gap-2 justify-end">
+                                    <button
+                                        onClick={() => onRefresh?.()}
+                                        title="Refresh"
+                                    >
+                                        <ArrowPathIcon
+                                            className={`h-5 w-5 text-gray-900 dark:text-gray-100 hover:text-gray-400 ${isLoading || isRefreshing ? "animate-spin" : ""}`}
                                         />
-                                        <SortableHeader
-                                            label="Started"
-                                            sortKey="started_at"
-                                            activeKey={sortKey}
-                                            direction={sortDir}
-                                            onSort={toggleSort}
-                                            className="px-3 w-36"
-                                        />
-                                        <SortableHeader
-                                            label="Elapsed"
-                                            sortKey="elapsed"
-                                            activeKey={sortKey}
-                                            direction={sortDir}
-                                            onSort={toggleSort}
-                                            className="px-3 w-24"
-                                        />
-                                        {/* Status is filtered via its dropdown, not sorted. */}
-                                        <FilterHeader
-                                            label="Status"
-                                            filterKey="status"
-                                            options={RESULT_STATUS_OPTIONS}
-                                            clearLabel="Clear statuses"
-                                            query={query}
-                                            setQuery={handleQueryChange}
-                                            className="px-3 text-center w-20"
-                                        />
-                                        <SortableHeader
-                                            label="Output File"
-                                            sortKey="output_file"
-                                            activeKey={sortKey}
-                                            direction={sortDir}
-                                            onSort={toggleSort}
-                                            className="px-3 w-1/4"
-                                        />
-                                        <th
-                                            scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 w-12 backdrop-blur bg-gray-50 dark:bg-gray-800"
-                                        >
-                                            <div className="flex gap-2 justify-end">
-                                                <button
-                                                    onClick={() => onRefresh?.()}
-                                                    title="Refresh"
-                                                >
-                                                    <ArrowPathIcon
-                                                        className={`h-5 w-5 text-gray-900 dark:text-gray-100 hover:text-gray-400 ${isLoading || isRefreshing ? "animate-spin" : ""}`}
-                                                    />
-                                                </button>
-                                            </div>
-                                        </th>
+                                    </button>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                        {isLoading ? (
+                            <>
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <tr key={i}>
+                                        <td colSpan={6} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
+                                            <div className="bg-gray-100 dark:bg-gray-700 h-9 rounded-md"></div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                                    {isLoading ? (
-                                        <>
-                                            {Array.from({ length: 5 }).map((_, i) => (
-                                                <tr key={i}>
-                                                    <td colSpan={6} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
-                                                        <div className="bg-gray-100 dark:bg-gray-700 h-9 rounded-md"></div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </>
-                                    ) : error ? (
-                                        <tr>
-                                            <td colSpan={6} className="h-64">
-                                                <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
-                                                    <img
-                                                        className="h-16 mb-5 w-auto ml-auto mr-auto opacity-80 dark:invert"
-                                                        src={assetPath("/img/dead-fish.png")}
-                                                        alt="Loading error."
-                                                    />
-                                                    {error?.message || "Failed to load results."}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ) : visibleResults.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="h-64">
-                                                <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
-                                                    {results.length === 0
-                                                        ? "No results found"
-                                                        : "No results match your search"}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        currentResults.map((result) => (
-                                            <tr
-                                                key={result.id}
-                                                onClick={() => onResultSelect(result)}
-                                                className={`cursor-pointer ${
-                                                    selectedResult?.id === result.id
-                                                        ? "bg-blue-50 dark:bg-blue-900/20"
-                                                        : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                }`}
-                                            >
-                                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-xs font-mono text-gray-900 dark:text-gray-100 sm:pl-6">
-                                                    <div className="overflow-x-scroll">{basename(result.input_file)}</div>
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
-                                                    {result.started_at ? lastModified(result.started_at) : "-"}
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-500 dark:text-gray-400">
-                                                    {formatElapsed(result.started_at, result.finished_at)}
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3">
-                                                    <div className="flex justify-center">
-                                                        <StatusIcon success={result.success} />
-                                                    </div>
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-xs font-mono text-gray-900 dark:text-gray-100">
-                                                    <div className="overflow-x-scroll">
-                                                        {basename(result.output_file)}
-                                                    </div>
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-right">
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                    <tr className="bg-white dark:bg-gray-800">
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                ))}
+                            </>
+                        ) : error ? (
+                            <tr>
+                                <td colSpan={6} className="h-64">
+                                    <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
+                                        <img
+                                            className="h-16 mb-5 w-auto ml-auto mr-auto opacity-80 dark:invert"
+                                            src={assetPath("/img/dead-fish.png")}
+                                            alt="Loading error."
+                                        />
+                                        {error?.message || "Failed to load results."}
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : visibleResults.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="h-64">
+                                    <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
+                                        {results.length === 0
+                                            ? "No results found"
+                                            : "No results match your search"}
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : (
+                            currentResults.map((result) => (
+                                <tr
+                                    key={result.id}
+                                    onClick={() => onResultSelect(result)}
+                                    className={`cursor-pointer ${
+                                        selectedResult?.id === result.id
+                                            ? "bg-blue-50 dark:bg-blue-900/20"
+                                            : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    }`}
+                                >
+                                    <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-xs font-mono text-gray-900 dark:text-gray-100 sm:pl-6">
+                                        <div className="overflow-x-scroll">{basename(result.input_file)}</div>
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
+                                        {result.started_at ? lastModified(result.started_at) : "-"}
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-500 dark:text-gray-400">
+                                        {formatElapsed(result.started_at, result.finished_at)}
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3">
+                                        <div className="flex justify-center">
+                                            <StatusIcon success={result.success} />
+                                        </div>
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-left text-xs font-mono text-gray-900 dark:text-gray-100">
+                                        <div className="overflow-x-scroll">
+                                            {basename(result.output_file)}
+                                        </div>
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-right">
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
                 </div>
+                {pageCount > 1 && (
+                    <div className="flex-none border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <Pagination
+                            filesPerPage={resultsPerPage}
+                            totalFiles={visibleResults.length}
+                            currentPage={page}
+                            setCurrentPage={setCurrentPage}
+                            disabled={false}
+                        />
+                    </div>
+                )}
             </div>
-            <Pagination
-                filesPerPage={resultsPerPage}
-                totalFiles={visibleResults.length}
-                currentPage={page}
-                setCurrentPage={setCurrentPage}
-                disabled={false}
-            />
         </div>
     );
 }

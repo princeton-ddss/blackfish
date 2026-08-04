@@ -12,6 +12,7 @@ import FilterHeader from "@/components/FilterHeader";
 import FilterMenu from "@/components/FilterMenu";
 import TableSearch from "@/components/TableSearch";
 import { useTableControls } from "@/lib/useTableControls";
+import { COLUMN_HEIGHT } from "./layout";
 import { TASKS } from "./NewJobModal";
 import StatusBadge from "./StatusBadge";
 import PropTypes from "prop-types";
@@ -159,7 +160,6 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
     const indexOfFirstJob = indexOfLastJob - jobsPerPage;
 
     const currentJobs = visibleJobs.slice(indexOfFirstJob, indexOfLastJob);
-    const heightClass = "lg:h-[calc(100vh-11rem)]";
 
     const handleQueryChange = (q) => {
         setQuery(q);
@@ -167,8 +167,12 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
     };
 
     return (
-        <div id="jobs-table" name="jobs-table" className={`flex-none ${heightClass}`}>
-            <div className="flex items-center justify-between mb-2 h-9">
+        <div
+            id="jobs-table"
+            name="jobs-table"
+            className={`flex-none lg:flex lg:flex-col ${COLUMN_HEIGHT}`}
+        >
+            <div className="flex-none flex items-center justify-between mb-2 h-9">
                 <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">
                     Jobs
                 </label>
@@ -213,7 +217,7 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                     )}
                 </div>
             </div>
-            <div className="mb-4">
+            <div className="flex-none mb-4">
                 <TableSearch query={query} setQuery={handleQueryChange}>
                     <FilterMenu
                         label="Filters"
@@ -223,162 +227,156 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                     />
                 </TableSearch>
             </div>
-            <div className="flow-root">
-                <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                    <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                        <div className={`ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg ${heightClass} overflow-y-auto relative z-0`}>
-                            <table className="divide-y divide-gray-300 dark:divide-gray-600 table-fixed w-full">
-                                <thead>
-                                    <tr>
-                                        <SortableHeader
-                                            label="Name"
-                                            sortKey="name"
-                                            activeKey={sortKey}
-                                            direction={sortDir}
-                                            onSort={toggleSort}
-                                            className="pl-4 pr-3 sm:pl-6 w-1/4"
+            {/* Pagination lives inside the bordered box so the box's bottom edge
+                is the column's bottom edge, aligned with the details panel. */}
+            <div className="flex flex-col lg:flex-1 lg:min-h-0 ring-1 ring-gray-300 dark:ring-gray-600 sm:rounded-lg overflow-hidden">
+                <div className="lg:flex-1 lg:min-h-0 overflow-auto relative z-0">
+                <table className="divide-y divide-gray-300 dark:divide-gray-600 table-fixed w-full">
+                    <thead>
+                        <tr>
+                            <SortableHeader
+                                label="Name"
+                                sortKey="name"
+                                activeKey={sortKey}
+                                direction={sortDir}
+                                onSort={toggleSort}
+                                className="pl-4 pr-3 sm:pl-6 w-1/4"
+                            />
+                            <SortableHeader
+                                label="ID"
+                                sortKey="id"
+                                activeKey={sortKey}
+                                direction={sortDir}
+                                onSort={toggleSort}
+                                className="px-3 w-24"
+                            />
+                            <SortableHeader
+                                label="Submitted"
+                                sortKey="created_at"
+                                activeKey={sortKey}
+                                direction={sortDir}
+                                onSort={toggleSort}
+                                className="px-3 w-36"
+                            />
+                            {/* Status & Progress headers are filter
+                                dropdowns, not sortable columns. */}
+                            <FilterHeader
+                                label="Status"
+                                filterKey="status"
+                                options={STATUS_OPTIONS}
+                                clearLabel="Clear statuses"
+                                query={query}
+                                setQuery={handleQueryChange}
+                                className="px-3 text-left w-24"
+                            />
+                            <FilterHeader
+                                label="Progress"
+                                filterKey="progress"
+                                options={PROGRESS_OPTIONS}
+                                clearLabel="Clear"
+                                query={query}
+                                setQuery={handleQueryChange}
+                                className="px-3 text-left w-32"
+                            />
+                            <th
+                                scope="col"
+                                className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 w-20 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                            >
+                                <div className="flex gap-2 justify-end">
+                                    <button
+                                        onClick={onRefresh}
+                                        disabled={isRefreshing}
+                                        title="Refresh"
+                                        className="text-gray-900 dark:text-gray-100 hover:text-gray-400 disabled:opacity-50"
+                                    >
+                                        <ArrowPathIcon
+                                            className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
                                         />
-                                        <SortableHeader
-                                            label="ID"
-                                            sortKey="id"
-                                            activeKey={sortKey}
-                                            direction={sortDir}
-                                            onSort={toggleSort}
-                                            className="px-3 w-24"
+                                    </button>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                        {isLoading ? (
+                            <>
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <tr key={i}>
+                                        <td colSpan={6} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
+                                            <div className="bg-gray-100 dark:bg-gray-700 h-9 rounded-md"></div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </>
+                        ) : visibleJobs.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="h-64">
+                                    <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
+                                        {jobs.length === 0
+                                            ? "No jobs found"
+                                            : "No jobs match your search"}
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : (
+                            currentJobs.map((job) => (
+                                <tr
+                                    key={job.id}
+                                    onClick={() => onJobClick(job)}
+                                    className={`cursor-pointer ${
+                                        selectedJob?.id === job.id
+                                            ? "bg-blue-50 dark:bg-blue-900/20"
+                                            : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    }`}
+                                >
+                                    <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-sm text-gray-900 dark:text-gray-100 sm:pl-6">
+                                        <div className="overflow-x-scroll">{job.name}</div>
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-500 dark:text-gray-400 font-mono text-xs" title={job.id}>
+                                        {job.id?.slice(0, 8)}
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
+                                        {lastModified(job.created_at)}
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-left text-sm">
+                                        <StatusBadge status={job.status} errored={job.errored} />
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
+                                        <ProgressDisplay
+                                            finished={job.finished}
+                                            staged={job.staged}
+                                            errored={job.errored}
                                         />
-                                        <SortableHeader
-                                            label="Submitted"
-                                            sortKey="created_at"
-                                            activeKey={sortKey}
-                                            direction={sortDir}
-                                            onSort={toggleSort}
-                                            className="px-3 w-36"
-                                        />
-                                        {/* Status & Progress headers are filter
-                                            dropdowns, not sortable columns. */}
-                                        <FilterHeader
-                                            label="Status"
-                                            filterKey="status"
-                                            options={STATUS_OPTIONS}
-                                            clearLabel="Clear statuses"
-                                            query={query}
-                                            setQuery={handleQueryChange}
-                                            className="px-3 text-left w-24"
-                                        />
-                                        <FilterHeader
-                                            label="Progress"
-                                            filterKey="progress"
-                                            options={PROGRESS_OPTIONS}
-                                            clearLabel="Clear"
-                                            query={query}
-                                            setQuery={handleQueryChange}
-                                            className="px-3 text-left w-32"
-                                        />
-                                        <th
-                                            scope="col"
-                                            className="sticky top-0 z-10 px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 w-20 backdrop-blur bg-gray-50 dark:bg-gray-800"
+                                    </td>
+                                    <td className="whitespace-nowrap py-3 px-3 text-right">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onJobDrillIn(job);
+                                            }}
+                                            className="text-gray-900 dark:text-gray-100 hover:text-gray-400"
                                         >
-                                            <div className="flex gap-2 justify-end">
-                                                <button
-                                                    onClick={onRefresh}
-                                                    disabled={isRefreshing}
-                                                    title="Refresh"
-                                                    className="text-gray-900 dark:text-gray-100 hover:text-gray-400 disabled:opacity-50"
-                                                >
-                                                    <ArrowPathIcon
-                                                        className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
-                                                    />
-                                                </button>
-                                            </div>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                                    {isLoading ? (
-                                        <>
-                                            {Array.from({ length: 5 }).map((_, i) => (
-                                                <tr key={i}>
-                                                    <td colSpan={6} className="relative whitespace-nowrap py-3 px-5 animate-pulse">
-                                                        <div className="bg-gray-100 dark:bg-gray-700 h-9 rounded-md"></div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </>
-                                    ) : visibleJobs.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="h-64">
-                                                <div className="font-light sm:text-sm text-center align-middle text-gray-600 dark:text-gray-400">
-                                                    {jobs.length === 0
-                                                        ? "No jobs found"
-                                                        : "No jobs match your search"}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        currentJobs.map((job) => (
-                                            <tr
-                                                key={job.id}
-                                                onClick={() => onJobClick(job)}
-                                                className={`cursor-pointer ${
-                                                    selectedJob?.id === job.id
-                                                        ? "bg-blue-50 dark:bg-blue-900/20"
-                                                        : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                }`}
-                                            >
-                                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-left text-sm text-gray-900 dark:text-gray-100 sm:pl-6">
-                                                    <div className="overflow-x-scroll">{job.name}</div>
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-500 dark:text-gray-400 font-mono text-xs" title={job.id}>
-                                                    {job.id?.slice(0, 8)}
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
-                                                    {lastModified(job.created_at)}
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm">
-                                                    <StatusBadge status={job.status} errored={job.errored} />
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
-                                                    <ProgressDisplay
-                                                        finished={job.finished}
-                                                        staged={job.staged}
-                                                        errored={job.errored}
-                                                    />
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 px-3 text-right">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onJobDrillIn(job);
-                                                        }}
-                                                        className="text-gray-900 dark:text-gray-100 hover:text-gray-400"
-                                                    >
-                                                        <ChevronRightIcon className="h-4 w-4" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                    <tr className="bg-white dark:bg-gray-800">
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                        <td className="whitespace-nowrap h-16"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                            <ChevronRightIcon className="h-4 w-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
                 </div>
+                {pageCount > 1 && (
+                    <div className="flex-none border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <Pagination
+                            filesPerPage={jobsPerPage}
+                            totalFiles={visibleJobs.length}
+                            currentPage={page}
+                            setCurrentPage={setCurrentPage}
+                            disabled={false}
+                        />
+                    </div>
+                )}
             </div>
-            <Pagination
-                filesPerPage={jobsPerPage}
-                totalFiles={visibleJobs.length}
-                currentPage={page}
-                setCurrentPage={setCurrentPage}
-                disabled={false}
-            />
         </div>
     );
 }

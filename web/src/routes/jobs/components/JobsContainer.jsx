@@ -7,6 +7,7 @@ import JobResultsTable from "./JobResultsTable";
 import JobDetailsPanel from "./JobDetailsPanel";
 import ResultPreview from "./ResultPreview";
 import NewJobModal from "./NewJobModal";
+import { COLUMN_HEIGHT } from "./layout";
 
 // Mock data for development - matches API BatchJob structure
 const MOCK_JOBS = [
@@ -374,13 +375,13 @@ function JobsContainer() {
                     />
                 )}
             </div>
-            <div className="w-full lg:flex-1 lg:min-w-[24rem] mb-2">
-                <div className="flex items-center justify-between mb-2 h-9">
+            <div className={`w-full lg:flex-1 lg:min-w-[24rem] lg:flex lg:flex-col ${COLUMN_HEIGHT}`}>
+                <div className="flex-none flex items-center justify-between mb-2 h-9">
                     <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">
                         {showResultPreview ? "Result Preview" : "Job Details"}
                     </label>
                 </div>
-                <div className="ring-1 ring-gray-300 dark:ring-gray-600 rounded-lg lg:h-[calc(100vh-11rem)] overflow-y-auto">
+                <div className="lg:flex-1 lg:min-h-0 ring-1 ring-gray-300 dark:ring-gray-600 rounded-lg overflow-y-auto">
                     {showResultPreview ? (
                         <ResultPreview
                             result={selectedResult}

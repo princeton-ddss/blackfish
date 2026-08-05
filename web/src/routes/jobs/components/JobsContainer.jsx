@@ -243,9 +243,29 @@ function JobsContainer() {
     const [viewingResults, setViewingResults] = useState(false);
     const [isNewPipelineModalOpen, setIsNewPipelineModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
-    const [jobActionInProgress, setJobActionInProgress] = useState(null); // job id being stopped/deleted
+    // job id -> the action in flight for it ("stop" | "resume" | "delete").
+    // Keyed by job because actions on different jobs run concurrently: a single
+    // scalar let the second action clear the first one's in-flight state, which
+    // re-enabled its buttons mid-request.
+    const [jobActions, setJobActions] = useState({});
     const [operationSuccess, setOperationSuccess] = useState(null);
     const [operationError, setOperationError] = useState(null);
+
+    const beginJobAction = (jobId, action) => {
+        setJobActions((prev) => ({ ...prev, [jobId]: action }));
+        // Clear both: a stale success from a previous action would otherwise
+        // sit alongside this one's error, each describing a different job.
+        setOperationSuccess(null);
+        setOperationError(null);
+    };
+
+    const endJobAction = (jobId) => {
+        setJobActions((prev) => {
+            // eslint-disable-next-line no-unused-vars
+            const { [jobId]: _finished, ...rest } = prev;
+            return rest;
+        });
+    };
 
     // Gate mock data on import.meta.env.DEV so Vite can tree-shake MOCK_JOBS
     // out of production builds. In prod this expression simplifies to `apiJobs`.
@@ -293,11 +313,7 @@ function JobsContainer() {
     };
 
     const handleStopJob = async (job) => {
-        setJobActionInProgress(job.id);
-        // Clear both: a stale success from a previous action would otherwise
-        // sit alongside this one's error, each describing a different job.
-        setOperationSuccess(null);
-        setOperationError(null);
+        beginJobAction(job.id, "stop");
         try {
             const updated = await stopJob(job.id);
             // Like resume, a failed stop can answer 200 with the job marked
@@ -320,16 +336,12 @@ function JobsContainer() {
             console.error("Failed to stop job:", err);
             setOperationError(`Could not stop ${job.name}. ${err.message}`);
         } finally {
-            setJobActionInProgress(null);
+            endJobAction(job.id);
         }
     };
 
     const handleResumeJob = async (job) => {
-        setJobActionInProgress(job.id);
-        // Clear both: a stale success from a previous action would otherwise
-        // sit alongside this one's error, each describing a different job.
-        setOperationSuccess(null);
-        setOperationError(null);
+        beginJobAction(job.id, "resume");
         try {
             const updated = await resumeJob(job.id);
             // A failed resubmit still answers 200: the route catches the
@@ -357,16 +369,12 @@ function JobsContainer() {
             console.error("Failed to resume job:", err);
             setOperationError(`Could not resume ${job.name}. ${err.message}`);
         } finally {
-            setJobActionInProgress(null);
+            endJobAction(job.id);
         }
     };
 
     const handleDeleteJob = async (job) => {
-        setJobActionInProgress(job.id);
-        // Clear both: a stale success from a previous action would otherwise
-        // sit alongside this one's error, each describing a different job.
-        setOperationSuccess(null);
-        setOperationError(null);
+        beginJobAction(job.id, "delete");
         try {
             await deleteJob(job.id);
             // Unlike stop/resume this waits for the response before touching
@@ -384,7 +392,7 @@ function JobsContainer() {
             console.error("Failed to delete job:", err);
             setOperationError(`Could not delete ${job.name}. ${err.message}`);
         } finally {
-            setJobActionInProgress(null);
+            endJobAction(job.id);
         }
     };
 
@@ -433,7 +441,7 @@ function JobsContainer() {
                         onRefresh={() => mutate()}
                         useMockData={useMockData}
                         setUseMockData={setUseMockData}
-                        jobActionInProgress={jobActionInProgress}
+                        jobActions={jobActions}
                     />
                 )}
             </div>
@@ -456,7 +464,7 @@ function JobsContainer() {
                             onStopJob={handleStopJob}
                             onResumeJob={handleResumeJob}
                             onDeleteJob={handleDeleteJob}
-                            jobActionInProgress={jobActionInProgress}
+                            jobActions={jobActions}
                         />
                     )}
                 </div>

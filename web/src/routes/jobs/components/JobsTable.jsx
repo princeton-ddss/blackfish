@@ -133,7 +133,7 @@ ProgressDisplay.propTypes = {
     errored: PropTypes.number,
 };
 
-function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false, isRefreshing = false, onRefresh, onNewClick, profile, useMockData, setUseMockData, jobActionInProgress = null }) {
+function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = false, isRefreshing = false, onRefresh, onNewClick, profile, useMockData, setUseMockData, jobActions = {} }) {
     const isSlurm = profile?.schema === "slurm";
     const [currentPage, setCurrentPage] = useState(1);
     // See JobResultsTable: a page short enough to fit without scrolling makes
@@ -344,7 +344,7 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
                                         <StatusBadge
                                             status={job.status}
                                             errored={job.errored}
-                                            pulse={jobActionInProgress === job.id}
+                                            pulse={Boolean(jobActions[job.id])}
                                         />
                                     </td>
                                     <td className="whitespace-nowrap py-3 px-3 text-left text-sm text-gray-900 dark:text-gray-100">
@@ -399,7 +399,8 @@ JobsTable.propTypes = {
     profile: PropTypes.object,
     useMockData: PropTypes.bool,
     setUseMockData: PropTypes.func,
-    jobActionInProgress: PropTypes.string,
+    // job id -> action in flight for it ("stop" | "resume" | "delete").
+    jobActions: PropTypes.objectOf(PropTypes.string),
 };
 
 export default JobsTable;

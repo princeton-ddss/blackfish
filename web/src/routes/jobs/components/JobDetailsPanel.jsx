@@ -115,7 +115,7 @@ ProgressBar.propTypes = {
     total: PropTypes.number,
 };
 
-function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActionInProgress }) {
+function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActions = {} }) {
     if (!job) {
         return (
             <div className="bg-white dark:bg-gray-800 p-6 h-full flex flex-col justify-center">
@@ -136,6 +136,9 @@ function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActionIn
     // total is null before the job's first observation: no denominator to show.
     const pending = total === null ? 0 : total - done - failed;
     const reason = terminalReason(job);
+    // Any action in flight for this job blocks its other actions and marks the
+    // status unsettled — regardless of which action it is.
+    const actionInFlight = Boolean(jobActions[job.id]);
     const restarts = Number(job.restarts) || 0;
 
     return (
@@ -154,41 +157,41 @@ function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActionIn
                     <StatusBadge
                         status={job.status}
                         errored={job.errored}
-                        pulse={jobActionInProgress === job.id}
+                        pulse={actionInFlight}
                     />
                     <div className="flex items-center gap-0.5">
                         {isBatchJobActive(job.status) && onStopJob && (
                             <button
                                 type="button"
                                 onClick={() => onStopJob(job)}
-                                disabled={jobActionInProgress === job.id}
+                                disabled={actionInFlight}
                                 aria-label="Stop job"
                                 className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
                             >
-                                <StopIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
+                                <StopIcon className={`h-5 w-5 ${actionInFlight ? "animate-pulse" : ""}`} />
                             </button>
                         )}
                         {isBatchJobResumable(job.status) && onResumeJob && (
                             <button
                                 type="button"
                                 onClick={() => onResumeJob(job)}
-                                disabled={jobActionInProgress === job.id}
+                                disabled={actionInFlight}
                                 aria-label="Resume job"
                                 title="Resume job"
                                 className="p-1.5 rounded-md text-gray-500 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
                             >
-                                <PlayIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
+                                <PlayIcon className={`h-5 w-5 ${actionInFlight ? "animate-pulse" : ""}`} />
                             </button>
                         )}
                         {!isBatchJobActive(job.status) && onDeleteJob && (
                             <button
                                 type="button"
                                 onClick={() => onDeleteJob(job)}
-                                disabled={jobActionInProgress === job.id}
+                                disabled={actionInFlight}
                                 aria-label="Delete job"
                                 className="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
                             >
-                                <TrashIcon className={`h-5 w-5 ${jobActionInProgress === job.id ? "animate-pulse" : ""}`} />
+                                <TrashIcon className={`h-5 w-5 ${actionInFlight ? "animate-pulse" : ""}`} />
                             </button>
                         )}
                     </div>
@@ -399,7 +402,8 @@ JobDetailsPanel.propTypes = {
     onStopJob: PropTypes.func,
     onResumeJob: PropTypes.func,
     onDeleteJob: PropTypes.func,
-    jobActionInProgress: PropTypes.string,
+    // job id -> action in flight for it ("stop" | "resume" | "delete").
+    jobActions: PropTypes.objectOf(PropTypes.string),
 };
 
 export default JobDetailsPanel;

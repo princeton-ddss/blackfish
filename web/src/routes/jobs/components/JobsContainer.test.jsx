@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
@@ -125,6 +125,52 @@ describe("JobsContainer resume outcomes", () => {
       expect(
         screen.queryByText("Resumed Batch Translation."),
       ).not.toBeInTheDocument(),
+    );
+  });
+});
+
+describe("JobsContainer concurrent actions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // Regression test for #443: in-flight state used to be a single job id, so
+  // starting an action on a second job cleared the first job's, un-pulsing its
+  // badge and re-enabling its buttons while its request was still outstanding.
+  test("keeps a job's in-flight state when another job's action starts", async () => {
+    const jobA = { ...STOPPED_JOB, id: "job-A", name: "Job A" };
+    const jobB = { ...STOPPED_JOB, id: "job-B", name: "Job B" };
+
+    let finishA;
+    resumeJob
+      .mockImplementationOnce(() => new Promise((resolve) => { finishA = resolve; }))
+      .mockResolvedValueOnce({ id: "job-B", status: "resubmitted" });
+
+    const user = userEvent.setup();
+    renderContainer([jobA, jobB]);
+
+    // The selected job's name also appears in the details panel, so scope row
+    // lookups to the table.
+    const rowFor = (name) =>
+      within(screen.getByRole("table")).getByText(name).closest("tr");
+    const badgeFor = (name) => within(rowFor(name)).getByText("Stopped");
+
+    // Start A's resume; it stays pending.
+    await user.click(rowFor("Job A"));
+    await user.click(await screen.findByLabelText("Resume job"));
+    expect(badgeFor("Job A")).toHaveClass("animate-pulse");
+
+    // Start B's resume and let it finish.
+    await user.click(rowFor("Job B"));
+    await user.click(await screen.findByLabelText("Resume job"));
+    expect(await screen.findByText("Resumed Job B.")).toBeInTheDocument();
+
+    // A is still waiting, so its badge must still say so.
+    expect(badgeFor("Job A")).toHaveClass("animate-pulse");
+
+    finishA({ id: "job-A", status: "resubmitted" });
+    await waitFor(() =>
+      expect(badgeFor("Job A")).not.toHaveClass("animate-pulse"),
     );
   });
 });

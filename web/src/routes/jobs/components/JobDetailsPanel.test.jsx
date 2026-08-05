@@ -168,8 +168,13 @@ describe("JobDetailsPanel resume action", () => {
   });
 
   test("disables Resume while an action is in flight for that job", () => {
-    renderPanel("stopped", { jobActionInProgress: "job-001" });
+    renderPanel("stopped", { jobActions: { "job-001": "resume" } });
     expect(screen.getByLabelText("Resume job")).toBeDisabled();
+  });
+
+  test("stays enabled while a different job's action is in flight", () => {
+    renderPanel("stopped", { jobActions: { "job-002": "stop" } });
+    expect(screen.getByLabelText("Resume job")).toBeEnabled();
   });
 
   test("omits Resume when no handler is supplied", () => {

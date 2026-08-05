@@ -7,17 +7,16 @@ Before releasing a new version, ensure you have completed the following:
 ### Pre-Release
 - [ ] All PRs for this release are merged to main
 - [ ] CI is green on main branch
-- [ ] Coverage badge is up to date
 
 ### Version Bump
 - [ ] Update version in `lib/pyproject.toml`
 - [ ] Update version in `web/package.json` (keep in sync)
-- [ ] Update CHANGELOG if maintained
 
 ### Testing
 - [ ] Full test suite passes
   - Python: `cd lib && uv run just test`
   - Frontend: `cd web && npm test`
+- [ ] Update coverage badge: `cd lib && uv run coverage`
 - [ ] Manual smoke test of key features
 
 ### Documentation

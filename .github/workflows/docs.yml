@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Configure Git Credentials
         run: |
           git config user.name github-actions[bot]
@@ -35,7 +35,7 @@ jobs:
         run: |
           git fetch origin
           git checkout ${{ github.event.pull_request.head.ref }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.x
       - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag mike
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Configure Git Credentials
         run: |
           git config user.name github-actions[bot]
@@ -56,7 +56,7 @@ jobs:
         run: |
           git fetch origin
           git checkout ${{ github.ref_name }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.x
       - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag mike

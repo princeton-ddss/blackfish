@@ -1097,6 +1097,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#resume-resume-a-batch-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        resume - Resume a batch job
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rm-delete-a-batch-job" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1839,6 +1850,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#resume-resume-a-batch-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        resume - Resume a batch job
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rm-delete-a-batch-job" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2241,7 +2263,9 @@ refreshed by listing jobs. The Blackfish UI lists jobs on an interval, so under 
 happen on their own. From the CLI, run <code>blackfish batch ls</code> to refresh — that check is what
 resubmits a walltime-killed job that still has work to do.</p>
 <p>A job that stops making progress across restarts (e.g. an input that always fails to process) is
-halted and reported as <code>STALLED</code>; one that exhausts its restart budget is reported as <code>EXHAUSTED</code>.</p>
+halted and reported as <code>STALLED</code>; one that exhausts its restart budget is reported as <code>EXHAUSTED</code>.
+Either can be put back into the restart loop with <a href="#resume-resume-a-batch-job"><code>resume</code></a> once the
+underlying problem is addressed.</p>
 <h3 id="ls-list-batch-jobs"><code>ls</code> - List batch jobs</h3>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>ls
 </span></code></pre></div>
@@ -2253,14 +2277,25 @@ remaining (see <a href="#walltime-and-restarts">Walltime and restarts</a>).</p>
 </span></code></pre></div>
 <p>Stops a running batch job and cancels its Slurm allocation. Partial results already written to the
 output directory are preserved.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Stopping a job is final. A stopped job is never resubmitted, even if files remain unprocessed —
-there is no resume-after-stop. To finish the remaining files, submit a new job pointed at the
-same output directory; already-finished files are skipped.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A stopped job is never resubmitted on its own — the restart loop does not pick it back up. To
+finish the remaining files, use <a href="#resume-resume-a-batch-job"><code>resume</code></a>.</p>
 </div>
+<h3 id="resume-resume-a-batch-job"><code>resume</code> - Resume a batch job</h3>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>resume<span class="w"> </span>&lt;job-id&gt;
+</span></code></pre></div>
+<p>Puts a terminal job back into the restart loop by resubmitting its allocation against the same
+output directory. Already-finished files are skipped, so the job continues where it left off — and
+picks up any inputs added to the input directory in the meantime.</p>
+<p>Only <strong>stopped</strong>, <strong>stalled</strong>, and <strong>exhausted</strong> jobs can be resumed. A <strong>broken</strong> job cannot: that
+status marks a metadata or configuration error whose cause has to be fixed first, and resubmitting
+would just reproduce it.</p>
+<p>Resuming resets the restart counters, so a job that exhausted its restart budget gets a fresh one.
+The input directory is re-checked first, so resuming a job whose inputs have since been deleted or
+moved fails immediately rather than inside the allocation.</p>
 <h3 id="rm-delete-a-batch-job"><code>rm</code> - Delete a batch job</h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>rm<span class="w"> </span>&lt;job-id&gt;
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>blackfish<span class="w"> </span>batch<span class="w"> </span>rm<span class="w"> </span>&lt;job-id&gt;
 </span></code></pre></div>
 <p>Removes a batch job record from Blackfish's internal database.</p>
 <div class="footnote">

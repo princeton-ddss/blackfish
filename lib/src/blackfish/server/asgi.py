@@ -9,7 +9,11 @@ import os
 from os import urandom
 import json
 import httpx
-from blackfish.server.http_client import create_http_client, STREAM_TIMEOUT
+from blackfish.server.http_client import (
+    create_http_client,
+    PROXY_TIMEOUT,
+    STREAM_TIMEOUT,
+)
 from datetime import datetime
 from dataclasses import dataclass
 from collections.abc import AsyncGenerator
@@ -1806,9 +1810,13 @@ async def delete_job(
 
 
 async def asyncpost(
-    client: httpx.AsyncClient, url: str, data: Any, headers: Any
+    client: httpx.AsyncClient,
+    url: str,
+    data: Any,
+    headers: Any,
+    timeout: Any = httpx.USE_CLIENT_DEFAULT,
 ) -> Any:
-    response = await client.post(url, content=data, headers=headers)
+    response = await client.post(url, content=data, headers=headers, timeout=timeout)
     return response.json()
 
 
@@ -1870,12 +1878,23 @@ async def proxy_service(
 
         return Stream(generator)
     else:
-        res = await asyncpost(
-            state.http_client,
-            url,
-            json.dumps(data),
-            {"Content-Type": "application/json"},
-        )
+        try:
+            res = await asyncpost(
+                state.http_client,
+                url,
+                json.dumps(data),
+                {"Content-Type": "application/json"},
+                timeout=PROXY_TIMEOUT,
+            )
+        except httpx.ReadTimeout:
+            raise HTTPException(
+                status_code=504,
+                detail=(
+                    "The service took too long to respond. This can happen "
+                    "when running inference on CPU (no GPU); try a shorter "
+                    "audio clip or a GPU-backed service."
+                ),
+            )
         return res
 
 

@@ -544,6 +544,25 @@ export function coerceParamValue(task, paramName, value) {
   return value;
 }
 
+// The initial taskParams for a task: each param's declared default, plus the
+// default prompt for tasks that require a prompt but have no server-side one.
+// A dropped default here (e.g. OCR's output_format="text") submits a null
+// output_ext and makes tigerflow fall back to its ".out" default, which the
+// task rejects — so the modal must always re-seed these when it opens.
+export function getDefaultTaskParams(task) {
+  if (!task) return {};
+  const defaults = {};
+  task.params.forEach((param) => {
+    if (param.default !== undefined) {
+      defaults[param.name] = param.default;
+    }
+  });
+  if (task.promptRequired && task.defaultPrompt) {
+    defaults.prompt = task.defaultPrompt;
+  }
+  return defaults;
+}
+
 // Translate exposes a single "Source Language" dropdown, but the image has two
 // params: an optional explicit source_lang and an auto_lang_detect boolean.
 // "auto" (not a valid language code) means "detect per file"; a real code is
@@ -848,23 +867,13 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     }
   }, [open]);
 
-  // Initialize task params when task changes
+  // Seed task param defaults on every open, not just when `task` changes: the
+  // reset effect above clears taskParams to {} on open, and `task` is a stable
+  // reference, so reopening the same task would otherwise leave defaults unset.
   useEffect(() => {
-    if (!task) return;
-    const defaults = {};
-    task.params.forEach((param) => {
-      if (param.default !== undefined) {
-        defaults[param.name] = param.default;
-      }
-    });
-    // A required prompt has no server-side default, so seed the field with the
-    // task's default prompt rather than leaving it blank (which would submit an
-    // empty required param).
-    if (task.promptRequired && task.defaultPrompt) {
-      defaults.prompt = task.defaultPrompt;
-    }
-    setTaskParams(defaults);
-  }, [task]);
+    if (!open || !task) return;
+    setTaskParams(getDefaultTaskParams(task));
+  }, [open, task]);
 
   // Auto-detect language pair from model name for translation task
   useEffect(() => {

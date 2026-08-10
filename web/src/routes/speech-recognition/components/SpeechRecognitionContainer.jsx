@@ -41,16 +41,30 @@ function SpeechRecognitionContainer({
         true,
         controller.signal,
       );
+      // A cancelled request's fetch can still resolve successfully after
+      // abort() (the work was already in flight); its stale result must not
+      // repopulate the box. Check the signal directly so this holds whether or
+      // not a newer request has since replaced abortRef.
+      if (controller.signal.aborted) return;
       setOutput(res.text.trim());
     } catch (err) {
       // A cancelled request is expected — leave the output untouched. Surface a
       // real failure (network error, service returned an error) to the user.
       if (err.name !== "AbortError") {
         console.error("Transcription error:", err);
-        setError({
-          message: "Transcription failed",
-          detail: err.message || "The service may be unavailable.",
-        });
+        if (err.status === 504) {
+          setError({
+            message: "Transcription timed out",
+            detail:
+              "The service took too long to respond. This is common on CPU " +
+              "(no GPU) — try a shorter audio clip or a GPU-backed service.",
+          });
+        } else {
+          setError({
+            message: "Transcription failed",
+            detail: err.message || "The service may be unavailable.",
+          });
+        }
       }
     } finally {
       unregister();

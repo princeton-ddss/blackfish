@@ -565,6 +565,7 @@ COMPATIBLE_PIPELINES: dict[str, list[str]] = {
         "audio-text-to-text",
         "video-text-to-text",
         "image-to-text",
+        "any-to-any",
     ],
     "object-detection": [
         "object-detection",

@@ -3,6 +3,7 @@ import { describe, test, expect } from "vitest";
 import {
   TASKS,
   coerceParamValue,
+  getDefaultTaskParams,
   isParamVisible,
   applyTranslateSourceLang,
   buildJobResources,
@@ -40,6 +41,34 @@ describe("coerceParamValue", () => {
 
   test("returns the raw value for an unknown param", () => {
     expect(coerceParamValue(detect, "not_a_param", "x")).toBe("x");
+  });
+});
+
+describe("getDefaultTaskParams", () => {
+  const ocr = TASKS.find((t) => t.id === "ocr");
+
+  test("seeds every param that declares a default", () => {
+    // The modal re-seeds these on each open. A dropped default (the bug: OCR's
+    // output_format="text") submits output_ext=null, so tigerflow falls back to
+    // ".out" and errors every file.
+    const defaults = getDefaultTaskParams(ocr);
+    for (const param of ocr.params) {
+      if (param.default !== undefined) {
+        expect(defaults[param.name]).toBe(param.default);
+      }
+    }
+  });
+
+  test("seeds output_format for OCR (regression for the .out default)", () => {
+    expect(getDefaultTaskParams(ocr).output_format).toBe("text");
+  });
+
+  test("seeds the default prompt for prompt-required tasks", () => {
+    expect(getDefaultTaskParams(ocr).prompt).toBe(ocr.defaultPrompt);
+  });
+
+  test("returns an empty object for a null task", () => {
+    expect(getDefaultTaskParams(null)).toEqual({});
   });
 });
 

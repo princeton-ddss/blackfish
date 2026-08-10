@@ -21,7 +21,17 @@ export async function callSpeechRecognitionInference(service, audioPath, params,
     signal,
   });
   if (!res.ok) {
-    throw new Error("Failed to call the service"); // activate the closest `error.js` Error Boundary
+    // Preserve the backend's status and message so callers can distinguish a
+    // timeout (504) from other failures and show an actionable message.
+    let detail;
+    try {
+      detail = (await res.json()).detail;
+    } catch {
+      // Response had no JSON body; fall back to a generic message below.
+    }
+    const err = new Error(detail || "Failed to call the service");
+    err.status = res.status;
+    throw err;
   }
 
   return res.json();

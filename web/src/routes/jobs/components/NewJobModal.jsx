@@ -870,6 +870,8 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   // Seed task param defaults on every open, not just when `task` changes: the
   // reset effect above clears taskParams to {} on open, and `task` is a stable
   // reference, so reopening the same task would otherwise leave defaults unset.
+  // Both effects run on open, but this one is a full overwrite (not a merge),
+  // so their order does not matter — this always produces the complete defaults.
   useEffect(() => {
     if (!open || !task) return;
     setTaskParams(getDefaultTaskParams(task));

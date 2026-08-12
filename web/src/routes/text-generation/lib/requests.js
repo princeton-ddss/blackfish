@@ -1,22 +1,8 @@
 import { blackfishApiURL } from "@/config";
+import { parseErrorResponse as parseError } from "@/lib/requests";
 
-/**
- * Parse an error response from a streaming request.
- * @param {Response} res - The fetch response object.
- * @returns {Promise<Error>} An error with the parsed message and status code.
- */
-async function parseErrorResponse(res) {
-  let errorMessage = "Stream request failed.";
-  try {
-    const errorBody = await res.json();
-    errorMessage = errorBody.detail || errorBody.message || errorMessage;
-  } catch {
-    // Response body may not be JSON
-  }
-  const error = new Error(errorMessage);
-  error.status = res.status;
-  return error;
-}
+/** Parse an error response from a streaming request. */
+const parseErrorResponse = (res) => parseError(res, "Stream request failed.");
 
 /**
  * Parse a single SSE chunk from a streaming response.

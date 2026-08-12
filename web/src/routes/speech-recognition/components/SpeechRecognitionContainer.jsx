@@ -55,9 +55,11 @@ function SpeechRecognitionContainer({
         if (err.status === 504) {
           setError({
             message: "Transcription timed out",
+            // Reuse the backend's detail so the guidance stays in one place.
             detail:
-              "The service took too long to respond. This is common on CPU " +
-              "(no GPU) — try a shorter audio clip or a GPU-backed service.",
+              err.message ||
+              "The service took too long to respond. This is common on " +
+                "CPU (no GPU) — try a shorter audio clip or a GPU-backed service.",
           });
         } else {
           setError({

@@ -1886,7 +1886,7 @@ async def proxy_service(
                 {"Content-Type": "application/json"},
                 timeout=PROXY_TIMEOUT,
             )
-        except httpx.ReadTimeout:
+        except httpx.ReadTimeout as e:
             raise HTTPException(
                 status_code=504,
                 detail=(
@@ -1894,7 +1894,7 @@ async def proxy_service(
                     "when running inference on CPU (no GPU); try a shorter "
                     "audio clip or a GPU-backed service."
                 ),
-            )
+            ) from e
         return res
 
 

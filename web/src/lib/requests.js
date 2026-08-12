@@ -1,6 +1,27 @@
 import { blackfishApiURL } from "../config";
 import { dirname } from "./pathUtils";
 
+/**
+ * Parse an error response into an Error carrying the backend's message and
+ * status, so callers can distinguish failures (e.g. a 504 timeout) and reuse
+ * the server-provided detail rather than hardcoding their own copy.
+ * @param {Response} res - The fetch response object.
+ * @param {string} [fallback] - Message to use when the body has no JSON detail.
+ * @returns {Promise<Error>} An error with `.message` and `.status` set.
+ */
+export async function parseErrorResponse(res, fallback = "Request failed.") {
+  let message = fallback;
+  try {
+    const errorBody = await res.json();
+    message = errorBody.detail || errorBody.message || fallback;
+  } catch {
+    // Response body may not be JSON; keep the fallback message.
+  }
+  const error = new Error(message);
+  error.status = res.status;
+  return error;
+}
+
 /* Return a list of local files with resolved path */
 export async function fetchFiles(path) {
   const res = await fetch(`${blackfishApiURL}/api/${path}`)

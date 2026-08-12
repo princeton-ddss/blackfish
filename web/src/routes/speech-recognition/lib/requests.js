@@ -1,4 +1,5 @@
 import { blackfishApiURL } from "@/config";
+import { parseErrorResponse } from "@/lib/requests";
 
 /** Call a service with given ID. Pass `signal` to allow cancellation. */
 export async function callSpeechRecognitionInference(service, audioPath, params, use_proxy=false, signal=undefined) {
@@ -23,15 +24,7 @@ export async function callSpeechRecognitionInference(service, audioPath, params,
   if (!res.ok) {
     // Preserve the backend's status and message so callers can distinguish a
     // timeout (504) from other failures and show an actionable message.
-    let detail;
-    try {
-      detail = (await res.json()).detail;
-    } catch {
-      // Response had no JSON body; fall back to a generic message below.
-    }
-    const err = new Error(detail || "Failed to call the service");
-    err.status = res.status;
-    throw err;
+    throw await parseErrorResponse(res, "Failed to call the service");
   }
 
   return res.json();

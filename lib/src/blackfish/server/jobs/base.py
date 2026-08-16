@@ -5,7 +5,7 @@ import os
 import shlex
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import yaml
 from advanced_alchemy.base import UUIDAuditBase
@@ -128,15 +128,16 @@ def format_status(status: BatchJobStatus | None) -> str:
 
 
 def _resolve_image_and_provider(
-    app_config: "State | BlackfishConfig",
-    profile: "BlackfishProfile | None",
+    app_config: State | BlackfishConfig,
+    profile: BlackfishProfile | None,
 ) -> tuple[Any, Any]:
     """Resolve the tigerflow-ml ImageSpec and container provider.
 
     The cluster runs Apptainer, so only a LocalProfile consults the locally
     detected ``CONTAINER_PROVIDER``; everything else is Apptainer.
     """
-    from blackfish.server.config import ContainerProvider, config as _config
+    from blackfish.server.config import ContainerProvider
+    from blackfish.server.config import config as _config
 
     images = getattr(app_config, "IMAGES", None) or _config.IMAGES
 
@@ -154,7 +155,7 @@ def _resolve_image_and_provider(
 
 def create_tigerflow_client_for_profile(
     profile_name: str,
-    app_config: "State | BlackfishConfig",
+    app_config: State | BlackfishConfig,
 ) -> TigerFlowClient:
     """Create a TigerFlowClient for a profile.
 
@@ -190,8 +191,8 @@ def create_tigerflow_client_for_profile(
 
 
 def create_tigerflow_client(
-    job: "BatchJob",
-    app_config: "State | BlackfishConfig",
+    job: BatchJob,
+    app_config: State | BlackfishConfig,
 ) -> TigerFlowClient:
     """Create a TigerFlowClient for a batch job.
 
@@ -240,39 +241,39 @@ class BatchJob(UUIDAuditBase):
     name: Mapped[str]
     task: Mapped[str]  # e.g., "transcribe", "detect"
     repo_id: Mapped[str]  # Model ID (e.g., "openai/whisper-large-v3")
-    revision: Mapped[Optional[str]]  # Model revision/version
+    revision: Mapped[str | None]  # Model revision/version
 
     # Data paths and file types
     input_dir: Mapped[str]  # Input directory on cluster
     output_dir: Mapped[str]  # Output directory on cluster
-    input_ext: Mapped[Optional[str]]  # Input file extension (e.g., ".wav")
-    output_ext: Mapped[Optional[str]]  # Output file extension (e.g., ".json")
-    cache_dir: Mapped[Optional[str]]  # Model cache directory on cluster
+    input_ext: Mapped[str | None]  # Input file extension (e.g., ".wav")
+    output_ext: Mapped[str | None]  # Output file extension (e.g., ".json")
+    cache_dir: Mapped[str | None]  # Model cache directory on cluster
 
     # Configuration (stored as JSON)
-    params: Mapped[Optional[dict[str, Any]]] = mapped_column(
+    params: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, default=None
     )
-    resources: Mapped[Optional[dict[str, Any]]] = mapped_column(
+    resources: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, default=None
     )
     max_workers: Mapped[int] = mapped_column(default=1)
-    idle_timeout: Mapped[Optional[int]] = mapped_column(default=None)  # minutes
+    idle_timeout: Mapped[int | None] = mapped_column(default=None)  # minutes
 
     # Profile info (denormalized for convenience)
     profile: Mapped[str]
-    user: Mapped[Optional[str]]
-    host: Mapped[Optional[str]]
-    home_dir: Mapped[Optional[str]]
+    user: Mapped[str | None]
+    host: Mapped[str | None]
+    home_dir: Mapped[str | None]
 
     # Job state
-    status: Mapped[Optional[BatchJobStatus]]
-    pid: Mapped[Optional[str]]  # Slurm job ID of the current allocation
+    status: Mapped[BatchJobStatus | None]
+    pid: Mapped[str | None]  # Slurm job ID of the current allocation
 
     # Progress tracking
-    staged: Mapped[Optional[int]]  # Items remaining (total - finished - errored)
-    finished: Mapped[Optional[int]]  # Successfully processed
-    errored: Mapped[Optional[int]]  # Failed items (transient; reset each run)
+    staged: Mapped[int | None]  # Items remaining (total - finished - errored)
+    finished: Mapped[int | None]  # Successfully processed
+    errored: Mapped[int | None]  # Failed items (transient; reset each run)
 
     # Restart bookkeeping
     restarts: Mapped[int] = mapped_column(default=0)
@@ -284,8 +285,8 @@ class BatchJob(UUIDAuditBase):
     processed_highwater: Mapped[int] = mapped_column(default=0)
 
     # TigerFlow versions (for reproducibility)
-    tigerflow_version: Mapped[Optional[str]]
-    tigerflow_ml_version: Mapped[Optional[str]]
+    tigerflow_version: Mapped[str | None]
+    tigerflow_ml_version: Mapped[str | None]
 
     def __repr__(self) -> str:
         return f"<BatchJob(name={self.name}, task={self.task}, status={self.status})>"
@@ -339,7 +340,7 @@ class BatchJob(UUIDAuditBase):
             account=res.get("account"),
         )
 
-    def _is_slurm(self, profile: "BlackfishProfile | None") -> bool:
+    def _is_slurm(self, profile: BlackfishProfile | None) -> bool:
         """Whether this job runs under Slurm (sbatch), independent of transport.
 
         Determined by profile *type*: a ``SlurmProfile`` uses Slurm even when
@@ -349,7 +350,7 @@ class BatchJob(UUIDAuditBase):
         """
         return isinstance(profile, SlurmProfile)
 
-    def _render_script(self, app_config: "State | BlackfishConfig") -> str:
+    def _render_script(self, app_config: State | BlackfishConfig) -> str:
         """Render the batch launch script for this job."""
         profile = deserialize_profile(app_config.HOME_DIR, self.profile)
         if profile is None:
@@ -381,7 +382,7 @@ class BatchJob(UUIDAuditBase):
             else DEFAULT_IDLE_TIMEOUT,
         )
 
-    async def _submit(self, app_config: "State | BlackfishConfig") -> str:
+    async def _submit(self, app_config: State | BlackfishConfig) -> str:
         """Render, stage, and launch the batch script.
 
         The launch mechanism is chosen by profile *type* (Slurm → ``sbatch``,
@@ -441,7 +442,7 @@ class BatchJob(UUIDAuditBase):
 
     async def start(
         self,
-        app_config: "State | BlackfishConfig",
+        app_config: State | BlackfishConfig,
         client: TigerFlowClient,
     ) -> None:
         """Start the batch job by submitting a containerized Slurm allocation.
@@ -529,7 +530,7 @@ class BatchJob(UUIDAuditBase):
 
     async def resume(
         self,
-        app_config: "State | BlackfishConfig",
+        app_config: State | BlackfishConfig,
         client: TigerFlowClient,
     ) -> None:
         """Put a terminal job back into the restart loop.
@@ -743,7 +744,7 @@ class BatchJob(UUIDAuditBase):
     async def poll(
         self,
         client: TigerFlowClient,
-        app_config: "State | BlackfishConfig",
+        app_config: State | BlackfishConfig,
     ) -> BatchJobStatus:
         """Refresh status and advance the restart loop when the allocation has
         ended with work remaining.
@@ -779,6 +780,15 @@ class BatchJob(UUIDAuditBase):
             or status in _TERMINAL_STATUSES
             or total is None
         ):
+            # Pipeline finished before walltime: the allocation is still
+            # holding resources. The explicit stop() path reaps it; a natural
+            # completion never goes through stop(), so do it here at the
+            # transition edge.
+            if (
+                status == BatchJobStatus.STOPPED
+                and self.status != BatchJobStatus.STOPPED
+            ):
+                await self._cancel_allocation()
             self.status = status
             return status
 

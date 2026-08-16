@@ -1,9 +1,9 @@
 """Unit tests for BatchJob orchestration logic."""
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
 from uuid import UUID
 
+import pytest
 from blackfish.server.config import ContainerProvider
 from blackfish.server.images import DEFAULT_IMAGES
 from blackfish.server.job import JobState
@@ -16,21 +16,20 @@ from blackfish.server.jobs.base import (
 )
 from blackfish.server.jobs.client import (
     TigerFlowClient,
+    TigerFlowError,
+    TigerFlowPipelineProgress,
+    TigerFlowProgress,
     TigerFlowReport,
     TigerFlowReportStatus,
-    TigerFlowProgress,
-    TigerFlowPipelineProgress,
-    TigerFlowError,
     TigerFlowVersions,
 )
 from blackfish.server.jobs.tasks import (
-    is_supported_task,
-    get_task_library,
     build_pipeline_config,
     get_default_input_ext,
     get_default_output_ext,
+    get_task_library,
+    is_supported_task,
 )
-
 
 pytestmark = pytest.mark.anyio
 
@@ -264,6 +263,33 @@ class TestBatchJobUpdate:
         assert result == BatchJobStatus.STOPPED
         assert job.finished == 10
         submit.assert_not_called()
+
+    @patch("blackfish.server.jobs.base.remote")
+    async def test_poll_cancels_allocation_on_natural_completion(
+        self, mock_remote: Mock
+    ) -> None:
+        """Pipeline finished before walltime while Slurm state is still alive:
+        poll must scancel the allocation. Otherwise the UI hides the Stop
+        button (status=STOPPED) but the Slurm job keeps holding GPUs."""
+        mock_remote.run = AsyncMock()
+        job = create_test_batch_job(
+            status=BatchJobStatus.RUNNING, host="localhost", pid="4242"
+        )
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=10, in_progress=0, staged=None, errored=0
+        )
+        _drive_update(job, total=10, slurm_state=JobState.RUNNING)
+
+        result = await job.poll(client, MockAppConfig())
+
+        assert result == BatchJobStatus.STOPPED
+        assert mock_remote.run.await_count == 1  # scancel issued
+
+        # A subsequent poll on the already-STOPPED job must not re-scancel.
+        mock_remote.run.reset_mock()
+        await job.poll(client, MockAppConfig())
+        mock_remote.run.assert_not_called()
 
     async def test_update_resubmits_when_ended_with_progress(self) -> None:
         """Allocation ended, progress advanced, under budget -> resubmit +
@@ -834,8 +860,8 @@ class TestCreateTigerflowClientForProfile:
     @patch("blackfish.server.jobs.base.deserialize_profile")
     def test_creates_ssh_runner_for_slurm_profile(self, mock_deserialize: Mock) -> None:
         """Should create SSHRunner for SlurmProfile."""
-        from blackfish.server.models.profile import SlurmProfile
         from blackfish.server.jobs.client import SSHRunner
+        from blackfish.server.models.profile import SlurmProfile
 
         mock_profile = SlurmProfile(
             name="test-slurm",
@@ -858,8 +884,8 @@ class TestCreateTigerflowClientForProfile:
         self, mock_deserialize: Mock
     ) -> None:
         """Should create LocalRunner for LocalProfile."""
-        from blackfish.server.models.profile import LocalProfile
         from blackfish.server.jobs.client import LocalRunner
+        from blackfish.server.models.profile import LocalProfile
 
         mock_profile = LocalProfile(
             name="test-local",

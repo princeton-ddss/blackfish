@@ -715,6 +715,26 @@ class TestCreateModelAPI:
         # Same model ID returned
         assert model1["id"] == model2["id"]
 
+    async def test_create_model_concurrent_idempotent(self, client: AsyncTestClient):
+        """Two concurrent POSTs with the same (repo, profile, revision) must
+        both succeed with the same id. Under the pre-fix behaviour both
+        requests passed the check-then-insert guard and the loser surfaced
+        an IntegrityError (500) after the UNIQUE constraint landed."""
+        data = {
+            "repo": "concurrent-org/concurrent-model",
+            "profile": "default",
+            "revision": "v1.0",
+            "image": "text-generation",
+            "model_dir": "/tmp/models/concurrent-org--concurrent-model",
+        }
+        r1, r2 = await asyncio.gather(
+            client.post("/api/models", json=data),
+            client.post("/api/models", json=data),
+        )
+        assert r1.status_code == 201, r1.text
+        assert r2.status_code == 201, r2.text
+        assert r1.json()["id"] == r2.json()["id"]
+
 
 class TestDownloadModelAPI:
     """Test cases for the POST /api/models/download endpoint."""

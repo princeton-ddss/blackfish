@@ -1880,6 +1880,57 @@ async def proxy_service(
         return res
 
 
+_MODEL_UNIQUE_CONSTRAINT = "uq_model_repo_profile_revision"
+
+
+def _is_model_unique_violation(exc: IntegrityError) -> bool:
+    """True if ``exc`` is the (repo, profile, revision) uniqueness violation.
+
+    Narrower than a bare ``except IntegrityError`` so a future NOT NULL or FK
+    constraint won't be silently misdiagnosed as a raced insert.
+    """
+    orig = getattr(exc, "orig", None)
+    return orig is not None and _MODEL_UNIQUE_CONSTRAINT in str(orig)
+
+
+async def _insert_or_return_existing_model(
+    session: AsyncSession, model: Model
+) -> Model:
+    """Insert ``model`` inside a savepoint, or return the row a concurrent
+    caller inserted first.
+
+    Both call sites that create ``Model`` rows outside of ``get_models`` are
+    check-then-insert against ``(repo, profile, revision)``. Before the
+    ``uq_model_repo_profile_revision`` constraint existed the loser of a race
+    silently added a duplicate row; now the loser gets an ``IntegrityError``
+    that would otherwise surface as a 500 or a spurious download failure.
+    Re-query on the constraint violation so those call sites keep the
+    idempotent behavior their callers expect.
+    """
+    try:
+        async with session.begin_nested():
+            session.add(model)
+            await session.flush()
+        return model
+    except IntegrityError as e:
+        if not _is_model_unique_violation(e):
+            raise
+        existing = (
+            await session.execute(
+                sa.select(Model).where(
+                    Model.repo == model.repo,
+                    Model.profile == model.profile,
+                    Model.revision == model.revision,
+                )
+            )
+        ).scalar_one()
+        logger.warning(
+            f"Concurrent write already added {model.repo}@{model.revision} "
+            f"for profile {model.profile}; returning the winning row."
+        )
+        return existing
+
+
 @get("/api/models", guards=ENDPOINT_GUARDS)
 async def get_models(
     session: AsyncSession,
@@ -1958,22 +2009,10 @@ async def get_models(
                 m.image = hub_image
                 m.metadata_ = metadata_dict
 
-                # Insert inside a savepoint. A concurrent refresh may have
-                # inserted the same (repo, profile, revision) between our DB
-                # read and this write; the UNIQUE constraint turns that into
-                # an IntegrityError on the losing insert. Rolling back only
-                # the savepoint (not the outer transaction) lets us skip the
-                # duplicate and continue with the rest. Adding inside the
-                # savepoint keeps the session's identity map clean on rollback.
-                try:
-                    async with session.begin_nested():
-                        session.add(m)
-                        await session.flush()
-                except IntegrityError:
-                    logger.warning(
-                        f"Concurrent refresh already added {m.repo}@{m.revision} "
-                        f"for profile {m.profile}; skipping duplicate insert."
-                    )
+                # A concurrent refresh may have inserted the same
+                # (repo, profile, revision) between our DB read and this
+                # write; treat the winning row as authoritative and continue.
+                await _insert_or_return_existing_model(session, m)
 
         # 5. Update existing models with missing metadata
         to_update = [
@@ -2087,9 +2126,11 @@ async def create_model(data: CreateModelRequest, session: AsyncSession) -> Model
         model_dir=data.model_dir,
         metadata_=data.metadata_,
     )
-    session.add(model)
-    await session.flush()  # Populate ID before returning
-    return model
+    # A concurrent create_model (e.g. two CLI re-runs, or a create_model
+    # racing a refresh scan) may have inserted the same row between the
+    # check above and this write. The helper turns the resulting
+    # IntegrityError into the winning row so the endpoint stays idempotent.
+    return await _insert_or_return_existing_model(session, model)
 
 
 @delete("/api/models/{model_id:str}", guards=ENDPOINT_GUARDS)
@@ -2552,9 +2593,11 @@ async def _run_download_task(
             add_model, repo_id, profile, revision, use_cache
         )
 
-        # Add model to database
+        # Add model to database. A concurrent refresh or download of the
+        # same (repo, profile, revision) may race with our check-then-insert;
+        # the helper catches the IntegrityError and returns the winning row
+        # so the download isn't marked FAILED just because someone else won.
         async with async_session_factory() as session:
-            # Check if model already exists
             query = sa.select(Model).where(
                 Model.repo == repo_id,
                 Model.profile == profile.name,
@@ -2565,9 +2608,9 @@ async def _run_download_task(
             if existing:
                 completed_model_id = existing.id
             else:
-                session.add(new_model)
+                persisted = await _insert_or_return_existing_model(session, new_model)
                 await session.commit()
-                completed_model_id = new_model.id
+                completed_model_id = persisted.id
 
         await update_task_status(DownloadStatus.COMPLETED, model_id=completed_model_id)
 

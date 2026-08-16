@@ -1958,11 +1958,22 @@ async def get_models(
                 m.image = hub_image
                 m.metadata_ = metadata_dict
 
-            session.add_all(to_add)
-            try:
-                await session.flush()
-            except Exception as e:
-                logger.error(f"Failed to add new models: {e}")
+                # Insert inside a savepoint. A concurrent refresh may have
+                # inserted the same (repo, profile, revision) between our DB
+                # read and this write; the UNIQUE constraint turns that into
+                # an IntegrityError on the losing insert. Rolling back only
+                # the savepoint (not the outer transaction) lets us skip the
+                # duplicate and continue with the rest. Adding inside the
+                # savepoint keeps the session's identity map clean on rollback.
+                try:
+                    async with session.begin_nested():
+                        session.add(m)
+                        await session.flush()
+                except IntegrityError:
+                    logger.warning(
+                        f"Concurrent refresh already added {m.repo}@{m.revision} "
+                        f"for profile {m.profile}; skipping duplicate insert."
+                    )
 
         # 5. Update existing models with missing metadata
         to_update = [

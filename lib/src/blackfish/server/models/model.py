@@ -7,7 +7,7 @@ from pathlib import Path
 from log_symbols.symbols import LogSymbols
 from huggingface_hub import snapshot_download, model_info, scan_cache_dir, ModelInfo
 from advanced_alchemy.base import UUIDAuditBase
-from sqlalchemy import JSON
+from sqlalchemy import JSON, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from blackfish.server.models.profile import BlackfishProfile as Profile
 from blackfish.server.models.metadata import fetch_model_metadata
@@ -36,6 +36,17 @@ PIPELINE_IMAGES = {
 
 class Model(UUIDAuditBase):
     __tablename__ = "model"
+    # A given profile has exactly one on-disk snapshot per (repo, revision).
+    # Enforced at the DB level so concurrent refreshes can't create duplicate
+    # rows — see get_models(refresh=True): two overlapping calls both compute
+    # the same "missing" diff and race to INSERT, and without this constraint
+    # both succeed with different UUIDs.
+    __table_args__ = (
+        UniqueConstraint(
+            "repo", "profile", "revision", name="uq_model_repo_profile_revision"
+        ),
+    )
+
     repo: Mapped[str]  # e.g., bigscience/bloom-560m
     profile: Mapped[str]  # e.g.,  hpc
     revision: Mapped[str]

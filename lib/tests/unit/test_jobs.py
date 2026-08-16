@@ -460,6 +460,34 @@ class TestBatchJobUpdate:
         assert result != BatchJobStatus.RESUBMITTED
         submit.assert_not_called()
 
+    @patch("blackfish.server.jobs.base.remote")
+    async def test_refresh_cancels_allocation_on_natural_completion(
+        self, mock_remote: Mock
+    ) -> None:
+        """The delete endpoint calls refresh() (not poll()) and then drops the
+        DB row for any STOPPED job. If refresh() flipped RUNNING -> STOPPED
+        without cancelling the still-live allocation, deletion would orphan
+        the Slurm job with no record left for a future poll() to reap it."""
+        mock_remote.run = AsyncMock()
+        job = create_test_batch_job(
+            status=BatchJobStatus.RUNNING, host="localhost", pid="4242"
+        )
+        client = create_mock_client()
+        client.report.return_value = make_mock_report(
+            finished=10, in_progress=0, staged=None, errored=0
+        )
+        _drive_update(job, total=10, slurm_state=JobState.RUNNING)
+
+        result = await job.refresh(client)
+
+        assert result == BatchJobStatus.STOPPED
+        assert mock_remote.run.await_count == 1  # scancel issued
+
+        # A subsequent refresh on the already-terminal job short-circuits.
+        mock_remote.run.reset_mock()
+        await job.refresh(client)
+        mock_remote.run.assert_not_called()
+
     async def test_poll_does_not_resubmit_when_slurm_state_unknown(self) -> None:
         """A just-resubmitted allocation sacct hasn't registered reads MISSING
         (unknown, not terminal). Poll must NOT treat that as ended and

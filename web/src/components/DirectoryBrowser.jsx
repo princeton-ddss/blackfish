@@ -24,8 +24,15 @@ function DirectoryBrowser({
   disabled = false,
 }) {
   const [query, setQuery] = useState("");
+  const [inputValue, setInputValue] = useState(value ?? "");
 
   const { files, error: fsError, isLoading, refresh, homeDir, isConnected } = useFileSystem(value, profile);
+
+  // Keep the controlled input in sync with the current path as navigation
+  // changes it (folder clicks, homeDir init).
+  useEffect(() => {
+    setInputValue(value ?? "");
+  }, [value]);
 
   // Determine if this is a remote profile
   const isRemote = isRemoteProfile(profile);
@@ -68,8 +75,9 @@ function DirectoryBrowser({
       {/* Path input */}
       <DirectoryInput
         root={displayRoot}
-        path={value}
-        setPath={handlePathChange}
+        value={inputValue}
+        onChange={setInputValue}
+        onSubmit={() => handlePathChange(inputValue)}
         disabled={disabled}
       />
 

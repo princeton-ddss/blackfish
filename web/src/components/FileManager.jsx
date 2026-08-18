@@ -31,6 +31,7 @@ function FileManager({
     const { reconnect, isConnecting, error: connectionError } = useRemoteFileSystem();
     const [path, setPath] = useState(null);
     const [query, setQuery] = useState("");
+    const [inputValue, setInputValue] = useState("");
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -51,6 +52,12 @@ function FileManager({
             setPath(homeDir);
         }
     }, [homeDir, path]);
+
+    // Keep the controlled input in sync with the current path as navigation
+    // changes it (folder clicks, homeDir init, profile switch).
+    useEffect(() => {
+        setInputValue(path ?? "");
+    }, [path]);
 
     // Auto-dismiss success notifications after 5s. The effect cleanup also
     // cancels the timer on unmount and when a new success message arrives
@@ -176,8 +183,9 @@ function FileManager({
 
             <DirectoryInput
                 root={displayRoot}
-                path={path}
-                setPath={handlePathChange}
+                value={inputValue}
+                onChange={setInputValue}
+                onSubmit={() => handlePathChange(inputValue)}
                 disabled={status.disabled || operationInProgress}
                 error={
                     error?.status === 403 || error?.code === "permission_denied"

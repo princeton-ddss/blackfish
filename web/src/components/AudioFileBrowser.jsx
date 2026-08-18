@@ -306,6 +306,7 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
   const [selected, setSelected] = useState("");
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [inputValue, setInputValue] = useState(root ?? "");
   // A remote profile lists over the SFTP WebSocket; a local/null profile uses
   // the REST path. useFileSystem branches internally on isRemoteProfile.
   const { files, error, isLoading, refresh } = useFileSystem(path, profile);
@@ -314,6 +315,12 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
     setPath(root);
     setPathError(false);
   }, [root]);
+
+  // Keep the controlled input in sync with the current path as navigation
+  // changes it (folder clicks, back button, root/service switch).
+  useEffect(() => {
+    setInputValue(path ?? "");
+  }, [path]);
 
   // Confine navigation to the service mount. A path that escapes `root` (e.g.
   // via ".." or an absolute path typed into the search bar) is refused and
@@ -355,11 +362,12 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
       <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Browser</label>
       <DirectoryInput
         root={root}
-        path={path}
+        value={inputValue}
+        onChange={setInputValue}
         // Route typed/searched paths through the boundary check so an
         // out-of-mount path is refused (and surfaces the alert below) rather
         // than navigating.
-        setPath={handlePathChange}
+        onSubmit={() => handlePathChange(inputValue)}
         disabled={status.disabled}
       />
       <DirectoryInputAlert root={root} isVisible={pathError} />

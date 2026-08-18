@@ -51,6 +51,7 @@ function FileSelectModal({
   const [query, setQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState(null);
+  const [inputValue, setInputValue] = useState("");
 
   const { reconnect, isConnecting, error: connectionError } = useRemoteFileSystem();
   const { files, error: fsError, isLoading, refresh, isConnected, homeDir } = useFileSystem(path, profile);
@@ -59,6 +60,12 @@ function FileSelectModal({
   useEffect(() => {
     if (homeDir && path === null) setPath(homeDir);
   }, [homeDir, path]);
+
+  // Keep the controlled input in sync with the current path as navigation
+  // changes it.
+  useEffect(() => {
+    setInputValue(path ?? "");
+  }, [path]);
 
   const handleClose = () => {
     setSelectedFile(null);
@@ -183,8 +190,9 @@ function FileSelectModal({
                 <div className="px-4 py-3">
                   <DirectoryInput
                     root={displayRoot}
-                    path={path}
-                    setPath={handlePathChange}
+                    value={inputValue}
+                    onChange={setInputValue}
+                    onSubmit={() => handlePathChange(inputValue)}
                     disabled={false}
                   />
 

@@ -34,6 +34,8 @@ import { fetchProfileResources, fetchModelSizeFromHub, createJob } from "@/lib/r
 import { selectTierByModelSize, isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
+const DEFAULT_WORKER_TIMEOUT = '01:00';
+
 // Task definitions - each task maps to a TigerFlow task type
 // id must match backend SUPPORTED_TASKS keys (detect, ocr, transcribe, translate, chat)
 // service can be a string or array of strings for tasks that support multiple model types
@@ -588,7 +590,11 @@ export function buildJobResources(tier, { account, workerTimeout } = {}) {
   if (tier?.memory_gb != null) resources.mem = tier.memory_gb;
   if (tier?.gpu_count != null) resources.gpus = tier.gpu_count;
   if (account) resources.account = account;
-  if (workerTimeout) resources.time = `${workerTimeout}:00`;
+  if (workerTimeout) {
+    resources.time = `${workerTimeout}:00`
+  } else {
+    resources.time = DEFAULT_WORKER_TIMEOUT
+  };
   return resources;
 }
 

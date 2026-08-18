@@ -79,11 +79,13 @@ function FileManager({
     const displayRoot = homeDir ?? root;
 
     const handlePathChange = (newPath) => {
-        // Only enforce the boundary (and normalize) when root is an explicit
-        // absolute path. For "~"/remote roots, "~"-relative input can't be
-        // resolved client-side, so pass it through unchanged.
+        // Normalize absolute paths (resolve "." / "..") so navigation lands on
+        // and displays a clean path. "~"-relative input can't be resolved
+        // client-side, so leave those (and non-absolute input) untouched.
+        const resolved = newPath?.startsWith("/") ? normalizePath(newPath) : newPath;
+        // Enforce the mount boundary only when root is an explicit absolute
+        // path (not "~"/remote).
         const enforceBoundary = !isRemote && root?.startsWith("/");
-        const resolved = enforceBoundary ? normalizePath(newPath) : newPath;
         if (enforceBoundary && !isWithinRoot(resolved, root)) {
             setOperationError(`Path must be within ${root}`);
             // Revert the input to the last valid path so a rejected string
@@ -91,6 +93,11 @@ function FileManager({
             setInputValue(path ?? "");
             return;
         }
+        // Sync the input to the resolved path directly. The [path] effect
+        // covers navigation that changes path, but when the resolved path
+        // equals the current one (e.g. "/x/.." back to "/x") no re-render
+        // fires, so set it here too to clear any raw "." / ".." the user typed.
+        setInputValue(resolved ?? "");
         setPath(resolved);
         if (onPathChange) onPathChange(resolved);
     };

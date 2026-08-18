@@ -269,7 +269,7 @@ function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActions 
             )}
 
             {/* Resource Config Section */}
-            {(job.resources || job.max_workers) && (
+            {job.resources && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
                     <div className="flex items-center gap-2 mb-3">
                         <ServerIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -298,16 +298,8 @@ function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActions 
                         )}
                         {job.resources?.time && (
                             <div className="flex justify-between">
-                                {/* Per-allocation walltime; batch jobs resubmit across
-                                    allocations, so this is not the total job runtime. */}
-                                <span className="text-gray-500 dark:text-gray-400">Walltime (per allocation):</span>
+                                <span className="text-gray-500 dark:text-gray-400">Time Limit:</span>
                                 <span className="text-gray-900 dark:text-gray-100">{job.resources.time}</span>
-                            </div>
-                        )}
-                        {job.max_workers != null && (
-                            <div className="flex justify-between">
-                                <span className="text-gray-500 dark:text-gray-400">Max Workers:</span>
-                                <span className="text-gray-900 dark:text-gray-100">{job.max_workers}</span>
                             </div>
                         )}
                     </div>
@@ -390,7 +382,6 @@ JobDetailsPanel.propTypes = {
         revision: PropTypes.string,
         input_dir: PropTypes.string,
         output_dir: PropTypes.string,
-        max_workers: PropTypes.number,
         resources: PropTypes.shape({
             mem: PropTypes.number,
             cpus: PropTypes.number,

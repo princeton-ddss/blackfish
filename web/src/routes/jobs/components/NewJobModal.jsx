@@ -34,6 +34,8 @@ import { fetchProfileResources, fetchModelSizeFromHub, createJob } from "@/lib/r
 import { selectTierByModelSize, isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
+const DEFAULT_WORKER_TIMEOUT = '01:00:00';
+
 // Task definitions - each task maps to a TigerFlow task type
 // id must match backend SUPPORTED_TASKS keys (detect, ocr, transcribe, translate, chat)
 // service can be a string or array of strings for tasks that support multiple model types
@@ -588,7 +590,11 @@ export function buildJobResources(tier, { account, workerTimeout } = {}) {
   if (tier?.memory_gb != null) resources.mem = tier.memory_gb;
   if (tier?.gpu_count != null) resources.gpus = tier.gpu_count;
   if (account) resources.account = account;
-  if (workerTimeout) resources.time = `${workerTimeout}:00`;
+  if (workerTimeout) {
+    resources.time = `${workerTimeout}:00`
+  } else {
+    resources.time = DEFAULT_WORKER_TIMEOUT
+  };
   return resources;
 }
 
@@ -746,7 +752,6 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   const [selectedPartition, setSelectedPartition] = useState(null);
   const [selectedTier, setSelectedTier] = useState(null);
   const [recommendedTier, setRecommendedTier] = useState(null);
-  const [maxWorkers, setMaxWorkers] = useState(1);
 
   // Advanced options
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -856,7 +861,6 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       setSelectedPartition(null);
       setSelectedTier(null);
       setRecommendedTier(null);
-      setMaxWorkers(1);
       setShowAdvanced(false);
       setAccount("");
       setWorkerTimeout("");
@@ -1085,7 +1089,6 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
         cache_dir: cacheDir,
         params: Object.keys(pipelineParams).length > 0 ? pipelineParams : null,
         resources: Object.keys(jobResources).length > 0 ? jobResources : null,
-        max_workers: maxWorkers,
         idle_timeout: idleTimeout ? parseTimeToMinutes(idleTimeout) : undefined,
       };
 
@@ -1512,24 +1515,6 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
               />
             </div>
 
-            <fieldset>
-              <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100 mb-1">
-                Max Workers
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={maxWorkers}
-                onChange={(e) => setMaxWorkers(parseInt(e.target.value) || 1)}
-                disabled={isSubmitting}
-                className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 disabled:bg-gray-100 dark:disabled:bg-gray-800"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Maximum number of concurrent Slurm jobs. TigerFlow scales automatically.
-              </p>
-            </fieldset>
-
             {/* Advanced Options */}
             <fieldset>
               <button
@@ -1561,9 +1546,9 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                   <ServiceModalValidatedInput
                     type="text"
                     htmlFor="worker-timeout"
-                    label="Worker Timeout"
+                    label="Time Limit"
                     placeholder="01:00"
-                    help="Time limit for each worker job in HH:MM format (max 168:00)."
+                    help="Slurm job time limit in HH:MM format (max 168:00)."
                     value={workerTimeout}
                     setValue={setWorkerTimeout}
                     validate={validateWorkerTimeout}

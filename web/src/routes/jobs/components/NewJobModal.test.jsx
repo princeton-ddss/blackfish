@@ -276,13 +276,13 @@ describe("buildJobResources", () => {
     expect(res.time).toBe("02:00:00");
   });
 
-  test("account and time are omitted when absent", () => {
+  test("account omitted when absent", () => {
     const res = buildJobResources(gpuTier);
     expect(res).not.toHaveProperty("account");
-    expect(res).not.toHaveProperty("time");
+    expect(res.time).toBe("01:00:00");
   });
 
-  test("an undefined tier yields an empty resources object", () => {
-    expect(buildJobResources(undefined)).toEqual({});
+  test("an undefined tier yields only default time", () => {
+    expect(buildJobResources(undefined)).toEqual({"time": "01:00:00"});
   });
 });

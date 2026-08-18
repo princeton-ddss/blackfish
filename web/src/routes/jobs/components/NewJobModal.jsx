@@ -34,7 +34,7 @@ import { fetchProfileResources, fetchModelSizeFromHub, createJob } from "@/lib/r
 import { selectTierByModelSize, isRemoteProfile } from "@/lib/util";
 import PropTypes from "prop-types";
 
-const DEFAULT_WORKER_TIMEOUT = '01:00';
+const DEFAULT_WORKER_TIMEOUT = '01:00:00';
 
 // Task definitions - each task maps to a TigerFlow task type
 // id must match backend SUPPORTED_TASKS keys (detect, ocr, transcribe, translate, chat)

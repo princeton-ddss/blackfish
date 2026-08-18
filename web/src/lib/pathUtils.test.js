@@ -110,6 +110,22 @@ describe("pathUtils", () => {
       expect(clampToRoot("/home/us", "/home/user")).toBe("/home/user");
     });
 
+    test("clamps a '..' traversal that escapes the root", () => {
+      // Regression: a raw prefix check would wrongly accept this because the
+      // string starts with the root. Normalizing resolves it to "/etc", which
+      // is outside "/mount/audio" and must clamp back to root.
+      expect(clampToRoot("/mount/audio/../../etc", "/mount/audio")).toBe(
+        "/mount/audio"
+      );
+    });
+
+    test("normalizes an in-root path that contains '.'/'..' segments", () => {
+      // Traversal that stays inside root resolves and is returned normalized.
+      expect(clampToRoot("/mount/audio/sub/../clip.wav", "/mount/audio")).toBe(
+        "/mount/audio/clip.wav"
+      );
+    });
+
     test("passes the path through when there is no root", () => {
       expect(clampToRoot("/home", null)).toBe("/home");
     });

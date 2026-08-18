@@ -20,6 +20,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "framer-motion": "^12.40.0",
     "lodash": "^4.17.21",
+    "pathe": "^2.0.3",
     "prismjs": "^1.30.0",
     "react": "^18",
     "react-audio-visualize": "^1.2.0",

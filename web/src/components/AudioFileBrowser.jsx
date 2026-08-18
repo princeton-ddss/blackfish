@@ -338,7 +338,10 @@ function AudioFileBrowser({ root, setAudioPath, status, children }) {
       <DirectoryInput
         root={root}
         path={path}
-        setPath={setPath}
+        // Confine typed/searched paths to the service mount, mirroring the
+        // back-button's clamp. A raw setPath would let the search bar navigate
+        // above `root` (e.g. via ".." or an absolute path).
+        setPath={(next) => setPath(clampToRoot(next, root))}
         pathError={pathError}
         setPathError={setPathError}
         disabled={status.disabled}

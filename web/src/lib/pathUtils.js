@@ -6,6 +6,8 @@
  * - Root representation: Forward slash "/" (never "" or null for connected state)
  */
 
+import { normalize } from "pathe";
+
 /**
  * Join path parts, handling root "/" and avoiding double slashes.
  * @param {...string} parts - Path segments to join
@@ -85,11 +87,17 @@ export function isWithinRoot(path, root) {
 /**
  * Clamp a path to a security root: return `path` when it's within `root`,
  * otherwise `root` itself. With no root (null), the path passes through.
+ *
+ * The candidate is normalized first (resolving "." and ".." segments) so a
+ * traversal like "/mount/../../etc" collapses to "/etc" and is correctly
+ * rejected — a raw prefix check would wrongly accept it because the string
+ * still starts with the root.
  * @param {string} path - Candidate path (e.g. a computed parent)
  * @param {string|null} root - Security boundary root (null = no boundary)
- * @returns {string} `path` if allowed, else `root`
+ * @returns {string} normalized `path` if allowed, else `root`
  */
 export function clampToRoot(path, root) {
   if (root == null) return path;
-  return isWithinRoot(path, root) ? path : root;
+  const normalized = normalize(path);
+  return isWithinRoot(normalized, root) ? normalized : root;
 }

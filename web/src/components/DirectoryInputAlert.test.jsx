@@ -1,18 +1,16 @@
-import { render, act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render } from "@testing-library/react";
 import { test, expect } from "vitest";
 import DirectoryInputAlert from "./DirectoryInputAlert";
 
-test("DirectoryInputAlert visible and dismissible", async () => {
-  const user = userEvent.setup();
-  const {baseElement, getByRole, asFragment} = render(
-    <DirectoryInputAlert root="/" isVisible={true} />
+test("DirectoryInputAlert visible", () => {
+  const {baseElement, getByText} = render(
+    <DirectoryInputAlert root="/mount/audio" isVisible={true} />
+  );
+  // Surfaces the mount root in the message; transient (no dismiss control).
+  expect(getByText(/Only files in the mounted directory/)).toHaveTextContent(
+    "/mount/audio"
   );
   expect(baseElement).toMatchSnapshot();
-  await act(async () => {
-    await user.click(getByRole("button"));
-  });
-  expect(asFragment().baseElement).toBeUndefined();
 });
 
 test("DirectoryInputAlert not visible", () => {

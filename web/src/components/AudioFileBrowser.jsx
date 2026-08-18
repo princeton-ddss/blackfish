@@ -9,9 +9,10 @@ import {
 import { useFileSystem } from "@/lib/loaders";
 import { assetPath } from "@/config";
 import { fileSize, lastModified } from "@/lib/util";
-import { dirname, clampToRoot, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
+import { dirname, clampToRoot, normalizePath, isWithinRoot, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import DirectoryInput from "@/components/DirectoryInput";
+import DirectoryInputAlert from "@/components/DirectoryInputAlert";
 import FilterInput from "@/components/FilterInput";
 import PropTypes from "prop-types";
 
@@ -311,7 +312,22 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
 
   useEffect(() => {
     setPath(root);
+    setPathError(false);
   }, [root]);
+
+  // Confine navigation to the service mount. A path that escapes `root` (e.g.
+  // via ".." or an absolute path typed into the search bar) is refused and
+  // surfaces the alert instead of navigating. Normalizing first resolves
+  // "." / ".." so a traversal can't slip past the boundary check.
+  const handlePathChange = (next) => {
+    const normalized = normalizePath(next);
+    if (!isWithinRoot(normalized, root)) {
+      setPathError(true);
+      return;
+    }
+    setPathError(false);
+    setPath(normalized);
+  };
 
   // Filter and paginate here so the footer (below) can host the pagination
   // alongside the submit control passed in as `children`.
@@ -340,14 +356,13 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
       <DirectoryInput
         root={root}
         path={path}
-        // Confine typed/searched paths to the service mount, mirroring the
-        // back-button's clamp. A raw setPath would let the search bar navigate
-        // above `root` (e.g. via ".." or an absolute path).
-        setPath={(next) => setPath(clampToRoot(next, root))}
-        pathError={pathError}
-        setPathError={setPathError}
+        // Route typed/searched paths through the boundary check so an
+        // out-of-mount path is refused (and surfaces the alert below) rather
+        // than navigating.
+        setPath={handlePathChange}
         disabled={status.disabled}
       />
+      <DirectoryInputAlert root={root} isVisible={pathError} />
 
       <FilterInput className="sm:flex-auto" query={query} setQuery={setQuery} disabled={status.disabled} />
 
@@ -357,7 +372,6 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
         root={root}
         setAudioPath={setAudioPath}
         setPath={setPath}
-        setPathError={setPathError}
         selected={selected}
         setSelected={setSelected}
         isLoading={isLoading}

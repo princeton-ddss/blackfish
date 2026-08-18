@@ -9,6 +9,18 @@
 import { normalize } from "pathe";
 
 /**
+ * Resolve "." and ".." segments and collapse duplicate slashes, preserving a
+ * leading "/". Delegates to pathe (Vite's cross-platform POSIX path library)
+ * so callers don't hand-roll traversal resolution. Keep pathe an
+ * implementation detail of this module — callers import from here.
+ * @param {string} path - Path to normalize
+ * @returns {string} Normalized path
+ */
+export function normalizePath(path) {
+  return normalize(path);
+}
+
+/**
  * Join path parts, handling root "/" and avoiding double slashes.
  * @param {...string} parts - Path segments to join
  * @returns {string} Joined path
@@ -98,6 +110,6 @@ export function isWithinRoot(path, root) {
  */
 export function clampToRoot(path, root) {
   if (root == null) return path;
-  const normalized = normalize(path);
+  const normalized = normalizePath(path);
   return isWithinRoot(normalized, root) ? normalized : root;
 }

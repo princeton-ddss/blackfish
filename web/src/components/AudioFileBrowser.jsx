@@ -12,8 +12,8 @@ import { fileSize, lastModified } from "@/lib/util";
 import { dirname, clampToRoot, normalizePath, isWithinRoot, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import DirectoryInput from "@/components/DirectoryInput";
-import DirectoryInputAlert from "@/components/DirectoryInputAlert";
 import FilterInput from "@/components/FilterInput";
+import Notification from "@/components/Notification";
 import PropTypes from "prop-types";
 
 /**
@@ -302,7 +302,7 @@ const FILES_PER_PAGE = 20;
 
 function AudioFileBrowser({ root, setAudioPath, status, profile = null, children }) {
   const [path, setPath] = useState(root);
-  const [pathError, setPathError] = useState(false);
+  const [operationError, setOperationError] = useState(null);
   const [selected, setSelected] = useState("");
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -313,7 +313,7 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
 
   useEffect(() => {
     setPath(root);
-    setPathError(false);
+    setOperationError(null);
   }, [root]);
 
   // Keep the controlled input in sync with the current path as navigation
@@ -322,22 +322,32 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
     setInputValue(path ?? "");
   }, [path]);
 
+  // Auto-dismiss the boundary-error toast after 5s, mirroring FileManager.
+  useEffect(() => {
+    if (!operationError) return undefined;
+    const id = setTimeout(() => setOperationError(null), 5000);
+    return () => clearTimeout(id);
+  }, [operationError]);
+
   // Confine navigation to the service mount. A path that escapes `root` (e.g.
-  // via ".." or an absolute path typed into the search bar) is refused and
-  // surfaces the alert instead of navigating. Normalizing first resolves
-  // "." / ".." so a traversal can't slip past the boundary check — and an
-  // in-root path with such segments navigates to (and displays) its clean
-  // resolved form.
+  // via ".." or an absolute path typed into the search bar) is refused with a
+  // toast instead of navigating. Normalizing first resolves "." / ".." so a
+  // traversal can't slip past the boundary check — and an in-root path with
+  // such segments navigates to (and displays) its clean resolved form.
   const handlePathChange = (next) => {
     const normalized = normalizePath(next);
     if (!isWithinRoot(normalized, root)) {
-      setPathError(true);
+      setOperationError(`Only files within ${root} are accessible.`);
       // Revert the input to the last valid path so a rejected (un-navigable)
       // string doesn't linger in the box.
       setInputValue(path ?? "");
       return;
     }
-    setPathError(false);
+    setOperationError(null);
+    // Sync the input to the resolved path directly. When the resolved path
+    // equals the current one (e.g. "/mount/.." back to "/mount") no re-render
+    // fires, so set it here too to clear any raw "." / ".." the user typed.
+    setInputValue(normalized ?? "");
     setPath(normalized);
   };
 
@@ -370,12 +380,19 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
         value={inputValue}
         onChange={setInputValue}
         // Route typed/searched paths through the boundary check so an
-        // out-of-mount path is refused (and surfaces the alert below) rather
-        // than navigating.
+        // out-of-mount path is refused (via toast) rather than navigating.
         onSubmit={() => handlePathChange(inputValue)}
         disabled={status.disabled}
+        // Surface a missing/forbidden in-root path inline on the input,
+        // mirroring FileManager, instead of the generic table error panel.
+        error={
+          error?.status === 403 || error?.code === "permission_denied"
+            ? { message: "Access denied" }
+            : error?.status === 404 || error?.code === "not_found"
+              ? { message: "Path not found" }
+              : null
+        }
       />
-      <DirectoryInputAlert root={root} isVisible={pathError} />
 
       <FilterInput className="sm:flex-auto" query={query} setQuery={setQuery} disabled={status.disabled} />
 
@@ -388,7 +405,13 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
         selected={selected}
         setSelected={setSelected}
         isLoading={isLoading}
-        error={error}
+        // 403/404 are shown inline on the input above; keep the table clean
+        // for those and reserve its error panel for real/unknown failures.
+        error={
+          error?.status === 403 || error?.status === 404 || error?.code === "permission_denied" || error?.code === "not_found"
+            ? null
+            : error
+        }
         refresh={refresh}
         status={status}
       />
@@ -407,6 +430,13 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
         />
         <div className="absolute right-0">{children}</div>
       </div>
+
+      <Notification
+        show={!!operationError}
+        variant="error"
+        message={operationError || ""}
+        onDismiss={() => setOperationError(null)}
+      />
     </div>
   );
 }

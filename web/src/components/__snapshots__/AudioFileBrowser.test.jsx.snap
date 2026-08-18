@@ -278,6 +278,14 @@ exports[`AudioFileBrowser back navigation 1`] = `
           class="absolute right-0"
         />
       </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
+        />
+      </div>
     </div>
   </div>
 </body>
@@ -500,6 +508,14 @@ exports[`AudioFileBrowser disabled interactions 1`] = `
       >
         <div
           class="absolute right-0"
+        />
+      </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
         />
       </div>
     </div>
@@ -852,6 +868,14 @@ exports[`AudioFileBrowser folder navigation 1`] = `
           class="absolute right-0"
         />
       </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
+        />
+      </div>
     </div>
   </div>
 </body>
@@ -1100,6 +1124,14 @@ exports[`AudioFileBrowser loading state with files 1`] = `
       >
         <div
           class="absolute right-0"
+        />
+      </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
         />
       </div>
     </div>
@@ -1514,6 +1546,14 @@ exports[`AudioFileBrowser with directories and interactions 1`] = `
           class="absolute right-0"
         />
       </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
+        />
+      </div>
     </div>
   </div>
 </body>
@@ -1731,6 +1771,14 @@ exports[`AudioFileBrowser with empty files 1`] = `
       >
         <div
           class="absolute right-0"
+        />
+      </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
         />
       </div>
     </div>
@@ -1952,6 +2000,14 @@ exports[`AudioFileBrowser with error 1`] = `
           class="absolute right-0"
         />
       </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
+        />
+      </div>
     </div>
   </div>
 </body>
@@ -2169,6 +2225,14 @@ exports[`AudioFileBrowser with no service selected 1`] = `
       >
         <div
           class="absolute right-0"
+        />
+      </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
         />
       </div>
     </div>
@@ -2393,6 +2457,14 @@ exports[`Disabled AudioFileBrowser 1`] = `
       >
         <div
           class="absolute right-0"
+        />
+      </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
         />
       </div>
     </div>
@@ -3265,6 +3337,14 @@ exports[`Enabled AudioFileBrowser 1`] = `
           class="absolute right-0"
         />
       </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
+        />
+      </div>
     </div>
   </div>
 </body>
@@ -3487,6 +3567,14 @@ exports[`Loading AudioFileBrowser 1`] = `
       >
         <div
           class="absolute right-0"
+        />
+      </div>
+      <div
+        aria-live="assertive"
+        class="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:p-6 z-[100]"
+      >
+        <div
+          class="flex w-full flex-col items-center space-y-4 sm:items-end"
         />
       </div>
     </div>

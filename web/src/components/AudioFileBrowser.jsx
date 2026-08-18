@@ -299,13 +299,15 @@ AudioFileBrowserTable.propTypes = {
  */
 const FILES_PER_PAGE = 20;
 
-function AudioFileBrowser({ root, setAudioPath, status, children }) {
+function AudioFileBrowser({ root, setAudioPath, status, profile = null, children }) {
   const [path, setPath] = useState(root);
   const [pathError, setPathError] = useState(false);
   const [selected, setSelected] = useState("");
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const { files, error, isLoading, refresh } = useFileSystem(path); // TODO: only fetch files if !status.disabled
+  // A remote profile lists over the SFTP WebSocket; a local/null profile uses
+  // the REST path. useFileSystem branches internally on isRemoteProfile.
+  const { files, error, isLoading, refresh } = useFileSystem(path, profile);
 
   useEffect(() => {
     setPath(root);
@@ -386,6 +388,7 @@ AudioFileBrowser.propTypes = {
   root: PropTypes.string,
   setAudioPath: PropTypes.func,
   status: PropTypes.object,
+  profile: PropTypes.object,
   children: PropTypes.node,
 };
 

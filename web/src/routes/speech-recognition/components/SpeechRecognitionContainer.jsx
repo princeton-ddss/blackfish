@@ -6,6 +6,7 @@ import SpeechRecognitionOutput from "./SpeechRecognitionOutput";
 import SpeechRecognitionSubmit from "./SpeechRecognitionSubmit";
 import { callSpeechRecognitionInference } from "../lib/requests";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { ProfileContext } from "@/components/ProfileSelect";
 import PropTypes from "prop-types";
 
 
@@ -18,6 +19,10 @@ function SpeechRecognitionContainer({
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const { selectedService, registerInFlight } = useContext(ServiceContext);
+  // The service list is scoped to the globally-selected profile, so this is
+  // also the profile the selected service runs under — and the one the remote
+  // file-system WebSocket is connected to. File access follows it.
+  const { profile } = useContext(ProfileContext);
   // Tracks the in-flight transcription so it can be cancelled by the user or on
   // unmount. Stop/Delete cancellation goes through the ServiceProvider registry
   // (keyed by the request's service), so it targets the right request even if a
@@ -98,16 +103,9 @@ function SpeechRecognitionContainer({
       };
     }
 
-    if (selectedService.host === "localhost") {
-      return {
-        disabled: false,
-      };
-    } else {
-      return {
-        disabled: true,
-        detail: "Remote file access isn't supported for this version of Blackfish."
-      };
-    }
+    return {
+      disabled: false,
+    };
   };
 
   const fileBrowserStatus = getFileBrowserStatus();
@@ -119,6 +117,7 @@ function SpeechRecognitionContainer({
           root={selectedService ? selectedService.mount : ""}
           setAudioPath={setAudioPath}
           status={fileBrowserStatus}
+          profile={profile}
         >
           <SpeechRecognitionSubmit
             selectedService={selectedService}
@@ -131,6 +130,7 @@ function SpeechRecognitionContainer({
       </div>
       <SpeechRecognitionAudioPreview
         audioPath={audioPath}
+        profile={profile}
       />
       <SpeechRecognitionOutput
         output={output}

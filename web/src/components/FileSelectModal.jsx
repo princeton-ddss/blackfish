@@ -6,11 +6,12 @@ import {
   Transition,
   TransitionChild,
 } from "@headlessui/react";
-import { XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useFileSystem } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 import { isRemoteProfile } from "@/lib/util";
 import DirectoryInput from "@/components/DirectoryInput";
+import RemoteConnectionStatus from "@/components/RemoteConnectionStatus";
 import FilterInput from "@/components/FilterInput";
 import FileManagerTable from "@/components/FileManagerTable";
 import PropTypes from "prop-types";
@@ -155,34 +156,14 @@ function FileSelectModal({
                 {/* Connection status (remote profiles only) */}
                 {isRemoteProfile(profile) && (
                   <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${
-                          isConnected
-                            ? "bg-green-500"
-                            : connectionError
-                              ? "bg-red-500"
-                              : "animate-pulse bg-yellow-500"
-                        }`}
-                      />
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
-                        {isConnected
-                          ? `Connected to ${profile.user}@${profile.host}`
-                          : connectionError
-                            ? "Disconnected"
-                            : "Connecting..."}
-                      </span>
-                      {connectionError && (
-                        <button
-                          onClick={reconnect}
-                          disabled={isConnecting}
-                          className="ml-1 p-0.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50 focus:outline-none"
-                          aria-label="Reconnect"
-                        >
-                          <ArrowPathIcon className={`h-3.5 w-3.5 ${isConnecting ? "animate-spin" : ""}`} />
-                        </button>
-                      )}
-                    </div>
+                    <RemoteConnectionStatus
+                      profile={profile}
+                      isConnected={isConnected}
+                      isConnecting={isConnecting}
+                      connectionError={connectionError}
+                      onReconnect={reconnect}
+                      size="xs"
+                    />
                   </div>
                 )}
 

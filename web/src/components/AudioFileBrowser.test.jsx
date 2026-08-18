@@ -12,6 +12,18 @@ vi.mock("@/lib/loaders", async () => {
   };
 });
 
+// AudioFileBrowser reads connection state via useRemoteFileSystem, which throws
+// outside its provider. Stub it with a local ("connected") default; the tests
+// here use local profiles, so the remote indicator renders nothing.
+vi.mock("@/providers/RemoteFileSystemProvider", () => ({
+  useRemoteFileSystem: () => ({
+    isConnected: true,
+    isConnecting: false,
+    error: null,
+    reconnect: () => {},
+  }),
+}));
+
 // Mock Date to ensure consistent "days ago" text in snapshots
 const MOCK_DATE = new Date('2025-06-24T14:16:50');
 const originalDate = global.Date;

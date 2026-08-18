@@ -134,6 +134,22 @@ export const useFileSystem = (path, profile = null) => {
   const [remoteError, setRemoteError] = useState(null);
   const [remoteLoading, setRemoteLoading] = useState(false);
 
+  // When `path` changes, the previous path's files/error must not leak into the
+  // new path's render. The fetch effect below clears them, but effects run
+  // *after* render — leaving a window where a stale error (e.g. a 404 from the
+  // old path) paints on the new path before loading turns on. Reset during
+  // render instead (React's "adjust state on prop change" pattern) so the stale
+  // error is gone on the very first render for the new path.
+  const prevRemotePathRef = useRef(path);
+  if (isRemote && prevRemotePathRef.current !== path) {
+    prevRemotePathRef.current = path;
+    setRemoteFiles(null);
+    setRemoteError(null);
+    // Mark loading if we're able to fetch, so consumers gate error UI on it
+    // until the effect's listDir settles.
+    setRemoteLoading(remoteFs.isConnected && path !== null);
+  }
+
   // Stable home directory for local profiles. Captured once from the first
   // successful fetch (path defaults to "~") and held stable across navigations.
   // The remote path gets homeDir from the WS "connected" message which is
@@ -157,28 +173,59 @@ export const useFileSystem = (path, profile = null) => {
     }
   }, [isRemote, remoteFs.isConnected]);
 
-  // Fetch remote directory when path or connection changes
+  // Fetch remote directory when path or connection changes.
+  //
+  // The first listDir against a freshly-connected session can fail with a
+  // transient error (e.g. a GPFS fileset on /scratch/gpfs isn't stat-able until
+  // an automount is triggered, so the first "list" returns not_found and a
+  // retry succeeds). Retry a few times with short backoff before surfacing the
+  // error, so the user sees the eventual success rather than a flash of
+  // "Path not found". A cancellation flag drops results from a stale run when
+  // path/connection changes mid-retry.
   const { isConnected, listDir } = remoteFs;
   useEffect(() => {
     if (!isRemote || !isConnected || path === null) {
-      return;
+      return undefined;
     }
+
+    let cancelled = false;
+    const maxAttempts = 5;
+    // The failure is usually ready-an-instant-later, so retry the first time on
+    // the next tick (0ms) — no visible delay in the common case — then escalate:
+    // 0, 150, 300, 600 ms before the 2nd..5th attempts.
+    const backoffMs = (n) => (n <= 1 ? 0 : 150 * 2 ** (n - 2));
 
     setRemoteLoading(true);
     setRemoteError(null);
 
-    listDir(path)
-      .then((entries) => {
-        setRemoteFiles(entries);
-        setRemoteError(null);
-      })
-      .catch((err) => {
-        setRemoteError(err);
-        setRemoteFiles(null);
-      })
-      .finally(() => {
-        setRemoteLoading(false);
-      });
+    const attempt = (n) => {
+      listDir(path)
+        .then((entries) => {
+          if (cancelled) return;
+          setRemoteFiles(entries);
+          setRemoteError(null);
+          setRemoteLoading(false);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          if (n < maxAttempts) {
+            setTimeout(() => {
+              if (!cancelled) attempt(n + 1);
+            }, backoffMs(n));
+            return;
+          }
+          // Retries exhausted — surface the error.
+          setRemoteError(err);
+          setRemoteFiles(null);
+          setRemoteLoading(false);
+        });
+    };
+
+    attempt(1);
+
+    return () => {
+      cancelled = true;
+    };
   }, [isRemote, path, isConnected, listDir]);
 
   // Refresh function for remote
@@ -218,10 +265,14 @@ export const useFileSystem = (path, profile = null) => {
 
   // Return appropriate source based on profile type
   if (isRemote) {
+    const remoteLoadingState = remoteLoading || remoteFs.isConnecting;
     return {
       files: remoteFiles,
       error: remoteError || remoteFs.error,
-      isLoading: remoteLoading || remoteFs.isConnecting,
+      isLoading: remoteLoadingState,
+      // Same as isLoading for remote (no background-revalidation concept);
+      // exposed so consumers can gate error UI uniformly across branches.
+      isFetching: remoteLoadingState,
       refresh: refreshRemote,
       isConnected: remoteFs.isConnected,
       homeDir: remoteFs.homeDir,
@@ -232,6 +283,11 @@ export const useFileSystem = (path, profile = null) => {
     files: localFs.data?.files ?? null,
     error: localFs.error,
     isLoading: localFs.isLoading,
+    // isValidating covers background revalidation of an already-seen key,
+    // where isLoading is false. Consumers gate transient error UI on this so a
+    // stale error doesn't paint while a refetch is in flight. The table keeps
+    // using isLoading so it doesn't flicker to a skeleton on every refresh.
+    isFetching: localFs.isLoading || localFs.isValidating,
     refresh: localFs.mutate,
     isConnected: true, // Local is always "connected"
     homeDir: localHomeDirRef.current,

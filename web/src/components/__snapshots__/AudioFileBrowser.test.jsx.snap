@@ -8,11 +8,15 @@ exports[`AudioFileBrowser back navigation 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -299,11 +303,15 @@ exports[`AudioFileBrowser disabled interactions 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -531,11 +539,15 @@ exports[`AudioFileBrowser folder navigation 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -889,11 +901,15 @@ exports[`AudioFileBrowser loading state with files 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -1147,11 +1163,15 @@ exports[`AudioFileBrowser with directories and interactions 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -1567,11 +1587,15 @@ exports[`AudioFileBrowser with empty files 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -1794,11 +1818,15 @@ exports[`AudioFileBrowser with error 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -2021,11 +2049,15 @@ exports[`AudioFileBrowser with no service selected 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -2248,11 +2280,15 @@ exports[`Disabled AudioFileBrowser 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -2480,11 +2516,15 @@ exports[`Enabled AudioFileBrowser 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"
@@ -3358,11 +3398,15 @@ exports[`Loading AudioFileBrowser 1`] = `
       id="audio-file-browser"
       name="audio-file-browser"
     >
-      <label
-        class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+      <div
+        class="flex items-center gap-4"
       >
-        File Browser
-      </label>
+        <label
+          class="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100"
+        >
+          File Browser
+        </label>
+      </div>
       <div>
         <div
           class="mt-2 flex rounded-md border border-gray-300 dark:border-gray-600"

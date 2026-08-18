@@ -27,6 +27,7 @@ import ServiceModalCheckBox from "@/components/ServiceModalCheckbox";
 import Alert from "@/components/Alert";
 import Stepper from "@/components/Stepper";
 import DirectoryBrowser from "@/components/DirectoryBrowser";
+import RemoteConnectionStatus from "@/components/RemoteConnectionStatus";
 import { dirname } from "@/lib/pathUtils";
 import { useModels } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
@@ -1454,23 +1455,12 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
 
             {/* Connection status indicator for remote profiles */}
             {isRemote && (
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-8">
-                <span
-                  className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${
-                    isConnected
-                      ? "bg-green-500"
-                      : connectionError
-                        ? "bg-red-500"
-                        : "animate-pulse bg-yellow-500"
-                  }`}
+              <div className="flex items-center justify-center mt-8">
+                <RemoteConnectionStatus
+                  profile={profile}
+                  isConnected={isConnected}
+                  connectionError={connectionError}
                 />
-                <span>
-                  {isConnected
-                    ? `Connected to ${profile?.host}`
-                    : connectionError
-                      ? "Connection failed"
-                      : "Connecting..."}
-                </span>
               </div>
             )}
           </div>

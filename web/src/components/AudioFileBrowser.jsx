@@ -7,11 +7,13 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { useFileSystem } from "@/lib/loaders";
+import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 import { assetPath } from "@/config";
-import { fileSize, lastModified } from "@/lib/util";
+import { fileSize, lastModified, isRemoteProfile } from "@/lib/util";
 import { dirname, clampToRoot, normalizePath, isWithinRoot, isFileSystemRoot, isAtSecurityBoundary } from "@/lib/pathUtils";
 import Pagination from "@/components/Pagination";
 import DirectoryInput from "@/components/DirectoryInput";
+import RemoteConnectionStatus from "@/components/RemoteConnectionStatus";
 import FilterInput from "@/components/FilterInput";
 import Notification from "@/components/Notification";
 import PropTypes from "prop-types";
@@ -307,9 +309,21 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState(root ?? "");
+  // Connection state, for the remote-status indicator and to defer listing
+  // until the SFTP session is up (no-op for local: isConnected stays false but
+  // we don't gate local paths on it).
+  const { isConnected, isConnecting, error: connectionError, reconnect } = useRemoteFileSystem();
+
+  // For a remote profile, don't list the mount until the connection is up.
+  // Listing eagerly (as this browser seeds path = service.mount immediately)
+  // hits the socket mid-handshake and returns a spurious "not found". Passing
+  // null defers the fetch — useFileSystem no-ops on a null path — until
+  // connected, mirroring how the File Manager waits for a valid directory.
+  const effectivePath = isRemoteProfile(profile) && !isConnected ? null : path;
+
   // A remote profile lists over the SFTP WebSocket; a local/null profile uses
   // the REST path. useFileSystem branches internally on isRemoteProfile.
-  const { files, error, isLoading, refresh } = useFileSystem(path, profile);
+  const { files, error, isLoading, isFetching, refresh } = useFileSystem(effectivePath, profile);
 
   useEffect(() => {
     setPath(root);
@@ -369,11 +383,12 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
   }, [path, query]);
 
   // Inline path error for the search input, derived from the fetch state.
-  // Gated on !isLoading so a stale error from the previous path doesn't paint
+  // Gated on !isFetching so a stale error from the previous path doesn't paint
   // while the new listing is still in flight (e.g. right after a service
-  // switch seeds a new mount). isLoading includes the remote connecting state.
+  // switch seeds a new mount). isFetching covers the remote connecting state
+  // and local background revalidation.
   const inputError =
-    isLoading
+    isFetching
       ? null
       : error?.status === 403 || error?.code === "permission_denied"
         ? { message: "Access denied" }
@@ -387,7 +402,16 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
       name="audio-file-browser"
       className="mb-2 w-full max-w-6xl"
     >
-      <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Browser</label>
+      <div className="flex items-center gap-4">
+        <label className="font-medium text-sm leading-6 text-gray-900 dark:text-gray-100">File Browser</label>
+        <RemoteConnectionStatus
+          profile={profile}
+          isConnected={isConnected}
+          isConnecting={isConnecting}
+          connectionError={connectionError}
+          onReconnect={reconnect}
+        />
+      </div>
       <DirectoryInput
         root={root}
         value={inputValue}

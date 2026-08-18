@@ -78,6 +78,18 @@ function FileManager({
 
     const displayRoot = homeDir ?? root;
 
+    // Inline path error for the search input, derived from the fetch state.
+    // Gated on !isLoading so a stale error from the previous path doesn't paint
+    // while the new listing is still in flight.
+    const inputError =
+        isLoading
+            ? null
+            : error?.status === 403 || error?.code === "permission_denied"
+                ? { message: "Access denied" }
+                : error?.status === 404 || error?.code === "not_found"
+                    ? { message: "Path not found" }
+                    : null;
+
     const handlePathChange = (newPath) => {
         // Normalize absolute paths (resolve "." / "..") so navigation lands on
         // and displays a clean path. "~"-relative input can't be resolved
@@ -201,13 +213,7 @@ function FileManager({
                 onChange={setInputValue}
                 onSubmit={() => handlePathChange(inputValue)}
                 disabled={status.disabled || operationInProgress}
-                error={
-                    error?.status === 403 || error?.code === "permission_denied"
-                        ? { message: "Access denied" }
-                        : error?.status === 404 || error?.code === "not_found"
-                            ? { message: "Path not found" }
-                            : null
-                }
+                error={inputError}
             />
 
             <FilterInput

@@ -368,6 +368,19 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
     setCurrentPage(1);
   }, [path, query]);
 
+  // Inline path error for the search input, derived from the fetch state.
+  // Gated on !isLoading so a stale error from the previous path doesn't paint
+  // while the new listing is still in flight (e.g. right after a service
+  // switch seeds a new mount). isLoading includes the remote connecting state.
+  const inputError =
+    isLoading
+      ? null
+      : error?.status === 403 || error?.code === "permission_denied"
+        ? { message: "Access denied" }
+        : error?.status === 404 || error?.code === "not_found"
+          ? { message: "Path not found" }
+          : null;
+
   return (
     <div
       id="audio-file-browser"
@@ -385,13 +398,7 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
         disabled={status.disabled}
         // Surface a missing/forbidden in-root path inline on the input,
         // mirroring FileManager, instead of the generic table error panel.
-        error={
-          error?.status === 403 || error?.code === "permission_denied"
-            ? { message: "Access denied" }
-            : error?.status === 404 || error?.code === "not_found"
-              ? { message: "Path not found" }
-              : null
-        }
+        error={inputError}
       />
 
       <FilterInput className="sm:flex-auto" query={query} setQuery={setQuery} disabled={status.disabled} />

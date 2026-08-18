@@ -4,7 +4,7 @@ import {
     ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
 import { useFileSystem } from "@/lib/loaders";
-import { isWithinRoot } from "@/lib/pathUtils";
+import { isWithinRoot, normalizePath } from "@/lib/pathUtils";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 import Notification from "@/components/Notification";
 import FileManagerTable from "@/components/FileManagerTable";
@@ -79,13 +79,20 @@ function FileManager({
     const displayRoot = homeDir ?? root;
 
     const handlePathChange = (newPath) => {
-        // Only enforce path boundary if root is an explicit path (not ~)
-        if (!isRemote && root?.startsWith("/") && !isWithinRoot(newPath, root)) {
+        // Only enforce the boundary (and normalize) when root is an explicit
+        // absolute path. For "~"/remote roots, "~"-relative input can't be
+        // resolved client-side, so pass it through unchanged.
+        const enforceBoundary = !isRemote && root?.startsWith("/");
+        const resolved = enforceBoundary ? normalizePath(newPath) : newPath;
+        if (enforceBoundary && !isWithinRoot(resolved, root)) {
             setOperationError(`Path must be within ${root}`);
+            // Revert the input to the last valid path so a rejected string
+            // doesn't linger in the box.
+            setInputValue(path ?? "");
             return;
         }
-        setPath(newPath);
-        if (onPathChange) onPathChange(newPath);
+        setPath(resolved);
+        if (onPathChange) onPathChange(resolved);
     };
 
     const handleFileClick = (file) => {

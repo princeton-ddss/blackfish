@@ -325,11 +325,16 @@ function AudioFileBrowser({ root, setAudioPath, status, profile = null, children
   // Confine navigation to the service mount. A path that escapes `root` (e.g.
   // via ".." or an absolute path typed into the search bar) is refused and
   // surfaces the alert instead of navigating. Normalizing first resolves
-  // "." / ".." so a traversal can't slip past the boundary check.
+  // "." / ".." so a traversal can't slip past the boundary check — and an
+  // in-root path with such segments navigates to (and displays) its clean
+  // resolved form.
   const handlePathChange = (next) => {
     const normalized = normalizePath(next);
     if (!isWithinRoot(normalized, root)) {
       setPathError(true);
+      // Revert the input to the last valid path so a rejected (un-navigable)
+      // string doesn't linger in the box.
+      setInputValue(path ?? "");
       return;
     }
     setPathError(false);

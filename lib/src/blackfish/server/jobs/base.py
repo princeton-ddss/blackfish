@@ -718,11 +718,18 @@ class BatchJob(UUIDAuditBase):
         return BatchJobStatus.SUBMITTED
 
     async def refresh(self, client: TigerFlowClient) -> BatchJobStatus:
-        """Read-only status refresh — never resubmits or mutates restart counters.
+        """Refresh status without advancing the restart loop.
 
         Reads the tigerflow report (durable ``processed`` count) and Slurm
-        liveness and updates progress fields. Safe to call after ``stop()`` or
-        before deletion. Use ``poll()`` to also advance the restart loop.
+        liveness and updates progress fields. Never resubmits. Called before
+        deletion and after ``stop()``. Use ``poll()`` to also advance the
+        restart loop.
+
+        If the observation flips a still-live job into ``STOPPED`` because the
+        pipeline finished all inputs before walltime, the Slurm allocation is
+        also cancelled here — otherwise a deletion path (which uses
+        ``refresh()``, not ``poll()``) would drop the DB row while leaving the
+        allocation orphaned until walltime with no way to reap it.
 
         Caller is responsible for persistence.
         """
@@ -737,6 +744,8 @@ class BatchJob(UUIDAuditBase):
 
         processed, total, state = await self._observe(client)
         status = self._status_from_observation(processed, total, state)
+        if status == BatchJobStatus.STOPPED and self.status != BatchJobStatus.STOPPED:
+            await self._cancel_allocation()
         self.status = status
         return status
 
@@ -779,6 +788,15 @@ class BatchJob(UUIDAuditBase):
             or status in _TERMINAL_STATUSES
             or total is None
         ):
+            # Pipeline finished before walltime: the allocation is still
+            # holding resources. The explicit stop() path reaps it; a natural
+            # completion never goes through stop(), so do it here at the
+            # transition edge.
+            if (
+                status == BatchJobStatus.STOPPED
+                and self.status != BatchJobStatus.STOPPED
+            ):
+                await self._cancel_allocation()
             self.status = status
             return status
 

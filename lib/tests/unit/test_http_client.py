@@ -28,6 +28,12 @@ def test_stream_timeout_disables_read_deadline() -> None:
     assert hc.STREAM_TIMEOUT.read is None
 
 
+def test_proxy_timeout_allows_slow_cpu_inference() -> None:
+    # Non-streaming proxied inference (e.g. CPU transcription) needs more than
+    # the default 30s read timeout, but stays bounded for the short-clip UI.
+    assert hc.PROXY_TIMEOUT.read == 60.0
+
+
 @pytest.mark.anyio
 async def test_client_can_be_closed() -> None:
     client = hc.create_http_client()

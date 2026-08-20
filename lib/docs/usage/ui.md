@@ -18,6 +18,7 @@ Blackfish ships with a browser-based UI served alongside the API at `http://loca
     - **Translation** — translate text files between languages.
     - **Object Detection** — zero-shot object detection on images.
     - **OCR** — extract text from images or scanned pages.
+    - **Embedding** — generate vector embeddings for text, image, or PDF files.
 - **Settings** — profile management, theme preference, and Hugging
   Face token management.
 
@@ -73,7 +74,7 @@ when a Slurm profile is selected.
 
 - From the **Jobs** page, click **New Job** — this is a dropdown menu.
 - Pick the task you want to run: **Transcription**, **Translation**,
-  **Object Detection**, or **OCR**.
+  **Object Detection**, **OCR**, or **Embedding**.
 - The New Job modal opens as a stepper:
     1. **Model** — pick a model and revision.
     2. **Task parameters** — fields vary by task:
@@ -81,6 +82,8 @@ when a Slurm profile is selected.
         - *Translation*: source language, target language.
         - *Object Detection*: labels, threshold, batch size, sample FPS.
         - *OCR*: output format.
+        - *Embedding*: encode mode, normalize, truncate dimension,
+          batch size (multi-page PDF inputs only), encode options.
     3. **Data** — use the directory browser to select an input directory
        on the cluster and an output directory to write results to. Set
        the input file extension to filter inputs.
@@ -95,7 +98,9 @@ when a Slurm profile is selected.
 - Click a job row to view file-level details. Each row shows the
   input and output file names, start time, elapsed time, and status (success
   or failure). Click a file row to open a side panel with a preview of
-  the output and additional details.
+  the output and additional details. Binary outputs have no preview —
+  embedding results (`.npy`) show "Preview not available" and can be
+  downloaded instead.
 
 ### Manage models
 

@@ -1106,6 +1106,40 @@ class TestTasks:
         rendered = job._pipeline_yaml()
         assert "output_ext: .txt" in rendered
 
+    def test_build_pipeline_config_builds_embed_task(self) -> None:
+        """build_pipeline_config emits a local embed task with its params."""
+        config = build_pipeline_config(
+            task="embed",
+            input_ext=".txt",
+            params={
+                "model": "sentence-transformers/all-MiniLM-L6-v2",
+                "normalize": True,
+            },
+            output_ext=".npy",
+        )
+
+        task = config["tasks"][0]
+        assert task["name"] == "embed"
+        assert task["kind"] == "local"
+        assert task["module"] == "tigerflow_ml.multimodal.embed.local"
+        assert task["input_ext"] == ".txt"
+        assert task["output_ext"] == ".npy"
+        assert task["params"]["normalize"] is True
+
+    def test_embed_pipeline_yaml_sets_npy_output_ext(self) -> None:
+        """An embed job with no explicit output_ext falls back to .npy in the
+        pipeline. The embed task raises on any other suffix, so without this the
+        job would fail on every input file.
+        """
+        job = create_test_batch_job(
+            task="embed",
+            input_ext=".txt",
+            output_ext=None,
+            params={"normalize": True},
+        )
+        rendered = job._pipeline_yaml()
+        assert "output_ext: .npy" in rendered
+
 
 class TestBatchJobImagePinning:
     """Tests for the persisted container image (``image_ref``).

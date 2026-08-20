@@ -577,6 +577,14 @@ COMPATIBLE_PIPELINES: dict[str, list[str]] = {
         "object-detection",
         "zero-shot-object-detection",
     ],
+    # Not a Hugging Face pipeline tag: "embedding" is our own label for the two
+    # tags sentence-transformers models actually carry. The embed *task* is
+    # named "embed" (tigerflow-ml's identifier); this is the service name the
+    # launcher filters models by.
+    "embedding": [
+        "sentence-similarity",
+        "feature-extraction",
+    ],
 }
 
 

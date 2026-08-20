@@ -458,6 +458,7 @@ Services are great for interactive work, but sometimes you need to run an ML tas
 | [`translate`](https://princeton-ddss.github.io/tigerflow-ml/next/tasks/translate)   | Translate text between languages          | `.txt`                 | `.txt`                  |
 | [`detect`](https://princeton-ddss.github.io/tigerflow-ml/next/tasks/detect)         | Zero-shot object detection on images      | `.png`, `.jpg`, etc.   | `.json`                 |
 | [`ocr`](https://princeton-ddss.github.io/tigerflow-ml/next/tasks/ocr)               | Extract text from images or scanned pages | `.png`, `.jpg`, etc.   | `.txt`, `.md`, `.json`  |
+| [`embed`](https://princeton-ddss.github.io/tigerflow-ml/next/tasks/embed)           | Generate vector embeddings for files      | `.txt`, `.md`, `.png`, `.pdf`, etc. | `.npy`     |
 
 ### `run` - Start a batch job
 

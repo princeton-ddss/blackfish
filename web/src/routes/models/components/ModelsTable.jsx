@@ -342,10 +342,13 @@ function RevisionRows({ revisions, activeDownload, cacheDir, homeDir, isRemote, 
         );
     }
 
-    // Revision rows
+    // Revision rows. Key on the DB row id (unique per Model row) rather than
+    // the revision hash: duplicate hashes have historically leaked in through
+    // a race in the refresh endpoint, and duplicate React keys break diffing —
+    // switching to a different model then reconciles against stale nodes.
     for (const revision of revisions) {
         rows.push(
-            <tr key={revision.revision} className="xl:hidden bg-gray-50 dark:bg-gray-900">
+            <tr key={revision.id} className="xl:hidden bg-gray-50 dark:bg-gray-900">
                 <td className="py-2 pl-4 pr-1 w-8"></td>
                 <td className="py-2 pl-2 pr-3 text-sm">
                     <div className="flex items-center gap-2 pl-4">
@@ -897,7 +900,7 @@ function ModelsTable({
                                                 );
                                             })()}
                                             {selectedModel.revisions.map((revision) => (
-                                                <tr key={revision.revision} className="bg-white dark:bg-gray-800">
+                                                <tr key={revision.id} className="bg-white dark:bg-gray-800">
                                                     <td className="py-3 pl-6 pr-4 text-left text-sm w-full">
                                                         <div className="flex items-center gap-1.5">
                                                             <span

@@ -216,6 +216,58 @@ class TestFetchModelsAPI:
             for model in result:
                 assert model.get("profile") == "default"
 
+    async def test_concurrent_refresh_does_not_create_duplicates(
+        self, client: AsyncTestClient
+    ):
+        """Two overlapping refresh calls both diff DB vs. filesystem and both
+        try to INSERT the same rows. The UNIQUE constraint on
+        (repo, profile, revision) plus the per-row savepoint in get_models
+        must collapse this to a single row, not two rows with different UUIDs
+        (the OoD-only bug that made the UI show ghost revisions)."""
+
+        # Return fresh Model instances on each call — production find_models
+        # builds new objects per scan, and sharing SQLAlchemy instances across
+        # sessions would trigger DetachedInstanceError unrelated to the race.
+        def make_fs_models():
+            return [
+                Model(
+                    repo="racy-org/racy-model",
+                    profile="default",
+                    revision="deadbeef",
+                    image="unknown",
+                    model_dir="/home/test/.blackfish/models/models--racy-org--racy-model",
+                    metadata_=None,
+                ),
+            ]
+
+        mock_find_models = AsyncMock(side_effect=lambda *_a, **_kw: make_fs_models())
+        mock_fetch = MagicMock(return_value=("text-generation", {"model_size_gb": 1.0}))
+
+        with patch("blackfish.server.asgi.find_models", mock_find_models):
+            with patch("blackfish.server.asgi.fetch_model_info_from_hub", mock_fetch):
+                r1, r2 = await asyncio.gather(
+                    client.get(
+                        "/api/models", params={"profile": "default", "refresh": True}
+                    ),
+                    client.get(
+                        "/api/models", params={"profile": "default", "refresh": True}
+                    ),
+                )
+
+        assert r1.status_code == 200, r1.text
+        assert r2.status_code == 200, r2.text
+
+        # Post-race: exactly one row for the raced key. Without the constraint
+        # and savepoint, this returns two rows with distinct UUIDs.
+        response = await client.get("/api/models", params={"profile": "default"})
+        result = response.json()
+        matching = [
+            m
+            for m in result
+            if m["repo"] == "racy-org/racy-model" and m["revision"] == "deadbeef"
+        ]
+        assert len(matching) == 1
+
     async def test_refresh_without_profile_is_rejected(self, client: AsyncTestClient):
         """Refresh without ?profile= should 400 — the CLI fans out per-profile."""
         response = await client.get("/api/models", params={"refresh": True})
@@ -662,6 +714,26 @@ class TestCreateModelAPI:
 
         # Same model ID returned
         assert model1["id"] == model2["id"]
+
+    async def test_create_model_concurrent_idempotent(self, client: AsyncTestClient):
+        """Two concurrent POSTs with the same (repo, profile, revision) must
+        both succeed with the same id. Under the pre-fix behaviour both
+        requests passed the check-then-insert guard and the loser surfaced
+        an IntegrityError (500) after the UNIQUE constraint landed."""
+        data = {
+            "repo": "concurrent-org/concurrent-model",
+            "profile": "default",
+            "revision": "v1.0",
+            "image": "text-generation",
+            "model_dir": "/tmp/models/concurrent-org--concurrent-model",
+        }
+        r1, r2 = await asyncio.gather(
+            client.post("/api/models", json=data),
+            client.post("/api/models", json=data),
+        )
+        assert r1.status_code == 201, r1.text
+        assert r2.status_code == 201, r2.text
+        assert r1.json()["id"] == r2.json()["id"]
 
 
 class TestDownloadModelAPI:

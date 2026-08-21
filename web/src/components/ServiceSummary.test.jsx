@@ -129,7 +129,27 @@ describe("ServiceSummary", () => {
       container.querySelectorAll('.gpus-indicator')
     ).filter((el) => el.textContent.trim() === "-");
     expect(gpus).toHaveLength(1);
+    // image_ref is null for services created before it was recorded, or
+    // never launched, so the row must degrade to a dash rather than blank.
+    expect(
+      container.querySelector('.service-summary__image').textContent.trim()
+    ).toBe("-");
     expect(baseElement).toMatchSnapshot();
+  });
+
+  it("renders the image tag, with the full reference as a title", () => {
+    // The column is narrow, so only the tag is shown; the full repo:tag is
+    // preserved in the title attribute for hover.
+    const { container } = render(
+      <ServiceSummary
+        service={{ ...mockService, image_ref: "vllm/vllm-openai:v0.20.0" }}
+        profile={mockProfile}
+        task="test-task"
+      />
+    );
+    const image = container.querySelector('.service-summary__image');
+    expect(image.textContent.trim()).toBe("v0.20.0");
+    expect(image.getAttribute("title")).toBe("vllm/vllm-openai:v0.20.0");
   });
 
   describe("Timer component", () => {

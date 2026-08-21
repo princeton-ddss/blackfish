@@ -336,6 +336,14 @@ function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActions 
                                 <span className="text-gray-900 dark:text-gray-100">{job.revision}</span>
                             </div>
                         )}
+                        {job.image_ref && (
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 dark:text-gray-400">Image:</span>
+                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono truncate ml-2 max-w-[200px]" title={job.image_ref}>
+                                    {job.image_ref}
+                                </span>
+                            </div>
+                        )}
                         {job.params && Object.keys(job.params).length > 0 && (
                             <>
                                 {Object.entries(job.params).map(([key, value]) => (
@@ -380,6 +388,7 @@ JobDetailsPanel.propTypes = {
         task: PropTypes.string,
         repo_id: PropTypes.string,
         revision: PropTypes.string,
+        image_ref: PropTypes.string,
         input_dir: PropTypes.string,
         output_dir: PropTypes.string,
         resources: PropTypes.shape({

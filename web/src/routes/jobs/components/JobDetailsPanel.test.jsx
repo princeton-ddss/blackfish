@@ -182,3 +182,32 @@ describe("JobDetailsPanel resume action", () => {
     expect(screen.queryByLabelText("Resume job")).not.toBeInTheDocument();
   });
 });
+
+describe("JobDetailsPanel image reference", () => {
+  const job = (extra = {}) => ({
+    id: "job-001",
+    name: "Batch Translation",
+    status: "stopped",
+    task: "translate",
+    repo_id: "google/gemma-3-4b-it",
+    ...extra,
+  });
+
+  test("shows the pinned image, with the full reference as a title", () => {
+    render(
+      <JobDetailsPanel
+        job={job({ image_ref: "ghcr.io/princeton-ddss/tigerflow-ml:0.1.1" })}
+      />,
+    );
+    const value = screen.getByTitle("ghcr.io/princeton-ddss/tigerflow-ml:0.1.1");
+    expect(value).toHaveTextContent("ghcr.io/princeton-ddss/tigerflow-ml:0.1.1");
+    expect(screen.getByText("Image:")).toBeInTheDocument();
+  });
+
+  test("omits the row when no image was recorded", () => {
+    // Null for jobs created before image_ref, or never launched — showing an
+    // empty "Image:" row would imply the pin is missing rather than unknown.
+    render(<JobDetailsPanel job={job()} />);
+    expect(screen.queryByText("Image:")).not.toBeInTheDocument();
+  });
+});

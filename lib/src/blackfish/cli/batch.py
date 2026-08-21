@@ -31,6 +31,7 @@ from blackfish.cli.profile import resolve_profile_or_exit
 from blackfish.server.models.profile import deserialize_profile
 from blackfish.server.utils import (
     format_datetime,
+    format_image_version,
     get_latest_commit,
     get_model_dir,
     get_models,
@@ -136,6 +137,7 @@ def list_batch_jobs(
         field_names=[
             "JOB ID",
             "TASK",
+            "VERSION",
             "MODEL",
             "CREATED",
             "UPDATED",
@@ -207,6 +209,7 @@ def list_batch_jobs(
                 [
                     job["id"][:DISPLAY_ID_LENGTH],
                     job.get("task", ""),
+                    format_image_version(job.get("image_ref")),
                     job.get("repo_id", ""),
                     format_datetime(datetime.fromisoformat(job["created_at"])),
                     format_datetime(datetime.fromisoformat(job["updated_at"])),

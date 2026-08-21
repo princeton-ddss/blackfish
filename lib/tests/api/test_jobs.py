@@ -1090,10 +1090,46 @@ class TestCreateBatchJobAPI:
 
         assert response.status_code == 400
 
+    async def test_create_job_accepts_explicit_null_image_ref(
+        self, client: AsyncTestClient
+    ):
+        """An explicit null means "no pin", same as omitting the field.
+
+        The validator must short-circuit on None: passing it to
+        ImageSpec.parse raises TypeError, which surfaced as a 400 with
+        "argument of type 'NoneType' is not iterable" — rejecting a request
+        that is perfectly valid. A frontend serializing an empty selector is
+        the likely source of an explicit null.
+        """
+
+        data = {
+            "name": "null-pin-job",
+            "task": "transcribe",
+            "repo_id": "openai/whisper-large-v3",
+            "image_ref": None,
+            "profile": {
+                "name": "test",
+                "home_dir": "/home/test",
+                "cache_dir": "/cache",
+            },
+            "input_dir": "/data/input",
+            "output_dir": "/data/output",
+        }
+
+        with patch.object(BatchJob, "start", new_callable=AsyncMock):
+            response = await client.post("/api/jobs", json=data)
+
+        assert response.status_code == 201
+        assert response.json()["image_ref"] is None
+
     async def test_create_job_without_image_ref_is_unpinned(
         self, client: AsyncTestClient
     ):
-        """Omitting image_ref leaves it NULL; start() backfills the default."""
+        """Omitting image_ref leaves it unset through build_batch_job.
+
+        start() is mocked here, so this observes the row before the backfill
+        runs; a real unpinned launch records the resolved default.
+        """
 
         data = {
             "name": "unpinned-job",

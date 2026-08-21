@@ -1028,9 +1028,15 @@ async def get_ports(request: Request) -> int:  # type: ignore
     return find_port()
 
 
-def is_valid_image_ref(ref: str) -> str:
-    """Validate an optional pinned container image reference ("repo:tag")."""
-    ImageSpec.parse(ref)  # raises ValueError if malformed
+def is_valid_image_ref(ref: str | None) -> str | None:
+    """Validate an optional pinned container image reference ("repo:tag").
+
+    An explicit ``null`` is equivalent to omitting the field ("no pin"), so it
+    passes through rather than reaching ``ImageSpec.parse`` — which would raise
+    TypeError on None and surface as a 400 with an unhelpful message.
+    """
+    if ref is not None:
+        ImageSpec.parse(ref)  # raises ValueError if malformed
     return ref
 
 

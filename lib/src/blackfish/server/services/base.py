@@ -134,7 +134,7 @@ class Service(UUIDAuditBase):
     }
 
     def __repr__(self) -> str:
-        return f"Service(id={self.id}, name={self.name}, image={self.image}, model={self.model}, profile={self.profile}, host={self.host}, user={self.user}, home_dir={self.home_dir}, cache_dir={self.cache_dir}, job_id={self.job_id}, port={self.port}, status={self.status}, scheduler={self.scheduler}, provider={self.provider}, grace_period={self.grace_period}, mount={self.mount})"
+        return f"Service(id={self.id}, name={self.name}, image={self.image}, image_ref={self.image_ref}, model={self.model}, profile={self.profile}, host={self.host}, user={self.user}, home_dir={self.home_dir}, cache_dir={self.cache_dir}, job_id={self.job_id}, port={self.port}, status={self.status}, scheduler={self.scheduler}, provider={self.provider}, grace_period={self.grace_period}, mount={self.mount})"
 
     def get_profile(self) -> Optional[BlackfishProfile]:
         if self.scheduler == JobScheduler.Slurm:

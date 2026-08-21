@@ -661,27 +661,27 @@ class BatchJob(UUIDAuditBase):
         if not self.pid:
             return JobState.MISSING
 
-        # Buffer against clock skew between this host and the cluster, and
-        # against the gap between row creation and sbatch actually recording a
-        # start time. Generous because being slightly too early costs nothing —
-        # a wrapped-around id is years old, not hours.
-        start_bound = self.created_at - datetime.timedelta(hours=6)
-
-        sacct_cmd = [
-            "env",
-            "TZ=UTC",
-            "sacct",
-            "-n",
-            "-P",
-            "-X",
-            "-j",
-            str(self.pid),
-            "-S",
-            start_bound.strftime("%Y-%m-%dT%H:%M:%S"),
-            "-o",
-            "State",
-        ]
         try:
+            # Buffer against clock skew between this host and the cluster, and
+            # against the gap between row creation and sbatch actually recording
+            # a start time. Generous because being slightly too early costs
+            # nothing — a wrapped-around id is years old, not hours.
+            start_bound = self.created_at - datetime.timedelta(hours=6)
+
+            sacct_cmd = [
+                "env",
+                "TZ=UTC",
+                "sacct",
+                "-n",
+                "-P",
+                "-X",
+                "-j",
+                str(self.pid),
+                "-S",
+                start_bound.strftime("%Y-%m-%dT%H:%M:%S"),
+                "-o",
+                "State",
+            ]
             if self.host == "localhost":
                 result = await remote.run(sacct_cmd)
             else:

@@ -131,6 +131,25 @@ def test_find_port_none():
     pass
 
 
+def test_format_image_version():
+    """The list tables show a tag, or a dash when nothing was recorded."""
+    # Well-formed refs render as the tag alone — the tables are already near
+    # terminal width, so the full repo:tag goes in the details views instead.
+    assert (
+        utils.format_image_version("ghcr.io/princeton-ddss/tigerflow-ml:0.1.1")
+        == "0.1.1"
+    )
+    assert utils.format_image_version("vllm/vllm-openai:v0.20.0") == "v0.20.0"
+
+    # NULL for rows created before image_ref existed, or never launched.
+    assert utils.format_image_version(None) == "-"
+    assert utils.format_image_version("") == "-"
+
+    # An unparsable value falls back to itself rather than raising, so a bad
+    # row can never break the whole table.
+    assert utils.format_image_version("garbage") == "garbage"
+
+
 def test_format_datetime():
     t1 = datetime.datetime(
         2025, 1, 12, 14, 58, 29, 646404, tzinfo=datetime.timezone.utc

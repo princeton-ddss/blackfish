@@ -119,6 +119,7 @@ from blackfish.server.setup import (
     ProfileSetupError,
     repair_slurm_profile,
 )
+from blackfish.server.images import ImageSpec
 from blackfish.server.models.model import (
     Model,
     PIPELINE_IMAGES,
@@ -1027,9 +1028,21 @@ async def get_ports(request: Request) -> int:  # type: ignore
     return find_port()
 
 
+def is_valid_image_ref(ref: str) -> str:
+    """Validate an optional pinned container image reference ("repo:tag")."""
+    ImageSpec.parse(ref)  # raises ValueError if malformed
+    return ref
+
+
+# A pinned container image, e.g. "ghcr.io/princeton-ddss/tigerflow-ml:0.1.1".
+# None means "use the configured default", which is then recorded on the row.
+ImageRef = Annotated[Optional[str], AfterValidator(is_valid_image_ref)]
+
+
 class ServiceRequest(BaseModel):
     name: str
     image: str
+    image_ref: ImageRef = None
     repo_id: str
     profile: Profile
     container_config: ContainerConfig
@@ -1060,6 +1073,7 @@ def build_service(data: ServiceRequest) -> Service:
     flattened = {
         "name": data.name,
         "model": data.repo_id,
+        "image_ref": data.image_ref,
         "profile": data.profile.name,
         "home_dir": data.profile.home_dir,
         "cache_dir": data.profile.cache_dir,
@@ -1338,6 +1352,7 @@ class BatchJobRequest(BaseModel):
     task: str  # e.g., "transcribe", "summarize"
     repo_id: str  # Model ID (e.g., "openai/whisper-large-v3")
     revision: Optional[str] = None  # Model revision
+    image_ref: ImageRef = None  # Pinned container image; None uses the default
     profile: Profile
     input_dir: str  # Input directory on cluster
     output_dir: str  # Output directory on cluster
@@ -1358,6 +1373,7 @@ def build_batch_job(data: BatchJobRequest) -> BatchJob:
         "task": data.task,
         "repo_id": data.repo_id,
         "revision": data.revision,
+        "image_ref": data.image_ref,
         "profile": data.profile.name,
         "home_dir": data.profile.home_dir,
         "input_dir": data.input_dir,

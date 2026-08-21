@@ -408,3 +408,104 @@ class TestNormalizeModelDirMigration:
             ).scalar_one()
 
         assert result == fixed
+
+
+def _create_minimal_service_table(conn: sa.Connection) -> None:
+    """Create a minimal `service` table for exercising the image_ref migration."""
+    conn.execute(
+        text(
+            """
+            CREATE TABLE service (
+                id BLOB NOT NULL,
+                name VARCHAR NOT NULL,
+                image VARCHAR NOT NULL,
+                model VARCHAR NOT NULL,
+                CONSTRAINT pk_service PRIMARY KEY (id)
+            )
+            """
+        )
+    )
+
+
+class TestAddImageRefColumns:
+    """Tests for 2026-08-21_add_image_ref_columns (revision 87981ca2ed42).
+
+    Adds a nullable `image_ref` to both `service` and `jobs`, recording the
+    container image a launch used so restarts can reuse it.
+    """
+
+    FILENAME = "2026-08-21_add_image_ref_columns_87981ca2ed42.py"
+
+    def test_schema_upgrade_adds_image_ref_to_both_tables(self, engine: Engine) -> None:
+        """Both tables gain a nullable image_ref column."""
+        with engine.connect() as conn:
+            _create_minimal_service_table(conn)
+            _create_v05_jobs_table(conn)
+            conn.commit()
+
+            migration = load_migration(self.FILENAME)
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.schema_upgrades()
+            conn.commit()
+
+            for table in ("service", "jobs"):
+                cols = _get_columns(conn, table)
+                assert "image_ref" in cols, f"missing image_ref on {table!r}"
+                # PRAGMA reports notnull=1 for NOT NULL columns.
+                assert not cols["image_ref"]["notnull"], (
+                    f"image_ref on {table!r} must be nullable: pre-existing rows "
+                    "have no recorded image, and NULL means 'use the default'"
+                )
+
+    def test_existing_rows_survive_with_null_image_ref(self, engine: Engine) -> None:
+        """Rows created before the migration keep their data, with image_ref NULL."""
+        with engine.connect() as conn:
+            _create_minimal_service_table(conn)
+            _create_v05_jobs_table(conn)
+            conn.execute(
+                text(
+                    "INSERT INTO service (id, name, image, model) "
+                    "VALUES (:id, :n, :i, :m)"
+                ),
+                {
+                    "id": b"svc",
+                    "n": "existing",
+                    "i": "text_generation",
+                    "m": "meta-llama/Llama-3.1-8B",
+                },
+            )
+            conn.commit()
+
+            migration = load_migration(self.FILENAME)
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.schema_upgrades()
+            conn.commit()
+
+            row = conn.execute(text("SELECT name, image, image_ref FROM service")).one()
+
+        assert row.name == "existing"
+        assert row.image == "text_generation"
+        assert row.image_ref is None
+
+    def test_schema_downgrade_removes_image_ref(self, engine: Engine) -> None:
+        """Downgrade drops the column from both tables."""
+        with engine.connect() as conn:
+            _create_minimal_service_table(conn)
+            _create_v05_jobs_table(conn)
+            conn.commit()
+
+            migration = load_migration(self.FILENAME)
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.schema_upgrades()
+            conn.commit()
+
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.schema_downgrades()
+            conn.commit()
+
+            for table in ("service", "jobs"):
+                assert "image_ref" not in _get_columns(conn, table)

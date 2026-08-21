@@ -1042,6 +1042,78 @@ class TestCreateBatchJobAPI:
             assert job["repo_id"] == "openai/whisper-large-v3"
             assert job["profile"] == "test"  # only returns the name
 
+    async def test_create_job_with_pinned_image(self, client: AsyncTestClient):
+        """A pinned image_ref is persisted on the job."""
+
+        data = {
+            "name": "pinned-job",
+            "task": "transcribe",
+            "repo_id": "openai/whisper-large-v3",
+            "image_ref": "ghcr.io/princeton-ddss/tigerflow-ml:9.9.9",
+            "profile": {
+                "name": "test",
+                "home_dir": "/home/test",
+                "cache_dir": "/cache",
+            },
+            "input_dir": "/data/input",
+            "output_dir": "/data/output",
+        }
+
+        with patch.object(BatchJob, "start", new_callable=AsyncMock):
+            response = await client.post("/api/jobs", json=data)
+
+        assert response.status_code == 201
+        assert (
+            response.json()["image_ref"] == "ghcr.io/princeton-ddss/tigerflow-ml:9.9.9"
+        )
+
+    async def test_create_job_rejects_malformed_image_ref(
+        self, client: AsyncTestClient
+    ):
+        """A malformed ref is a 400, not a job that fails later at render."""
+
+        data = {
+            "name": "bad-pin",
+            "task": "transcribe",
+            "repo_id": "openai/whisper-large-v3",
+            "image_ref": "missing-the-tag",
+            "profile": {
+                "name": "test",
+                "home_dir": "/home/test",
+                "cache_dir": "/cache",
+            },
+            "input_dir": "/data/input",
+            "output_dir": "/data/output",
+        }
+
+        response = await client.post("/api/jobs", json=data)
+
+        assert response.status_code == 400
+
+    async def test_create_job_without_image_ref_is_unpinned(
+        self, client: AsyncTestClient
+    ):
+        """Omitting image_ref leaves it NULL; start() backfills the default."""
+
+        data = {
+            "name": "unpinned-job",
+            "task": "transcribe",
+            "repo_id": "openai/whisper-large-v3",
+            "profile": {
+                "name": "test",
+                "home_dir": "/home/test",
+                "cache_dir": "/cache",
+            },
+            "input_dir": "/data/input",
+            "output_dir": "/data/output",
+        }
+
+        with patch.object(BatchJob, "start", new_callable=AsyncMock):
+            response = await client.post("/api/jobs", json=data)
+
+        assert response.status_code == 201
+        assert response.json()["image_ref"] is None
+
     async def test_create_job_missing_request_body(self, client: AsyncTestClient):
         """Test creating a job with missing request body."""
         response = await client.post("/api/jobs")

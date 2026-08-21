@@ -43,6 +43,23 @@ class ImageSpec:
         return cls(repo=repo, tag=tag)
 
 
+def resolve_image(image_ref: str | None, default: ImageSpec) -> ImageSpec:
+    """The pinned image if one was recorded, else the configured default.
+
+    Services and batch jobs persist the image they launched with (``image_ref``)
+    so that restarts reuse it rather than picking up whatever the config
+    currently points at.
+
+    Args:
+        image_ref: A persisted ``repo:tag`` reference, or None to use the default.
+        default: The configured image for this service/task.
+
+    Raises:
+        ValueError: If ``image_ref`` is set but malformed.
+    """
+    return ImageSpec.parse(image_ref) if image_ref else default
+
+
 DEFAULT_IMAGES: dict[str, ImageSpec] = {
     "text_generation": ImageSpec(repo="vllm/vllm-openai", tag="v0.20.0"),
     "speech_recognition": ImageSpec(

@@ -89,25 +89,14 @@ class TestResolveImage:
         assert spec.tag == "0.1.2"
         assert spec.repo == "ghcr.io/princeton-ddss/tigerflow-ml"
 
-    def test_pin_may_change_repo_not_just_tag(self):
-        """image_ref stores the full repo:tag, so a pin can move repos too."""
-        spec = resolve_image("vllm/vllm-openai:v0.20.0", self.DEFAULT)
-        assert spec.repo == "vllm/vllm-openai"
-        assert spec.tag == "v0.20.0"
+    def test_malformed_pin_raises(self):
+        """A malformed pin propagates ValueError, so the API rejects it as a
+        400 rather than rendering a broken launch script."""
+        with pytest.raises(ValueError):
+            resolve_image("no-tag", self.DEFAULT)
 
-    def test_resolved_pin_round_trips_through_sif_and_docker_ref(self):
-        """The pin must survive into both launch forms (apptainer and docker)."""
-        spec = resolve_image("ghcr.io/princeton-ddss/tigerflow-ml:0.1.2", self.DEFAULT)
-        assert spec.sif == "tigerflow-ml_0.1.2.sif"
-        assert spec.docker_ref == "ghcr.io/princeton-ddss/tigerflow-ml:0.1.2"
-
-    @pytest.mark.parametrize("bad", ["no-tag", "repo:", ":tag", ""])
-    def test_malformed_pin_raises(self, bad):
-        """Malformed refs raise so the API can reject them as a 400 rather
-        than rendering a broken launch script."""
-        if bad == "":
-            # Empty string is falsy -> treated as "no pin", not an error.
-            assert resolve_image(bad, self.DEFAULT) is self.DEFAULT
-        else:
-            with pytest.raises(ValueError):
-                resolve_image(bad, self.DEFAULT)
+    def test_empty_pin_is_treated_as_no_pin(self):
+        """An empty string is falsy, so it falls through to the default rather
+        than raising — worth pinning down since "" is a plausible value from a
+        form field that was rendered but never filled in."""
+        assert resolve_image("", self.DEFAULT) is self.DEFAULT

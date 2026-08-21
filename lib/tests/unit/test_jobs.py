@@ -5,7 +5,7 @@ from uuid import UUID
 
 import pytest
 from blackfish.server.config import ContainerProvider
-from blackfish.server.images import DEFAULT_IMAGES
+from blackfish.server.images import DEFAULT_IMAGES, ImageSpec
 from blackfish.server.job import JobState
 from blackfish.server.jobs.base import (
     DEFAULT_JOB_RESOURCES,
@@ -1148,22 +1148,43 @@ class TestBatchJobImagePinning:
         assert DEFAULT_IMAGES["tigerflow_ml"].sif not in script
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
-    def test_resubmission_still_renders_the_pin(self, mock_deserialize: Mock) -> None:
+    def test_pin_survives_a_changed_configured_default(
+        self, mock_deserialize: Mock
+    ) -> None:
         """The regression this feature exists to prevent.
 
         Batch jobs re-render on every resubmission (the restart loop calls
-        _submit -> _render_script), so a long job must not drift onto a new
-        image just because the configured default moved.
+        _submit -> _render_script). If the configured default moves mid-flight
+        — a redeploy with a new DEFAULT_IMAGES pin, or a changed
+        BLACKFISH_TIGERFLOW_ML_IMAGE — a job holding a pin must keep rendering
+        *its* image, not the new default.
         """
         mock_deserialize.return_value = self._slurm_localhost()
         job = create_test_batch_job(
             host="localhost",
             image_ref="ghcr.io/princeton-ddss/tigerflow-ml:9.9.9",
-            restarts=3,
         )
 
-        for _ in range(2):
-            assert "tigerflow-ml_9.9.9.sif" in job._render_script(MockAppConfig())
+        # First allocation, under the original default.
+        assert "tigerflow-ml_9.9.9.sif" in job._render_script(MockAppConfig())
+
+        # The deployment's default moves out from under the running job.
+        class MovedDefaultConfig(MockAppConfig):
+            IMAGES = {
+                **DEFAULT_IMAGES,
+                "tigerflow_ml": ImageSpec(
+                    repo="ghcr.io/princeton-ddss/tigerflow-ml", tag="5.5.5"
+                ),
+            }
+
+        # Sanity-check the new default is live: an *unpinned* job follows it.
+        unpinned = create_test_batch_job(host="localhost", image_ref=None)
+        assert "tigerflow-ml_5.5.5.sif" in unpinned._render_script(MovedDefaultConfig())
+
+        # The pinned job does not drift onto it.
+        resubmitted = job._render_script(MovedDefaultConfig())
+        assert "tigerflow-ml_9.9.9.sif" in resubmitted
+        assert "tigerflow-ml_5.5.5.sif" not in resubmitted
 
     async def test_start_backfills_image_ref_from_the_client(self) -> None:
         """An unpinned launch records what actually ran.

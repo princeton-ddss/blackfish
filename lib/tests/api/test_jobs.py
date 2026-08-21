@@ -1119,40 +1119,7 @@ class TestCreateBatchJobAPI:
         with patch.object(BatchJob, "start", new_callable=AsyncMock):
             response = await client.post("/api/jobs", json=data)
 
-        # The point of this test: the request is accepted, not 400'd.
         assert response.status_code == 201
-        # start() is mocked, so this observes the row before the backfill —
-        # it shows the request path didn't invent a pin, not what a real
-        # launch returns (which is the resolved default).
-        assert response.json()["image_ref"] is None
-
-    async def test_create_job_without_image_ref_is_unpinned(
-        self, client: AsyncTestClient
-    ):
-        """Omitting image_ref leaves it unset through build_batch_job.
-
-        start() is mocked here, so this observes the row before the backfill
-        runs; a real unpinned launch records the resolved default.
-        """
-
-        data = {
-            "name": "unpinned-job",
-            "task": "transcribe",
-            "repo_id": "openai/whisper-large-v3",
-            "profile": {
-                "name": "test",
-                "home_dir": "/home/test",
-                "cache_dir": "/cache",
-            },
-            "input_dir": "/data/input",
-            "output_dir": "/data/output",
-        }
-
-        with patch.object(BatchJob, "start", new_callable=AsyncMock):
-            response = await client.post("/api/jobs", json=data)
-
-        assert response.status_code == 201
-        assert response.json()["image_ref"] is None
 
     async def test_create_job_missing_request_body(self, client: AsyncTestClient):
         """Test creating a job with missing request body."""

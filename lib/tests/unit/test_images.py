@@ -2,7 +2,7 @@
 
 import pytest
 
-from blackfish.server.images import DEFAULT_IMAGES, ImageSpec
+from blackfish.server.images import DEFAULT_IMAGES, ImageSpec, resolve_image
 
 
 def test_image_spec_docker_ref():
@@ -68,3 +68,35 @@ def test_default_images_covers_all_concrete_services():
         f"Service identities {identities} do not match "
         f"DEFAULT_IMAGES service keys {service_image_keys}"
     )
+
+
+class TestResolveImage:
+    """Tests for resolve_image, the pin-or-default helper.
+
+    Services and batch jobs persist the image they launched with so that
+    restarts reuse it rather than following a changed config default.
+    """
+
+    DEFAULT = ImageSpec(repo="ghcr.io/princeton-ddss/tigerflow-ml", tag="0.1.1")
+
+    def test_returns_default_when_no_pin(self):
+        assert resolve_image(None, self.DEFAULT) is self.DEFAULT
+
+    def test_pin_wins_over_default(self):
+        """A recorded pin must beat the configured default — this is the whole
+        point: a config change must not silently swap a running job's image."""
+        spec = resolve_image("ghcr.io/princeton-ddss/tigerflow-ml:0.1.2", self.DEFAULT)
+        assert spec.tag == "0.1.2"
+        assert spec.repo == "ghcr.io/princeton-ddss/tigerflow-ml"
+
+    def test_malformed_pin_raises(self):
+        """A malformed pin propagates ValueError, so the API rejects it as a
+        400 rather than rendering a broken launch script."""
+        with pytest.raises(ValueError):
+            resolve_image("no-tag", self.DEFAULT)
+
+    def test_empty_pin_is_treated_as_no_pin(self):
+        """An empty string is falsy, so it falls through to the default rather
+        than raising — worth pinning down since "" is a plausible value from a
+        form field that was rendered but never filled in."""
+        assert resolve_image("", self.DEFAULT) is self.DEFAULT

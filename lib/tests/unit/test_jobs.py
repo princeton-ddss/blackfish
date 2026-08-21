@@ -5,7 +5,7 @@ from uuid import UUID
 
 import pytest
 from blackfish.server.config import ContainerProvider
-from blackfish.server.images import DEFAULT_IMAGES
+from blackfish.server.images import DEFAULT_IMAGES, ImageSpec
 from blackfish.server.job import JobState
 from blackfish.server.jobs.base import (
     DEFAULT_JOB_RESOURCES,
@@ -77,6 +77,9 @@ def create_mock_client() -> AsyncMock:
     client.host = "localhost"
     client.runner = AsyncMock()
     client.runner.run = AsyncMock(return_value=(0, b"", b""))
+    # Set on the real client in __init__, so `spec` doesn't provide it. start()
+    # reads it to record the image the job actually launched with.
+    client.image = DEFAULT_IMAGES["tigerflow_ml"]
     return client
 
 
@@ -1098,3 +1101,152 @@ class TestTasks:
         )
         rendered = job._pipeline_yaml()
         assert "output_ext: .txt" in rendered
+
+
+class TestBatchJobImagePinning:
+    """Tests for the persisted container image (``image_ref``).
+
+    A job records the image it launched with so that resubmissions reuse it
+    rather than following a changed configuration default.
+    """
+
+    def _slurm_localhost(self):
+        from blackfish.server.models.profile import SlurmProfile
+
+        return SlurmProfile(
+            name="onburst",
+            host="localhost",
+            user="alice",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/cache",
+        )
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_render_uses_configured_default_when_unpinned(
+        self, mock_deserialize: Mock
+    ) -> None:
+        """No pin -> the configured default SIF, i.e. today's behavior."""
+        mock_deserialize.return_value = self._slurm_localhost()
+        job = create_test_batch_job(host="localhost", image_ref=None)
+
+        script = job._render_script(MockAppConfig())
+
+        assert DEFAULT_IMAGES["tigerflow_ml"].sif in script
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_render_uses_the_pin_when_set(self, mock_deserialize: Mock) -> None:
+        """A pin overrides the configured default in the launch script."""
+        mock_deserialize.return_value = self._slurm_localhost()
+        job = create_test_batch_job(
+            host="localhost",
+            image_ref="ghcr.io/princeton-ddss/tigerflow-ml:9.9.9",
+        )
+
+        script = job._render_script(MockAppConfig())
+
+        assert "tigerflow-ml_9.9.9.sif" in script
+        assert DEFAULT_IMAGES["tigerflow_ml"].sif not in script
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_pin_survives_a_changed_configured_default(
+        self, mock_deserialize: Mock
+    ) -> None:
+        """The regression this feature exists to prevent.
+
+        Batch jobs re-render on every resubmission (the restart loop calls
+        _submit -> _render_script). If the configured default moves mid-flight
+        — a redeploy with a new DEFAULT_IMAGES pin, or a changed
+        BLACKFISH_TIGERFLOW_ML_IMAGE — a job holding a pin must keep rendering
+        *its* image, not the new default.
+        """
+        mock_deserialize.return_value = self._slurm_localhost()
+        job = create_test_batch_job(
+            host="localhost",
+            image_ref="ghcr.io/princeton-ddss/tigerflow-ml:9.9.9",
+        )
+
+        # First allocation, under the original default.
+        assert "tigerflow-ml_9.9.9.sif" in job._render_script(MockAppConfig())
+
+        # The deployment's default moves out from under the running job.
+        class MovedDefaultConfig(MockAppConfig):
+            IMAGES = {
+                **DEFAULT_IMAGES,
+                "tigerflow_ml": ImageSpec(
+                    repo="ghcr.io/princeton-ddss/tigerflow-ml", tag="5.5.5"
+                ),
+            }
+
+        # Sanity-check the new default is live: an *unpinned* job follows it.
+        unpinned = create_test_batch_job(host="localhost", image_ref=None)
+        assert "tigerflow-ml_5.5.5.sif" in unpinned._render_script(MovedDefaultConfig())
+
+        # The pinned job does not drift onto it.
+        resubmitted = job._render_script(MovedDefaultConfig())
+        assert "tigerflow-ml_9.9.9.sif" in resubmitted
+        assert "tigerflow-ml_5.5.5.sif" not in resubmitted
+
+    async def test_start_backfills_image_ref_from_the_client(self) -> None:
+        """An unpinned launch records what actually ran.
+
+        The value comes from the client, which resolved and health-checked the
+        same spec the script uses, so the record can't disagree with reality.
+        """
+        job = create_test_batch_job(image_ref=None)
+        client = create_mock_client()
+        client.image = DEFAULT_IMAGES["tigerflow_ml"]
+        client.check_health.return_value = TigerFlowVersions(
+            tigerflow="0.1.0", tigerflow_ml="0.1.0"
+        )
+
+        with patch.object(job, "_submit", new=AsyncMock(return_value="99")):
+            await job.start(MockAppConfig(), client)
+
+        assert job.image_ref == DEFAULT_IMAGES["tigerflow_ml"].docker_ref
+
+    async def test_start_does_not_overwrite_an_existing_pin(self) -> None:
+        """A user-supplied pin survives start(); backfill only fills a blank."""
+        pinned = "ghcr.io/princeton-ddss/tigerflow-ml:9.9.9"
+        job = create_test_batch_job(image_ref=pinned)
+        client = create_mock_client()
+        client.image = DEFAULT_IMAGES["tigerflow_ml"]
+        client.check_health.return_value = TigerFlowVersions(
+            tigerflow="0.1.0", tigerflow_ml="0.1.0"
+        )
+
+        with patch.object(job, "_submit", new=AsyncMock(return_value="99")):
+            await job.start(MockAppConfig(), client)
+
+        assert job.image_ref == pinned
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_client_is_built_from_the_jobs_pin(self, mock_deserialize: Mock) -> None:
+        """The health-check client must probe the SIF the script will run.
+
+        create_tigerflow_client resolves an image independently of
+        _render_script. If it ignored the pin, check_health would verify one
+        image (and record its versions) while the job ran another.
+        """
+        mock_deserialize.return_value = self._slurm_localhost()
+        job = create_test_batch_job(
+            host="localhost",
+            image_ref="ghcr.io/princeton-ddss/tigerflow-ml:9.9.9",
+        )
+
+        client = create_tigerflow_client(job, MockAppConfig())
+
+        assert client.image.tag == "9.9.9"
+        assert "tigerflow-ml_9.9.9.sif" in client.sif_path
+        # And it matches what the launch script actually references.
+        assert client.image.sif in job._render_script(MockAppConfig())
+
+    @patch("blackfish.server.jobs.base.deserialize_profile")
+    def test_client_falls_back_to_default_when_unpinned(
+        self, mock_deserialize: Mock
+    ) -> None:
+        mock_deserialize.return_value = self._slurm_localhost()
+        job = create_test_batch_job(host="localhost", image_ref=None)
+
+        client = create_tigerflow_client(job, MockAppConfig())
+
+        assert client.image == DEFAULT_IMAGES["tigerflow_ml"]

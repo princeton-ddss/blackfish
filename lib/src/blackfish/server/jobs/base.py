@@ -130,13 +130,24 @@ def format_status(status: BatchJobStatus | None) -> str:
 def _resolve_image_and_provider(
     app_config: "State | BlackfishConfig",
     profile: "BlackfishProfile | None",
+    image_ref: str | None = None,
 ) -> tuple[Any, Any]:
     """Resolve the tigerflow-ml ImageSpec and container provider.
 
     The cluster runs Apptainer, so only a LocalProfile consults the locally
     detected ``CONTAINER_PROVIDER``; everything else is Apptainer.
+
+    Args:
+        app_config: Application configuration (IMAGES, CONTAINER_PROVIDER).
+        profile: The job's profile, which decides the container provider.
+        image_ref: A job's pinned ``repo:tag``, if it recorded one. Callers
+            holding a job MUST pass ``job.image_ref``: the launch script and
+            the health-check client each resolve an image independently, and
+            if they disagree the pre-flight validates a different SIF than the
+            job actually runs.
     """
     from blackfish.server.config import ContainerProvider, config as _config
+    from blackfish.server.images import resolve_image
 
     images = getattr(app_config, "IMAGES", None) or _config.IMAGES
 
@@ -149,7 +160,7 @@ def _resolve_image_and_provider(
             or ContainerProvider.Apptainer
         )
 
-    return images["tigerflow_ml"], provider
+    return resolve_image(image_ref, images["tigerflow_ml"]), provider
 
 
 def create_tigerflow_client_for_profile(
@@ -215,7 +226,10 @@ def create_tigerflow_client(
     # SIF location uses the profile cache_dir, not job.cache_dir (the HF cache).
     cache_dir = profile.cache_dir if profile else home_dir
 
-    image, provider = _resolve_image_and_provider(app_config, profile)
+    # Pass the job's pin: this client's SIF path is what check_health probes,
+    # and it must be the same image _render_script launches. Resolving the
+    # default here would validate one image while the job ran another.
+    image, provider = _resolve_image_and_provider(app_config, profile, job.image_ref)
     return TigerFlowClient(
         runner=runner,
         home_dir=home_dir,
@@ -283,7 +297,16 @@ class BatchJob(UUIDAuditBase):
     )
     processed_highwater: Mapped[int] = mapped_column(default=0)
 
-    # TigerFlow versions (for reproducibility)
+    # The container image this job actually ran, as "repo:tag". Set at launch
+    # (from the request, else the configured default) and reused on every
+    # resubmission, so a long job that restarts keeps the same image even if
+    # the configured default changes. NULL for jobs started before this was
+    # recorded.
+    image_ref: Mapped[Optional[str]]
+
+    # TigerFlow versions (for reproducibility). Read from *inside* the image
+    # at launch, so they describe its contents; `image_ref` above is the
+    # image that was chosen.
     tigerflow_version: Mapped[Optional[str]]
     tigerflow_ml_version: Mapped[Optional[str]]
 
@@ -361,7 +384,9 @@ class BatchJob(UUIDAuditBase):
             home_dir, "jobs", self.id.hex, f"pipeline-{self.id}.yaml"
         )
 
-        image, provider = _resolve_image_and_provider(app_config, profile)
+        image, provider = _resolve_image_and_provider(
+            app_config, profile, self.image_ref
+        )
         env = Environment(loader=PackageLoader("blackfish.server", "templates"))
         template = env.get_template(f"batch_{scheduler}.sh")
         return template.render(
@@ -464,6 +489,13 @@ class BatchJob(UUIDAuditBase):
         versions = await client.check_health()
         self.tigerflow_version = versions.tigerflow
         self.tigerflow_ml_version = versions.tigerflow_ml
+
+        # Record the image actually launched, so resubmissions reuse it even if
+        # the configured default changes. Taken from the client, which resolved
+        # (and just health-checked) the same spec _render_script will use.
+        # Only on first start: resume/restart must keep the existing pin.
+        if self.image_ref is None:
+            self.image_ref = client.image.docker_ref
 
         await self._ensure_directories(client)
 

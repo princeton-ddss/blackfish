@@ -32,6 +32,7 @@ from blackfish.server.logger import logger
 from blackfish.server.utils import find_port
 from blackfish.server.http_client import HEALTH_CHECK_TIMEOUT
 from blackfish.server.config import ContainerProvider, config as blackfish_config
+from blackfish.server.images import resolve_image
 from blackfish.server.models.profile import BlackfishProfile, LocalProfile, SlurmProfile
 
 
@@ -95,7 +96,14 @@ class Service(UUIDAuditBase):
     __tablename__ = "service"
 
     name: Mapped[str]
+    # The service *type* (e.g. "text_generation"). Doubles as the polymorphic
+    # discriminator and the IMAGES/template key — not a container reference.
     image: Mapped[str]
+    # The container image this service actually ran, as "repo:tag". Set at
+    # launch (from the request, else the configured default) and reused on
+    # restart, so a config change can't silently swap the image underneath a
+    # running service. NULL for services started before this was recorded.
+    image_ref: Mapped[Optional[str]]
     model: Mapped[str]
 
     profile: Mapped[str]
@@ -126,7 +134,7 @@ class Service(UUIDAuditBase):
     }
 
     def __repr__(self) -> str:
-        return f"Service(id={self.id}, name={self.name}, image={self.image}, model={self.model}, profile={self.profile}, host={self.host}, user={self.user}, home_dir={self.home_dir}, cache_dir={self.cache_dir}, job_id={self.job_id}, port={self.port}, status={self.status}, scheduler={self.scheduler}, provider={self.provider}, grace_period={self.grace_period}, mount={self.mount})"
+        return f"Service(id={self.id}, name={self.name}, image={self.image}, image_ref={self.image_ref}, model={self.model}, profile={self.profile}, host={self.host}, user={self.user}, home_dir={self.home_dir}, cache_dir={self.cache_dir}, job_id={self.job_id}, port={self.port}, status={self.status}, scheduler={self.scheduler}, provider={self.provider}, grace_period={self.grace_period}, mount={self.mount})"
 
     def get_profile(self) -> Optional[BlackfishProfile]:
         if self.scheduler == JobScheduler.Slurm:
@@ -679,6 +687,14 @@ class Service(UUIDAuditBase):
     ) -> str:
         env = Environment(loader=PackageLoader("blackfish.server", "templates"))
         template = env.get_template(f"{self.image}_{self.scheduler or 'local'}.sh")
+        image = resolve_image(self.image_ref, blackfish_config.IMAGES[self.image])
+
+        # Record the image actually rendered, so a restart reuses it even if the
+        # configured default changes. Backfilled here (rather than in start())
+        # because the Slurm and local branches each render separately.
+        if self.image_ref is None:
+            self.image_ref = image.docker_ref
+
         job_script = template.render(
             uuid=self.id.hex,
             name=self.name,
@@ -688,7 +704,7 @@ class Service(UUIDAuditBase):
             container_config=container_config,
             job_config=job_config,
             mount=self.mount,
-            image=blackfish_config.IMAGES[self.image],
+            image=image,
         )
 
         return job_script

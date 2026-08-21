@@ -224,3 +224,75 @@ class TestServiceLaunchError:
         error = ServiceLaunchError("submit", "hpc.princeton.edu")
         assert error.error_type == "submit"
         assert error.host == "hpc.princeton.edu"
+
+
+class TestServiceImagePinning:
+    """Tests for the persisted container image (``image_ref``) on services.
+
+    A service records the image it launched with so that a restart reuses it
+    rather than following a changed configuration default.
+    """
+
+    def _service(self, **kwargs):
+        from uuid import UUID
+
+        from blackfish.server.job import JobScheduler
+        from blackfish.server.services.text_generation import TextGeneration
+
+        defaults = {
+            "id": UUID("2a7a8e62-40cc-4240-a825-463e5b11a81f"),
+            "name": "test-service",
+            "model": "meta-llama/Llama-3.1-8B-Instruct",
+            "profile": "default",
+            "host": "localhost",
+            "user": "alice",
+            "home_dir": "/home/alice/.blackfish",
+            "cache_dir": "/scratch/cache",
+            "scheduler": JobScheduler.Slurm,
+            "grace_period": 180,
+        }
+        defaults.update(kwargs)
+        return TextGeneration(**defaults)
+
+    def _render(self, service):
+        from blackfish.server.job import SlurmJobConfig
+        from blackfish.server.services.text_generation import TextGenerationConfig
+
+        return service.render_job_script(
+            TextGenerationConfig(port=8080),
+            SlurmJobConfig(name="test-service"),
+        )
+
+    def test_render_uses_configured_default_when_unpinned(self):
+        """No pin -> the configured default SIF, i.e. today's behavior."""
+        from blackfish.server.images import DEFAULT_IMAGES
+
+        script = self._render(self._service(image_ref=None))
+
+        assert DEFAULT_IMAGES["text_generation"].sif in script
+
+    def test_render_uses_the_pin_when_set(self):
+        """A pin overrides the configured default in the launch script."""
+        from blackfish.server.images import DEFAULT_IMAGES
+
+        script = self._render(self._service(image_ref="vllm/vllm-openai:v9.9.9"))
+
+        assert "vllm-openai_v9.9.9.sif" in script
+        assert DEFAULT_IMAGES["text_generation"].sif not in script
+
+    def test_render_backfills_image_ref_when_unpinned(self):
+        """An unpinned render records what it actually used, so a later
+        restart reuses that image instead of a changed default."""
+        from blackfish.server.images import DEFAULT_IMAGES
+
+        service = self._service(image_ref=None)
+        self._render(service)
+
+        assert service.image_ref == DEFAULT_IMAGES["text_generation"].docker_ref
+
+    def test_render_does_not_overwrite_an_existing_pin(self):
+        """Backfill only fills a blank; a user-supplied pin survives."""
+        service = self._service(image_ref="vllm/vllm-openai:v9.9.9")
+        self._render(service)
+
+        assert service.image_ref == "vllm/vllm-openai:v9.9.9"

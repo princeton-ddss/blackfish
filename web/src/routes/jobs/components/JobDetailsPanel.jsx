@@ -325,7 +325,7 @@ function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActions 
                         {job.repo_id && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Model:</span>
-                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono truncate ml-2 max-w-[200px]" title={job.repo_id}>
+                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono truncate ml-2 max-w-[320px]" title={job.repo_id}>
                                     {job.repo_id}
                                 </span>
                             </div>
@@ -333,13 +333,15 @@ function JobDetailsPanel({ job, onStopJob, onResumeJob, onDeleteJob, jobActions 
                         {job.revision && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Revision:</span>
-                                <span className="text-gray-900 dark:text-gray-100">{job.revision}</span>
+                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono truncate ml-2 max-w-[320px]" title={job.revision}>
+                                    {job.revision}
+                                </span>
                             </div>
                         )}
                         {job.image_ref && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Image:</span>
-                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono truncate ml-2 max-w-[200px]" title={job.image_ref}>
+                                <span className="text-gray-900 dark:text-gray-100 text-xs font-mono truncate ml-2 max-w-[320px]" title={job.image_ref}>
                                     {job.image_ref}
                                 </span>
                             </div>

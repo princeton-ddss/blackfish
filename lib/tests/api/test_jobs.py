@@ -1119,7 +1119,11 @@ class TestCreateBatchJobAPI:
         with patch.object(BatchJob, "start", new_callable=AsyncMock):
             response = await client.post("/api/jobs", json=data)
 
+        # The point of this test: the request is accepted, not 400'd.
         assert response.status_code == 201
+        # start() is mocked, so this observes the row before the backfill —
+        # it shows the request path didn't invent a pin, not what a real
+        # launch returns (which is the resolved default).
         assert response.json()["image_ref"] is None
 
     async def test_create_job_without_image_ref_is_unpinned(

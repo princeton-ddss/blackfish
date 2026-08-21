@@ -120,6 +120,7 @@ from blackfish.server.setup import (
     repair_slurm_profile,
 )
 from blackfish.server.images import ImageSpec
+from blackfish.server.image_probe import list_staged_tags
 from blackfish.server.models.model import (
     Model,
     PIPELINE_IMAGES,
@@ -1026,6 +1027,56 @@ async def delete_audio(path: str, profile: Optional[str] = None) -> Path | str:
 async def get_ports(request: Request) -> int:  # type: ignore
     """Find an available port on the server. This endpoint allows a UI to run local services."""
     return find_port()
+
+
+class StagedContainer(BaseModel):
+    """The container versions available for one service on a profile."""
+
+    service: str  # logical service name, e.g. "text_generation"
+    repo: str  # always from config; a .sif filename cannot yield a repo
+    tags: list[str]  # staged tags, version-ordered, unparsable ones last
+    default: str  # the configured tag; always present
+    default_staged: bool  # whether that tag's .sif is actually on disk
+
+
+@get("/api/containers", guards=ENDPOINT_GUARDS)
+async def list_containers(profile: str) -> list[StagedContainer]:
+    """List the container images staged on a profile, per service.
+
+    Named ``containers`` rather than ``images`` to keep it clear of
+    ``/api/image``, which serves uploaded image *files* and takes the same
+    ``profile`` parameter.
+
+    Args:
+        profile: Name of the profile to inspect.
+    """
+    try:
+        resolved = deserialize_profile(blackfish_config.HOME_DIR, profile)
+    except FileNotFoundError:
+        raise NotFoundException(detail="Profile config not found.")
+
+    if resolved is None:
+        raise NotFoundException(detail=f"Profile '{profile}' not found.")
+
+    try:
+        staged = await list_staged_tags(resolved, blackfish_config.IMAGES)
+    except TigerFlowError as e:
+        logger.warning(f"Failed to list containers for {profile}: {e.error_type}")
+        raise InternalServerException(detail=e.user_message())
+    except Exception as e:
+        logger.error(f"Unexpected error listing containers for {profile}: {e}")
+        raise InternalServerException(detail="Failed to list container images.")
+
+    return [
+        StagedContainer(
+            service=service,
+            repo=spec.repo,
+            tags=staged[service],
+            default=spec.tag,
+            default_staged=spec.tag in staged[service],
+        )
+        for service, spec in blackfish_config.IMAGES.items()
+    ]
 
 
 def is_valid_image_ref(ref: str | None) -> str | None:
@@ -3676,6 +3727,7 @@ app = Litestar(
         login,
         logout,
         get_ports,
+        list_containers,
         RemoteFileBrowserSession,
         get_files,
         upload_image,

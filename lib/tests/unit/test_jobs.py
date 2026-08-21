@@ -1,5 +1,6 @@
 """Unit tests for BatchJob orchestration logic."""
 
+import datetime
 from unittest.mock import AsyncMock, Mock, patch
 from uuid import UUID
 
@@ -1250,3 +1251,97 @@ class TestBatchJobImagePinning:
         client = create_tigerflow_client(job, MockAppConfig())
 
         assert client.image == DEFAULT_IMAGES["tigerflow_ml"]
+
+
+class TestSlurmStateQuery:
+    """Tests for the sacct query in BatchJob._slurm_state().
+
+    Slurm recycles job IDs once its counter wraps, and the accounting database
+    keeps old records forever. An unbounded query can return a different,
+    long-finished job that shares the id — read as a terminal state, which
+    stalls a job that is actually running.
+    """
+
+    def _job(self, **kwargs) -> BatchJob:
+        job = create_test_batch_job(**kwargs)
+        job.created_at = datetime.datetime(
+            2026, 8, 21, 16, 38, 14, tzinfo=datetime.timezone.utc
+        )
+        return job
+
+    @patch("blackfish.server.jobs.base.remote")
+    async def test_query_is_bounded_by_the_jobs_creation_time(
+        self, mock_remote: Mock
+    ) -> None:
+        """-S excludes records that predate this job, so a recycled id can't
+        match a years-old record from another user."""
+        mock_remote.run = AsyncMock(return_value=Mock(stdout=b"RUNNING"))
+        job = self._job(host="localhost", pid="12728301")
+
+        await job._slurm_state()
+
+        cmd = mock_remote.run.call_args.args[0]
+        assert "-S" in cmd
+        bound = cmd[cmd.index("-S") + 1]
+        # Six hours before creation: early enough to absorb clock skew, but
+        # nowhere near a wrapped-around record from a previous counter cycle.
+        assert bound == "2026-08-21T10:38:14"
+
+    @patch("blackfish.server.jobs.base.remote")
+    async def test_query_forces_utc(self, mock_remote: Mock) -> None:
+        """created_at is UTC but sacct reads naive timestamps as cluster-local.
+
+        Without this, on a UTC-4 cluster the bound lands hours in the future and
+        sacct fails with "Start time ... is after end time" — which would
+        silently disable the liveness check. `env` is used rather than a shell
+        prefix because the local path executes without a shell.
+        """
+        mock_remote.run = AsyncMock(return_value=Mock(stdout=b"RUNNING"))
+        job = self._job(host="localhost", pid="12728301")
+
+        await job._slurm_state()
+
+        cmd = mock_remote.run.call_args.args[0]
+        assert cmd[:3] == ["env", "TZ=UTC", "sacct"]
+
+    @patch("blackfish.server.jobs.base.remote")
+    async def test_the_bound_follows_the_job_not_a_fixed_window(
+        self, mock_remote: Mock
+    ) -> None:
+        """A long-running allocation must not be excluded by its own age.
+
+        A fixed window (e.g. "now-1days") would hide any job that started
+        earlier than that, leaving it permanently unobservable.
+        """
+        mock_remote.run = AsyncMock(return_value=Mock(stdout=b"RUNNING"))
+        job = self._job(host="localhost", pid="12728301")
+        job.created_at = datetime.datetime(
+            2026, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc
+        )
+
+        await job._slurm_state()
+
+        cmd = mock_remote.run.call_args.args[0]
+        assert cmd[cmd.index("-S") + 1] == "2026-01-01T21:04:05"
+
+    @patch("blackfish.server.jobs.base.remote")
+    async def test_missing_pid_skips_the_query(self, mock_remote: Mock) -> None:
+        """No pid means nothing to look up — don't shell out at all."""
+        mock_remote.run = AsyncMock()
+        job = self._job(host="localhost", pid=None)
+
+        assert await job._slurm_state() == JobState.MISSING
+        mock_remote.run.assert_not_called()
+
+    @patch("blackfish.server.jobs.base.remote")
+    async def test_query_failure_is_not_terminal(self, mock_remote: Mock) -> None:
+        """A failed lookup must report MISSING, not a terminal state.
+
+        MISSING is non-terminal, so the restart policy waits for the next
+        observation rather than treating an unreadable cluster as "the
+        allocation ended".
+        """
+        mock_remote.run = AsyncMock(side_effect=OSError("ssh exploded"))
+        job = self._job(host="localhost", pid="12728301")
+
+        assert await job._slurm_state() == JobState.MISSING

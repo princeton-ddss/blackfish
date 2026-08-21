@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import os
 import shlex
 from enum import StrEnum, auto
@@ -636,20 +637,51 @@ class BatchJob(UUIDAuditBase):
             logger.warning(f"Failed to scancel job {self.pid} for {self.id}: {e}")
 
     async def _slurm_state(self) -> JobState:
-        """Return the current Slurm state of this job's allocation."""
+        """Return the current Slurm state of this job's allocation.
+
+        Slurm recycles job IDs once its counter wraps (``MaxJobId``), and the
+        accounting database keeps old records forever. Without a lower time
+        bound, ``sacct -j <id>`` can return a *different*, long-finished job
+        that happens to share the id — reported as a terminal state, which the
+        restart policy reads as "this allocation ended", stalling a job that is
+        actually running.
+
+        ``-S`` bounds the query to records starting no earlier than shortly
+        before this job was created. The bound follows the job rather than being
+        a fixed window, so a long-running allocation is never excluded by its
+        own age.
+
+        ``env TZ=UTC`` makes both sides agree on the timezone: ``created_at`` is
+        UTC, while ``sacct`` interprets naive timestamps as cluster-local. On a
+        UTC-4 cluster an unconverted bound lands in the future, and sacct then
+        errors with "Start time ... is after end time" rather than returning
+        anything. ``env`` is used (rather than a shell prefix) because the local
+        path executes without a shell.
+        """
         if not self.pid:
             return JobState.MISSING
-        sacct_cmd = [
-            "sacct",
-            "-n",
-            "-P",
-            "-X",
-            "-j",
-            str(self.pid),
-            "-o",
-            "State",
-        ]
+
         try:
+            # Buffer against clock skew between this host and the cluster, and
+            # against the gap between row creation and sbatch actually recording
+            # a start time. Generous because being slightly too early costs
+            # nothing — a wrapped-around id is years old, not hours.
+            start_bound = self.created_at - datetime.timedelta(hours=6)
+
+            sacct_cmd = [
+                "env",
+                "TZ=UTC",
+                "sacct",
+                "-n",
+                "-P",
+                "-X",
+                "-j",
+                str(self.pid),
+                "-S",
+                start_bound.strftime("%Y-%m-%dT%H:%M:%S"),
+                "-o",
+                "State",
+            ]
             if self.host == "localhost":
                 result = await remote.run(sacct_cmd)
             else:

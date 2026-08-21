@@ -629,6 +629,9 @@ def details(service_id: str) -> None:  # pragma: no cover
     data = {
         "name": service.name,
         "image": service.image,
+        # The full "repo:tag" this service launched with (null if it predates
+        # image_ref or was never launched). `ls` shows only the tag.
+        "image_ref": service.image_ref,
         "model": service.model,
         "profile": asdict(profile) if profile is not None else None,
         "status": {
@@ -697,13 +700,14 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
     from typing import Any
     from prettytable import PrettyTable, TableStyle
     from datetime import datetime
-    from blackfish.server.utils import format_datetime
+    from blackfish.server.utils import format_datetime, format_image_version
     from blackfish.server.services.base import ServiceStatus
 
     tab = PrettyTable(
         field_names=[
             "SERVICE ID",
             "IMAGE",
+            "VERSION",
             "MODEL",
             "CREATED",
             "UPDATED",
@@ -756,6 +760,7 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
                 [
                     service["id"][:DISPLAY_ID_LENGTH],
                     service["image"],
+                    format_image_version(service.get("image_ref")),
                     service["model"],
                     format_datetime(datetime.fromisoformat(service["created_at"])),
                     format_datetime(datetime.fromisoformat(service["updated_at"])),

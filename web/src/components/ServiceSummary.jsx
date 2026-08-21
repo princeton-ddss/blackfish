@@ -7,6 +7,7 @@ import {
   CpuChipIcon,
   FireIcon,
   CubeTransparentIcon,
+  CircleStackIcon,
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 import { formattedTimeInterval, isServiceRunning } from "@/lib/util";
@@ -59,6 +60,11 @@ function ServiceSummary({
               <div className="grow font-regular text-sm mr-1">Model </div>
               <span className="mr-2">-</span>
             </div>
+            <div className="mb-1 ml-0 inline-flex justify-start items-center">
+              <CubeTransparentIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
+              <div className="grow font-regular text-sm mr-1">Image </div>
+              <span className="mr-2">-</span>
+            </div>
             <div className="mb-1 ml-0 inline-flex justify-start items-center capitalize">
               <HeartIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
               <div className="grow font-regular text-sm mr-1">Status </div>
@@ -80,7 +86,7 @@ function ServiceSummary({
               <span className="mr-2">-</span>
             </div>
             <div className="mb-1 ml-0 inline-flex items-center">
-              <CubeTransparentIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
+              <CircleStackIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
               <div className="grow font-regular text-sm mr-1">Memory </div>
               <span className="mr-2">-</span>
             </div>
@@ -109,6 +115,15 @@ function ServiceSummary({
             {service?.model
               ? service.model.split("/")[1] || service.model
               : "-"}
+          </div>
+          <div className="mb-1 ml-0 inline-flex justify-start items-center">
+            <CubeTransparentIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />
+            <div className="grow font-medium text-sm mr-1">Image </div>
+            {/* Show the tag only — a full "repo:tag" overflows this column.
+                The complete reference is in the title attribute. */}
+            <span className="service-summary__image" title={service?.image_ref || undefined}>
+              {service?.image_ref ? service.image_ref.split(":").pop() : "-"}
+            </span>
           </div>
           <div className="mb-1 ml-0 inline-flex justify-start items-center capitalize">
             <HeartIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />
@@ -141,7 +156,7 @@ function ServiceSummary({
             {service?.ntasks_per_node || "-"}
           </div>
           <div className="mb-1 ml-0 inline-flex items-center">
-            <CubeTransparentIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />
+            <CircleStackIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />
             <div className="grow font-medium text-sm mr-1">Memory </div>
             {service?.mem || "-"}
           </div>

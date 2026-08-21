@@ -5,6 +5,7 @@ from typing import Optional
 from huggingface_hub import ModelCard, list_repo_commits
 from huggingface_hub.errors import RepositoryNotFoundError
 from blackfish.server import remote
+from blackfish.server.images import ImageSpec
 from blackfish.server.models.profile import BlackfishProfile, SlurmProfile
 from blackfish.server.logger import logger
 from yaspin import yaspin
@@ -270,6 +271,25 @@ def find_port(
                         f"Failed to bind port {port} on host {host}. Trying next port."
                     )
     raise OSError(f"OSError: no ports available in range {lower}-{upper}")
+
+
+def format_image_version(image_ref: Optional[str]) -> str:
+    """Format an ``image_ref`` as a short tag for a list table.
+
+    List tables are already near the width of a standard terminal, so they show
+    only the tag ("0.1.1") rather than the full ``repo:tag``; the complete
+    reference is available in the details views.
+
+    Returns "-" when no image was recorded — the column is NULL for anything
+    created before the image_ref migration or never launched — and falls back to
+    the raw value if it isn't a well-formed reference.
+    """
+    if not image_ref:
+        return "-"
+    try:
+        return ImageSpec.parse(image_ref).tag
+    except ValueError:
+        return image_ref
 
 
 def format_datetime(t0: datetime.datetime, t1: datetime.datetime | None = None) -> str:

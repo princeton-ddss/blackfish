@@ -569,6 +569,10 @@ COMPATIBLE_PIPELINES: dict[str, list[str]] = {
         "image-to-text",
         "any-to-any",
     ],
+    "image-text-to-text": [
+        "image-text-to-text",
+        "any-to-any",
+    ],
     "object-detection": [
         "object-detection",
         "zero-shot-object-detection",

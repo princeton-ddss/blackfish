@@ -486,6 +486,16 @@ def remove_batch_job(
     help="Model revision (commit hash). Uses latest available if not specified.",
 )
 @click.option(
+    "--image-ref",
+    type=str,
+    default=None,
+    help=(
+        "Pin the tigerflow-ml container image, e.g."
+        " 'ghcr.io/princeton-ddss/tigerflow-ml:0.1.1'. Defaults to the"
+        " configured image. See `blackfish batch ls` for the version in use."
+    ),
+)
+@click.option(
     "--params",
     type=str,
     default=None,
@@ -523,6 +533,7 @@ def run_batch_job(
     input_dir: str,
     output_dir: str,
     revision: Optional[str],
+    image_ref: Optional[str],
     params: Optional[str],
     resources: Optional[str],
     max_workers: int,
@@ -632,6 +643,10 @@ def run_batch_job(
         click.echo(
             yaml.dump(pipeline_config, default_flow_style=False, sort_keys=False)
         )
+        # The image is rendered into the job script, not the pipeline config,
+        # so report it separately rather than leaving the pin invisible here.
+        if image_ref:
+            click.echo(f"Container image: {image_ref}")
         return
 
     # Build and submit the job
@@ -644,6 +659,7 @@ def run_batch_job(
                     "task": task,
                     "repo_id": model,
                     "revision": revision,
+                    "image_ref": image_ref,
                     "profile": asdict(matched_profile),
                     "input_dir": input_dir,
                     "output_dir": output_dir,

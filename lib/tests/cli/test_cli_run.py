@@ -1185,3 +1185,54 @@ class TestRunGroupOptions:
         assert "Started service" in result.output
         call_args = mock_post.call_args
         assert call_args[1]["json"]["grace_period"] == 300
+
+    def test_image_ref_is_forwarded_to_the_api(
+        self, cli_runner, mock_config, local_profile
+    ):
+        """--image-ref reaches the request body as image_ref.
+
+        The option is on the `run` group, so it travels through ServiceOptions
+        to whichever service subcommand runs.
+        """
+        cmd = [
+            "run",
+            "-p",
+            "default",
+            "--image-ref",
+            "vllm/vllm-openai:v9.9.9",
+            "text-generation",
+            "openai/gpt-2",
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.text_generation.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.text_generation.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.text_generation.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.text_generation.get_model_dir"
+            ) as mock_get_model_dir,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/gpt-2"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model"
+
+            mock_response = Mock()
+            mock_response.ok = True
+            mock_response.json.return_value = {"id": "service-uuid-123"}
+            mock_post.return_value = mock_response
+
+            cli_runner.invoke(main, cmd)
+
+        assert mock_post.call_args[1]["json"]["image_ref"] == "vllm/vllm-openai:v9.9.9"

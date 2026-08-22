@@ -169,6 +169,7 @@ def run_text_generation(
             click.echo(f"> scheduler: {service.scheduler}")
             click.echo(f"> mount: {options.mount}")
             click.echo(f"> grace_period: {options.grace_period}")
+            click.echo(f"> image_ref: {options.image_ref}")
             click.echo("\n👇 Here's the job script 👇\n")
             click.echo(service.render_job_script(container_config, job_config))
         else:
@@ -185,6 +186,7 @@ def run_text_generation(
                             "job_config": asdict(job_config),
                             "mount": options.mount,
                             "grace_period": options.grace_period,
+                            "image_ref": options.image_ref,
                         },
                     )
                 except (
@@ -229,6 +231,7 @@ def run_text_generation(
             click.echo(f"> provider: {config.CONTAINER_PROVIDER}")
             click.echo(f"> mount: {options.mount}")
             click.echo(f"> grace_period: {options.grace_period}")
+            click.echo(f"> image_ref: {options.image_ref}")
             click.echo("\n👇 Here's the job script 👇\n")
             click.echo(service.render_job_script(container_config, job_config))
         else:
@@ -245,6 +248,7 @@ def run_text_generation(
                             "job_config": asdict(job_config),
                             "mount": options.mount,
                             "grace_period": options.grace_period,
+                            "image_ref": options.image_ref,
                         },
                     )
                 except (

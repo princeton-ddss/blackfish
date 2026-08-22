@@ -286,6 +286,7 @@ class Blackfish:
         job_config: Optional[dict[str, Any]] = None,
         mount: Optional[str] = None,
         grace_period: int = 180,
+        image_ref: Optional[str] = None,
         auto_cleanup: bool = True,
         **kwargs: dict[str, Any],  # BlackfishConfig
     ) -> ManagedService:
@@ -303,6 +304,9 @@ class Blackfish:
             job_config: Job configuration options (Slurm settings, etc.)
             mount: Optional directory to mount
             grace_period: Time in seconds to wait before marking unhealthy
+            image_ref: Pin the container image as "repo:tag" (e.g.
+                "vllm/vllm-openai:v0.20.0"). None uses the configured image,
+                which is then recorded on the service so restarts reuse it.
             auto_cleanup: If True, automatically stop and delete this service when the
                 Python script exits (default: True)
             **kwargs: Additional service-specific parameters
@@ -344,6 +348,7 @@ class Blackfish:
             "cache_dir": profile.cache_dir,
             "mount": mount,
             "grace_period": grace_period,
+            "image_ref": image_ref,
             **kwargs,
         }
 
@@ -470,6 +475,7 @@ class Blackfish:
         job_config: Optional[dict[str, Any]] = None,
         mount: Optional[str] = None,
         grace_period: int = 180,
+        image_ref: Optional[str] = None,
         auto_cleanup: bool = True,
         **kwargs: dict[str, Any],  # BlackfishConfig
     ) -> ManagedService:
@@ -477,16 +483,19 @@ class Blackfish:
 
         See async_launch_service for details.
         """
+        # Keyword arguments so adding a parameter to the async signature can't
+        # silently shift these onto the wrong ones.
         return await self.async_launch_service(
             name,
             image,
             model,
-            profile_name,
-            container_config,
-            job_config,
-            mount,
-            grace_period,
-            auto_cleanup,
+            profile_name=profile_name,
+            container_config=container_config,
+            job_config=job_config,
+            mount=mount,
+            grace_period=grace_period,
+            image_ref=image_ref,
+            auto_cleanup=auto_cleanup,
             **kwargs,
         )
 

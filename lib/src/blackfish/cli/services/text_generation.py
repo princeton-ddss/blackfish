@@ -157,6 +157,7 @@ def run_text_generation(
                 scheduler=JobScheduler.Slurm,
                 mount=options.mount,
                 grace_period=options.grace_period,
+                image_ref=options.image_ref,
             )
             click.echo("\n🚧 Rendering job script for service:\n")
             click.echo(f"> name: {name}")
@@ -220,6 +221,7 @@ def run_text_generation(
                 provider=config.CONTAINER_PROVIDER,
                 mount=options.mount,
                 grace_period=options.grace_period,
+                image_ref=options.image_ref,
             )
             click.echo("\n🚧 Rendering job script for service:\n")
             click.echo(f"> name: {name}")

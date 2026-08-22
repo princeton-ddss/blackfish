@@ -3,6 +3,7 @@ import Info from "./Info";
 import Alert from "@/components/Alert";
 import ModelSelect from "@/components/ModelSelect"
 import RevisionSelect from "@/components/RevisionSelect"
+import ImageVersionSelect from "@/components/ImageVersionSelect"
 import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
@@ -27,6 +28,10 @@ function ServiceModalForm({
   isModelsLoading = false,
   services,
   setModel,
+  container,
+  isContainerLoading = false,
+  imageRef,
+  setImageRef,
   jobOptions,
   setJobOptions,
   setValidationErrors,
@@ -338,6 +343,16 @@ function ServiceModalForm({
               isLoading={isModelsLoading}
             />
           </fieldset>
+
+          <fieldset>
+            <ImageVersionSelect
+              container={container}
+              imageRef={imageRef}
+              setImageRef={setImageRef}
+              disabled={disabled}
+              isLoading={isContainerLoading}
+            />
+          </fieldset>
         </div>
       ) : warnIfNoModels()}
 
@@ -544,6 +559,10 @@ ServiceModalForm.propTypes = {
   isModelsLoading: PropTypes.bool,
   services: PropTypes.array,
   setModel: PropTypes.func,
+  container: PropTypes.object,
+  isContainerLoading: PropTypes.bool,
+  imageRef: PropTypes.string,
+  setImageRef: PropTypes.func,
   jobOptions: PropTypes.object,
   setJobOptions: PropTypes.func,
   setValidationErrors: PropTypes.func,

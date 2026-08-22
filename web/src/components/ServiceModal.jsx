@@ -11,7 +11,7 @@ import ServiceModalForm from "@/components/ServiceModalForm";
 import ServiceLaunchErrorAlert from "@/components/ServiceLaunchErrorAlert";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { runService, fetchProfileResources } from "@/lib/requests";
-import { useModels, useServices, useClusterStatus } from "@/lib/loaders";
+import { useModels, useServices, useClusterStatus, useStagedContainers } from "@/lib/loaders";
 import { sleep, randomInt, isDeepEmpty } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -110,12 +110,19 @@ function ServiceModal({
   const {
     status: clusterStatus,
   } = useClusterStatus(profile);
+  // `task` is the hyphenated pipeline name; config.IMAGES keys use underscores.
+  // This is the same transform runService applies to build the `image` field.
+  const {
+    container,
+    isLoading: containerLoading,
+  } = useStagedContainers(profile, task?.replaceAll("-", "_"));
 
   const { setSelectedServiceId } = useContext(ServiceContext);
 
 
   const [jobOptions, setJobOptions] = React.useState(() => getDefaultJobOptions(profile));
   const [model, setModel] = useState(null);
+  const [imageRef, setImageRef] = useState(null);
   const [resources, setResources] = useState(null);
   const clusterPartitions = clusterStatus?.partitions
     ? Object.keys(clusterStatus.partitions)
@@ -176,7 +183,14 @@ function ServiceModal({
     console.debug("from handleFormSubmit: attempting to launch service")
     setIsLaunching(true)
     setLaunchError(null)
-    const res = await runService(task, model, jobOptions, containerOptions, profile);
+    const res = await runService(
+      task,
+      model,
+      jobOptions,
+      containerOptions,
+      profile,
+      imageRef
+    );
     if (!res.ok) {
       let message = "Failed to launch service.";
       try {
@@ -279,6 +293,10 @@ function ServiceModal({
                         isModelsLoading={modelsLoading}
                         services={services}
                         setModel={setModel}
+                        container={container}
+                        isContainerLoading={containerLoading}
+                        imageRef={imageRef}
+                        setImageRef={setImageRef}
                         jobOptions={jobOptions}
                         setJobOptions={setJobOptions}
                         setValidationErrors={setValidationErrors}

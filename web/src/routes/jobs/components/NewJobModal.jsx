@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import ModelSelect from "@/components/ModelSelect";
 import RevisionSelect from "@/components/RevisionSelect";
+import ImageVersionSelect from "@/components/ImageVersionSelect";
 import PartitionSelect from "@/components/PartitionSelect";
 import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
@@ -28,7 +29,7 @@ import Alert from "@/components/Alert";
 import Stepper from "@/components/Stepper";
 import DirectoryBrowser from "@/components/DirectoryBrowser";
 import { dirname } from "@/lib/pathUtils";
-import { useModels } from "@/lib/loaders";
+import { useModels, useStagedContainers } from "@/lib/loaders";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 import { fetchProfileResources, fetchModelSizeFromHub, createJob } from "@/lib/requests";
 import { selectTierByModelSize, isRemoteProfile } from "@/lib/util";
@@ -733,8 +734,22 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     isLoading: modelsLoading,
     error: modelsError,
   } = useModels(profile, task?.service);
+  // Always tigerflow_ml: every batch task runs in that container regardless of
+  // task (jobs/base.py resolves images["tigerflow_ml"] with no task branch).
+  // task.service is an HF pipeline tag for filtering models, not an image key.
+  const {
+    container,
+    isLoading: containerLoading,
+  } = useStagedContainers(profile, "tigerflow_ml");
+  // Only when discovery *succeeded* and reported nothing staged. An
+  // unreachable profile leaves `container` undefined, which must not block the
+  // launch — the backend still resolves its configured default.
+  const noContainerStaged = Boolean(
+    container && !containerLoading && container.tags.length === 0
+  );
   const [repoId, setRepoId] = useState(null);
   const [model, setModel] = useState(null);
+  const [imageRef, setImageRef] = useState(null);
 
   // Derive model type from selected model's image field (e.g., "object-detection", "zero-shot-object-detection")
   const modelType = model?.image || null;
@@ -1081,6 +1096,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
         task: task.id,
         repo_id: model?.repo_id || repoId,
         revision: model?.revision || null,
+        image_ref: imageRef,
         profile: profile,
         input_dir: inputDir,
         output_dir: outputDir,
@@ -1110,7 +1126,10 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
   const isStepValid = (stepId) => {
     switch (stepId) {
       case "model":
-        return repoId && !modelsLoading;
+        // Blocked only when we know nothing is staged: the job would fail its
+        // pre-flight ("tigerflow-ml image not found"), so stop here rather
+        // than after four more steps.
+        return repoId && !modelsLoading && !noContainerStaged;
       case "options":
         // Check required params (including dynamically required ones based on model type)
         if (!task) return false;
@@ -1202,6 +1221,13 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
               </Alert>
             ) : (
               <>
+                {noContainerStaged && (
+                  <Alert variant="error" title="No container image staged">
+                    The tigerflow-ml image is not staged on this profile, so a
+                    job cannot start. Ask an administrator to stage it (see{" "}
+                    <code>blackfish image ls</code>).
+                  </Alert>
+                )}
                 <fieldset>
                   <ModelSelect
                     models={models || []}
@@ -1218,6 +1244,15 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                     setModel={setModel}
                     disabled={isSubmitting || modelsLoading}
                     isLoading={modelsLoading}
+                  />
+                </fieldset>
+                <fieldset>
+                  <ImageVersionSelect
+                    container={container}
+                    imageRef={imageRef}
+                    setImageRef={setImageRef}
+                    disabled={isSubmitting || containerLoading}
+                    isLoading={containerLoading}
                   />
                 </fieldset>
               </>

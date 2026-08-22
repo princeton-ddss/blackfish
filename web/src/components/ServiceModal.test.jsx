@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import ServiceModal from "@/components/ServiceModal";
 import { ServiceContext } from "@/providers/ServiceProvider";
-import { useModels, useServices, useClusterStatus } from "@/lib/loaders";
+import { useModels, useServices, useClusterStatus, useStagedContainers } from "@/lib/loaders";
 import { runService, fetchProfileResources } from "@/lib/requests";
 import { sleep, randomInt, isDeepEmpty } from "@/lib/util";
 
@@ -123,6 +123,14 @@ describe("ServiceModal", () => {
 
     useClusterStatus.mockReturnValue({
       status: null,
+      error: null,
+      isLoading: false,
+      isRefreshing: false,
+      refresh: vi.fn(),
+    });
+
+    useStagedContainers.mockReturnValue({
+      container: undefined,
       error: null,
       isLoading: false,
       isRefreshing: false,
@@ -288,7 +296,10 @@ describe("ServiceModal", () => {
           time: "00:30:00",
         }),
         { port: 8080 },
-        { schema: "slurm", host: "test-host", user: "testuser" }
+        { schema: "slurm", host: "test-host", user: "testuser" },
+        // No staged containers mocked, so no pin is selected and the backend
+        // resolves its configured default.
+        null
       );
     });
 

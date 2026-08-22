@@ -400,6 +400,15 @@ def start(reload: bool | None) -> None:  # pragma: no cover
     default=180,
     help="Time (s) to wait before setting service health to 'unhealthy'.",
 )
+@click.option(
+    "--image-ref",
+    type=str,
+    default=None,
+    help=(
+        "Pin the container image, e.g. 'vllm/vllm-openai:v0.20.0'. Defaults to"
+        " the configured image. See `blackfish ls` for the version in use."
+    ),
+)
 @click.pass_context
 def run(
     ctx: Context,
@@ -413,6 +422,7 @@ def run(
     profile: Optional[str],
     mount: Optional[str],
     grace_period: int,
+    image_ref: Optional[str],
 ) -> None:  # pragma: no cover
     """Run an inference service.
 
@@ -438,6 +448,7 @@ def run(
         "options": ServiceOptions(
             mount=mount,
             grace_period=grace_period,
+            image_ref=image_ref,
         ),
     }
 

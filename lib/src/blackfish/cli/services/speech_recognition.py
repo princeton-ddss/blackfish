@@ -154,6 +154,7 @@ def run_speech_recognition(
                 scheduler=JobScheduler.Slurm,
                 mount=options.mount,
                 grace_period=options.grace_period,
+                image_ref=options.image_ref,
             )
             click.echo("\n🚧 Rendering job script for service:\n")
             click.echo(f"> name: {name}")
@@ -166,6 +167,7 @@ def run_speech_recognition(
             click.echo(f"> scheduler: {service.scheduler}")
             click.echo(f"> mount: {options.mount}")
             click.echo(f"> grace_period: {options.grace_period}")
+            click.echo(f"> image_ref: {options.image_ref}")
             click.echo("\n👇 Here's the job script 👇\n")
             click.echo(service.render_job_script(container_config, job_config))
         else:
@@ -182,6 +184,7 @@ def run_speech_recognition(
                             "job_config": asdict(job_config),
                             "mount": options.mount,
                             "grace_period": options.grace_period,
+                            "image_ref": options.image_ref,
                         },
                     )
                 except (
@@ -215,6 +218,7 @@ def run_speech_recognition(
                 provider=config.CONTAINER_PROVIDER,
                 mount=options.mount,
                 grace_period=options.grace_period,
+                image_ref=options.image_ref,
             )
             click.echo("\n🚧 Rendering job script for service:\n")
             click.echo(f"> name: {name}")
@@ -226,6 +230,7 @@ def run_speech_recognition(
             click.echo(f"> provider: {config.CONTAINER_PROVIDER}")
             click.echo(f"> mount: {options.mount}")
             click.echo(f"> grace_period: {options.grace_period}")
+            click.echo(f"> image_ref: {options.image_ref}")
             click.echo("\n👇 Here's the job script 👇\n")
             click.echo(service.render_job_script(container_config, job_config))
         else:
@@ -242,6 +247,7 @@ def run_speech_recognition(
                             "job_config": asdict(job_config),
                             "mount": options.mount,
                             "grace_period": options.grace_period,
+                            "image_ref": options.image_ref,
                         },
                     )
                 except (

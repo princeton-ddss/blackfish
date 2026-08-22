@@ -1185,3 +1185,105 @@ class TestRunGroupOptions:
         assert "Started service" in result.output
         call_args = mock_post.call_args
         assert call_args[1]["json"]["grace_period"] == 300
+
+    def test_image_ref_is_forwarded_to_the_api(
+        self, cli_runner, mock_config, local_profile
+    ):
+        """--image-ref reaches the request body as image_ref.
+
+        The option is on the `run` group, so it travels through ServiceOptions
+        to whichever service subcommand runs.
+        """
+        cmd = [
+            "run",
+            "-p",
+            "cluster",
+            "--image-ref",
+            "vllm/vllm-openai:v9.9.9",
+            "text-generation",
+            "openai/gpt-2",
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.text_generation.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.text_generation.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.text_generation.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.text_generation.get_model_dir"
+            ) as mock_get_model_dir,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/gpt-2"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model"
+
+            mock_response = Mock()
+            mock_response.ok = True
+            mock_response.json.return_value = {"id": "service-uuid-123"}
+            mock_post.return_value = mock_response
+
+            cli_runner.invoke(main, cmd)
+
+        assert mock_post.call_args[1]["json"]["image_ref"] == "vllm/vllm-openai:v9.9.9"
+
+    def test_dry_run_renders_the_pinned_image(
+        self, cli_runner, mock_config, slurm_profile
+    ):
+        """The rendered script must pin the requested image, not the default.
+
+        The preview is exactly where a cautious user checks that a pin took
+        effect, so asserting only on the `> image_ref:` echo is not enough —
+        that line was correct while the script below it still referenced the
+        configured default.
+        """
+        cmd = [
+            "run",
+            "-p",
+            "cluster",
+            "--image-ref",
+            "vllm/vllm-openai:v9.9.9",
+            "text-generation",
+            "openai/gpt-2",
+            "--dry-run",
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.text_generation.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.text_generation.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.text_generation.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.text_generation.get_model_dir"
+            ) as mock_get_model_dir,
+        ):
+            mock_deserialize.return_value = slurm_profile
+            mock_get_models.return_value = ["openai/gpt-2"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model"
+
+            result = cli_runner.invoke(main, cmd)
+
+        # The script itself, not the echo line above it.
+        script = result.output.split("> image_ref:")[-1]
+        assert "vllm-openai_v9.9.9" in script
+        assert "vllm-openai_v0.20.0" not in script

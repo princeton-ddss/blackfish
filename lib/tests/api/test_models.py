@@ -80,6 +80,27 @@ class TestFetchModelsAPI:
         vlm_ids = [m["id"] for m in result if m["image"] == "image-text-to-text"]
         assert vlm_model_id in vlm_ids
 
+    async def test_fetch_image_text_to_text_includes_any_to_any(
+        self, client: AsyncTestClient
+    ):
+        """image-text-to-text must widen to any-to-any as well.
+
+        vLLM's VLM code path serves omni/any-to-any models through the same
+        entry point as image-text-to-text, so the OCR batch launcher (and any
+        other consumer filtering by that pipeline) needs both tags.
+        """
+        any_to_any_model_id = "d4e5f6a7-b8c9-0123-def0-234567890123"
+
+        response = await client.get(
+            "/api/models", params={"image": "image-text-to-text"}
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        images = {model.get("image") for model in result}
+        assert "any-to-any" in images
+        assert any_to_any_model_id in [m["id"] for m in result]
+
     async def test_refresh_preserves_existing_model_ids(self, client: AsyncTestClient):
         """Test that refresh preserves IDs for models that already exist."""
         # Get existing model ID before refresh

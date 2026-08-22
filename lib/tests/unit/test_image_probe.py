@@ -77,6 +77,20 @@ class TestSortTags:
             "0.10.0",
         ]
 
+    def test_handles_an_uppercase_v_prefix(self) -> None:
+        """Version accepts v/V per PEP 440, so no hand-stripping is needed."""
+        assert sort_tags(["V2.0.0", "v1.0.0"]) == ["v1.0.0", "V2.0.0"]
+
+    def test_a_doubled_v_prefix_is_not_a_version(self) -> None:
+        """Guards the reason for not hand-stripping: lstrip("v") removes every
+        leading v, so "vv1.0.0" would parse as 1.0.0 and sort *between* the
+        real versions instead of last with the other unparsable tags."""
+        assert sort_tags(["vv1.0.0", "0.1.0", "V2.0.0"]) == [
+            "0.1.0",
+            "V2.0.0",
+            "vv1.0.0",
+        ]
+
     def test_unparsable_tags_sort_last_without_raising(self) -> None:
         """`latest` is runnable, so it is kept — but it says nothing about
         which image it names, so it must never sort first."""

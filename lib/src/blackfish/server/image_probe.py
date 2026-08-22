@@ -44,7 +44,9 @@ def sort_tags(tags: list[str]) -> list[str]:
 
     A plain string sort is wrong — ``"0.1.10" < "0.1.2"`` — and tag styles are
     inconsistent across images (vLLM publishes ``v0.20.0``, the DDSS images
-    publish a bare ``0.1.2``), so the leading ``v`` is tolerated.
+    publish a bare ``0.1.2``). ``Version`` accepts either form per PEP 440, so
+    no prefix stripping is needed; hand-stripping with ``lstrip("v")`` would
+    also mangle a malformed ``vv1.0.0`` into a valid-looking version.
 
     Tags that are not versions at all (``latest``, ``nightly``) are still
     runnable, so they are kept and sorted last rather than hidden; callers must
@@ -53,7 +55,7 @@ def sort_tags(tags: list[str]) -> list[str]:
 
     def key(tag: str) -> tuple[int, Version | str]:
         try:
-            return (0, Version(tag.lstrip("v")))
+            return (0, Version(tag))
         except InvalidVersion:
             return (1, tag)
 

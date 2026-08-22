@@ -25,10 +25,10 @@ import SelectSkeleton from "@/components/SelectSkeleton";
 function ModelSelect({ models, setRepoId, setModelId, disabled, isLoading = false }) {
 
   const [selected, setSelected] = useState(null);
-  const isDisabled = disabled || isLoading;
 
   // filter unique repo_ids
   const repos = getUniqueRepoIds(models);
+  const isDisabled = disabled || isLoading || repos.length < 2;
 
   // update repo_id and model_id on selection
   useEffect(() => {

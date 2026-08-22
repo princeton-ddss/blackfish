@@ -27,10 +27,10 @@ import SelectSkeleton from "@/components/SelectSkeleton";
 function RevisionSelect({ models, repoId, setModel, disabled, isLoading = false }) {
 
   const [selected, setSelected] = useState(null);
-  const isDisabled = disabled || isLoading;
 
   // filter repo_id revisions
   const revisions = (models ?? []).filter(model => model.repo_id === repoId);
+  const isDisabled = disabled || isLoading || revisions.length < 2;
 
   // update selection on revisions refresh
   useEffect(() => {

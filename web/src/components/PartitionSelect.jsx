@@ -9,12 +9,13 @@ function PartitionSelect({ partitions, selectedPartition, setSelectedPartition, 
 
   // Find the selected partition object
   const selected = partitions.find(p => p.name === selectedPartition) || partitions[0];
+  const isDisabled = disabled || partitions.length < 2;
 
   return (
     <Listbox
       value={selected}
       onChange={(partition) => setSelectedPartition(partition.name)}
-      disabled={disabled}
+      disabled={isDisabled}
     >
       <div className="relative">
         <ListboxButton className="relative w-full cursor-default rounded-lg bg-white dark:bg-gray-700 py-2 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-300 sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">

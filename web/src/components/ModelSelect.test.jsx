@@ -99,6 +99,24 @@ describe("ModelSelect", () => {
     });
   });
 
+  it("disables the control (but still lifts the repo) with one unique repo", async () => {
+    render(
+      <ModelSelect
+        models={[
+          { repo_id: "only-repo", revision: "rev-1" },
+          { repo_id: "only-repo", revision: "rev-2" },
+        ]}
+        setRepoId={mockSetRepoId}
+        disabled={false}
+      />
+    );
+    await waitFor(() => {
+      expect(mockSetRepoId).toHaveBeenCalledWith("only-repo");
+    });
+    // Two rows but one unique repo — nothing to pick between.
+    expect(document.querySelector("button")).toBeDisabled();
+  });
+
   it("applies disabled styling when disabled prop is true", () => {
     const {baseElement} = render(
       <ModelSelect

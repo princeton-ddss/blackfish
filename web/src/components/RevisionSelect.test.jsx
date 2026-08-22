@@ -1,5 +1,5 @@
-import { render } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
 import RevisionSelect from "@/components/RevisionSelect";
 
 describe("RevisionSelect", () => {
@@ -22,6 +22,39 @@ describe("RevisionSelect", () => {
       />
     );
     expect(baseElement).toMatchSnapshot();
+  });
+
+  it("stays enabled when the repo has multiple revisions", () => {
+    // Guards the off-by-one direction of the `< 2` check: two options must
+    // remain interactive, otherwise the launcher becomes unusable for any
+    // repo that has more than one staged revision.
+    const setModel = vi.fn();
+    render(
+      <RevisionSelect
+        models={[
+          { repo_id: "repo", revision: "rev-a" },
+          { repo_id: "repo", revision: "rev-b" },
+        ]}
+        repoId="repo"
+        setModel={setModel}
+        disabled={false}
+      />
+    );
+    expect(screen.getByRole("button")).not.toBeDisabled();
+  });
+
+  it("disables the control (but still lifts the model) with one revision", () => {
+    const setModel = vi.fn();
+    render(
+      <RevisionSelect
+        models={[{ repo_id: "repo", revision: "rev-only" }]}
+        repoId="repo"
+        setModel={setModel}
+        disabled={false}
+      />
+    );
+    expect(screen.getByRole("button")).toBeDisabled();
+    expect(setModel).toHaveBeenCalledWith({ repo_id: "repo", revision: "rev-only" });
   });
 
   it("Disabled", () => {

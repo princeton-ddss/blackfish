@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
 import ServiceModalCheckbox from "@/components/ServiceModalCheckbox"
+import { useScrollOnExpand } from "@/lib/useScrollOnExpand";
 import PropTypes from "prop-types";
 
 function TextGenerationContainerOptionsForm({
@@ -9,6 +10,9 @@ function TextGenerationContainerOptionsForm({
   disabled
 }) {
   const [expanded, setExpanded] = useState(false);
+  // This section sits at the bottom of the modal, so expanding it without
+  // scrolling reveals nothing until the user scrolls down themselves.
+  useScrollOnExpand(expanded);
 
   return (
     <>

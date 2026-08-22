@@ -925,17 +925,19 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     }
   }, [models, repoId]);
 
-  // Auto-scroll to bottom when advanced options opens
+  // Auto-scroll to bottom when either advanced section opens. Expanding one
+  // below the fold otherwise reveals nothing until the user scrolls, which
+  // reads as the click having done nothing.
   useEffect(() => {
-    if (showAdvanced && contentRef.current) {
-      setTimeout(() => {
-        contentRef.current.scrollTo({
-          top: contentRef.current.scrollHeight,
-          behavior: "smooth"
-        });
-      }, 50);
-    }
-  }, [showAdvanced]);
+    if (!(showAdvanced || showModelAdvanced) || !contentRef.current) return;
+    const timer = setTimeout(() => {
+      contentRef.current?.scrollTo({
+        top: contentRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [showAdvanced, showModelAdvanced]);
 
   const handleTaskParamChange = (paramName, value) => {
     setTaskParams((prev) => ({ ...prev, [paramName]: value }));

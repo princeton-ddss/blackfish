@@ -4,6 +4,7 @@ import Alert from "@/components/Alert";
 import ModelSelect from "@/components/ModelSelect"
 import RevisionSelect from "@/components/RevisionSelect"
 import ImageVersionSelect from "@/components/ImageVersionSelect"
+import { useScrollOnExpand } from "@/lib/useScrollOnExpand"
 import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
@@ -52,6 +53,9 @@ function ServiceModalForm({
   const [recommendedTier, setRecommendedTier] = React.useState(null);
   const [partitionWarning, setPartitionWarning] = React.useState(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
+  // Expanding a section below the fold otherwise reveals nothing until the
+  // user scrolls, which reads as the click having done nothing.
+  useScrollOnExpand(showAdvanced);
   const [account, setAccount] = React.useState("");
 
   // Default tiers when API doesn't return data

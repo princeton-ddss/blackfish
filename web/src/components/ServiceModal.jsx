@@ -12,6 +12,7 @@ import ServiceLaunchErrorAlert from "@/components/ServiceLaunchErrorAlert";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { runService, fetchProfileResources } from "@/lib/requests";
 import { useModels, useServices, useClusterStatus, useStagedContainers } from "@/lib/loaders";
+import { ScrollContainerContext } from "@/lib/useScrollOnExpand";
 import { sleep, randomInt, isDeepEmpty } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -178,6 +179,9 @@ function ServiceModal({
   ])
 
   const cancelButtonRef = useRef(null);
+  // Shared with the nested forms so their collapsible sections can scroll this
+  // container into view when they expand.
+  const contentRef = useRef(null);
 
   const handleFormSubmit = async () => {
     console.debug("from handleFormSubmit: attempting to launch service")
@@ -243,6 +247,7 @@ function ServiceModal({
   };
 
   return (
+    <ScrollContainerContext.Provider value={contentRef}>
     <Transition show={open} as={Fragment}>
       <Dialog
         as="div"
@@ -277,7 +282,7 @@ function ServiceModal({
             >
               <DialogPanel className="relative transform rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:mt-4 sm:mb-8 sm:w-full sm:max-w-4xl max-h-[90vh] flex flex-col">
                 {/* Scrollable content area */}
-                <div className="flex-1 overflow-y-auto px-4 pt-5 sm:p-6 sm:pl-6">
+                <div ref={contentRef} className="flex-1 overflow-y-auto px-4 pt-5 sm:p-6 sm:pl-6">
                   <DialogTitle
                     as="h3"
                     className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100"
@@ -348,6 +353,7 @@ function ServiceModal({
         </div>
       </Dialog>
     </Transition>
+    </ScrollContainerContext.Provider>
   );
 }
 

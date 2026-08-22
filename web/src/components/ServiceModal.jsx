@@ -11,7 +11,8 @@ import ServiceModalForm from "@/components/ServiceModalForm";
 import ServiceLaunchErrorAlert from "@/components/ServiceLaunchErrorAlert";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { runService, fetchProfileResources } from "@/lib/requests";
-import { useModels, useServices, useClusterStatus } from "@/lib/loaders";
+import { useModels, useServices, useClusterStatus, useStagedContainers } from "@/lib/loaders";
+import { ScrollContainerContext } from "@/lib/useScrollOnExpand";
 import { sleep, randomInt, isDeepEmpty } from "@/lib/util";
 import PropTypes from "prop-types";
 
@@ -110,12 +111,19 @@ function ServiceModal({
   const {
     status: clusterStatus,
   } = useClusterStatus(profile);
+  // `task` is the hyphenated pipeline name; config.IMAGES keys use underscores.
+  // This is the same transform runService applies to build the `image` field.
+  const {
+    container,
+    isLoading: containerLoading,
+  } = useStagedContainers(profile, task?.replaceAll("-", "_"));
 
   const { setSelectedServiceId } = useContext(ServiceContext);
 
 
   const [jobOptions, setJobOptions] = React.useState(() => getDefaultJobOptions(profile));
   const [model, setModel] = useState(null);
+  const [imageRef, setImageRef] = useState(null);
   const [resources, setResources] = useState(null);
   const clusterPartitions = clusterStatus?.partitions
     ? Object.keys(clusterStatus.partitions)
@@ -171,12 +179,22 @@ function ServiceModal({
   ])
 
   const cancelButtonRef = useRef(null);
+  // Shared with the nested forms so their collapsible sections can scroll this
+  // container into view when they expand.
+  const contentRef = useRef(null);
 
   const handleFormSubmit = async () => {
     console.debug("from handleFormSubmit: attempting to launch service")
     setIsLaunching(true)
     setLaunchError(null)
-    const res = await runService(task, model, jobOptions, containerOptions, profile);
+    const res = await runService(
+      task,
+      model,
+      jobOptions,
+      containerOptions,
+      profile,
+      imageRef
+    );
     if (!res.ok) {
       let message = "Failed to launch service.";
       try {
@@ -229,6 +247,7 @@ function ServiceModal({
   };
 
   return (
+    <ScrollContainerContext.Provider value={contentRef}>
     <Transition show={open} as={Fragment}>
       <Dialog
         as="div"
@@ -263,7 +282,7 @@ function ServiceModal({
             >
               <DialogPanel className="relative transform rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:mt-4 sm:mb-8 sm:w-full sm:max-w-4xl max-h-[90vh] flex flex-col">
                 {/* Scrollable content area */}
-                <div className="flex-1 overflow-y-auto px-4 pt-5 sm:p-6 sm:pl-6">
+                <div ref={contentRef} className="flex-1 overflow-y-auto px-4 pt-5 sm:p-6 sm:pl-6">
                   <DialogTitle
                     as="h3"
                     className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100"
@@ -279,6 +298,10 @@ function ServiceModal({
                         isModelsLoading={modelsLoading}
                         services={services}
                         setModel={setModel}
+                        container={container}
+                        isContainerLoading={containerLoading}
+                        imageRef={imageRef}
+                        setImageRef={setImageRef}
                         jobOptions={jobOptions}
                         setJobOptions={setJobOptions}
                         setValidationErrors={setValidationErrors}
@@ -330,6 +353,7 @@ function ServiceModal({
         </div>
       </Dialog>
     </Transition>
+    </ScrollContainerContext.Provider>
   );
 }
 

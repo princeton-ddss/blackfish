@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
-import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults } from "./requests";
+import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults, fetchStagedContainers } from "./requests";
 import { ServiceStatus, isRemoteProfile } from "./util";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 
@@ -251,6 +251,34 @@ export const useClusterStatus = (profile) => {
   );
   return {
     status: data,
+    error: error,
+    isLoading: isLoading,
+    isRefreshing: isValidating,
+    refresh: mutate,
+  };
+};
+
+/**
+ * The container image versions staged on a profile, for one service.
+ *
+ * `service` is a config.IMAGES key ("text_generation", "tigerflow_ml"), not an
+ * HF pipeline tag. Callers holding a hyphenated launcher name must convert it.
+ *
+ * Returns `container` as `{repo, tags, default, default_staged}`, or undefined
+ * while loading or on error — callers fall back to launching with the
+ * configured default, so an unreachable cluster never blocks a launch.
+ */
+export const useStagedContainers = (profile, service) => {
+  const key = profile?.name && service ? `containers/${profile.name}` : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    key,
+    () => fetchStagedContainers(profile.name),
+    {
+      revalidateOnFocus: false,
+    }
+  );
+  return {
+    container: data?.find((c) => c.service === service),
     error: error,
     isLoading: isLoading,
     isRefreshing: isValidating,

@@ -182,12 +182,16 @@ export function buildContainerConfig(containerConfig) {
 }
 
 /** Start an service to perform the specified ML/AI pipeline. */
-export async function runService(pipeline, model, jobConfig, containerConfig, profile) {
+export async function runService(pipeline, model, jobConfig, containerConfig, profile, imageRef = null) {
   let body;
   if (profile.schema === "slurm") {
     body = {
       name: jobConfig.name,
-      image: pipeline.replace("-", "_"),
+      // replaceAll, not replace: `image` must match a config.IMAGES key
+      // exactly, and a non-global replace would leave a two-hyphen name like
+      // "image-text-to-text" as "image_text-to-text".
+      image: pipeline.replaceAll("-", "_"),
+      image_ref: imageRef,
       repo_id: model.repo_id,
       profile: profile,
       container_config: {
@@ -212,7 +216,11 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
     const port = await res.json();
     body = {
       name: jobConfig.name,
-      image: pipeline.replace("-", "_"),
+      // replaceAll, not replace: `image` must match a config.IMAGES key
+      // exactly, and a non-global replace would leave a two-hyphen name like
+      // "image-text-to-text" as "image_text-to-text".
+      image: pipeline.replaceAll("-", "_"),
+      image_ref: imageRef,
       repo_id: model.repo_id,
       profile: profile,
       container_config: {
@@ -308,6 +316,29 @@ export async function fetchClusterStatus(profileName) {
     console.debug(`from fetchClusterStatus: failed to fetch cluster status (status=${res.status})`);
     // Try to parse error detail from response body
     let message = "Failed to fetch cluster status.";
+    try {
+      const body = await res.json();
+      if (body.detail) {
+        message = body.detail;
+      }
+    } catch {
+      // Ignore JSON parse errors, use default message
+    }
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/** Fetch the container images staged on a profile, grouped by service. */
+export async function fetchStagedContainers(profileName) {
+  const res = await fetch(
+    `${blackfishApiURL}/api/containers?profile=${encodeURIComponent(profileName)}`
+  );
+  if (!res.ok) {
+    console.debug(`from fetchStagedContainers: failed (status=${res.status})`);
+    let message = "Failed to fetch container images.";
     try {
       const body = await res.json();
       if (body.detail) {

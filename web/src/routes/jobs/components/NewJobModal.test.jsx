@@ -7,6 +7,7 @@ import {
   isParamVisible,
   applyTranslateSourceLang,
   buildJobResources,
+  isNoContainerStaged,
 } from "./NewJobModal";
 
 const detect = TASKS.find((t) => t.id === "detect");
@@ -284,5 +285,32 @@ describe("buildJobResources", () => {
 
   test("an undefined tier yields only default time", () => {
     expect(buildJobResources(undefined)).toEqual({"time": "01:00:00"});
+  });
+});
+
+describe("isNoContainerStaged", () => {
+  const staged = { service: "tigerflow_ml", tags: ["0.1.1"], default: "0.1.1" };
+  const empty = { service: "tigerflow_ml", tags: [], default: "0.1.1" };
+
+  test("blocks only when discovery found nothing staged", () => {
+    // The job would be rejected at pre-flight ("tigerflow-ml image not
+    // found"), so the wizard stops here rather than four steps later.
+    expect(isNoContainerStaged(empty, false)).toBe(true);
+  });
+
+  test("does not block when a version is staged", () => {
+    expect(isNoContainerStaged(staged, false)).toBe(false);
+  });
+
+  test("does not block when the profile is unreachable", () => {
+    // container is undefined when discovery failed. We do not know what is
+    // staged, and the backend can still resolve its configured default, so a
+    // flaky login node must not make the launcher unusable.
+    expect(isNoContainerStaged(undefined, false)).toBe(false);
+  });
+
+  test("does not block while still loading", () => {
+    // An in-flight fetch briefly looks like "nothing staged".
+    expect(isNoContainerStaged(empty, true)).toBe(false);
   });
 });

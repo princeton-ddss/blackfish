@@ -3,6 +3,8 @@ import Info from "./Info";
 import Alert from "@/components/Alert";
 import ModelSelect from "@/components/ModelSelect"
 import RevisionSelect from "@/components/RevisionSelect"
+import ImageVersionSelect from "@/components/ImageVersionSelect"
+import { useScrollOnExpand } from "@/lib/useScrollOnExpand"
 import TierSelect from "@/components/TierSelect";
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
@@ -27,6 +29,10 @@ function ServiceModalForm({
   isModelsLoading = false,
   services,
   setModel,
+  container,
+  isContainerLoading = false,
+  imageRef,
+  setImageRef,
   jobOptions,
   setJobOptions,
   setValidationErrors,
@@ -47,6 +53,9 @@ function ServiceModalForm({
   const [recommendedTier, setRecommendedTier] = React.useState(null);
   const [partitionWarning, setPartitionWarning] = React.useState(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
+  // Expanding a section below the fold otherwise reveals nothing until the
+  // user scrolls, which reads as the click having done nothing.
+  useScrollOnExpand(showAdvanced);
   const [account, setAccount] = React.useState("");
 
   // Default tiers when API doesn't return data
@@ -338,6 +347,7 @@ function ServiceModalForm({
               isLoading={isModelsLoading}
             />
           </fieldset>
+
         </div>
       ) : warnIfNoModels()}
 
@@ -469,6 +479,20 @@ function ServiceModalForm({
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Leave empty to use your default account.
                   </p>
+
+                  <div className="mt-4">
+                    <ImageVersionSelect
+                      container={container}
+                      imageRef={imageRef}
+                      setImageRef={setImageRef}
+                      disabled={disabled}
+                      isLoading={isContainerLoading}
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Pin the container image for reproducibility. The default
+                      is recommended unless you need a specific version.
+                    </p>
+                  </div>
                 </div>
               )}
             </fieldset>
@@ -529,6 +553,41 @@ function ServiceModalForm({
                 </div>
               </div>
             </fieldset>
+
+            {/* Advanced options (collapsed by default). Local profiles have no
+                Slurm settings, but they still run containers, so the image
+                version belongs here too. */}
+            <fieldset>
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 w-full text-left"
+              >
+                <legend className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100">
+                  Advanced Options
+                </legend>
+                {showAdvanced ? (
+                  <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                )}
+              </button>
+              {showAdvanced && (
+                <div className="mt-3">
+                  <ImageVersionSelect
+                    container={container}
+                    imageRef={imageRef}
+                    setImageRef={setImageRef}
+                    disabled={disabled}
+                    isLoading={isContainerLoading}
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Pin the container image for reproducibility. The default is
+                    recommended unless you need a specific version.
+                  </p>
+                </div>
+              )}
+            </fieldset>
           </>
         )
       }
@@ -544,6 +603,10 @@ ServiceModalForm.propTypes = {
   isModelsLoading: PropTypes.bool,
   services: PropTypes.array,
   setModel: PropTypes.func,
+  container: PropTypes.object,
+  isContainerLoading: PropTypes.bool,
+  imageRef: PropTypes.string,
+  setImageRef: PropTypes.func,
   jobOptions: PropTypes.object,
   setJobOptions: PropTypes.func,
   setValidationErrors: PropTypes.func,

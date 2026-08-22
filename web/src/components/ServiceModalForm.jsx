@@ -344,15 +344,6 @@ function ServiceModalForm({
             />
           </fieldset>
 
-          <fieldset>
-            <ImageVersionSelect
-              container={container}
-              imageRef={imageRef}
-              setImageRef={setImageRef}
-              disabled={disabled}
-              isLoading={isContainerLoading}
-            />
-          </fieldset>
         </div>
       ) : warnIfNoModels()}
 
@@ -484,6 +475,20 @@ function ServiceModalForm({
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Leave empty to use your default account.
                   </p>
+
+                  <div className="mt-4">
+                    <ImageVersionSelect
+                      container={container}
+                      imageRef={imageRef}
+                      setImageRef={setImageRef}
+                      disabled={disabled}
+                      isLoading={isContainerLoading}
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Pin the container image for reproducibility. The default
+                      is recommended unless you need a specific version.
+                    </p>
+                  </div>
                 </div>
               )}
             </fieldset>
@@ -543,6 +548,41 @@ function ServiceModalForm({
                   </div>
                 </div>
               </div>
+            </fieldset>
+
+            {/* Advanced options (collapsed by default). Local profiles have no
+                Slurm settings, but they still run containers, so the image
+                version belongs here too. */}
+            <fieldset>
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 w-full text-left"
+              >
+                <legend className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100">
+                  Advanced Options
+                </legend>
+                {showAdvanced ? (
+                  <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                )}
+              </button>
+              {showAdvanced && (
+                <div className="mt-3">
+                  <ImageVersionSelect
+                    container={container}
+                    imageRef={imageRef}
+                    setImageRef={setImageRef}
+                    disabled={disabled}
+                    isLoading={isContainerLoading}
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Pin the container image for reproducibility. The default is
+                    recommended unless you need a specific version.
+                  </p>
+                </div>
+              )}
             </fieldset>
           </>
         )

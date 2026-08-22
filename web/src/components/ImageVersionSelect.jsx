@@ -39,25 +39,31 @@ function ImageVersionSelect({
   disabled,
   isLoading = false,
 }) {
-  const [selected, setSelected] = useState(null);
+  // Only what the user explicitly picked. The effective selection is derived
+  // below rather than stored, so a container change (new profile or service)
+  // can never leave a stale tag paired with a new repo.
+  const [chosen, setChosen] = useState(null);
   const isDisabled = disabled || isLoading;
 
   const tags = container?.tags ?? [];
 
-  // Seed from the configured default whenever the container changes (a new
-  // profile or service), falling back to the first staged tag when that
-  // default is not on disk.
+  // Prefer the configured default, falling back to the first staged tag when
+  // that default is not on disk. A user's pick wins, but only while it is
+  // still offered — switching containers drops it.
+  const selected = container
+    ? (tags.includes(chosen) ? chosen : null) ??
+      (container.default_staged ? container.default : tags[0] ?? null)
+    : null;
+
+  // Forget the explicit pick when the container changes, so the derived
+  // default applies to the new service rather than a tag from the old one.
   useEffect(() => {
-    if (!container) {
-      setSelected(null);
-      return;
-    }
-    const fallback = container.tags?.[0] ?? null;
-    setSelected(container.default_staged ? container.default : fallback);
+    setChosen(null);
   }, [container]);
 
   // Lift the full "repo:tag" — image_ref stores a complete reference, since a
-  // pin may move repos and not just tags.
+  // pin may move repos and not just tags. Derived from `container` in the same
+  // pass as `selected`, so the two are always consistent.
   useEffect(() => {
     if (!setImageRef) return;
     if (selected && container?.repo) {
@@ -80,7 +86,7 @@ function ImageVersionSelect({
 
   return (
     <Field disabled={isDisabled}>
-      <Listbox value={selected} onChange={setSelected} disabled={isDisabled}>
+      <Listbox value={selected} onChange={setChosen} disabled={isDisabled}>
         <Label className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
           Version
         </Label>

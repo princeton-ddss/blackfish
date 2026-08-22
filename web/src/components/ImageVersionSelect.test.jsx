@@ -101,6 +101,38 @@ describe("ImageVersionSelect", () => {
     );
   });
 
+  it("never lifts a new repo paired with the previous tag", () => {
+    // Regression: seeding `selected` in one effect and lifting it in another
+    // let the lift fire first with the new container but the stale tag,
+    // emitting a reference that does not exist. Deriving the selection from
+    // the container removes the intermediate entirely. `toHaveBeenLastCalled`
+    // would not catch this — every call has to be correct.
+    const { rerender, setImageRef } = renderSelect();
+    setImageRef.mockClear();
+
+    const other = {
+      service: "tigerflow_ml",
+      repo: "ghcr.io/princeton-ddss/tigerflow-ml",
+      tags: ["0.1.1"],
+      default: "0.1.1",
+      default_staged: true,
+    };
+    rerender(
+      <ImageVersionSelect
+        container={other}
+        imageRef={null}
+        setImageRef={setImageRef}
+        disabled={false}
+      />
+    );
+
+    for (const [ref] of setImageRef.mock.calls) {
+      if (ref !== null) {
+        expect(ref).toBe("ghcr.io/princeton-ddss/tigerflow-ml:0.1.1");
+      }
+    }
+  });
+
   it("shows a skeleton rather than the select while loading", () => {
     renderSelect({ isLoading: true });
     // The real select renders its current value; the skeleton must not.

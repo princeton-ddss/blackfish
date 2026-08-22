@@ -187,7 +187,10 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
   if (profile.schema === "slurm") {
     body = {
       name: jobConfig.name,
-      image: pipeline.replace("-", "_"),
+      // replaceAll, not replace: `image` must match a config.IMAGES key
+      // exactly, and a non-global replace would leave a two-hyphen name like
+      // "image-text-to-text" as "image_text-to-text".
+      image: pipeline.replaceAll("-", "_"),
       image_ref: imageRef,
       repo_id: model.repo_id,
       profile: profile,
@@ -213,7 +216,10 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
     const port = await res.json();
     body = {
       name: jobConfig.name,
-      image: pipeline.replace("-", "_"),
+      // replaceAll, not replace: `image` must match a config.IMAGES key
+      // exactly, and a non-global replace would leave a two-hyphen name like
+      // "image-text-to-text" as "image_text-to-text".
+      image: pipeline.replaceAll("-", "_"),
       image_ref: imageRef,
       repo_id: model.repo_id,
       profile: profile,

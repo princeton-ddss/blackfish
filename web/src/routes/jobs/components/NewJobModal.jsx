@@ -513,6 +513,15 @@ const VIDEO_INPUT_EXTS = new Set([
 // `showWhenParam` (e.g. transcribe's batch_size only applies when windowing is
 // "batched"). All three call sites (render, validation, submit) go through this
 // one predicate so a hidden param's stale value is never sent.
+// Whether discovery *succeeded* and reported no staged image. Distinct from
+// "we could not reach the profile" (container undefined), which must not block
+// a launch — the backend still resolves its configured default. Only this case
+// is a guaranteed failure: the job would be rejected at pre-flight with
+// "tigerflow-ml image not found".
+export function isNoContainerStaged(container, isLoading) {
+  return Boolean(container && !isLoading && container.tags?.length === 0);
+}
+
 export function isParamVisible(param, { inputExt, taskParams, modelType } = {}) {
   if (param.showWhen?.modelType && modelType !== param.showWhen.modelType) {
     return false;
@@ -741,12 +750,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
     container,
     isLoading: containerLoading,
   } = useStagedContainers(profile, "tigerflow_ml");
-  // Only when discovery *succeeded* and reported nothing staged. An
-  // unreachable profile leaves `container` undefined, which must not block the
-  // launch — the backend still resolves its configured default.
-  const noContainerStaged = Boolean(
-    container && !containerLoading && container.tags.length === 0
-  );
+  const noContainerStaged = isNoContainerStaged(container, containerLoading);
   const [repoId, setRepoId] = useState(null);
   const [model, setModel] = useState(null);
   const [imageRef, setImageRef] = useState(null);
@@ -770,6 +774,9 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
 
   // Advanced options
   const [showAdvanced, setShowAdvanced] = useState(false);
+  // Separate disclosure: the Model step's advanced section is a different step
+  // from Compute's, so they expand independently.
+  const [showModelAdvanced, setShowModelAdvanced] = useState(false);
   const [account, setAccount] = useState("");
   const [workerTimeout, setWorkerTimeout] = useState("");
   const [idleTimeout, setIdleTimeout] = useState("");
@@ -877,6 +884,7 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       setSelectedTier(null);
       setRecommendedTier(null);
       setShowAdvanced(false);
+      setShowModelAdvanced(false);
       setAccount("");
       setWorkerTimeout("");
       setIdleTimeout("");
@@ -1246,14 +1254,38 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
                     isLoading={modelsLoading}
                   />
                 </fieldset>
+                {/* Collapsed by default: the configured default is right for
+                    almost everyone, and pinning is an expert need. */}
                 <fieldset>
-                  <ImageVersionSelect
-                    container={container}
-                    imageRef={imageRef}
-                    setImageRef={setImageRef}
-                    disabled={isSubmitting || containerLoading}
-                    isLoading={containerLoading}
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowModelAdvanced(!showModelAdvanced)}
+                    className="flex items-center gap-2 w-full text-left"
+                  >
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      Advanced Options
+                    </span>
+                    {showModelAdvanced ? (
+                      <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                  {showModelAdvanced && (
+                    <div className="mt-3">
+                      <ImageVersionSelect
+                        container={container}
+                        imageRef={imageRef}
+                        setImageRef={setImageRef}
+                        disabled={isSubmitting || containerLoading}
+                        isLoading={containerLoading}
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Pin the container image for reproducibility. The default
+                        is recommended unless you need a specific version.
+                      </p>
+                    </div>
+                  )}
                 </fieldset>
               </>
             )}

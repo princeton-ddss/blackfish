@@ -43,9 +43,8 @@ function ImageVersionSelect({
   // below rather than stored, so a container change (new profile or service)
   // can never leave a stale tag paired with a new repo.
   const [chosen, setChosen] = useState(null);
-  const isDisabled = disabled || isLoading;
-
   const tags = container?.tags ?? [];
+  const isDisabled = disabled || isLoading || tags.length < 2;
 
   // Prefer the configured default, falling back to the first staged tag when
   // that default is not on disk. A user's pick wins, but only while it is
@@ -78,8 +77,8 @@ function ImageVersionSelect({
   }
 
   // Nothing staged, or the profile is unreachable: stay out of the way and let
-  // the backend resolve its default. A single staged version still renders, to
-  // match RevisionSelect — disabling one-option selects is tracked in #489.
+  // the backend resolve its default. A single staged version still renders
+  // (disabled) so the user sees which image is going to run.
   if (selected === null) {
     return <></>;
   }

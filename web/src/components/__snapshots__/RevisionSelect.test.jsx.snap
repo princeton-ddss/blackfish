@@ -13,8 +13,8 @@ exports[`RevisionSelect > Disabled 1`] = `
         class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
         data-disabled=""
         data-headlessui-state="disabled"
-        for="headlessui-control-:r8:"
-        id="headlessui-label-:rb:"
+        for="headlessui-control-:ro:"
+        id="headlessui-label-:rr:"
       >
         Revision
       </label>
@@ -24,12 +24,12 @@ exports[`RevisionSelect > Disabled 1`] = `
         <button
           aria-expanded="false"
           aria-haspopup="listbox"
-          aria-labelledby="headlessui-label-:rb: headlessui-control-:r8:"
+          aria-labelledby="headlessui-label-:rr: headlessui-control-:ro:"
           class="bg-gray-100 dark:bg-gray-800 ring-gray-300 dark:ring-gray-600 ring-1 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 sm:text-sm sm:leading-6"
           data-disabled=""
           data-headlessui-state="disabled"
           disabled=""
-          id="headlessui-control-:r8:"
+          id="headlessui-control-:ro:"
           type="button"
         >
           <span
@@ -56,11 +56,15 @@ exports[`RevisionSelect > Standard 1`] = `
 <body>
   <div>
     <div
-      data-headlessui-state=""
+      aria-disabled="true"
+      data-disabled=""
+      data-headlessui-state="disabled"
+      disabled=""
     >
       <label
         class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
-        data-headlessui-state=""
+        data-disabled=""
+        data-headlessui-state="disabled"
         for="headlessui-control-:r0:"
         id="headlessui-label-:r3:"
       >
@@ -73,8 +77,10 @@ exports[`RevisionSelect > Standard 1`] = `
           aria-expanded="false"
           aria-haspopup="listbox"
           aria-labelledby="headlessui-label-:r3: headlessui-control-:r0:"
-          class="bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 sm:text-sm sm:leading-6"
-          data-headlessui-state=""
+          class="bg-gray-100 dark:bg-gray-800 ring-gray-300 dark:ring-gray-600 ring-1 relative w-full cursor-default rounded-md py-1.5 pl-1 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 sm:text-sm sm:leading-6"
+          data-disabled=""
+          data-headlessui-state="disabled"
+          disabled=""
           id="headlessui-control-:r0:"
           type="button"
         >
@@ -86,24 +92,6 @@ exports[`RevisionSelect > Standard 1`] = `
             >
               169d4a4341b33bc18d8881c4b69c2e104e1cc0af
             </span>
-          </span>
-          <span
-            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-5 w-5 text-gray-400"
-              data-slot="icon"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                clip-rule="evenodd"
-                d="M10.53 3.47a.75.75 0 0 0-1.06 0L6.22 6.72a.75.75 0 0 0 1.06 1.06L10 5.06l2.72 2.72a.75.75 0 1 0 1.06-1.06l-3.25-3.25Zm-4.31 9.81 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 1 0-1.06-1.06L10 14.94l-2.72-2.72a.75.75 0 0 0-1.06 1.06Z"
-                fill-rule="evenodd"
-              />
-            </svg>
           </span>
         </button>
       </div>

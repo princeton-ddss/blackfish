@@ -65,16 +65,19 @@ describe("ImageVersionSelect", () => {
     expect(dom).toBeEmptyDOMElement();
   });
 
-  it("still renders with a single option, matching RevisionSelect", () => {
-    // Disabling one-option selects is tracked separately (#489); until then
-    // the version in use stays visible rather than vanishing.
+  it("renders a disabled control with a single option", () => {
+    // One staged version: the value stays visible so users see what's going to
+    // run, but the affordance is disabled since there is nothing else to pick.
+    // The lifted image_ref still needs to make it into the request payload.
     const container = {
       ...CONTAINER,
       tags: ["0.1.1"],
       default: "0.1.1",
     };
-    renderSelect({ container });
+    const { setImageRef } = renderSelect({ container });
     expect(screen.getByText("0.1.1")).toBeInTheDocument();
+    expect(screen.getByRole("button")).toBeDisabled();
+    expect(setImageRef).toHaveBeenCalledWith("vllm/vllm-openai:0.1.1");
   });
 
   it("re-seeds when the container changes, e.g. on a profile switch", () => {

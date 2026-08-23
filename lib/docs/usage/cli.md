@@ -185,13 +185,38 @@ blackfish profile rm --name <profile> --force
 
 !!! note
 
-    Deleting a profile does not remove its remote resources (e.g., models, images, or job files in `home_dir` or `cache_dir`). These may be shared with other profiles and should be cleaned up manually if no longer needed.
+    Deleting a profile does not remove its remote resources (models, images, or job files in `home_dir` and `cache_dir`). These may be shared with other profiles, so Blackfish leaves the decision — and the `rm` — to you. See [Cleaning up profile resources](#cleaning-up-profile-resources) below.
 
 !!! warning
 
     Force-deleting the default profile leaves Blackfish without an explicitly flagged default. It
     will fall back to a profile named "default" or, failing that, the first profile listed—set a new
     default explicitly to avoid surprises.
+
+#### Cleaning up profile resources
+
+`profile rm` deletes the profile from Blackfish but does not touch its `home_dir` or `cache_dir`. Both may be shared with other profiles or with other users, so Blackfish leaves the cleanup to you.
+
+Once you've confirmed nothing else depends on a directory, remove it directly:
+
+```shell
+# Local
+rm -rf <dir>
+
+# Slurm
+ssh <user>@<host> "rm -rf <dir>"
+```
+
+`cache_dir` is usually a shared location on HPC systems (e.g., `/shared/.blackfish`) — check with your admin before removing.
+
+To remove Blackfish itself along with all of its local state, uninstall the package and remove `~/.blackfish`:
+
+```shell
+pip uninstall blackfish-ai   # or `uv tool uninstall blackfish-ai`
+rm -rf ~/.blackfish
+```
+
+Remote resources on any cluster you targeted need to be removed on the cluster using the commands above.
 
 ## Services
 

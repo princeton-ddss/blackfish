@@ -195,37 +195,28 @@ blackfish profile rm --name <profile> --force
 
 #### Cleaning up profile resources
 
-`profile rm` deletes the profile from Blackfish. It does not touch the profile's on-disk resources, because Blackfish can't safely tell whether they're shared with another profile (or with other users, in the case of `cache_dir`). Clean these up by hand once you've confirmed nothing else depends on them.
+`profile rm` deletes the profile from Blackfish but does not touch its `home_dir` or `cache_dir`. Both may be shared with other profiles or with other users, so Blackfish leaves the cleanup to you.
 
-For a **local profile**, everything lives on your machine:
-
-```shell
-# Job files, logs, and models the profile downloaded to home_dir.
-rm -rf <home_dir>/jobs
-
-# Only remove the model cache if no other profile uses this cache_dir.
-rm -rf <cache_dir>/models
-```
-
-For a **slurm profile**, the same directories live on the cluster:
+Once you've confirmed nothing else depends on a directory, remove it directly:
 
 ```shell
-ssh <user>@<host> "rm -rf <home_dir>/jobs"
+# Local
+rm -rf <dir>
 
-# Same caveat: check that cache_dir isn't shared before removing models.
-ssh <user>@<host> "rm -rf <cache_dir>/models"
+# Slurm
+ssh <user>@<host> "rm -rf <dir>"
 ```
 
-Container images in `cache_dir/images` are almost always shared with other users on HPC systems — leave them alone unless you're certain.
+`cache_dir` is usually a shared location on HPC systems (e.g., `/shared/.blackfish`) — check with your admin before removing.
 
-To remove Blackfish itself along with all of its local state (config, database, downloaded models under `~/.blackfish`), uninstall the package and remove the home directory:
+To remove Blackfish itself along with all of its local state, uninstall the package and remove `~/.blackfish`:
 
 ```shell
 pip uninstall blackfish-ai   # or `uv tool uninstall blackfish-ai`
 rm -rf ~/.blackfish
 ```
 
-Remote resources on any cluster you targeted need to be removed on the cluster itself using the commands above.
+Remote resources on any cluster you targeted need to be removed on the cluster using the commands above.
 
 ## Services
 

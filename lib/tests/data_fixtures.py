@@ -167,6 +167,14 @@ def models_fixture() -> list[Model | dict[str, Any]]:
             "model_dir": "/home/test/.blackfish/models/models--llava-hf/llava-1.5-7b-hf",
         },
         {
+            "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+            "repo": "Qwen/Qwen2.5-Omni-7B",
+            "profile": "default",
+            "revision": "main",
+            "image": "any-to-any",
+            "model_dir": "/home/test/.blackfish/models/models--Qwen/Qwen2.5-Omni-7B",
+        },
+        {
             "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
             "repo": "openai/whisper-large-v3",
             "profile": "hpc",

@@ -175,6 +175,16 @@ def models_fixture() -> list[Model | dict[str, Any]]:
             "model_dir": "/home/test/.blackfish/models/models--Qwen/Qwen2.5-Omni-7B",
         },
         {
+            # Orphan: profile "deleted" is not in tests/profiles.cfg, so this
+            # row simulates a model left behind by a deleted profile (#478).
+            "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+            "repo": "meta-llama/Llama-3.2-1B",
+            "profile": "deleted",
+            "revision": "1",
+            "image": "text_generation",
+            "model_dir": "/home/test/.blackfish/models/models--meta-llama/Llama-3.2-1B",
+        },
+        {
             "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
             "repo": "openai/whisper-large-v3",
             "profile": "hpc",

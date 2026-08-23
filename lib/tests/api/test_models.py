@@ -43,6 +43,23 @@ class TestFetchModelsAPI:
         for model in result:
             assert model.get("profile") == "test"
 
+    async def test_fetch_models_hides_orphans_from_deleted_profiles(
+        self, client: AsyncTestClient
+    ):
+        """Rows whose profile is not in profiles.cfg must not surface (#478).
+
+        The fixture seeds a model with profile="deleted" (not in the test
+        profiles.cfg). A stale row is a false capability claim — the model
+        can't launch without an active profile — so listings hide it.
+        """
+        orphan_id = "e5f6a7b8-c9d0-1234-ef01-345678901234"
+
+        response = await client.get("/api/models")
+        assert response.status_code == 200
+        result = response.json()
+        assert orphan_id not in {m["id"] for m in result}
+        assert "deleted" not in {m["profile"] for m in result}
+
     async def test_fetch_models_by_image(self, client: AsyncTestClient):
         """Test fetching models by image."""
         response = await client.get("/api/models", params={"image": "text_generation"})
@@ -639,13 +656,20 @@ class TestDeleteModelsAPI:
         assert len(result) == 1
         assert result[0]["status"] == "ok"
 
-        # Verify the other model still exists
-        get_response = await client.get(
-            "/api/models", params={"profile": "specific-profile"}
+        # Verify the other model still exists. Query the session directly
+        # rather than /api/models: the listing filters out rows whose profile
+        # isn't in profiles.cfg (#478), and "specific-profile" isn't.
+        remaining = (
+            (
+                await session.execute(
+                    sa.select(Model).where(Model.profile == "specific-profile")
+                )
+            )
+            .scalars()
+            .all()
         )
-        remaining_models = get_response.json()
-        assert len(remaining_models) == 1
-        assert remaining_models[0]["revision"] == "specific-v2"
+        assert len(remaining) == 1
+        assert remaining[0].revision == "specific-v2"
 
 
 class TestCreateModelAPI:

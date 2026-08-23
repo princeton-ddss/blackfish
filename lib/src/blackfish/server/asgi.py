@@ -2134,7 +2134,9 @@ async def get_models(
         logger.info("Querying model table...")
 
         # Build query with optional filters
-        query = sa.select(Model)
+        # Hide models whose profile has been deleted from profiles.cfg (#478).
+        active_profiles = [p.name for p in profiles]
+        query = sa.select(Model).where(Model.profile.in_(active_profiles))
         if profile is not None:
             query = query.where(Model.profile == profile)
         if image is not None:

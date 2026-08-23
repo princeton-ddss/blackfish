@@ -60,6 +60,19 @@ class TestFetchModelsAPI:
         assert orphan_id not in {m["id"] for m in result}
         assert "deleted" not in {m["profile"] for m in result}
 
+    async def test_fetch_models_by_deleted_profile_returns_empty(
+        self, client: AsyncTestClient
+    ):
+        """Explicitly asking for a deleted profile returns [], not the orphans.
+
+        Pins the intended contract: the profile filter can't be used to
+        surface hidden orphan rows, and the response is the same 200 [] a
+        never-existed profile gets (see test_fetch_nonexistent_profile_…).
+        """
+        response = await client.get("/api/models", params={"profile": "deleted"})
+        assert response.status_code == 200
+        assert response.json() == []
+
     async def test_fetch_models_by_image(self, client: AsyncTestClient):
         """Test fetching models by image."""
         response = await client.get("/api/models", params={"image": "text_generation"})

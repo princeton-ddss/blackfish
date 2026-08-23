@@ -185,13 +185,47 @@ blackfish profile rm --name <profile> --force
 
 !!! note
 
-    Deleting a profile does not remove its remote resources (e.g., models, images, or job files in `home_dir` or `cache_dir`). These may be shared with other profiles and should be cleaned up manually if no longer needed.
+    Deleting a profile does not remove its remote resources (models, images, or job files in `home_dir` and `cache_dir`). These may be shared with other profiles, so Blackfish leaves the decision — and the `rm` — to you. See [Cleaning up profile resources](#cleaning-up-profile-resources) below.
 
 !!! warning
 
     Force-deleting the default profile leaves Blackfish without an explicitly flagged default. It
     will fall back to a profile named "default" or, failing that, the first profile listed—set a new
     default explicitly to avoid surprises.
+
+#### Cleaning up profile resources
+
+`profile rm` deletes the profile from Blackfish. It does not touch the profile's on-disk resources, because Blackfish can't safely tell whether they're shared with another profile (or with other users, in the case of `cache_dir`). Clean these up by hand once you've confirmed nothing else depends on them.
+
+For a **local profile**, everything lives on your machine:
+
+```shell
+# Job files, logs, and models the profile downloaded to home_dir.
+rm -rf <home_dir>/jobs
+
+# Only remove the model cache if no other profile uses this cache_dir.
+rm -rf <cache_dir>/models
+```
+
+For a **slurm profile**, the same directories live on the cluster:
+
+```shell
+ssh <user>@<host> "rm -rf <home_dir>/jobs"
+
+# Same caveat: check that cache_dir isn't shared before removing models.
+ssh <user>@<host> "rm -rf <cache_dir>/models"
+```
+
+Container images in `cache_dir/images` are almost always shared with other users on HPC systems — leave them alone unless you're certain.
+
+To remove Blackfish itself along with all of its local state (config, database, downloaded models under `~/.blackfish`), uninstall the package and remove the home directory:
+
+```shell
+pip uninstall blackfish-ai   # or `uv tool uninstall blackfish-ai`
+rm -rf ~/.blackfish
+```
+
+Remote resources on any cluster you targeted need to be removed on the cluster itself using the commands above.
 
 ## Services
 

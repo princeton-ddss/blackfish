@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ChevronLeftIcon,
     ChevronRightIcon,
@@ -69,6 +69,11 @@ function FileManagerTable({
     directorySelectionMode = false,
 }) {
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Reset to the first page when the directory or filter changes.
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [path, query]);
 
     const indexOfLastFile = currentPage * filesPerPage;
     const indexOfFirstFile = indexOfLastFile - filesPerPage;

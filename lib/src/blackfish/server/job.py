@@ -2,12 +2,46 @@ import os
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from enum import StrEnum, auto
 from typing import Optional, Union
 from blackfish.server import remote
 from blackfish.server.logger import logger
 from blackfish.server.config import ContainerProvider
+
+
+def _split_state_start(stdout: bytes) -> tuple[bytes, bytes]:
+    """Split the first line of ``sacct ... -P -o State,Start`` output.
+
+    Returns ``(state_bytes, start_bytes)``. If ``stdout`` is empty (no matching
+    job) both fields are empty. If ``Start`` is missing (older Slurm or unusual
+    output) the start field is empty.
+    """
+    line = stdout.split(b"\n", 1)[0].strip()
+    if line == b"":
+        return b"", b""
+    parts = line.split(b"|", 1)
+    if len(parts) == 1:
+        return parts[0], b""
+    return parts[0], parts[1]
+
+
+def parse_sacct_start(value: str) -> Optional[datetime]:
+    """Parse the ``Start`` field returned by ``sacct``.
+
+    Assumes ``sacct`` was invoked with ``TZ=UTC`` so the timestamp is naive
+    ISO-8601 in UTC. Returns ``None`` for the empty string or ``"Unknown"``
+    (the value Slurm reports for jobs that have not started).
+    """
+    stripped = value.strip()
+    if stripped == "" or stripped.lower() == "unknown":
+        return None
+    try:
+        return datetime.fromisoformat(stripped).replace(tzinfo=timezone.utc)
+    except ValueError:
+        logger.warning(f"Failed to parse sacct Start value: {stripped!r}")
+        return None
 
 
 class JobState(StrEnum):
@@ -108,6 +142,7 @@ class SlurmJob(Job):
     node: Optional[str] = None
     port: Optional[int] = None
     state: Optional[JobState] = None
+    started_at: Optional[datetime] = None
     options: Optional[JobConfig] = None
 
     def is_local(self) -> bool:
@@ -117,6 +152,9 @@ class SlurmJob(Job):
         """Attempt to update the job state from Slurm accounting and return the new
         state (or current state if the update fails).
 
+        Also refreshes ``started_at`` from ``sacct``'s ``Start`` column so callers
+        can measure elapsed time from actual job start rather than submission.
+
         If the job state switches from PENDING or MISSING to RUNNING, also update
         the job node and port.
 
@@ -124,7 +162,11 @@ class SlurmJob(Job):
         """
         if verbose:
             logger.debug(f"Updating job state (job_id={self.job_id}).")
+        # TZ=UTC forces sacct to emit Start in UTC; without it Slurm uses the
+        # cluster-local timezone, which we would have to detect and convert.
         sacct_cmd = [
+            "env",
+            "TZ=UTC",
             "sacct",
             "-n",
             "-P",
@@ -134,7 +176,7 @@ class SlurmJob(Job):
             "-j",
             str(self.job_id),
             "-o",
-            "State",
+            "State,Start",
         ]
         try:
             if self.is_local():
@@ -142,7 +184,9 @@ class SlurmJob(Job):
             else:
                 result = await remote.ssh(f"{self.user}@{self.host}", sacct_cmd)
 
-            new_state = parse_state(result.stdout)
+            state_field, start_field = _split_state_start(result.stdout)
+            new_state = parse_state(state_field)
+            self.started_at = parse_sacct_start(start_field.decode("utf-8"))
             if verbose:
                 logger.debug(
                     f"The current job state is: {format_state(new_state)} (job_id={self.job_id})"

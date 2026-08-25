@@ -1887,6 +1887,16 @@ async def asyncpost(
     client: httpx.AsyncClient, url: str, data: Any, headers: Any
 ) -> Any:
     response = await client.post(url, content=data, headers=headers)
+    if not response.is_success:
+        try:
+            error_body = response.json()
+            error_message = error_body.get("message", "Upstream service error")
+        except Exception:
+            error_message = response.text or "Upstream service error"
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=error_message,
+        )
     return response.json()
 
 

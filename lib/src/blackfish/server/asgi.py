@@ -1109,7 +1109,7 @@ class ServiceRequest(BaseModel):
     container_config: ContainerConfig
     job_config: JobConfig
     mount: Optional[str] = None
-    grace_period: int = 180  # seconds
+    grace_period: int = blackfish_config.GRACE_PERIOD
 
 
 @dataclass

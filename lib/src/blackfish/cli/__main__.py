@@ -397,7 +397,7 @@ def start(reload: bool | None) -> None:  # pragma: no cover
     "--grace-period",
     "-g",
     type=int,
-    default=180,
+    default=config.GRACE_PERIOD,
     help="Time (s) to wait before setting service health to 'unhealthy'.",
 )
 @click.option(

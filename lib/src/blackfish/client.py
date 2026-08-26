@@ -28,7 +28,7 @@ from litestar.datastructures import State
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-from blackfish.server.config import BlackfishConfig
+from blackfish.server.config import BlackfishConfig, config
 from blackfish.server.http_client import create_http_client
 from blackfish.server.models.profile import (
     deserialize_profile,
@@ -285,7 +285,7 @@ class Blackfish:
         container_config: Optional[dict[str, Any]] = None,
         job_config: Optional[dict[str, Any]] = None,
         mount: Optional[str] = None,
-        grace_period: int = 180,
+        grace_period: int = config.GRACE_PERIOD,
         image_ref: Optional[str] = None,
         auto_cleanup: bool = True,
         **kwargs: dict[str, Any],  # BlackfishConfig
@@ -474,7 +474,7 @@ class Blackfish:
         container_config: Optional[dict[str, Any]] = None,
         job_config: Optional[dict[str, Any]] = None,
         mount: Optional[str] = None,
-        grace_period: int = 180,
+        grace_period: int = config.GRACE_PERIOD,
         image_ref: Optional[str] = None,
         auto_cleanup: bool = True,
         **kwargs: dict[str, Any],  # BlackfishConfig

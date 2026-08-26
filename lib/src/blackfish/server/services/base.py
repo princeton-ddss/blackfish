@@ -446,11 +446,20 @@ class Service(UUIDAuditBase):
                         ServiceStatus.PENDING,
                         ServiceStatus.STARTING,
                     ]:
-                        if self.created_at is None:
+                        # Measure grace from the job's actual start time (from
+                        # sacct) so queue time does not count against it. Fall
+                        # back to created_at if sacct did not report Start yet
+                        # (e.g. reported as "Unknown" or a transient parse
+                        # failure); this preserves prior behavior in that case.
+                        anchor = job.started_at or self.created_at
+                        if anchor is None:
                             raise Exception("Service is missing value `created_at`.")
-                        dt = datetime.now(timezone.utc) - self.created_at
-                        logger.debug(f"Service created {dt.seconds} seconds ago.")
-                        if dt.seconds > self.grace_period:
+                        dt = datetime.now(timezone.utc) - anchor
+                        logger.debug(
+                            f"Service running for {dt.total_seconds():.0f} seconds"
+                            f" (anchor={'job.started_at' if job.started_at else 'created_at'})."
+                        )
+                        if dt.total_seconds() > self.grace_period:
                             logger.debug(
                                 f"Service {self.id} grace period exceeded. Setting"
                                 " status to UNHEALTHY."
@@ -516,8 +525,10 @@ class Service(UUIDAuditBase):
                     if self.created_at is None:
                         raise Exception("Service is missing value `created_at`.")
                     dt = datetime.now(timezone.utc) - self.created_at
-                    logger.debug(f"Service created {dt.seconds} seconds ago.")
-                    if dt.seconds > self.grace_period:
+                    logger.debug(
+                        f"Service created {dt.total_seconds():.0f} seconds ago."
+                    )
+                    if dt.total_seconds() > self.grace_period:
                         logger.debug(
                             f"Service {self.id} grace period exceeded. Setting"
                             "status to UNHEALTHY."

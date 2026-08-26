@@ -296,3 +296,83 @@ class TestServiceImagePinning:
         self._render(service)
 
         assert service.image_ref == "vllm/vllm-openai:v9.9.9"
+
+
+class TestGracePeriodAnchor:
+    """Regression tests for the grace-period clock (#472).
+
+    A STARTING service whose ping fails but whose Slurm job is RUNNING should
+    stay STARTING while `now - job.started_at <= grace_period` and flip to
+    UNHEALTHY once it exceeds it. The grace window is measured from the job's
+    actual start (`sacct` Start), not from service submission — so a long
+    queue does not consume startup budget.
+    """
+
+    def _service(self, *, started_at, grace_period=180, created_at=None):
+        from datetime import datetime, timedelta, timezone
+        from uuid import UUID
+
+        from blackfish.server.job import JobScheduler, JobState, SlurmJob
+        from blackfish.server.services.base import ServiceStatus
+        from blackfish.server.services.text_generation import TextGeneration
+
+        # created_at is deliberately far in the past to prove the anchor is
+        # started_at (a queue-time fallback to created_at would trip grace).
+        created_at = created_at or datetime.now(timezone.utc) - timedelta(hours=6)
+        service = TextGeneration(
+            id=UUID("2a7a8e62-40cc-4240-a825-463e5b11a81f"),
+            name="test-service",
+            model="meta-llama/Llama-3.1-8B-Instruct",
+            profile="default",
+            host="localhost",
+            user="alice",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/cache",
+            scheduler=JobScheduler.Slurm,
+            grace_period=grace_period,
+            job_id="1",
+            port=8080,
+            status=ServiceStatus.STARTING,
+        )
+        service.created_at = created_at
+        job = SlurmJob(
+            job_id=1,
+            user="alice",
+            host="localhost",
+            data_dir="/tmp",
+            state=JobState.RUNNING,
+            started_at=started_at,
+        )
+        return service, job
+
+    async def _refresh_with(self, service, job):
+        with (
+            patch.object(service, "get_job", return_value=job),
+            patch.object(service, "ping", return_value=None),
+            patch.object(service, "open_tunnel", return_value=None),
+        ):
+            return await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+    async def test_starting_stays_starting_when_under_grace(self):
+        from datetime import datetime, timedelta, timezone
+
+        from blackfish.server.services.base import ServiceStatus
+
+        service, job = self._service(
+            started_at=datetime.now(timezone.utc) - timedelta(seconds=30),
+            grace_period=180,
+        )
+        status = await self._refresh_with(service, job)
+        assert status == ServiceStatus.STARTING
+
+    async def test_starting_flips_to_unhealthy_when_over_grace(self):
+        from datetime import datetime, timedelta, timezone
+
+        from blackfish.server.services.base import ServiceStatus
+
+        service, job = self._service(
+            started_at=datetime.now(timezone.utc) - timedelta(seconds=300),
+            grace_period=180,
+        )
+        status = await self._refresh_with(service, job)
+        assert status == ServiceStatus.UNHEALTHY

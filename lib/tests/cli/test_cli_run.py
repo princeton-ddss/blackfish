@@ -119,6 +119,8 @@ class TestRunTextGeneration:
         assert "Rendering job script" in result.output
         assert "model: openai/gpt-2" in result.output
         assert "profile: default" in result.output
+        # The local branch must pass an id; render_job_script reads self.id.hex.
+        assert mock_service_class.call_args[1].get("id") is not None
 
     def test_dry_run_slurm_profile(self, cli_runner, mock_config, slurm_profile):
         """Test dry run with SlurmProfile renders job script."""

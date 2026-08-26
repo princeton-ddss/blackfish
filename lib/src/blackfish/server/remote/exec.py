@@ -101,6 +101,17 @@ class RemoteAuthError(RemoteError):
     """SSH transport failed: authentication was rejected."""
 
 
+# Callers that need Slurm to emit timestamps in UTC prefix their command
+# with this. Errors should surface the underlying program, not "env".
+_ENV_UTC_PREFIX = ["env", "TZ=UTC"]
+
+
+def _strip_env_utc(cmd: list[str]) -> list[str]:
+    if cmd[: len(_ENV_UTC_PREFIX)] == _ENV_UTC_PREFIX:
+        return cmd[len(_ENV_UTC_PREFIX) :]
+    return cmd
+
+
 class RemoteCommandError(RemoteError):
     """The command ran to completion but exited with a non-zero status."""
 
@@ -111,9 +122,10 @@ class RemoteCommandError(RemoteError):
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
+        program = _strip_env_utc(cmd)[0]
         detail = stderr.decode("utf-8", "replace").strip()
         super().__init__(
-            f"Command {cmd[0]!r} exited with status {returncode}"
+            f"Command {program!r} exited with status {returncode}"
             + (f": {detail}" if detail else "")
         )
 

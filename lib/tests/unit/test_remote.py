@@ -82,6 +82,14 @@ async def test_run_nonzero_raises_command_error() -> None:
     assert exc_info.value.cmd == ["false"]
 
 
+async def test_command_error_reports_program_after_env_prefix() -> None:
+    """`env KEY=VAL prog ...` failures should surface `prog`, not `env`."""
+    with pytest.raises(RemoteCommandError) as exc_info:
+        await remote.run(["env", "TZ=UTC", "false"])
+    assert "'false'" in str(exc_info.value)
+    assert "'env'" not in str(exc_info.value)
+
+
 async def test_run_timeout() -> None:
     with pytest.raises(RemoteTimeout):
         await remote.run(["sleep", "5"], timeout=0.2)

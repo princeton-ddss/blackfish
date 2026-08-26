@@ -459,7 +459,7 @@ class Service(UUIDAuditBase):
                             f"Service running for {dt.total_seconds():.0f} seconds"
                             f" (anchor={'job.started_at' if job.started_at else 'created_at'})."
                         )
-                        if dt.seconds > self.grace_period:
+                        if dt.total_seconds() > self.grace_period:
                             logger.debug(
                                 f"Service {self.id} grace period exceeded. Setting"
                                 " status to UNHEALTHY."
@@ -525,8 +525,10 @@ class Service(UUIDAuditBase):
                     if self.created_at is None:
                         raise Exception("Service is missing value `created_at`.")
                     dt = datetime.now(timezone.utc) - self.created_at
-                    logger.debug(f"Service created {dt.seconds} seconds ago.")
-                    if dt.seconds > self.grace_period:
+                    logger.debug(
+                        f"Service created {dt.total_seconds():.0f} seconds ago."
+                    )
+                    if dt.total_seconds() > self.grace_period:
                         logger.debug(
                             f"Service {self.id} grace period exceeded. Setting"
                             "status to UNHEALTHY."

@@ -16,6 +16,7 @@ DEFAULT_STATIC_DIR = Path(__file__).parent.parent
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
 DEFAULT_DEBUG = True
 DEFAULT_MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+DEFAULT_GRACE_PERIOD = 600  # seconds
 
 
 class ContainerProvider(StrEnum):
@@ -60,6 +61,7 @@ class BlackfishConfig:
         auth_token: Optional[str] = None,
         container_provider: Optional[ContainerProvider] = None,
         max_file_size: int = DEFAULT_MAX_FILE_SIZE,
+        grace_period: int = DEFAULT_GRACE_PERIOD,
     ) -> None:
         self.BASE_PATH = os.getenv("BLACKFISH_BASE_PATH", base_path)
         self.HOST = os.getenv("BLACKFISH_HOST", host)
@@ -85,6 +87,7 @@ class BlackfishConfig:
         else:
             self.CONTAINER_PROVIDER = container_provider
         self.MAX_FILE_SIZE = int(os.getenv("BLACKFISH_MAX_FILE_SIZE", max_file_size))
+        self.GRACE_PERIOD = int(os.getenv("BLACKFISH_GRACE_PERIOD", grace_period))
         self.IMAGES: dict[str, ImageSpec] = {}
         for service, default in DEFAULT_IMAGES.items():
             override = os.getenv(f"BLACKFISH_{service.upper()}_IMAGE")

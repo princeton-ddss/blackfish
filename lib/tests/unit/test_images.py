@@ -41,12 +41,14 @@ def test_image_spec_parse_rejects_malformed(bad):
 
 
 def test_default_tigerflow_ml_image():
-    """The tigerflow-ml batch-job image is pinned in DEFAULT_IMAGES."""
+    """The tigerflow-ml batch-job image is pinned in DEFAULT_IMAGES.
+
+    Guards against accidental removal of the pin. The concrete tag value is
+    intentionally not asserted; version-bump PRs should only touch images.py.
+    """
     spec = DEFAULT_IMAGES["tigerflow_ml"]
     assert spec.repo == "ghcr.io/princeton-ddss/tigerflow-ml"
-    assert spec.tag == "0.1.1"
-    assert spec.sif == "tigerflow-ml_0.1.1.sif"
-    assert spec.docker_ref == "ghcr.io/princeton-ddss/tigerflow-ml:0.1.1"
+    assert spec.tag  # a tag is set
 
 
 def test_default_images_covers_all_concrete_services():

@@ -831,7 +831,10 @@ class TestCreateTigerflowClient:
         assert client.image is DEFAULT_IMAGES["tigerflow_ml"]
         assert client.provider is ContainerProvider.Apptainer
         assert client.cache_dir == "/scratch/.blackfish"
-        assert client.sif_path == "/scratch/.blackfish/images/tigerflow-ml_0.1.1.sif"
+        assert (
+            client.sif_path
+            == f"/scratch/.blackfish/images/{DEFAULT_IMAGES['tigerflow_ml'].sif}"
+        )
 
     @patch("blackfish.server.jobs.base.deserialize_profile")
     def test_slurm_job_uses_apptainer_even_when_host_detects_docker(
@@ -1055,9 +1058,9 @@ class TestTasks:
         assert job._job_config().gres == DEFAULT_JOB_RESOURCES["gres"]
 
     def test_chat_task_is_supported(self) -> None:
-        """The chat task maps to the tigerflow-ml text.chat.local module."""
+        """The chat task maps to the tigerflow-ml multimodal.chat.local module."""
         assert is_supported_task("chat") is True
-        assert get_task_library("chat") == "tigerflow_ml.text.chat.local"
+        assert get_task_library("chat") == "tigerflow_ml.multimodal.chat.local"
 
     def test_chat_default_input_ext_is_text(self) -> None:
         """Chat defaults to text input (preliminary support is text-only)."""
@@ -1085,7 +1088,7 @@ class TestTasks:
         task = config["tasks"][0]
         assert task["name"] == "chat"
         assert task["kind"] == "local"
-        assert task["module"] == "tigerflow_ml.text.chat.local"
+        assert task["module"] == "tigerflow_ml.multimodal.chat.local"
         assert task["input_ext"] == ".txt"
         assert task["params"]["prompt"] == "Summarize: {text}"
 

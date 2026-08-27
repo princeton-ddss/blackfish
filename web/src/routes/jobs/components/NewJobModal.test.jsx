@@ -15,6 +15,7 @@ const detect = TASKS.find((t) => t.id === "detect");
 const translate = TASKS.find((t) => t.id === "translate");
 const transcribe = TASKS.find((t) => t.id === "transcribe");
 const embed = TASKS.find((t) => t.id === "embed");
+const chat = TASKS.find((t) => t.id === "chat");
 
 describe("coerceParamValue", () => {
   test("coerces number-typed params to real numbers", () => {
@@ -109,20 +110,24 @@ describe("TASKS param definitions", () => {
     expect(targetLang.default).toBe("en");
   });
 
-  test("chat is registered, text-only, with a required prompt", () => {
+  test("chat is registered, multimodal, with a required prompt", () => {
     const chat = TASKS.find((t) => t.id === "chat");
     expect(chat).toBeDefined();
     expect(chat.promptRequired).toBe(true);
     expect(chat.defaultPrompt).toBeTruthy();
-    // Preliminary support is text-only (no image extensions yet).
+    // 0.2.0 accepts text, images, audio, and video.
     const exts = chat.inputExtOptions.map((o) => o.value);
-    expect(exts).toContain(".txt");
-    expect(exts).not.toContain(".jpg");
+    expect(exts).toEqual(expect.arrayContaining([".txt", ".jpg", ".wav", ".mp4"]));
     // temperature is numeric so it coerces to a real number at submit.
     const temp = chat.params.find((p) => p.name === "temperature");
     expect(temp.valueType).toBe("number");
-    // max_image_pixels is deferred with image inputs.
-    expect(chat.params.map((p) => p.name)).not.toContain("max_image_pixels");
+    // Media params are registered and modality-gated.
+    const maxPixels = chat.params.find((p) => p.name === "max_image_pixels");
+    expect(maxPixels?.imageOnly).toBe(true);
+    const audioRate = chat.params.find((p) => p.name === "audio_sampling_rate");
+    expect(audioRate?.audioOnly).toBe(true);
+    const videoFps = chat.params.find((p) => p.name === "video_sample_fps");
+    expect(videoFps?.videoOnly).toBe(true);
     // The prompt help explains the {text} placeholder.
     expect(chat.promptHelp).toMatch(/\{text\}/);
   });
@@ -258,6 +263,36 @@ describe("isParamVisible — videoOnly", () => {
     expect(dtype.videoOnly).toBeUndefined();
     expect(isParamVisible(dtype, { inputExt: ".jpg" })).toBe(true);
     expect(isParamVisible(dtype, { inputExt: ".mp4" })).toBe(true);
+  });
+});
+
+describe("isParamVisible — imageOnly", () => {
+  const imageParam = chat.params.find((p) => p.name === "max_image_pixels");
+
+  test("is shown for image inputs", () => {
+    expect(isParamVisible(imageParam, { inputExt: ".png" })).toBe(true);
+    expect(isParamVisible(imageParam, { inputExt: ".jpg" })).toBe(true);
+  });
+
+  test("is hidden for non-image inputs", () => {
+    expect(isParamVisible(imageParam, { inputExt: ".txt" })).toBe(false);
+    expect(isParamVisible(imageParam, { inputExt: ".wav" })).toBe(false);
+    expect(isParamVisible(imageParam, { inputExt: ".mp4" })).toBe(false);
+  });
+});
+
+describe("isParamVisible — audioOnly", () => {
+  const audioParam = chat.params.find((p) => p.name === "audio_sampling_rate");
+
+  test("is shown for audio inputs", () => {
+    expect(isParamVisible(audioParam, { inputExt: ".wav" })).toBe(true);
+    expect(isParamVisible(audioParam, { inputExt: ".mp3" })).toBe(true);
+  });
+
+  test("is hidden for non-audio inputs", () => {
+    expect(isParamVisible(audioParam, { inputExt: ".txt" })).toBe(false);
+    expect(isParamVisible(audioParam, { inputExt: ".png" })).toBe(false);
+    expect(isParamVisible(audioParam, { inputExt: ".mp4" })).toBe(false);
   });
 });
 

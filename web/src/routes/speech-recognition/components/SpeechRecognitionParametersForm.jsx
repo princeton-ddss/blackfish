@@ -72,7 +72,10 @@ function LanguageSelect({ language, setLanguage }) {
 }
 
 LanguageSelect.propTypes = {
-  language: PropTypes.string,
+  language: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+  }),
   setLanguage: PropTypes.func,
 };
 

@@ -64,7 +64,7 @@ DEFAULT_IMAGES: dict[str, ImageSpec] = {
     "text_generation": ImageSpec(repo="vllm/vllm-openai", tag="v0.20.0"),
     "speech_recognition": ImageSpec(
         repo="ghcr.io/princeton-ddss/speech-recognition-inference",
-        tag="0.1.2",
+        tag="0.2.1",
     ),
     # Note: the GHCR image tag is "0.2.0" (no leading "v"), unlike the
     # "v0.2.0" GitHub release tag.

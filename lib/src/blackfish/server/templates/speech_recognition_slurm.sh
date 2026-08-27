@@ -8,8 +8,10 @@ apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --bind {{ mount }}:/data/audio \
   --bind {{ container_config.model_dir }}:/data/models \
   {{ profile.cache_dir }}/images/{{ image.sif }} \
-  --model_dir /data/models \
-  --model_id {{ model }} \
+  launch \
+  --model-dir /data/models \
+  --model-id {{ model }} \
   --revision {{ container_config.revision }} \
+  --host 0.0.0.0 \
   --port $port
 {%- endblock %}

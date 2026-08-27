@@ -8,8 +8,8 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
   --name {{ name }} \
   {{ image.docker_ref }} \
   launch \
-  --model_dir /data/models \
-  --model_id {{ model }} \
+  --model-dir /data/models \
+  --model-id {{ model }} \
   {%- if container_config.revision %}
   --revision {{container_config.revision }} \
   {%- endif %}
@@ -23,8 +23,8 @@ apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   {{ profile.cache_dir }}/images/{{ image.sif }} \
   {{ name }} \
   launch \
-  --model_dir /data/models \
-  --model_id {{ model }} \
+  --model-dir /data/models \
+  --model-id {{ model }} \
   {%- if container_config.revision %}
   --revision {{ container_config.revision }}\
   {%- endif %}

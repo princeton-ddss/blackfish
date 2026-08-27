@@ -6,9 +6,8 @@ service, so it cannot answer "which versions could this profile run?" — that i
 what this module is for.
 
 The repo always comes from configuration and only the tag from the filename:
-``ImageSpec.sif`` drops the registry prefix
-(``ghcr.io/princeton-ddss/tigerflow-ml:0.1.1`` -> ``tigerflow-ml_0.1.1.sif``),
-so a filename alone cannot identify a repo.
+``ImageSpec.sif`` drops the registry prefix (``<host>/<org>/<name>:<tag>`` ->
+``<name>_<tag>.sif``), so a filename alone cannot identify a repo.
 """
 
 from __future__ import annotations

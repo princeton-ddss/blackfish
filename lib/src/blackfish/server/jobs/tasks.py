@@ -16,10 +16,10 @@ from typing import Any
 # allocation until the input directory is fully processed.
 SUPPORTED_TASKS: dict[str, str] = {
     "detect": "tigerflow_ml.image.detect.local",
-    "ocr": "tigerflow_ml.text.ocr.local",
+    "ocr": "tigerflow_ml.image.ocr.local",
     "transcribe": "tigerflow_ml.audio.transcribe.local",
     "translate": "tigerflow_ml.text.translate.local",
-    "chat": "tigerflow_ml.text.chat.local",
+    "chat": "tigerflow_ml.multimodal.chat.local",
 }
 
 # Default input file extensions for each task

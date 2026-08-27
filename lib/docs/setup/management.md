@@ -44,13 +44,13 @@ This lists each pinned image — one per service, plus the tigerflow-ml image us
 Services deployed on HPC systems require Apptainer, which uses Single Image Format (SIF) images instead of Docker's OCI format. Docker images must be converted to SIF files before Blackfish can use them. For most images—including those hosted on the GitHub container registry—running `apptainer pull` will do this automatically. For example,
 
 ```shell
-apptainer pull docker://ghcr.io/princeton-ddss/speech-recognition-inference:0.1.2
+apptainer pull docker://ghcr.io/princeton-ddss/speech-recognition-inference:<tag>
 ```
 
-This command generates a file `speech-recognition-inference_0.1.2.sif` in the directory where it is run. The tigerflow-ml image used for batch jobs is staged the same way — pull the version reported by `blackfish image ls`, e.g.
+This command generates a file `speech-recognition-inference_<tag>.sif` in the directory where it is run. Use the version reported by `blackfish image ls`. The tigerflow-ml image used for batch jobs is staged the same way:
 
 ```shell
-apptainer pull docker://ghcr.io/princeton-ddss/tigerflow-ml:0.1.1
+apptainer pull docker://ghcr.io/princeton-ddss/tigerflow-ml:<tag>
 ```
 
 Blackfish looks for images in the `cache_dir/images` directory specified by your profile. If you are an HPC admin setting up a shared environment, move images to the shared cache directory (e.g., `/shared/.blackfish/images`). If you are an individual user and your cache directory is read-only, ask your admin to add the required images or set your profile's `cache_dir` to a directory you can write to.

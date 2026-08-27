@@ -164,6 +164,26 @@ export const TASKS = [
         help: "Maximum tokens generated per image. Default: 4096",
         placeholder: "4096",
       },
+      {
+        name: "json_schema",
+        type: "textarea",
+        required: false,
+        showWhenParam: { name: "output_format", value: "json", default: "text" },
+        label: "JSON Schema",
+        help: 'Constrain the model to a JSON schema (vLLM structured outputs). Requires a supporting model.',
+        placeholder:
+          '{"type":"object","properties":{"text":{"type":"string"}},"required":["text"]}',
+      },
+      {
+        name: "buffer_size",
+        type: "text",
+        valueType: "number",
+        multiPageOnly: true,
+        required: false,
+        label: "PDF Buffer Size",
+        help: "PDF pages held in memory at once. Default: 100",
+        placeholder: "100",
+      },
     ],
   },
   {
@@ -453,16 +473,26 @@ export const TASKS = [
         help: "When the source language can't be determined, use a fallback prompt that omits {source_lang}.",
         default: false,
       },
+      {
+        name: "max_model_len",
+        type: "text",
+        valueType: "number",
+        required: false,
+        label: "Max Model Length",
+        help: "Total input + output tokens passed to vLLM. Defaults to (chunk_size * 2.5 + 512), capped by the model's context window.",
+        placeholder: "auto",
+      },
     ],
   },
   {
     id: "chat",
     name: "Chat",
-    description: "Apply a prompt to each text file",
+    description: "Prompt a chat model with text, images, audio, or video",
     service: "text-generation", // Uses LLM models
     defaultInputExt: ".txt",
-    // Chat has no server-side default prompt, so it is required. Preliminary
-    // support is text-only; image inputs (and max_image_pixels) come later.
+    // Chat has no server-side default prompt, so it is required. The prompt
+    // is still required for media inputs — the model needs it to know what
+    // to do with the media.
     defaultPrompt: "Summarize the following text:\n\n{text}",
     promptRequired: true,
     promptHelp:
@@ -471,6 +501,17 @@ export const TASKS = [
       { value: ".txt", label: "Plain text (.txt)" },
       { value: ".md", label: "Markdown (.md)" },
       { value: ".log", label: "Log (.log)" },
+      { value: ".png", label: "PNG (.png)" },
+      { value: ".jpg", label: "JPEG (.jpg)" },
+      { value: ".jpeg", label: "JPEG (.jpeg)" },
+      { value: ".tiff", label: "TIFF (.tiff)" },
+      { value: ".wav", label: "WAV (.wav)" },
+      { value: ".mp3", label: "MP3 (.mp3)" },
+      { value: ".flac", label: "FLAC (.flac)" },
+      { value: ".mp4", label: "MP4 (.mp4)" },
+      { value: ".mov", label: "MOV (.mov)" },
+      { value: ".mkv", label: "MKV (.mkv)" },
+      { value: ".webm", label: "WebM (.webm)" },
     ],
     params: [
       {
@@ -481,6 +522,44 @@ export const TASKS = [
         label: "Temperature",
         help: "Sampling temperature (0–2). Lower is more deterministic. Default: 0.0",
         placeholder: "0.0",
+      },
+      {
+        name: "max_image_pixels",
+        type: "text",
+        valueType: "number",
+        imageOnly: true,
+        required: false,
+        label: "Max Image Pixels",
+        help: "Maximum image dimension (width or height). Larger images are downscaled preserving aspect ratio. Default: no limit",
+        placeholder: "1024",
+      },
+      {
+        name: "audio_sampling_rate",
+        type: "text",
+        valueType: "number",
+        audioOnly: true,
+        required: false,
+        label: "Audio Sampling Rate (Hz)",
+        help: "Sampling rate audio inputs are resampled to before the model sees them. Default: 16000",
+        placeholder: "16000",
+      },
+      {
+        name: "video_sample_fps",
+        type: "text",
+        valueType: "number",
+        videoOnly: true,
+        required: false,
+        label: "Video Sample FPS",
+        help: "Frame rate video inputs are resampled to; frames are dropped to hit this rate. Default: no resampling",
+        placeholder: "1.0",
+      },
+      {
+        name: "response_schema",
+        type: "textarea",
+        required: false,
+        label: "Response Schema",
+        help: 'Constrain output via vLLM structured outputs. Format: "<type>=<value>". Types: choice, json, regex, grammar. Example: json={"type":"object","properties":{"text":{"type":"string"}}}',
+        placeholder: 'json={"type":"object","properties":{"text":{"type":"string"}}}',
       },
     ],
   },
@@ -585,14 +664,34 @@ const VIDEO_INPUT_EXTS = new Set([
 // count_images returns 1 for anything but a PDF), so batching never applies.
 const MULTI_PAGE_INPUT_EXTS = new Set([".pdf"]);
 
+// Image and audio extension sets used by chat's `imageOnly` / `audioOnly`
+// param gates so, e.g., `max_image_pixels` only appears when the input is
+// actually an image and `audio_sampling_rate` when it is audio.
+const IMAGE_INPUT_EXTS = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".tiff",
+  ".webp",
+  ".gif",
+  ".bmp",
+]);
+const AUDIO_INPUT_EXTS = new Set([
+  ".wav",
+  ".mp3",
+  ".flac",
+  ".m4a",
+  ".ogg",
+]);
+
 // Whether a param applies given the current form state. Hides params the task
 // would ignore: `showWhen.modelType` params for a mismatched model (e.g.
-// detect's labels, zero-shot only), `videoOnly` params for image inputs (e.g.
-// detect's batch_size), `multiPageOnly` params for single-page inputs (e.g.
-// embed's batch_size), and params gated on another param's value via
-// `showWhenParam` (e.g. transcribe's batch_size only applies when windowing is
-// "batched"). All three call sites (render, validation, submit) go through this
-// one predicate so a hidden param's stale value is never sent.
+// detect's labels, zero-shot only); `videoOnly` / `imageOnly` / `audioOnly` /
+// `multiPageOnly` params for mismatched input extensions (e.g. chat's
+// `max_image_pixels` for text inputs); and params gated on another param's
+// value via `showWhenParam` (e.g. transcribe's batch_size only applies when
+// windowing is "batched"). All three call sites (render, validation, submit)
+// go through this one predicate so a hidden param's stale value is never sent.
 // Whether discovery *succeeded* and reported no staged image. Distinct from
 // "we could not reach the profile" (container undefined), which must not block
 // a launch — the backend still resolves its configured default. Only this case
@@ -607,6 +706,12 @@ export function isParamVisible(param, { inputExt, taskParams, modelType } = {}) 
     return false;
   }
   if (param.videoOnly && !VIDEO_INPUT_EXTS.has(inputExt)) {
+    return false;
+  }
+  if (param.imageOnly && !IMAGE_INPUT_EXTS.has(inputExt)) {
+    return false;
+  }
+  if (param.audioOnly && !AUDIO_INPUT_EXTS.has(inputExt)) {
     return false;
   }
   if (param.multiPageOnly && !MULTI_PAGE_INPUT_EXTS.has(inputExt)) {

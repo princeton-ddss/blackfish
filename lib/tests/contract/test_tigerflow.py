@@ -31,6 +31,8 @@ EXPECTED_TASKS = [
     "ocr",
     "transcribe",
     "translate",
+    "chat",
+    "embed",
 ]
 
 

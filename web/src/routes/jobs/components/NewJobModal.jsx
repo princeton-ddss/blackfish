@@ -484,6 +484,79 @@ export const TASKS = [
       },
     ],
   },
+  {
+    id: "embed",
+    name: "Embedding",
+    description: "Generate vector embeddings for files",
+    // Not an HF pipeline tag: a COMPATIBLE_PIPELINES key that expands to the
+    // sentence-similarity/feature-extraction tags these models carry.
+    service: "embedding",
+    defaultInputExt: ".txt",
+    defaultPrompt: null, // Embedding models don't take a prompt
+    inputExtOptions: [
+      { value: ".txt", label: "Plain text (.txt)" },
+      { value: ".md", label: "Markdown (.md)" },
+      { value: ".log", label: "Log (.log)" },
+      { value: ".png", label: "PNG (.png)" },
+      { value: ".jpg", label: "JPEG (.jpg)" },
+      { value: ".jpeg", label: "JPEG (.jpeg)" },
+      { value: ".tiff", label: "TIFF (.tiff)" },
+      { value: ".pdf", label: "PDF (.pdf)" },
+    ],
+    // No output_format param: the task saves a NumPy array and rejects any
+    // other suffix, so the extension comes from the backend's .npy default.
+    params: [
+      {
+        name: "encode_mode",
+        type: "select",
+        required: false,
+        label: "Encode Mode",
+        help: "Asymmetric models embed documents and queries differently. Use Default unless the model documents otherwise.",
+        default: "encode",
+        options: [
+          { value: "encode", label: "Default (encode)" },
+          { value: "document", label: "Document (encode_document)" },
+          { value: "query", label: "Query (encode_query)" },
+        ],
+      },
+      {
+        name: "normalize",
+        type: "checkbox",
+        valueType: "boolean",
+        required: false,
+        label: "Normalize vectors",
+        help: "Scale each embedding to unit length, so dot product equals cosine similarity.",
+        default: false,
+      },
+      {
+        name: "truncate_dim",
+        type: "text",
+        valueType: "number",
+        required: false,
+        label: "Truncate Dimension",
+        help: "Shorten embeddings to this many dimensions (Matryoshka models). Default: full size",
+        placeholder: "768",
+      },
+      {
+        name: "batch_size",
+        type: "text",
+        valueType: "number",
+        multiPageOnly: true,
+        required: false,
+        label: "Batch Size",
+        help: "Pages encoded per batch. Applies only to multi-page PDFs. Default: 32",
+        placeholder: "32",
+      },
+      {
+        name: "encode_kwargs",
+        type: "textarea",
+        required: false,
+        label: "Encode Options",
+        help: "Additional encode() kwargs as JSON, e.g. {\"prompt\": \"query: \"}.",
+        placeholder: "{}",
+      },
+    ],
+  },
 ];
 
 // Map output_format values to file extensions
@@ -506,10 +579,17 @@ const VIDEO_INPUT_EXTS = new Set([
   ".wmv",
 ]);
 
+// Input extensions that can hold multiple pages. Params flagged `multiPageOnly`
+// only apply to these — e.g. embed's batch_size, which the task reads only on
+// its multi-page branch. A single image always counts as one page (tigerflow's
+// count_images returns 1 for anything but a PDF), so batching never applies.
+const MULTI_PAGE_INPUT_EXTS = new Set([".pdf"]);
+
 // Whether a param applies given the current form state. Hides params the task
 // would ignore: `showWhen.modelType` params for a mismatched model (e.g.
 // detect's labels, zero-shot only), `videoOnly` params for image inputs (e.g.
-// detect's batch_size), and params gated on another param's value via
+// detect's batch_size), `multiPageOnly` params for single-page inputs (e.g.
+// embed's batch_size), and params gated on another param's value via
 // `showWhenParam` (e.g. transcribe's batch_size only applies when windowing is
 // "batched"). All three call sites (render, validation, submit) go through this
 // one predicate so a hidden param's stale value is never sent.
@@ -527,6 +607,9 @@ export function isParamVisible(param, { inputExt, taskParams, modelType } = {}) 
     return false;
   }
   if (param.videoOnly && !VIDEO_INPUT_EXTS.has(inputExt)) {
+    return false;
+  }
+  if (param.multiPageOnly && !MULTI_PAGE_INPUT_EXTS.has(inputExt)) {
     return false;
   }
   if (param.showWhenParam) {
@@ -585,6 +668,22 @@ export function applyTranslateSourceLang(params) {
     params.auto_lang_detect = true;
   } else if (params.source_lang) {
     params.auto_lang_detect = false;
+  }
+  return params;
+}
+
+// Embed exposes one "Encode Mode" dropdown, but the image has two mutually
+// exclusive booleans: use_encode_document and use_encode_query. The task raises
+// if both are true, so a single select makes that state unrepresentable rather
+// than a runtime failure. Only the selected mode's flag is sent; the default
+// ("encode") sends neither. Mutates the params object in place.
+export function applyEmbedEncodeMode(params) {
+  const mode = params.encode_mode;
+  delete params.encode_mode;
+  if (mode === "document") {
+    params.use_encode_document = true;
+  } else if (mode === "query") {
+    params.use_encode_query = true;
   }
   return params;
 }
@@ -1092,6 +1191,12 @@ function NewJobModal({ open, setOpen, profile, task, onJobCreated }) {
       // separate params (see applyTranslateSourceLang).
       if (task.id === "translate") {
         applyTranslateSourceLang(pipelineParams);
+      }
+
+      // The embed "Encode Mode" dropdown drives the image's two mutually
+      // exclusive booleans (see applyEmbedEncodeMode).
+      if (task.id === "embed") {
+        applyEmbedEncodeMode(pipelineParams);
       }
 
       // Default job name: a compact, Slurm-friendly token like

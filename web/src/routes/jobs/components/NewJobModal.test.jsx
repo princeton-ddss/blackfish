@@ -6,6 +6,7 @@ import {
   getDefaultTaskParams,
   isParamVisible,
   applyTranslateSourceLang,
+  applyEmbedEncodeMode,
   buildJobResources,
   isNoContainerStaged,
 } from "./NewJobModal";
@@ -13,6 +14,7 @@ import {
 const detect = TASKS.find((t) => t.id === "detect");
 const translate = TASKS.find((t) => t.id === "translate");
 const transcribe = TASKS.find((t) => t.id === "transcribe");
+const embed = TASKS.find((t) => t.id === "embed");
 
 describe("coerceParamValue", () => {
   test("coerces number-typed params to real numbers", () => {
@@ -123,6 +125,105 @@ describe("TASKS param definitions", () => {
     expect(chat.params.map((p) => p.name)).not.toContain("max_image_pixels");
     // The prompt help explains the {text} placeholder.
     expect(chat.promptHelp).toMatch(/\{text\}/);
+  });
+
+  test("embed is registered, prompt-free, and accepts text and image inputs", () => {
+    expect(embed).toBeDefined();
+    // Embedding models take no prompt, so the modal must not render the field.
+    expect(embed.defaultPrompt).toBeNull();
+    expect(embed.promptRequired).toBeFalsy();
+    const exts = embed.inputExtOptions.map((o) => o.value);
+    expect(exts).toContain(".txt");
+    expect(exts).toContain(".png");
+    expect(exts).toContain(".pdf");
+    // Numeric params coerce to real numbers at submit.
+    for (const name of ["truncate_dim", "batch_size"]) {
+      expect(embed.params.find((p) => p.name === name).valueType).toBe("number");
+    }
+    // normalize is a real boolean, not a string.
+    const normalize = embed.params.find((p) => p.name === "normalize");
+    expect(normalize.type).toBe("checkbox");
+    expect(normalize.valueType).toBe("boolean");
+  });
+
+  test("embed has no output_format param — output is always .npy", () => {
+    // The task rejects any suffix but .npy, so the extension comes from the
+    // backend default. A UI output_format would submit a competing output_ext.
+    expect(embed.params.map((p) => p.name)).not.toContain("output_format");
+  });
+
+  test("embed exposes encode mode as one select, not two booleans", () => {
+    // use_encode_document and use_encode_query are mutually exclusive and the
+    // task raises when both are true; a single select makes that unreachable.
+    const names = embed.params.map((p) => p.name);
+    expect(names).not.toContain("use_encode_document");
+    expect(names).not.toContain("use_encode_query");
+    const mode = embed.params.find((p) => p.name === "encode_mode");
+    expect(mode.type).toBe("select");
+    expect(mode.default).toBe("encode");
+    expect(mode.options.map((o) => o.value)).toEqual([
+      "encode",
+      "document",
+      "query",
+    ]);
+  });
+});
+
+describe("applyEmbedEncodeMode", () => {
+  test("the default mode sends neither boolean", () => {
+    // Omitting both is what makes the task call plain encode().
+    expect(applyEmbedEncodeMode({ encode_mode: "encode" })).toEqual({});
+  });
+
+  test("document and query each set only their own flag", () => {
+    expect(applyEmbedEncodeMode({ encode_mode: "document" })).toEqual({
+      use_encode_document: true,
+    });
+    expect(applyEmbedEncodeMode({ encode_mode: "query" })).toEqual({
+      use_encode_query: true,
+    });
+  });
+
+  test("never sets both flags, which the task rejects", () => {
+    for (const mode of ["encode", "document", "query"]) {
+      const params = applyEmbedEncodeMode({ encode_mode: mode });
+      expect(params.use_encode_document && params.use_encode_query).toBeFalsy();
+    }
+  });
+
+  test("drops the UI-only encode_mode key and keeps other params", () => {
+    const params = applyEmbedEncodeMode({
+      encode_mode: "query",
+      normalize: true,
+    });
+    expect(params).not.toHaveProperty("encode_mode");
+    expect(params.normalize).toBe(true);
+  });
+});
+
+describe("isParamVisible — multiPageOnly", () => {
+  const multiPageParam = embed.params.find((p) => p.name === "batch_size");
+
+  test("is shown for PDF input", () => {
+    // Only a PDF can hold multiple pages, which is the sole branch where the
+    // task reads batch_size.
+    expect(isParamVisible(multiPageParam, { inputExt: ".pdf" })).toBe(true);
+  });
+
+  test("is hidden for single images", () => {
+    // tigerflow's count_images returns 1 for any non-PDF, so a single image
+    // takes the one-shot branch and never batches.
+    expect(isParamVisible(multiPageParam, { inputExt: ".png" })).toBe(false);
+    expect(isParamVisible(multiPageParam, { inputExt: ".jpg" })).toBe(false);
+  });
+
+  test("is hidden for text input", () => {
+    expect(isParamVisible(multiPageParam, { inputExt: ".txt" })).toBe(false);
+  });
+
+  test("does not affect params without the flag", () => {
+    const normalize = embed.params.find((p) => p.name === "normalize");
+    expect(isParamVisible(normalize, { inputExt: ".txt" })).toBe(true);
   });
 });
 

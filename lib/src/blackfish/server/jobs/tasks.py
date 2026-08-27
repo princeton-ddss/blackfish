@@ -20,6 +20,7 @@ SUPPORTED_TASKS: dict[str, str] = {
     "transcribe": "tigerflow_ml.audio.transcribe.local",
     "translate": "tigerflow_ml.text.translate.local",
     "chat": "tigerflow_ml.multimodal.chat.local",
+    "embed": "tigerflow_ml.multimodal.embed.local",
 }
 
 # Default input file extensions for each task
@@ -29,6 +30,7 @@ DEFAULT_INPUT_EXT: dict[str, str] = {
     "transcribe": ".wav",
     "translate": ".txt",
     "chat": ".txt",
+    "embed": ".txt",
 }
 
 # Default output file extensions for each task
@@ -37,6 +39,10 @@ DEFAULT_OUTPUT_EXT: dict[str, str] = {
     "detect": ".json",  # Object detection always outputs JSON
     "translate": ".txt",  # Translation outputs text files
     "chat": ".txt",  # Chat writes the model response as text
+    # Embed saves a NumPy array. This is not merely a default: the task rejects
+    # any other suffix outright, so leaving it unset would make tigerflow write
+    # ".out" and fail every file.
+    "embed": ".npy",
 }
 
 

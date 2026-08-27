@@ -8,16 +8,25 @@ import {
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
 import PropTypes from "prop-types";
 
+// requests.js omits the language field when Auto-detect is chosen.
+const AUTO_DETECT = { id: 0, name: "Auto-detect" };
 const languages = [
+  AUTO_DETECT,
   { id: 1, name: "English" },
-  { id: 2, name: "French" },
-  { id: 3, name: "Spanish" },
+  { id: 2, name: "Spanish" },
+  { id: 3, name: "French" },
   { id: 4, name: "German" },
-  { id: 5, name: "Chinese" },
-  { id: 6, name: "Norwegian" },
-  { id: 7, name: "Swedish" },
-  { id: 8, name: "Dutch" },
+  { id: 5, name: "Italian" },
+  { id: 6, name: "Portuguese" },
+  { id: 7, name: "Chinese" },
+  { id: 8, name: "Japanese" },
+  { id: 9, name: "Korean" },
+  { id: 10, name: "Arabic" },
+  { id: 11, name: "Hindi" },
+  { id: 12, name: "Russian" },
 ];
+
+export { languages, AUTO_DETECT };
 
 function LanguageSelect({ language, setLanguage }) {
   return (
@@ -38,7 +47,8 @@ function LanguageSelect({ language, setLanguage }) {
 
         <ListboxOptions
           transition
-          className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:data-[leave]:opacity-0 data-[leave]:transition data-[leave]:duration-100 data-[leave]:ease-in sm:text-sm"
+          anchor="bottom start"
+          className="z-50 mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-md bg-white dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:data-[leave]:opacity-0 data-[leave]:transition data-[leave]:duration-100 data-[leave]:ease-in sm:text-sm"
         >
           {languages.map((person) => (
             <ListboxOption

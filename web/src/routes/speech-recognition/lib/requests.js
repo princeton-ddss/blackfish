@@ -9,7 +9,10 @@ export async function callSpeechRecognitionInference(service, audioPath, params,
   const body = {
     audio_path: audioPath.replace(service.mount, "/data/audio"),
     response_format: "text",
-    language: params.language.name.toLowerCase(),
+  }
+  // Auto-detect: omit the field so SRI detects per file.
+  if (params.language?.name && params.language.name !== "Auto-detect") {
+    body.language = params.language.name.toLowerCase();
   }
   const res = await fetch(url, {
     method: "POST",

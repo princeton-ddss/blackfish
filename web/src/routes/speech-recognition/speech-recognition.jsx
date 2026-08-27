@@ -6,14 +6,13 @@ import { SidebarContainer } from "@/components/SidebarContainer";
 
 import SpeechRecognitionContainer from "./components/SpeechRecognitionContainer";
 import SpeechRecognitionContainerOptionsForm from "./components/SpeechRecognitionContainerOptionsForm";
-import SpeechRecognitionParametersForm from "./components/SpeechRecognitionParametersForm";
+import SpeechRecognitionParametersForm, {
+  AUTO_DETECT,
+} from "./components/SpeechRecognitionParametersForm";
 
 export default function SpeechRecognitionPage() {
   const [parameters, setParameters] = useState({
-    language: {
-      id: 0,
-      name: "English",
-    },
+    language: AUTO_DETECT,
   });
 
   const defaultContainerOptions = useMemo(() => {

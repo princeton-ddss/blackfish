@@ -3,7 +3,9 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from blackfish.server.config import ContainerProvider
 from blackfish.server.image_probe import (
+    extract_docker_tag,
     extract_tag,
     list_staged_tags,
     sort_tags,
@@ -169,4 +171,82 @@ class TestListStagedTags:
 
         command = runner.run.call_args.args[0]
         assert command.endswith("|| true")
+        assert "/cache/images" in command
+
+
+class TestExtractDockerTag:
+    def test_extracts_the_tag_for_a_matching_ref(self) -> None:
+        assert extract_docker_tag("vllm/vllm-openai:v0.20.0", VLLM) == "v0.20.0"
+
+    def test_requires_the_full_repo_to_match(self) -> None:
+        """Docker refs carry the registry prefix, so `vllm-openai:...` alone
+        (missing the `vllm/` org) is a different repo."""
+        assert extract_docker_tag("vllm-openai:v0.20.0", VLLM) is None
+
+    def test_ignores_a_different_repo(self) -> None:
+        assert extract_docker_tag("ghcr.io/foo/bar:1.0", VLLM) is None
+
+    def test_rejects_a_ref_without_a_tag(self) -> None:
+        assert extract_docker_tag("vllm/vllm-openai", VLLM) is None
+
+
+class TestListStagedTagsDocker:
+    async def test_groups_tags_by_service_from_docker_output(self) -> None:
+        images = {"text_generation": VLLM, "tigerflow_ml": TIGERFLOW}
+        refs = [
+            "vllm/vllm-openai:v0.8.4",
+            "vllm/vllm-openai:v0.20.0",
+            "ghcr.io/princeton-ddss/tigerflow-ml:0.1.1",
+            "ghcr.io/other/thing:1.0",  # orphan
+        ]
+        runner = _mock_runner("\n".join(refs).encode())
+
+        with patch("blackfish.server.image_probe._runner_for", return_value=runner):
+            staged = await list_staged_tags(
+                _profile(), images, provider=ContainerProvider.Docker
+            )
+
+        assert staged["text_generation"] == ["v0.8.4", "v0.20.0"]
+        assert staged["tigerflow_ml"] == ["0.1.1"]
+
+    async def test_filters_none_tagged_images(self) -> None:
+        """`docker image ls` prints `<none>` for untagged images; those rows
+        cannot be matched to any spec and would otherwise leak in as a tag."""
+        runner = _mock_runner(
+            b"vllm/vllm-openai:<none>\n<none>:<none>\nvllm/vllm-openai:v0.20.0\n"
+        )
+
+        with patch("blackfish.server.image_probe._runner_for", return_value=runner):
+            staged = await list_staged_tags(
+                _profile(), {"text_generation": VLLM}, provider=ContainerProvider.Docker
+            )
+
+        assert staged["text_generation"] == ["v0.20.0"]
+
+    async def test_missing_docker_yields_empty_not_an_error(self) -> None:
+        """A profile without docker installed is a valid state — the `|| true`
+        turns the failure into empty output, matching the SIF behavior."""
+        runner = _mock_runner(b"")
+
+        with patch("blackfish.server.image_probe._runner_for", return_value=runner):
+            staged = await list_staged_tags(
+                _profile(), {"text_generation": VLLM}, provider=ContainerProvider.Docker
+            )
+
+        assert staged["text_generation"] == []
+
+    async def test_apptainer_provider_uses_sif_layout(self) -> None:
+        """Anything other than Docker (including None) must fall back to the
+        SIF probe, since Slurm profiles have no Docker daemon to inspect."""
+        runner = _mock_runner(b"vllm-openai_v0.20.0.sif\n")
+
+        with patch("blackfish.server.image_probe._runner_for", return_value=runner):
+            staged = await list_staged_tags(
+                _profile(),
+                {"text_generation": VLLM},
+                provider=ContainerProvider.Apptainer,
+            )
+
+        assert staged["text_generation"] == ["v0.20.0"]
+        command = runner.run.call_args.args[0]
         assert "/cache/images" in command

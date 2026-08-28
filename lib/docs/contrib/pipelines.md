@@ -141,6 +141,12 @@ to the shared filesystem and pass the *path*; the store deliberately encodes
 JSON only, so this constraint is visible rather than something you discover at
 scale.
 
+A store can also be told it may not spill at all (`allow_spill=False`), which
+is how a process with no view of the cluster filesystem declares that fact. It
+then needs no root directory, and an oversized payload raises `PayloadTooLarge`
+at submit time instead of being written somewhere no worker can read. See
+[Where the pieces can run](#where-the-pieces-can-run).
+
 ### 3. Failure semantics
 
 **Answer: leases with a visibility timeout, at-least-once delivery, bounded
@@ -167,6 +173,16 @@ fails, all eight are retried. For pure work that is wasted time; against a
 metered API it costs quota, and against a non-idempotent write it is a bug. So
 `batch_size` is a throughput knob for cheap-to-repeat work and a *blast radius*
 for everything else.
+
+**An unreachable coordinator is not a failure of the work.** Queue calls raise
+`QueueUnavailable`, distinct from every other error, and a worker that sees one
+*waits* — holding the model it has already paid to load — with escalating
+backoff, until either the coordinator returns or `max_outage` elapses. Tasks it
+had leased are redelivered by lease expiry, so waiting costs nothing but time.
+Treating an outage as fatal would mean a login-node reboot costs a cluster's
+worth of warm workers, which is a far worse trade than idling through it. A 4xx
+is handled the opposite way: that is this worker asking for something wrong, so
+it is raised immediately rather than retried.
 
 The one failure a worker genuinely cannot diagnose is a commit whose reply was
 lost: it does not know whether its outputs landed. So it retries, and the store
@@ -227,6 +243,61 @@ Two hazards, both handled:
 Finalization checks "upstream complete **and** exactly one task outstanding" in
 the same transaction that emits, while the caller holds that task's lease — so a
 partial still being folded elsewhere blocks finalization rather than racing it.
+
+## Where the pieces can run
+
+The coordinator does two jobs, and they have different availability
+requirements — which is the whole basis for deciding what can go where.
+
+| | Must be | Tolerates |
+|---|---|---|
+| **Queue service** — serving leases and acknowledgements | always up, reachable from compute nodes | nothing; workers block on it |
+| **Control plane** — owning the DAG, scaling, submitting allocations | live-ish | being away for minutes |
+
+`QueueAPI` is the first and `Coordinator` is the second, and they are separate
+classes that happen to share a process. The `QueueClient` protocol is what a
+worker needs; `StoreClient` extends it with what a coordinator needs
+(`create_run`, `submit`, `seal`, `reclaim_expired`, `run_status`,
+`set_run_state`, `results`, `dead_letters`). `TaskStore` satisfies both
+directly and `HttpStoreClient` satisfies `StoreClient` over the wire, so **the
+control plane's location is a configuration rather than a rewrite**. There is a
+test that drives a complete run with the coordinator reaching the queue only
+over HTTP.
+
+### Running the control plane off the cluster
+
+This makes a workstation-hosted control plane workable — which is the only way
+to get a database that a cluster will not let you run as a daemon. Three things
+have to be true:
+
+1. **Workers must reach the queue service.** They only dial out, and most sites
+   firewall compute nodes off the public internet, so the queue service belongs
+   on the login node regardless. Reaching it from a workstation is an SSH
+   tunnel; reaching a *workstation* from compute nodes generally is not
+   possible, and a reverse tunnel needs `GatewayPorts yes` on the login node,
+   which many sites will not enable.
+2. **The control plane must not need the shared filesystem.** It encodes
+   submitted inputs and decodes results, so it touches the payload store. Use
+   `PayloadStore(allow_spill=False)`: paths and metadata stay inline and travel
+   in the queue row, and anything larger is refused loudly.
+3. **Workers must survive the control plane being away** — which they now do,
+   per the failure semantics above.
+
+The trade to weigh: durable state for a multi-day run then lives on a machine
+that goes in a bag, rather than on cluster storage that is backed up. Splitting
+along the queue/control line keeps the *queue* on the cluster and moves only the
+decisions, which is the configuration worth reaching for.
+
+### On swapping the database
+
+Worth separating from the location question, because the two are less coupled
+than they look. `TaskStore` is behind a narrow interface, and porting it to
+Postgres is mostly dialect — `INSERT OR IGNORE` becomes `ON CONFLICT DO
+NOTHING`, `rowid` becomes a sequence column. The prize is `SELECT … FOR UPDATE
+SKIP LOCKED`, which would make leases genuinely concurrent instead of
+serialized behind this design's single writer. That benefit is available
+wherever the store runs; what moving the control plane off the cluster buys is
+not capability but *permission* to run a daemon at all.
 
 ## Autoscaling
 
@@ -441,16 +512,20 @@ Stated plainly, because the difference matters:
   idempotent replay, retry backoff and its effect on the backlog, fan-in
   completion (including a diamond join), the tree reduce and its finalization
   gate, dead letters, autoscaling policy, the worker loop, the HTTP queue API
-  and its client, coordinator restart over a durable store, and end-to-end runs
-  of all six worked examples.
+  and its client, worker tolerance of an unreachable coordinator, a complete
+  run driven by a coordinator that reaches the queue only over HTTP,
+  coordinator restart over a durable store, and end-to-end runs of all six
+  worked examples.
 - **Not run on a cluster:** the Ray actor lifecycle, `sbatch`/`scancel` against
   a real scheduler, Apptainer image bring-up on compute nodes, and the HTTP path
   under real network conditions. The sizing arithmetic and the rendered sbatch
   script are unit-tested; the parts that need a scheduler and a GPU are not.
-- **Not built:** persistence of runs in the Blackfish database, REST routes on
-  the main app, CLI commands, and any UI. `create_pipeline_router` exists and is
-  tested standalone but is not mounted, because the store is process state and
-  the coordinator's lifecycle in the server is a design decision of its own.
+- **Not built:** persistence of runs in the Blackfish database, CLI commands,
+  and any UI. `create_pipeline_router` now serves both the worker-facing queue
+  API and the control-plane API, and is tested standalone, but it is not
+  mounted on the main app: the store is process state, the coordinator's
+  lifecycle in the server is a design decision of its own, and the router has
+  no auth yet.
 
 ### Known limitations
 
@@ -467,10 +542,16 @@ Stated plainly, because the difference matters:
 - **No directory-scanning source.** `BatchJob` takes an `input_dir` and walks
   it; a pipeline takes a list of values. A built-in `1:N` source that fans a
   directory out into paths is expressible today and simply is not written.
-- **The shared-filesystem assumption is unchecked.** If `payload_dir` or
-  `shard_dir` is not visible from a compute node, you find out when a worker
-  raises mid-run rather than at submit time. A coordinator pre-flight belongs
-  here.
+- **The shared-filesystem assumption is only half checked.** A control plane
+  can now declare it has no shared filesystem (`allow_spill=False`) and get an
+  error at submit time. But a *worker* whose `payload_dir` or `shard_dir` is
+  not actually visible still finds out mid-run. A coordinator pre-flight
+  belongs here.
+- **The queue API has no authentication.** `create_pipeline_router` installs no
+  guards, and `HttpQueueClient` will send a bearer token that nothing checks.
+  On a shared login node that means any other user who can reach the port can
+  lease, acknowledge or inject work. This must be closed before the router is
+  mounted anywhere real.
 
 ## Next steps
 

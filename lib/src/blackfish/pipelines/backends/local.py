@@ -21,7 +21,7 @@ from pathlib import Path
 
 from blackfish.pipelines.payload import PayloadStore
 from blackfish.pipelines.spec import JobSpec, Pipeline
-from blackfish.pipelines.store import TaskStore
+from blackfish.pipelines.client import QueueClient
 from blackfish.pipelines.worker import Worker
 from blackfish.server.logger import logger
 
@@ -35,7 +35,9 @@ class ThreadBackend:
     """Runs workers as threads in the coordinator process.
 
     Args:
-        store: The task store, shared with the coordinator.
+        store: How workers reach the queues. Typed as a
+            :class:`~blackfish.pipelines.client.QueueClient`, since a worker
+            needs nothing more than that.
         payloads: Payload store used to encode and resolve task values.
         pipeline: The pipeline being run.
         poll_seconds: Sleep between polls of an empty queue.
@@ -43,7 +45,7 @@ class ThreadBackend:
 
     def __init__(
         self,
-        store: TaskStore,
+        store: QueueClient,
         payloads: PayloadStore,
         pipeline: Pipeline,
         poll_seconds: float = 0.05,

@@ -27,10 +27,11 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from blackfish.pipelines.backends import WorkerBackend
+from blackfish.pipelines.client import StoreClient
 from blackfish.pipelines.payload import PayloadStore
 from blackfish.pipelines.scaler import Autoscaler, ScalingDecision
 from blackfish.pipelines.spec import Pipeline
-from blackfish.pipelines.store import RunState, RunStatus, TaskStore
+from blackfish.pipelines.store import RunState, RunStatus
 from blackfish.server.logger import logger
 
 DEFAULT_TICK_SECONDS = 1.0
@@ -40,7 +41,10 @@ class Coordinator:
     """Drives pipeline runs to completion.
 
     Args:
-        store: The task store. The coordinator owns it exclusively.
+        store: The task store, or a client for a remote one. Typed as
+            :class:`~blackfish.pipelines.client.StoreClient` rather than
+            :class:`~blackfish.pipelines.store.TaskStore` so the control plane
+            can run somewhere other than the machine holding the queue.
         payloads: Payload store, used to encode submitted inputs and decode
             results.
         backend: Where workers run.
@@ -50,7 +54,7 @@ class Coordinator:
 
     def __init__(
         self,
-        store: TaskStore,
+        store: StoreClient,
         payloads: PayloadStore,
         backend: WorkerBackend,
         autoscaler: Autoscaler | None = None,

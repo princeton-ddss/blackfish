@@ -45,8 +45,15 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from blackfish.pipelines.client import (
+    HttpQueueClient,
+    HttpStoreClient,
+    QueueClient,
+    QueueUnavailable,
+    StoreClient,
+)
 from blackfish.pipelines.coordinator import Coordinator
-from blackfish.pipelines.payload import PayloadStore
+from blackfish.pipelines.payload import PayloadError, PayloadStore, PayloadTooLarge
 from blackfish.pipelines.scaler import Autoscaler, ScalingDecision
 from blackfish.pipelines.spec import Cardinality, JobSpec, Pipeline, Placement
 from blackfish.pipelines.store import (
@@ -62,14 +69,21 @@ __all__ = [
     "Autoscaler",
     "Cardinality",
     "Coordinator",
+    "HttpQueueClient",
+    "HttpStoreClient",
     "JobSpec",
     "JobStatus",
+    "PayloadError",
     "PayloadStore",
+    "PayloadTooLarge",
+    "QueueClient",
+    "QueueUnavailable",
     "Pipeline",
     "Placement",
     "RunState",
     "RunStatus",
     "ScalingDecision",
+    "StoreClient",
     "Task",
     "TaskState",
     "TaskStore",

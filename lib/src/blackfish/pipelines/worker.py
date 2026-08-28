@@ -26,7 +26,7 @@ import threading
 import time
 from typing import Any, Callable, Sequence
 
-from blackfish.pipelines.client import QueueClient
+from blackfish.pipelines.client import QueueClient, QueueUnavailable
 from blackfish.pipelines.payload import PayloadStore
 from blackfish.pipelines.spec import Cardinality, JobSpec, Pipeline
 from blackfish.pipelines.store import Task, cardinality_check
@@ -40,6 +40,17 @@ DEFAULT_POLL_SECONDS = 2.0
 # How long a worker keeps polling an empty queue before exiting. Exiting frees
 # the Slurm allocation; the autoscaler brings a worker back when work returns.
 DEFAULT_IDLE_TIMEOUT_SECONDS = 300.0
+
+# How long a worker waits out an unreachable coordinator before giving up. A
+# login node reboot or a closed laptop lid should not cost a warm model, so
+# this is generous; but a worker holding a GPU against a coordinator that is
+# never coming back is worse than one that exits and lets the allocation go.
+DEFAULT_MAX_OUTAGE_SECONDS = 900.0
+
+# Polling interval during an outage, escalating so a long outage is not also a
+# denial-of-service attempt on whatever is trying to come back up.
+OUTAGE_POLL_MIN_SECONDS = 2.0
+OUTAGE_POLL_MAX_SECONDS = 60.0
 
 
 def resolve(path: str) -> Callable[..., Any]:
@@ -76,6 +87,8 @@ class Worker:
         poll_seconds: Sleep between polls of an empty queue.
         idle_timeout: Exit after this many seconds without work. ``None`` to
             run until stopped.
+        max_outage: Exit after this many seconds of an unreachable
+            coordinator. ``None`` to wait indefinitely.
     """
 
     def __init__(
@@ -88,6 +101,7 @@ class Worker:
         owner: str | None = None,
         poll_seconds: float = DEFAULT_POLL_SECONDS,
         idle_timeout: float | None = DEFAULT_IDLE_TIMEOUT_SECONDS,
+        max_outage: float | None = DEFAULT_MAX_OUTAGE_SECONDS,
     ) -> None:
         self.run_id = run_id
         self.pipeline = pipeline
@@ -97,6 +111,7 @@ class Worker:
         self.owner = owner or f"{socket.gethostname()}:{os.getpid()}"
         self.poll_seconds = poll_seconds
         self.idle_timeout = idle_timeout
+        self.max_outage = max_outage
 
         self._downstream = pipeline.downstream(job.name)
         self._is_sink = not self._downstream
@@ -132,12 +147,59 @@ class Worker:
             self._has_ctx = True
 
     def run(self, stop: threading.Event | None = None) -> None:
-        """Process batches until stopped, or until idle for ``idle_timeout``."""
+        """Process batches until stopped, idle, or cut off for too long.
+
+        An unreachable coordinator is waited out rather than treated as a
+        failure. The worker has already paid to load its model, and the queue
+        is durable, so the cheapest correct response to "the login node is
+        rebooting" is to hold still. Any tasks this worker had leased are
+        redelivered by lease expiry once the coordinator returns, so waiting
+        costs nothing but time.
+        """
         self.start()
         stop = stop or threading.Event()
         idle_since: float | None = None
+        outage_since: float | None = None
+        outage_delay = OUTAGE_POLL_MIN_SECONDS
+
         while not stop.is_set():
-            if self.run_once():
+            try:
+                did_work = self.run_once()
+            except QueueUnavailable as exc:
+                now = time.monotonic()
+                if outage_since is None:
+                    outage_since = now
+                    logger.warning(
+                        "Worker %s: coordinator unreachable (%s); holding job"
+                        " '%s' and its loaded state",
+                        self.owner,
+                        exc,
+                        self.job.name,
+                    )
+                if (
+                    self.max_outage is not None
+                    and now - outage_since >= self.max_outage
+                ):
+                    logger.error(
+                        "Worker %s: coordinator unreachable for %.0fs, giving up",
+                        self.owner,
+                        now - outage_since,
+                    )
+                    return
+                stop.wait(outage_delay)
+                outage_delay = min(outage_delay * 2, OUTAGE_POLL_MAX_SECONDS)
+                continue
+
+            if outage_since is not None:
+                logger.info(
+                    "Worker %s: coordinator reachable again after %.0fs",
+                    self.owner,
+                    time.monotonic() - outage_since,
+                )
+                outage_since = None
+                outage_delay = OUTAGE_POLL_MIN_SECONDS
+
+            if did_work:
                 idle_since = None
                 continue
             now = time.monotonic()
@@ -266,6 +328,31 @@ class Worker:
         )
 
 
+def _fetch_pipeline(
+    client: QueueClient, run_id: str, max_outage: float | None
+) -> Pipeline:
+    """Fetch the run's pipeline, waiting out a coordinator that is not up yet.
+
+    A worker allocation can start while the coordinator is still restarting.
+    Dying here wastes the allocation and the queue time that bought it, so the
+    startup path waits on the same terms the run loop does.
+    """
+    started = time.monotonic()
+    delay = OUTAGE_POLL_MIN_SECONDS
+    while True:
+        try:
+            return client.get_pipeline(run_id)
+        except QueueUnavailable as exc:
+            waited = time.monotonic() - started
+            if max_outage is not None and waited >= max_outage:
+                raise
+            logger.warning(
+                "Worker: coordinator unreachable at startup (%s); retrying", exc
+            )
+            time.sleep(delay)
+            delay = min(delay * 2, OUTAGE_POLL_MAX_SECONDS)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Entry point for a worker process.
 
@@ -292,6 +379,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=DEFAULT_IDLE_TIMEOUT_SECONDS,
         help="Exit after this many idle seconds; 0 to run until killed",
     )
+    parser.add_argument(
+        "--max-outage",
+        type=float,
+        default=DEFAULT_MAX_OUTAGE_SECONDS,
+        help=(
+            "Exit after this many seconds of an unreachable coordinator;"
+            " 0 to wait indefinitely"
+        ),
+    )
     args = parser.parse_args(argv)
 
     if bool(args.store) == bool(args.url):
@@ -307,7 +403,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         client = HttpQueueClient(args.url)
 
-    pipeline = client.get_pipeline(args.run)
+    pipeline = _fetch_pipeline(client, args.run, args.idle_timeout or None)
     worker = Worker(
         run_id=args.run,
         pipeline=pipeline,
@@ -316,6 +412,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         payloads=PayloadStore(args.payloads),
         poll_seconds=args.poll_seconds,
         idle_timeout=args.idle_timeout or None,
+        max_outage=args.max_outage or None,
     )
 
     stop = threading.Event()

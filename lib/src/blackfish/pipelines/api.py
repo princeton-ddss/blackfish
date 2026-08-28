@@ -22,7 +22,8 @@ from litestar import Router, get, post
 from litestar.di import Provide
 from litestar.exceptions import NotFoundException
 
-from blackfish.pipelines.store import TaskStore
+from blackfish.pipelines.spec import Pipeline
+from blackfish.pipelines.store import RunState, TaskStore
 
 
 class QueueAPI:
@@ -58,11 +59,59 @@ class QueueAPI:
                     "seen": job.seen,
                     "sealed": job.sealed,
                     "delayed": job.delayed,
+                    "upstream_complete": job.upstream_complete,
                     "complete": job.complete,
                 }
                 for job in status.jobs
             ],
         }
+
+    # ------------------------------------------------------------------
+    # Control plane: what a coordinator needs, as opposed to a worker
+    # ------------------------------------------------------------------
+
+    def create_run(self, data: dict[str, Any]) -> dict[str, Any]:
+        run_id = self.store.create_run(
+            Pipeline.from_dict(data["pipeline"]), run_id=data.get("run_id")
+        )
+        return {"run_id": run_id}
+
+    def submit(self, run_id: str, job: str, data: dict[str, Any]) -> dict[str, Any]:
+        keys = data.get("keys")
+        enqueued = self.store.submit(
+            run_id,
+            job,
+            list(data["payloads"]),
+            keys=list(keys) if keys is not None else None,
+        )
+        return {"enqueued": enqueued}
+
+    def seal(self, run_id: str, job: str) -> dict[str, Any]:
+        self.store.seal(run_id, job)
+        return {"sealed": True}
+
+    def reclaim(self, run_id: str | None = None) -> dict[str, Any]:
+        return {"reclaimed": self.store.reclaim_expired(run_id)}
+
+    def set_state(self, run_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        state = RunState(data["state"])
+        self.store.set_run_state(run_id, state)
+        return {"state": str(state)}
+
+    def results(self, run_id: str, job: str | None = None) -> dict[str, Any]:
+        return {"payloads": list(self.store.results(run_id, job))}
+
+    def dead_letters(self, run_id: str) -> dict[str, Any]:
+        return {
+            "dead_letters": [
+                {"job": job, "task_id": task_id, "error": error}
+                for job, task_id, error in self.store.dead_letters(run_id)
+            ]
+        }
+
+    # ------------------------------------------------------------------
+    # Data plane: what a worker needs
+    # ------------------------------------------------------------------
 
     def lease(self, run_id: str, job: str, data: dict[str, Any]) -> dict[str, Any]:
         tasks = self.store.lease(
@@ -177,6 +226,52 @@ async def finalize_reduce(
     return queue.finalize(run_id, job, data)
 
 
+@post("/runs")
+async def create_run(data: dict[str, Any], queue: QueueAPI) -> dict[str, Any]:
+    return queue.create_run(data)
+
+
+@post("/runs/{run_id:str}/jobs/{job:str}/submit")
+async def submit_inputs(
+    run_id: str, job: str, data: dict[str, Any], queue: QueueAPI
+) -> dict[str, Any]:
+    return queue.submit(run_id, job, data)
+
+
+@post("/runs/{run_id:str}/jobs/{job:str}/seal")
+async def seal_source(run_id: str, job: str, queue: QueueAPI) -> dict[str, Any]:
+    return queue.seal(run_id, job)
+
+
+@post("/runs/{run_id:str}/reclaim")
+async def reclaim_run(run_id: str, queue: QueueAPI) -> dict[str, Any]:
+    return queue.reclaim(run_id)
+
+
+@post("/reclaim")
+async def reclaim_all(queue: QueueAPI) -> dict[str, Any]:
+    return queue.reclaim(None)
+
+
+@post("/runs/{run_id:str}/state")
+async def set_run_state(
+    run_id: str, data: dict[str, Any], queue: QueueAPI
+) -> dict[str, Any]:
+    return queue.set_state(run_id, data)
+
+
+@get("/runs/{run_id:str}/results")
+async def get_results(
+    run_id: str, queue: QueueAPI, job: str | None = None
+) -> dict[str, Any]:
+    return queue.results(run_id, job)
+
+
+@get("/runs/{run_id:str}/dead-letters")
+async def get_dead_letters(run_id: str, queue: QueueAPI) -> dict[str, Any]:
+    return queue.dead_letters(run_id)
+
+
 def create_pipeline_router(store: TaskStore, path: str = "/pipelines") -> Router:
     """Build the router workers poll, backed by ``store``.
 
@@ -193,6 +288,14 @@ def create_pipeline_router(store: TaskStore, path: str = "/pipelines") -> Router
     return Router(
         path=path,
         route_handlers=[
+            create_run,
+            submit_inputs,
+            seal_source,
+            reclaim_run,
+            reclaim_all,
+            set_run_state,
+            get_results,
+            get_dead_letters,
             get_run_spec,
             get_run_status,
             lease_tasks,

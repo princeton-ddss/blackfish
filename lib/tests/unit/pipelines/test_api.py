@@ -14,7 +14,7 @@ from litestar import Litestar
 from litestar.testing import TestClient
 
 from blackfish.pipelines.api import QueueAPI, create_pipeline_router
-from blackfish.pipelines.client import HttpQueueClient
+from blackfish.pipelines.client import HttpQueueClient, QueueUnavailable
 from blackfish.pipelines.spec import Cardinality, JobSpec, Pipeline
 from blackfish.pipelines.store import TaskStore
 
@@ -155,7 +155,10 @@ class TestRetries:
             assert client.get_pipeline(run) == pipeline()
         assert attempts["n"] == 3
 
-    def test_a_server_error_is_retried_then_raised(self, store, run, monkeypatch):
+    def test_a_server_error_is_retried_then_reported_as_unavailable(
+        self, store, run, monkeypatch
+    ):
+        """Callers need to tell an outage from a bad request; the type says so."""
         monkeypatch.setattr("blackfish.pipelines.client.DEFAULT_BACKOFF_SECONDS", 0)
         calls = {"n": 0}
 
@@ -168,9 +171,43 @@ class TestRetries:
             transport=httpx.MockTransport(handle),
             max_retries=3,
         ) as client:
-            with pytest.raises(httpx.HTTPStatusError):
+            with pytest.raises(QueueUnavailable, match="unreachable after 3"):
                 client.get_pipeline(run)
         assert calls["n"] == 3
+
+    def test_transport_failure_is_reported_as_unavailable(
+        self, store, run, monkeypatch
+    ):
+        monkeypatch.setattr("blackfish.pipelines.client.DEFAULT_BACKOFF_SECONDS", 0)
+
+        def handle(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectError("no route to host")
+
+        with HttpQueueClient(
+            "http://coordinator",
+            transport=httpx.MockTransport(handle),
+            max_retries=2,
+        ) as client:
+            with pytest.raises(QueueUnavailable):
+                client.get_pipeline(run)
+
+    def test_a_client_error_is_not_retried(self, store, run, monkeypatch):
+        """A 404 is this worker asking wrong; four more tries only delay it."""
+        monkeypatch.setattr("blackfish.pipelines.client.DEFAULT_BACKOFF_SECONDS", 0)
+        calls = {"n": 0}
+
+        def handle(request: httpx.Request) -> httpx.Response:
+            calls["n"] += 1
+            return httpx.Response(404, json={"detail": "no such run"})
+
+        with HttpQueueClient(
+            "http://coordinator",
+            transport=httpx.MockTransport(handle),
+            max_retries=5,
+        ) as client:
+            with pytest.raises(httpx.HTTPStatusError):
+                client.get_pipeline("nope")
+        assert calls["n"] == 1, "a client error must not be retried"
 
 
 class TestLitestarRoutes:

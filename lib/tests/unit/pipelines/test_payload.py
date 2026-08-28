@@ -2,7 +2,11 @@ import json
 
 import pytest
 
-from blackfish.pipelines.payload import PayloadError, PayloadStore
+from blackfish.pipelines.payload import (
+    PayloadError,
+    PayloadStore,
+    PayloadTooLarge,
+)
 
 
 class TestInlinePayloads:
@@ -102,3 +106,38 @@ def test_spilled_files_hold_exactly_the_encoded_value(tmp_path):
     store.put({"a": 1})
     path = next(tmp_path.rglob("*.json"))
     assert json.loads(path.read_text()) == {"a": 1}
+
+
+class TestSpillRefusal:
+    """A store in a process that cannot see the shared filesystem."""
+
+    def test_inline_payloads_need_no_filesystem_at_all(self):
+        store = PayloadStore(allow_spill=False)
+        assert store.get(store.put({"path": "/scratch/a.wav"})) == {
+            "path": "/scratch/a.wav"
+        }
+
+    def test_an_oversized_payload_is_refused_rather_than_written(self):
+        store = PayloadStore(inline_max_bytes=16, allow_spill=False)
+        with pytest.raises(PayloadTooLarge, match="may not spill"):
+            store.put({"text": "x" * 100})
+
+    def test_the_refusal_says_what_to_do_instead(self):
+        store = PayloadStore(inline_max_bytes=0, allow_spill=False)
+        with pytest.raises(PayloadTooLarge, match="pass its path instead"):
+            store.put({"a": 1})
+
+    def test_a_spilling_store_still_needs_a_root(self):
+        with pytest.raises(ValueError, match="needs a root directory"):
+            PayloadStore()
+
+    def test_reading_a_spilled_reference_without_a_root_is_explained(self):
+        store = PayloadStore(allow_spill=False)
+        with pytest.raises(PayloadError, match="no root directory"):
+            store.get("file:" + "0" * 64)
+
+    def test_a_refusal_is_still_a_payload_error(self, tmp_path):
+        """Callers that catch PayloadError keep working."""
+        store = PayloadStore(inline_max_bytes=0, allow_spill=False)
+        with pytest.raises(PayloadError):
+            store.put({"a": 1})

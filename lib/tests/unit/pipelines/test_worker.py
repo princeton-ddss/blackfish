@@ -1,5 +1,6 @@
 import pytest
 
+from blackfish.pipelines.client import QueueUnavailable
 from blackfish.pipelines.payload import PayloadStore
 from blackfish.pipelines.spec import Cardinality, JobSpec, Pipeline
 from blackfish.pipelines.store import TaskStore, cardinality_check
@@ -425,3 +426,129 @@ class TestParams:
         _run_id, worker = make_worker(store, payloads, spec)
         with pytest.raises(TypeError, match="scal"):
             worker.start()
+
+
+class FlakyClient:
+    """Wraps a queue client and simulates the coordinator going away."""
+
+    def __init__(self, inner, fail_calls: int = 0, permanent: bool = False):
+        self.inner = inner
+        self.remaining = fail_calls
+        self.permanent = permanent
+        self.outages = 0
+
+    def __getattr__(self, name):
+        attr = getattr(self.inner, name)
+        if not callable(attr):
+            return attr
+
+        def wrapper(*args, **kwargs):
+            if self.permanent or self.remaining > 0:
+                self.remaining -= 1
+                self.outages += 1
+                raise QueueUnavailable("simulated outage")
+            return attr(*args, **kwargs)
+
+        return wrapper
+
+
+class TestOutageTolerance:
+    """A worker that cannot reach the coordinator should wait, not die.
+
+    It has already paid to load its model and the queue is durable, so holding
+    still is the cheapest correct response. A login node reboots; a laptop lid
+    closes. Neither should cost a cluster's worth of warm workers.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _fast_outage_polling(self, monkeypatch):
+        monkeypatch.setattr("blackfish.pipelines.worker.OUTAGE_POLL_MIN_SECONDS", 0.001)
+        monkeypatch.setattr("blackfish.pipelines.worker.OUTAGE_POLL_MAX_SECONDS", 0.005)
+
+    def _worker(self, store, payloads, client, **kwargs):
+        spec = JobSpec(
+            name="a", fn=f"{JOBS}:scale", setup=f"{JOBS}:load_model", batch_size=2
+        )
+        pipeline = Pipeline(name="p", jobs=(spec,))
+        run_id = store.create_run(pipeline)
+        worker = Worker(
+            run_id=run_id,
+            pipeline=pipeline,
+            job=spec,
+            client=client,
+            payloads=payloads,
+            idle_timeout=0.05,
+            poll_seconds=0.001,
+            **kwargs,
+        )
+        return run_id, worker
+
+    def test_a_worker_survives_an_outage_and_keeps_its_model(self, store, payloads):
+        client = FlakyClient(store, fail_calls=4)
+        run_id, worker = self._worker(store, payloads, client)
+        store.submit(run_id, "a", [payloads.put(i) for i in range(4)])
+
+        worker.run()
+
+        assert client.outages == 4, "the outage really happened"
+        assert store.job_status(run_id, "a").done == 4, "work finished afterwards"
+        assert jobs.SETUP_CALLS == 1, "the model was not reloaded"
+
+    def test_an_outage_does_not_dead_letter_anything(self, store, payloads):
+        """An unreachable coordinator is not a failure of the work."""
+        client = FlakyClient(store, fail_calls=3)
+        run_id, worker = self._worker(store, payloads, client)
+        store.submit(run_id, "a", [payloads.put(1)])
+        worker.run()
+        assert store.dead_letters(run_id) == ()
+
+    def test_a_worker_gives_up_once_the_outage_outlasts_its_patience(
+        self, store, payloads
+    ):
+        """Holding a GPU against a coordinator that is never coming back is worse."""
+        client = FlakyClient(store, permanent=True)
+        run_id, worker = self._worker(store, payloads, client, max_outage=0.05)
+        store.submit(run_id, "a", [payloads.put(1)])
+
+        worker.run()  # returns rather than raising
+
+        assert client.outages > 1
+        assert store.job_status(run_id, "a").ready == 1, "work is left for a retry"
+
+    def test_a_worker_waiting_out_an_outage_can_still_be_stopped(self, store, payloads):
+        import threading
+
+        client = FlakyClient(store, permanent=True)
+        _run_id, worker = self._worker(store, payloads, client, max_outage=None)
+        stop = threading.Event()
+
+        def stop_soon():
+            while client.outages < 3:
+                pass
+            stop.set()
+
+        watcher = threading.Thread(target=stop_soon, daemon=True)
+        watcher.start()
+        worker.run(stop)
+        watcher.join(timeout=5)
+        assert stop.is_set()
+
+    def test_startup_waits_for_a_coordinator_that_is_not_up_yet(
+        self, store, payloads, monkeypatch
+    ):
+        """An allocation can start while the coordinator is still restarting."""
+        from blackfish.pipelines.worker import _fetch_pipeline
+
+        spec = JobSpec(name="a", fn=f"{JOBS}:double")
+        pipeline = Pipeline(name="p", jobs=(spec,))
+        run_id = store.create_run(pipeline)
+        client = FlakyClient(store, fail_calls=2)
+        assert _fetch_pipeline(client, run_id, max_outage=5.0) == pipeline
+        assert client.outages == 2
+
+    def test_startup_eventually_gives_up(self, store):
+        from blackfish.pipelines.worker import _fetch_pipeline
+
+        client = FlakyClient(store, permanent=True)
+        with pytest.raises(QueueUnavailable):
+            _fetch_pipeline(client, "run", max_outage=0.01)

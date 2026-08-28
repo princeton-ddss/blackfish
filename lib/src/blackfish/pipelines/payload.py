@@ -34,26 +34,52 @@ class PayloadError(RuntimeError):
     """Raised when a payload cannot be encoded, stored, or read back."""
 
 
+class PayloadTooLarge(PayloadError):
+    """A payload needed spilling, and this store is not allowed to spill.
+
+    Raised only when ``allow_spill=False``, which is how a process that cannot
+    see the cluster's shared filesystem declares that fact. A coordinator
+    running somewhere else -- a laptop, a container, the far side of an SSH
+    tunnel -- can encode paths and small metadata perfectly well, and will
+    silently write a file nobody can read the moment a payload gets large.
+    Turning that into a loud error at submit time is much cheaper than finding
+    it halfway through a run.
+    """
+
+
 class PayloadStore:
     """Encodes task payloads to references and back.
 
     Args:
         root: Directory for spilled payloads. On a cluster this must be on a
             filesystem every worker node can see, because a task leased by one
-            node may have been produced by another.
+            node may have been produced by another. May be ``None`` only when
+            ``allow_spill`` is ``False``.
         inline_max_bytes: Encoded payloads at or below this size stay in the
             queue row; larger ones are spilled to ``root``.
+        allow_spill: Whether this store may write to ``root``. Set ``False`` in
+            a process that cannot see the shared filesystem; oversized payloads
+            then raise :class:`PayloadTooLarge` instead of being written
+            somewhere no worker can read them.
     """
 
     def __init__(
         self,
-        root: str | os.PathLike[str],
+        root: str | os.PathLike[str] | None = None,
         inline_max_bytes: int = DEFAULT_INLINE_MAX_BYTES,
+        allow_spill: bool = True,
     ) -> None:
         if inline_max_bytes < 0:
             raise ValueError("inline_max_bytes must be >= 0")
-        self.root = Path(root)
+        if allow_spill and root is None:
+            raise ValueError(
+                "A payload store that may spill needs a root directory."
+                " Pass allow_spill=False for a process with no shared"
+                " filesystem."
+            )
+        self.root = Path(root) if root is not None else None
         self.inline_max_bytes = inline_max_bytes
+        self.allow_spill = allow_spill
 
     def put(self, value: Any) -> str:
         """Store ``value`` and return a reference to it.
@@ -68,6 +94,7 @@ class PayloadStore:
 
         Raises:
             PayloadError: If ``value`` is not JSON-serializable.
+            PayloadTooLarge: If it needs spilling and this store may not spill.
         """
         try:
             encoded = json.dumps(value, sort_keys=True).encode("utf-8")
@@ -79,6 +106,14 @@ class PayloadStore:
 
         if len(encoded) <= self.inline_max_bytes:
             return _INLINE_PREFIX + encoded.decode("utf-8")
+
+        if not self.allow_spill:
+            raise PayloadTooLarge(
+                f"Payload is {len(encoded)} bytes, over the"
+                f" {self.inline_max_bytes}-byte inline limit, and this store"
+                " may not spill to disk. Write the value to storage the"
+                " workers can see and pass its path instead."
+            )
 
         digest = hashlib.sha256(encoded).hexdigest()
         path = self._path_for(digest)
@@ -101,6 +136,13 @@ class PayloadStore:
                 raise PayloadError(f"Malformed inline payload: {exc}") from exc
         if ref.startswith(_FILE_PREFIX):
             digest = ref[len(_FILE_PREFIX) :]
+            if self.root is None:
+                raise PayloadError(
+                    f"Payload {digest} lives on shared storage, but this store"
+                    " has no root directory to read it from. A process that"
+                    " resolves spilled payloads needs to see the filesystem"
+                    " the workers write to."
+                )
             path = self._path_for(digest)
             try:
                 return json.loads(path.read_bytes())
@@ -116,6 +158,7 @@ class PayloadStore:
     def _path_for(self, digest: str) -> Path:
         # Two-character fan-out keeps directory listings usable on parallel
         # filesystems that dislike very wide directories.
+        assert self.root is not None  # guarded by the callers
         return self.root / digest[:2] / f"{digest}.json"
 
 

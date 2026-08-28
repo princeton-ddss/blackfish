@@ -1286,4 +1286,6 @@ class TestRunGroupOptions:
         # The script itself, not the echo line above it.
         script = result.output.split("> image_ref:")[-1]
         assert "vllm-openai_v9.9.9" in script
-        assert "vllm-openai_v0.20.0" not in script
+        from blackfish.server.images import DEFAULT_IMAGES
+
+        assert DEFAULT_IMAGES["text_generation"].sif not in script

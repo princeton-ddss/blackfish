@@ -63,12 +63,13 @@ MAX_RETRY_BACKOFF = 300.0
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (
-    run_id     TEXT PRIMARY KEY,
-    pipeline   TEXT NOT NULL,
-    spec       TEXT NOT NULL,
-    state      TEXT NOT NULL,
-    created_at REAL NOT NULL,
-    updated_at REAL NOT NULL
+    run_id       TEXT PRIMARY KEY,
+    pipeline     TEXT NOT NULL,
+    spec         TEXT NOT NULL,
+    state        TEXT NOT NULL,
+    created_at   REAL NOT NULL,
+    updated_at   REAL NOT NULL,
+    heartbeat_at REAL
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -181,6 +182,24 @@ class JobStatus:
 
 
 @dataclass(frozen=True, slots=True)
+class RunInfo:
+    """A run's bookkeeping, cheap to read and safe to poll."""
+
+    run_id: str
+    pipeline: str
+    state: RunState
+    created_at: float
+    updated_at: float
+    heartbeat_at: float | None
+
+    def heartbeat_age(self, now: float) -> float | None:
+        """Seconds since the driving process last checked in."""
+        if self.heartbeat_at is None:
+            return None
+        return now - self.heartbeat_at
+
+
+@dataclass(frozen=True, slots=True)
 class RunStatus:
     """Completion state of a whole run."""
 
@@ -215,23 +234,40 @@ class TaskStore:
         path: Database file. Use ``":memory:"`` for tests.
         clock: Time source, injectable so lease expiry can be tested without
             sleeping.
+        read_only: Open without any ability to write. This is how a *monitor*
+            attaches to a run another process owns: WAL allows many readers
+            alongside the single writer, so a server can report live progress
+            without being able to disturb it. A read-only store creates no
+            schema and runs no migration -- it is a guest.
     """
 
     def __init__(
         self,
         path: str | Path = ":memory:",
         clock: Callable[[], float] = time.time,
+        read_only: bool = False,
     ) -> None:
         self.path = str(path)
         self._clock = clock
+        self.read_only = read_only
         # One connection, serialized by a lock. The coordinator's own
         # concurrency is cooperative (asyncio), and worker traffic arrives over
         # HTTP, so a single writer is not the bottleneck -- and it sidesteps
         # SQLite's write-lock contention entirely.
         self._lock = threading.RLock()
-        self._conn = sqlite3.connect(self.path, check_same_thread=False)
+        if read_only:
+            if self.path == ":memory:":
+                raise ValueError("A read-only store needs a real database file")
+            self._conn = sqlite3.connect(
+                f"file:{self.path}?mode=ro", uri=True, check_same_thread=False
+            )
+        else:
+            self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.isolation_level = None  # explicit transactions only
+        if read_only:
+            self._conn.execute("PRAGMA busy_timeout=5000")
+            return
         if self.path != ":memory:":
             self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
@@ -247,13 +283,18 @@ class TaskStore:
         existing database should get a working store rather than an opaque
         "no such column" on the next lease.
         """
-        columns = {
+        task_columns = {
             row["name"] for row in self._conn.execute("PRAGMA table_info(tasks)")
         }
-        if "available_at" not in columns:
+        if "available_at" not in task_columns:
             self._conn.execute(
                 "ALTER TABLE tasks ADD COLUMN available_at REAL NOT NULL DEFAULT 0"
             )
+        run_columns = {
+            row["name"] for row in self._conn.execute("PRAGMA table_info(runs)")
+        }
+        if "heartbeat_at" not in run_columns:
+            self._conn.execute("ALTER TABLE runs ADD COLUMN heartbeat_at REAL")
 
     def close(self) -> None:
         with self._lock:
@@ -331,6 +372,43 @@ class TaskStore:
             raise KeyError(f"No such run: {run_id}")
         spec: dict[str, Any] = json.loads(row["spec"])
         return Pipeline.from_dict(spec)
+
+    def heartbeat(self, run_id: str) -> None:
+        """Record that the process driving this run is still alive.
+
+        A monitor cannot tell "the coordinator is working" from "the
+        coordinator died holding the run open" by looking at queue depth --
+        both look like a run that is not progressing. A heartbeat separates
+        them, and is the only thing the driving process has to remember to do.
+        """
+        with self._tx() as conn:
+            conn.execute(
+                "UPDATE runs SET heartbeat_at = ? WHERE run_id = ?",
+                (self._clock(), run_id),
+            )
+
+    def run_info(self, run_id: str) -> "RunInfo":
+        """Bookkeeping about a run, without walking its queues.
+
+        Cheap enough for a monitor to poll frequently, unlike
+        :meth:`run_status`, which counts every task.
+        """
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT run_id, pipeline, state, created_at, updated_at,"
+                " heartbeat_at FROM runs WHERE run_id = ?",
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(f"No such run: {run_id}")
+        return RunInfo(
+            run_id=row["run_id"],
+            pipeline=row["pipeline"],
+            state=RunState(row["state"]),
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            heartbeat_at=row["heartbeat_at"],
+        )
 
     def set_run_state(self, run_id: str, state: RunState) -> None:
         with self._tx() as conn:

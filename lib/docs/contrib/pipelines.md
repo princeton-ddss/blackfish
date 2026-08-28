@@ -244,6 +244,84 @@ Finalization checks "upstream complete **and** exactly one task outstanding" in
 the same transaction that emits, while the caller holds that task's lease — so a
 partial still being folded elsewhere blocks finalization rather than racing it.
 
+## Running a pipeline as its own process
+
+A run is not hosted by whatever starts it. The server (or the CLI) creates the
+run, submits its inputs, launches a **runner process**, and then *observes* it —
+the same relationship Blackfish already has with a batch job, and the reason a
+batch job outlives an Open OnDemand session. The launcher's lifetime stops being
+something the run depends on.
+
+```
+server/UI                          runner process (detached)
+  create run, submit inputs  ──►   owns the store, the backend, the workers
+  launch ────────────────────►     heartbeats every tick
+  observe  ◄── read-only store, pid, heartbeat, log file
+  cancel   ──► SIGTERM, then records the verdict itself
+```
+
+The split of responsibility is deliberate: **the runner owns the run's
+execution; it does not own the run's existence.** Creating the run before
+launching means a UI can show a queued run with its inputs before any process
+exists, and relaunching after a crash is the same command with the same
+arguments.
+
+### Observation is evidence, not memory
+
+`RunSupervisor.observe()` reaches a verdict from three independent sources, none
+of which requires the run's process to cooperate:
+
+| Question | Evidence |
+|---|---|
+| Is the process there? | pid **plus its create time**, checked against the launch record |
+| Is it working? | the heartbeat in the `runs` table |
+| Did it finish? | the run's state, written whether or not anyone was watching |
+
+Each of those guards against a specific way a naive monitor lies, and all three
+were found by watching real processes rather than mocks:
+
+- **Zombies.** A dead child stays in the process table until reaped, and every
+  "does this pid exist" check says yes. Since the launcher is the parent, a
+  crashed runner would otherwise report healthy forever.
+- **Recycled pids.** After a server restart the supervisor is checking pids it
+  did not launch in this process. The create time is what makes the pid
+  evidence rather than a guess.
+- **"Launched" mistaken for "working".** A process that has never checked in is
+  `STARTING`, not `RUNNING` — and if it stays that way past the staleness
+  threshold, `UNRESPONSIVE`. Collapsing those hides a runner that dies during
+  start-up.
+
+Queue depth alone cannot distinguish a coordinator that is working from one that
+died holding the run open; both look like a run that is not progressing. That is
+the whole reason for the heartbeat.
+
+Observation is strictly read-only — the monitor opens the store with
+`read_only=True`, which WAL allows alongside the runner's single writer, so a
+UI polling a run cannot disturb it. **Commands may write**: `cancel()` records
+the run cancelled once the process is gone, because a runner killed before it
+could write its own verdict would otherwise look crashed when in fact someone
+asked it to stop.
+
+### Verdicts
+
+`QUEUED` · `STARTING` · `RUNNING` · `UNRESPONSIVE` · `COMPLETE` · `CANCELLED` ·
+`CRASHED`
+
+`CRASHED` is recoverable and says so: the queues are intact, so the remedy is to
+launch a runner again on the same run. There is a test that kills a runner and
+relaunches it to completion on the same queues.
+
+### What detachment does and does not buy
+
+The runner is started with `start_new_session=True`, so it has its own session
+and process group and does not receive the SIGHUP that ends a terminal or a
+portal session. That is not sufficient everywhere: a login node with logind's
+`KillUserProcesses=yes` reaps a user's processes at logout regardless of
+session. Where that is set, the durable form of "separate process" is a Slurm
+allocation, and this launcher is the development equivalent — the supervisor's
+interface is the same either way, so that is a backend swap rather than a
+redesign.
+
 ## Where the pieces can run
 
 The coordinator does two jobs, and they have different availability
@@ -514,14 +592,16 @@ Stated plainly, because the difference matters:
   gate, dead letters, autoscaling policy, the worker loop, the HTTP queue API
   and its client, worker tolerance of an unreachable coordinator, a complete
   run driven by a coordinator that reaches the queue only over HTTP,
-  coordinator restart over a durable store, and end-to-end runs of all six
-  worked examples.
+  coordinator restart over a durable store, launching and monitoring a detached
+  runner process (including crash, relaunch, cancel and re-attach against real
+  processes), and end-to-end runs of all six worked examples.
 - **Not run on a cluster:** the Ray actor lifecycle, `sbatch`/`scancel` against
   a real scheduler, Apptainer image bring-up on compute nodes, and the HTTP path
   under real network conditions. The sizing arithmetic and the rendered sbatch
   script are unit-tested; the parts that need a scheduler and a GPU are not.
 - **Not built:** persistence of runs in the Blackfish database, CLI commands,
-  and any UI. `create_pipeline_router` now serves both the worker-facing queue
+  and any UI. The supervisor is what a UI would drive, but nothing wires it to
+  the server yet: no ORM row, no routes, no startup re-attach. `create_pipeline_router` now serves both the worker-facing queue
   API and the control-plane API, and is tested standalone, but it is not
   mounted on the main app: the store is process state, the coordinator's
   lifecycle in the server is a design decision of its own, and the router has

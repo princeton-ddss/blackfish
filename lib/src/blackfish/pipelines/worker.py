@@ -117,7 +117,7 @@ class Worker:
         self._fn = resolve(self.job.fn)
         if self.job.setup is not None:
             started = time.monotonic()
-            self._ctx = resolve(self.job.setup)()
+            self._ctx = resolve(self.job.setup)(**self.job.params)
             self._has_ctx = True
             logger.info(
                 "Worker %s: setup for job '%s' completed in %.1fs",
@@ -125,6 +125,11 @@ class Worker:
                 self.job.name,
                 time.monotonic() - started,
             )
+        elif self.job.params:
+            # No setup to build a context, but the job still needs its
+            # configuration, so the params are the context.
+            self._ctx = self.job.params
+            self._has_ctx = True
 
     def run(self, stop: threading.Event | None = None) -> None:
         """Process batches until stopped, or until idle for ``idle_timeout``."""

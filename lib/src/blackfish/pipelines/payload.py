@@ -83,7 +83,7 @@ class PayloadStore:
         digest = hashlib.sha256(encoded).hexdigest()
         path = self._path_for(digest)
         if not path.exists():
-            self._write_atomic(path, encoded)
+            write_atomic(path, encoded)
         return _FILE_PREFIX + digest
 
     def get(self, ref: str) -> Any:
@@ -118,22 +118,25 @@ class PayloadStore:
         # filesystems that dislike very wide directories.
         return self.root / digest[:2] / f"{digest}.json"
 
-    @staticmethod
-    def _write_atomic(path: Path, data: bytes) -> None:
-        """Write ``data`` to ``path`` so readers never see a partial file.
 
-        Two workers retrying the same task write byte-identical content, so the
-        rename is safe to lose: whichever lands last wins with the same bytes.
-        """
-        path.parent.mkdir(parents=True, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".tmp-")
-        try:
-            with os.fdopen(fd, "wb") as handle:
-                handle.write(data)
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.replace(tmp, path)
-        except BaseException:
-            if os.path.exists(tmp):
-                os.unlink(tmp)
-            raise
+def write_atomic(path: Path, data: bytes) -> None:
+    """Write ``data`` to ``path`` so readers never see a partial file.
+
+    Exported because any job writing its own output -- a shard of embeddings, a
+    transcript -- needs exactly this: a retried task must not leave a truncated
+    file where a downstream job will later find one. Two workers retrying the
+    same task write byte-identical content, so the rename is safe to lose:
+    whichever lands last wins with the same bytes.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".tmp-")
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise

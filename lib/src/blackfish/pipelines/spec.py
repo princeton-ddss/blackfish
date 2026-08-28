@@ -97,11 +97,25 @@ class JobSpec:
         fn: Import path of the work function, ``"package.module:attribute"``.
             Workers run in separate processes (and on separate nodes), so a
             job is addressed by import path rather than by object reference.
-        setup: Import path of an optional zero-argument callable run **once per
-            worker process**, before the first batch. Its return value is
-            passed to ``fn`` as a second positional argument. This is where a
-            model gets loaded: the cost is paid once per allocation and then
+        setup: Import path of an optional callable run **once per worker
+            process**, before the first batch, as ``setup(**params)``. Its
+            return value becomes the job's *context*. This is where a model
+            gets loaded: the cost is paid once per allocation and then
             amortized over every task the worker handles.
+        params: Configuration for this job. A job is addressed by import path,
+            so this is the only way to hand it arguments -- the alternative
+            being module constants or environment variables, neither of which
+            survives a second pipeline using the same function.
+
+            It decides how ``fn`` is called:
+
+            - ``setup`` set: ``fn(batch, setup(**params))``
+            - no ``setup``, ``params`` non-empty: ``fn(batch, params)``
+            - neither: ``fn(batch)``
+
+            Passing params to ``setup`` as keywords rather than as a dict is
+            deliberate: a misspelled key is a ``TypeError`` when the worker
+            starts, not a ``KeyError`` an hour into the run.
         cardinality: How outputs relate to inputs. See :class:`Cardinality`.
         batch_size: Maximum number of tasks handed to ``fn`` in one call. A
             worker takes fewer when fewer are queued, so this is a ceiling, not
@@ -122,6 +136,7 @@ class JobSpec:
     name: str
     fn: str
     setup: str | None = None
+    params: dict[str, Any] = field(default_factory=dict)
     cardinality: Cardinality = Cardinality.ONE_TO_ONE
     batch_size: int = 1
     min_workers: int = 0
@@ -288,6 +303,7 @@ class Pipeline:
                     "name": job.name,
                     "fn": job.fn,
                     "setup": job.setup,
+                    "params": job.params,
                     "cardinality": str(job.cardinality),
                     "batch_size": job.batch_size,
                     "min_workers": job.min_workers,
@@ -310,6 +326,7 @@ class Pipeline:
                 name=job["name"],
                 fn=job["fn"],
                 setup=job.get("setup"),
+                params=job.get("params") or {},
                 cardinality=Cardinality(job.get("cardinality", "1:1")),
                 batch_size=job.get("batch_size", 1),
                 min_workers=job.get("min_workers", 0),

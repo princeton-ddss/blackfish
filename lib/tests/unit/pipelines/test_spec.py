@@ -152,3 +152,28 @@ class TestPipelineTopology:
             ),
         )
         assert Pipeline.from_dict(original.to_dict()) == original
+
+
+class TestParams:
+    def test_params_default_to_empty(self):
+        assert JobSpec(name="a", fn="m:f").params == {}
+
+    def test_params_survive_a_round_trip(self):
+        pipeline = Pipeline(
+            name="p",
+            jobs=(
+                JobSpec(
+                    name="a",
+                    fn="m:f",
+                    setup="m:s",
+                    params={"chunk_lines": 512, "shard_dir": "/scratch/out"},
+                ),
+            ),
+        )
+        assert Pipeline.from_dict(pipeline.to_dict()) == pipeline
+
+    def test_params_reach_the_serialized_form(self):
+        spec = Pipeline(
+            name="p", jobs=(JobSpec(name="a", fn="m:f", params={"dim": 8}),)
+        ).to_dict()
+        assert spec["jobs"][0]["params"] == {"dim": 8}

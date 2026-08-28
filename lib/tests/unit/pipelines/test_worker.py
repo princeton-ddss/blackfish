@@ -314,3 +314,59 @@ class TestWorkerEntryPoint:
                     "http://x",
                 ]
             )
+
+
+class TestParams:
+    """A job is addressed by import path, so ``params`` is how it is configured."""
+
+    def test_setup_receives_params_as_keywords(self, store, payloads):
+        spec = JobSpec(
+            name="a",
+            fn=f"{JOBS}:multiply",
+            setup=f"{JOBS}:build_context",
+            params={"scale": 5, "label": "prod"},
+        )
+        run_id, worker = make_worker(store, payloads, spec)
+        store.submit(run_id, "a", [payloads.put(3)])
+        worker.run_once()
+        assert jobs.SETUP_KWARGS == {"scale": 5, "label": "prod"}
+
+    def test_the_context_reaches_the_function(self, store, payloads):
+        spec = JobSpec(
+            name="a",
+            fn=f"{JOBS}:multiply",
+            setup=f"{JOBS}:build_context",
+            params={"scale": 5},
+        )
+        sink = JobSpec(name="b", fn=f"{JOBS}:double")
+        run_id, worker = make_worker(store, payloads, spec, sink)
+        store.submit(run_id, "a", [payloads.put(3)])
+        worker.run_once()
+        leased = store.lease(run_id, "b", 1, 60, "w")
+        assert payloads.get(leased[0].payload) == 15
+
+    def test_params_are_the_context_when_there_is_no_setup(self, store, payloads):
+        spec = JobSpec(name="a", fn=f"{JOBS}:multiply", params={"scale": 4})
+        run_id, worker = make_worker(store, payloads, spec)
+        store.submit(run_id, "a", [payloads.put(2)])
+        worker.run_once()
+        assert jobs.SEEN_CONTEXT == [{"scale": 4}]
+        assert jobs.SETUP_CALLS == 0
+
+    def test_a_job_with_neither_gets_no_context(self, store, payloads):
+        spec = JobSpec(name="a", fn=f"{JOBS}:double")
+        run_id, worker = make_worker(store, payloads, spec)
+        store.submit(run_id, "a", [payloads.put(2)])
+        assert worker.run_once()
+
+    def test_a_misspelled_param_fails_at_worker_start(self, store, payloads):
+        """Loudly, before any task is leased -- not an hour into the run."""
+        spec = JobSpec(
+            name="a",
+            fn=f"{JOBS}:multiply",
+            setup=f"{JOBS}:build_context",
+            params={"scal": 5},
+        )
+        _run_id, worker = make_worker(store, payloads, spec)
+        with pytest.raises(TypeError, match="scal"):
+            worker.start()

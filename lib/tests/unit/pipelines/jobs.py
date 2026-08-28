@@ -18,6 +18,8 @@ def reset() -> None:
     SETUP_CALLS = 0
     BATCH_SIZES.clear()
     FAILURES.clear()
+    SETUP_KWARGS.clear()
+    SEEN_CONTEXT.clear()
 
 
 def load_model() -> dict[str, Any]:
@@ -70,3 +72,19 @@ def flat_instead_of_nested(values: list[int]) -> list[int]:
 def total(values: list[int]) -> int:
     BATCH_SIZES.append(len(values))
     return sum(values)
+
+
+SETUP_KWARGS: dict[str, Any] = {}
+SEEN_CONTEXT: list[Any] = []
+
+
+def build_context(scale: int = 1, label: str = "default") -> dict[str, Any]:
+    """Setup that records the keywords it was configured with."""
+    SETUP_KWARGS.clear()
+    SETUP_KWARGS.update({"scale": scale, "label": label})
+    return {"scale": scale, "label": label}
+
+
+def multiply(values: list[int], context: dict[str, Any]) -> list[int]:
+    SEEN_CONTEXT.append(context)
+    return [value * int(context["scale"]) for value in values]

@@ -73,6 +73,23 @@ Jobs are addressed by import path (`module:attribute`) rather than by object
 reference, because a worker is a different process on a different node. A
 closure defined in a notebook cannot be a job.
 
+### Configuration goes in `params`
+
+Because a job is a path rather than a callable, there is nowhere to bind
+arguments — so `params` is how a job is configured, and it decides how the
+function is called:
+
+| | `fn` receives |
+|---|---|
+| `setup` set | `fn(batch, setup(**params))` |
+| no `setup`, `params` non-empty | `fn(batch, params)` |
+| neither | `fn(batch)` |
+
+Params reach `setup` as keywords rather than as a dict on purpose: a misspelled
+key is a `TypeError` when the worker starts, not a `KeyError` an hour into the
+run. The alternative — module constants or environment variables — does not
+survive a second pipeline using the same function with different settings.
+
 ## The four open questions, answered
 
 The design discussion left four questions open. Here is what the prototype
@@ -287,7 +304,16 @@ half-evaluating both. If Ray-on-Slurm proves awkward in practice, the backend
 protocol is three methods (`scale`, `count`, `shutdown`), so a Covalent
 assessment is a contained piece of work rather than a rewrite.
 
-## Trying it
+## Worked examples
+
+Two, in `blackfish.pipelines`. Both run anywhere — no GPU, no model download —
+because the expensive part is stubbed and everything around it is what real
+code does.
+
+### `example.py` — word count
+
+`read (1:N) → count (1:1) → merge (N:1)`. Small enough to read in one sitting
+and exercises all three cardinalities.
 
 ```python
 import asyncio
@@ -298,23 +324,74 @@ documents = ["the quick brown fox\njumps over the lazy dog", ...]
 status, results = asyncio.run(run_local(build_pipeline(max_workers=3), documents))
 ```
 
-`blackfish.pipelines.example` is a word-count pipeline —
-`read (1:N) → count (1:1) → merge (N:1)` — small enough to read and exercising
-all three cardinalities. `run_local` runs workers as threads; the semantics are
-identical to a cluster run, only the backend differs.
+### `example_embed.py` — embed every line of a large file
 
-For a closer rehearsal of cluster behaviour, use `SubprocessBackend`: real
-processes, real polling, setup paid per worker, workers killable.
+`plan (1:N) → embed (1:1) → manifest (N:1)`. The shape most "run a model over a
+big pile of data" jobs want, and it teaches four things the naive version gets
+wrong.
+
+**A task is a chunk, not a line.** The queue is an index, not an array: every
+task carries a UUID, a state, an attempt counter and timestamps, so one task per
+line spends a few hundred bytes of bookkeeping on a sentence — and the GPU wants
+a batch anyway, so you would be splitting the data apart only to have workers
+glue it back together. The chunk *is* the batch, which is why `embed` runs with
+`batch_size=1`. (Rule of thumb, not measured: under ~100k items, one task each is
+fine and simpler.)
+
+**Chunks are byte ranges found in one pass.** `plan` scans the file once,
+sequentially, recording offsets; workers then `seek()` straight to their range.
+A descriptor saying "skip 4096 lines, take 512" makes every worker re-read from
+the top, which is quadratic.
+
+**Output goes to disk; the queue gets a path.** Each chunk writes one shard and
+emits a reference. A few hundred thousand individual vector payloads would be a
+few hundred thousand tiny files, which is an abusive access pattern on a
+parallel filesystem.
+
+**Side effects need their own idempotency.** Shards are named by a hash of the
+chunk descriptor, so a redelivered chunk rewrites the same path with the same
+bytes instead of leaving a second, divergent shard. The queue makes its own
+bookkeeping idempotent; what a job writes is the job's to protect —
+`payload.write_atomic` is exported for exactly this.
+
+It also surfaces two constraints of the tree reduce that shape the types
+upstream:
+
+- **The fold must be closed over its own output.** A reduce queue holds a mix
+  of upstream outputs and its own partials, so `embed` emits
+  `{"shards": [one], "rows": n}` — a manifest of one shard — rather than a bare
+  shard record.
+- **A commutative fold cannot preserve order.** Partials combine in whatever
+  grouping the workers happen to lease, so each shard records `(source, index)`.
+  `index` alone is not enough once a run covers several files.
+
+```python
+from blackfish.pipelines.example_embed import build_pipeline
+
+pipeline = build_pipeline(shard_dir="/scratch/embeddings", chunk_lines=512)
+status, results = await run_local(pipeline, ["/scratch/corpus.txt"])
+manifest = results[0]          # {"shards": [...], "rows": 23}
+```
+
+Swapping `load_encoder` for one that returns a real `SentenceTransformer` is
+the whole diff between this and production.
+
+### Running them for real
+
+`run_local` runs workers as threads; the semantics are identical to a cluster
+run, only the backend differs. For a closer rehearsal, use `SubprocessBackend`:
+real processes, real polling, setup paid per worker, workers killable.
 
 ## What is not verified
 
 Stated plainly, because the difference matters:
 
-- **Covered by tests:** DAG validation, cardinality semantics, queue leases and
-  expiry, at-least-once delivery, idempotent replay, fan-in completion
-  (including a diamond join), the tree reduce and its finalization gate, dead
-  letters, autoscaling policy, the worker loop, the HTTP queue API and its
-  client, and end-to-end runs on both local backends.
+- **Covered by tests:** DAG validation, cardinality semantics, job params and
+  the call convention, queue leases and expiry, at-least-once delivery,
+  idempotent replay, fan-in completion (including a diamond join), the tree
+  reduce and its finalization gate, dead letters, autoscaling policy, the worker
+  loop, the HTTP queue API and its client, and end-to-end runs of both worked
+  examples on both local backends.
 - **Not run on a cluster:** the Ray actor lifecycle, `sbatch`/`scancel` against
   a real scheduler, Apptainer image bring-up on compute nodes, and the HTTP path
   under real network conditions. The sizing arithmetic and the rendered sbatch
@@ -323,6 +400,26 @@ Stated plainly, because the difference matters:
   the main app, CLI commands, and any UI. `create_pipeline_router` exists and is
   tested standalone but is not mounted, because the store is process state and
   the coordinator's lifecycle in the server is a design decision of its own.
+
+### Known limitations
+
+- **No streaming emit.** A `1:N` job returns all of its outputs from one call,
+  and they are inserted in a single transaction. Chunked fan-out keeps that
+  bounded — which is what `example_embed`'s `plan` job does — but a fan-out
+  producing millions of outputs from one call would be one enormous
+  transaction with the whole list in memory. Another chunking level is the
+  workaround; streaming would be the fix.
+- **No payload garbage collection.** Spilled payloads accumulate for the life
+  of the payload directory; a completed run's intermediates are never
+  reclaimed. Content addressing makes refcounting awkward, so this needs a
+  design rather than a patch.
+- **No directory-scanning source.** `BatchJob` takes an `input_dir` and walks
+  it; a pipeline takes a list of values. A built-in `1:N` source that fans a
+  directory out into paths is expressible today and simply is not written.
+- **The shared-filesystem assumption is unchecked.** If `payload_dir` or
+  `shard_dir` is not visible from a compute node, you find out when a worker
+  raises mid-run rather than at submit time. A coordinator pre-flight belongs
+  here.
 
 ## Next steps
 

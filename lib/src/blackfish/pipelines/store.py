@@ -57,6 +57,10 @@ from blackfish.pipelines.spec import Cardinality, Pipeline
 # resumed run re-emit every downstream task under new IDs.
 _TASK_NAMESPACE = uuid.UUID("6f1f1d3a-6a54-5a5f-9c0e-1b6a8c2f0e21")
 
+# Ceiling on the exponential retry delay. Past a few minutes a longer wait
+# stops being backoff and starts being an outage nobody is watching.
+MAX_RETRY_BACKOFF = 300.0
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (
     run_id     TEXT PRIMARY KEY,
@@ -74,6 +78,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     payload          TEXT NOT NULL,
     state            TEXT NOT NULL,
     attempts         INTEGER NOT NULL DEFAULT 0,
+    available_at     REAL NOT NULL DEFAULT 0,
     lease_expires_at REAL,
     lease_owner      TEXT,
     last_error       TEXT,
@@ -83,7 +88,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 CREATE INDEX IF NOT EXISTS tasks_by_state
-    ON tasks (run_id, job, state, created_at);
+    ON tasks (run_id, job, state, available_at, created_at);
 
 CREATE INDEX IF NOT EXISTS tasks_by_lease
     ON tasks (state, lease_expires_at);
@@ -155,16 +160,24 @@ class JobStatus:
     sealed: bool
     upstream_complete: bool
     complete: bool
+    delayed: int = 0
+    """Ready tasks still serving a retry backoff. Counted inside ``ready``, and
+    therefore inside ``outstanding``: a task waiting to be retried is emphati-
+    cally not finished, and a job holding one must not read as complete."""
 
     @property
     def outstanding(self) -> int:
-        """Tasks accepted but not yet settled (ready or leased)."""
+        """Tasks accepted but not yet settled (ready, delayed or leased)."""
         return self.ready + self.leased
 
     @property
     def backlog(self) -> int:
-        """Work waiting for a worker. What the autoscaler reacts to."""
-        return self.ready
+        """Work a worker could pick up right now. What the autoscaler reacts to.
+
+        Excludes tasks serving a backoff, so a job whose queue is entirely
+        rate-limited retries does not hold workers that have nothing to do.
+        """
+        return self.ready - self.delayed
 
 
 @dataclass(frozen=True, slots=True)
@@ -225,6 +238,22 @@ class TaskStore:
         self._conn.execute("PRAGMA foreign_keys=ON")
         self._conn.execute("PRAGMA busy_timeout=5000")
         self._conn.executescript(_SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Add columns introduced after a store may already have been created.
+
+        The prototype ships no Alembic migrations, and a developer with an
+        existing database should get a working store rather than an opaque
+        "no such column" on the next lease.
+        """
+        columns = {
+            row["name"] for row in self._conn.execute("PRAGMA table_info(tasks)")
+        }
+        if "available_at" not in columns:
+            self._conn.execute(
+                "ALTER TABLE tasks ADD COLUMN available_at REAL NOT NULL DEFAULT 0"
+            )
 
     def close(self) -> None:
         with self._lock:
@@ -385,6 +414,9 @@ class TaskStore:
         Claiming is exclusive: a leased task is invisible to other workers until
         it is settled or its lease expires. Returns fewer tasks than asked for
         when fewer are queued -- a half-full batch is never held back.
+
+        A task still serving its retry backoff is skipped, so a job whose
+        downstream service is rate-limiting it does not spin.
         """
         if max_tasks < 1:
             raise ValueError("max_tasks must be >= 1")
@@ -395,9 +427,9 @@ class TaskStore:
             # ``created_at``, and ordering them by ID would shuffle them.
             rows = conn.execute(
                 "SELECT task_id, payload, attempts FROM tasks"
-                " WHERE run_id = ? AND job = ? AND state = ?"
+                " WHERE run_id = ? AND job = ? AND state = ? AND available_at <= ?"
                 " ORDER BY created_at, rowid LIMIT ?",
-                (run_id, job, str(TaskState.READY), max_tasks),
+                (run_id, job, str(TaskState.READY), now, max_tasks),
             ).fetchall()
             if not rows:
                 return ()
@@ -561,10 +593,19 @@ class TaskStore:
         with self._tx() as conn:
             conn.executemany(
                 "UPDATE tasks SET state = ?, attempts = MAX(attempts - 1, 0),"
-                " lease_expires_at = NULL, lease_owner = NULL, updated_at = ?"
+                " available_at = ?, lease_expires_at = NULL, lease_owner = NULL,"
+                " updated_at = ?"
                 " WHERE run_id = ? AND job = ? AND task_id = ? AND state = ?",
                 [
-                    (str(TaskState.READY), now, run_id, job, tid, str(TaskState.LEASED))
+                    (
+                        str(TaskState.READY),
+                        now,
+                        now,
+                        run_id,
+                        job,
+                        tid,
+                        str(TaskState.LEASED),
+                    )
                     for tid in task_ids
                 ],
             )
@@ -576,8 +617,15 @@ class TaskStore:
         task_ids: Sequence[str],
         error: str,
         max_attempts: int,
+        retry_backoff: float = 0.0,
     ) -> tuple[int, int]:
         """Record a failed batch, retrying or dead-lettering each task.
+
+        A retried task is held for ``retry_backoff * 2 ** (attempts - 1)``
+        seconds, capped at :data:`MAX_RETRY_BACKOFF`. Without that, a batch
+        failing against a rate-limited service is re-leased immediately by the
+        same worker, which spends the task's whole attempt budget in
+        milliseconds and hammers whatever failed.
 
         Returns:
             ``(retried, dead_lettered)``.
@@ -603,11 +651,24 @@ class TaskStore:
                     )
                     dead += 1
                 else:
+                    delay = min(
+                        retry_backoff * (2 ** (int(row["attempts"]) - 1)),
+                        MAX_RETRY_BACKOFF,
+                    )
                     conn.execute(
                         "UPDATE tasks SET state = ?, last_error = ?,"
-                        " lease_expires_at = NULL, lease_owner = NULL,"
+                        " available_at = ?, lease_expires_at = NULL,"
+                        " lease_owner = NULL,"
                         " updated_at = ? WHERE run_id = ? AND job = ? AND task_id = ?",
-                        (str(TaskState.READY), error, now, run_id, job, task_id),
+                        (
+                            str(TaskState.READY),
+                            error,
+                            now + delay,
+                            now,
+                            run_id,
+                            job,
+                            task_id,
+                        ),
                     )
                     retried += 1
             if dead:
@@ -632,17 +693,24 @@ class TaskStore:
         with self._tx() as conn:
             if run_id is None:
                 cursor = conn.execute(
-                    "UPDATE tasks SET state = ?, lease_expires_at = NULL,"
-                    " lease_owner = NULL, updated_at = ?"
+                    "UPDATE tasks SET state = ?, available_at = ?,"
+                    " lease_expires_at = NULL, lease_owner = NULL, updated_at = ?"
                     " WHERE state = ? AND lease_expires_at <= ?",
-                    (str(TaskState.READY), now, str(TaskState.LEASED), now),
+                    (str(TaskState.READY), now, now, str(TaskState.LEASED), now),
                 )
             else:
                 cursor = conn.execute(
-                    "UPDATE tasks SET state = ?, lease_expires_at = NULL,"
-                    " lease_owner = NULL, updated_at = ?"
+                    "UPDATE tasks SET state = ?, available_at = ?,"
+                    " lease_expires_at = NULL, lease_owner = NULL, updated_at = ?"
                     " WHERE run_id = ? AND state = ? AND lease_expires_at <= ?",
-                    (str(TaskState.READY), now, run_id, str(TaskState.LEASED), now),
+                    (
+                        str(TaskState.READY),
+                        now,
+                        now,
+                        run_id,
+                        str(TaskState.LEASED),
+                        now,
+                    ),
                 )
             return cursor.rowcount
 
@@ -786,8 +854,9 @@ class TaskStore:
         for task_id, payload in zip(task_ids, payloads, strict=True):
             cursor = conn.execute(
                 "INSERT OR IGNORE INTO tasks (run_id, job, task_id, payload,"
-                " state, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (run_id, job, task_id, payload, str(TaskState.READY), now, now),
+                " state, available_at, created_at, updated_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (run_id, job, task_id, payload, str(TaskState.READY), now, now, now),
             )
             inserted += cursor.rowcount
         if inserted:
@@ -811,6 +880,11 @@ class TaskStore:
             (run_id, job),
         ):
             counts[TaskState(row["state"])] = row["n"]
+        delayed_row = conn.execute(
+            "SELECT COUNT(*) AS n FROM tasks WHERE run_id = ? AND job = ?"
+            " AND state = ? AND available_at > ?",
+            (run_id, job, str(TaskState.READY), self._clock()),
+        ).fetchone()
         barrier = conn.execute(
             "SELECT sealed, seen FROM barriers WHERE run_id = ? AND job = ?",
             (run_id, job),
@@ -840,6 +914,7 @@ class TaskStore:
             sealed=sealed,
             upstream_complete=upstream_complete,
             complete=upstream_complete and outstanding == 0,
+            delayed=int(delayed_row["n"]),
         )
 
     def _upstream_complete(

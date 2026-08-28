@@ -68,6 +68,7 @@ class QueueClient(Protocol):
         task_ids: Sequence[str],
         error: str,
         max_attempts: int,
+        retry_backoff: float = 0.0,
     ) -> tuple[int, int]: ...
 
     def finalize_reduce(
@@ -224,6 +225,7 @@ class HttpQueueClient:
         task_ids: Sequence[str],
         error: str,
         max_attempts: int,
+        retry_backoff: float = 0.0,
     ) -> tuple[int, int]:
         data = self._request(
             "POST",
@@ -232,6 +234,7 @@ class HttpQueueClient:
                 "task_ids": list(task_ids),
                 "error": error,
                 "max_attempts": max_attempts,
+                "retry_backoff": retry_backoff,
             },
         )
         return int(data["retried"]), int(data["dead_lettered"])

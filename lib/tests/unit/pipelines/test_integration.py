@@ -5,7 +5,7 @@ import pytest
 from blackfish.pipelines import run_local
 from blackfish.pipelines.backends.local import ThreadBackend
 from blackfish.pipelines.coordinator import Coordinator
-from blackfish.pipelines.example import build_pipeline
+from blackfish.pipelines.examples.word_count import build_pipeline
 from blackfish.pipelines.payload import PayloadStore
 from blackfish.pipelines.spec import Cardinality, JobSpec, Pipeline
 from blackfish.pipelines.store import TaskStore

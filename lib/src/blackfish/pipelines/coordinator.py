@@ -103,10 +103,30 @@ class Coordinator:
         )
         return rid
 
-    def submit(self, run_id: str, job: str, values: Sequence[Any]) -> int:
-        """Add inputs to an unsealed source job of a running pipeline."""
+    def submit(
+        self,
+        run_id: str,
+        job: str,
+        values: Sequence[Any],
+        keys: Sequence[str] | None = None,
+    ) -> int:
+        """Add inputs to an unsealed source job of a running pipeline.
+
+        Args:
+            run_id: The run.
+            job: A source job.
+            values: The inputs.
+            keys: Optional stable identity per value, which makes the
+                submission idempotent within this run. Pass the file path when
+                inputs are files: re-scanning a directory then enqueues only
+                what is new, so a standing run over a growing directory needs
+                no bookkeeping of its own.
+
+        Returns:
+            The number of inputs actually enqueued.
+        """
         refs = [self.payloads.put(value) for value in values]
-        return self.store.submit(run_id, job, refs)
+        return self.store.submit(run_id, job, refs, keys=keys)
 
     def seal(self, run_id: str, job: str) -> None:
         """Declare a source job closed. Required before the run can complete."""

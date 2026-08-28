@@ -57,6 +57,7 @@ class QueueAPI:
                     "failed": job.failed,
                     "seen": job.seen,
                     "sealed": job.sealed,
+                    "delayed": job.delayed,
                     "complete": job.complete,
                 }
                 for job in status.jobs
@@ -109,6 +110,7 @@ class QueueAPI:
             list(data["task_ids"]),
             str(data["error"]),
             int(data["max_attempts"]),
+            float(data.get("retry_backoff", 0.0)),
         )
         return {"retried": retried, "dead_lettered": dead}
 

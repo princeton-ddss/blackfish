@@ -22,9 +22,27 @@ def payloads(tmp_path) -> PayloadStore:
     return PayloadStore(tmp_path)
 
 
+class Clock:
+    """A hand-cranked clock, so retry backoff is testable without sleeping."""
+
+    def __init__(self, now: float = 1000.0) -> None:
+        self.now = now
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
+
+
 @pytest.fixture
-def store() -> TaskStore:
-    with TaskStore(":memory:") as store:
+def clock() -> Clock:
+    return Clock()
+
+
+@pytest.fixture
+def store(clock) -> TaskStore:
+    with TaskStore(":memory:", clock=clock) as store:
         yield store
 
 
@@ -156,21 +174,58 @@ class TestFailureHandling:
         worker.run_once()
         assert store.job_status(run_id, "a").ready == 1
 
-    def test_a_transient_failure_succeeds_on_retry(self, store, payloads):
-        spec = JobSpec(name="a", fn=f"{JOBS}:flaky", max_attempts=3)
+    def test_a_transient_failure_succeeds_on_retry(self, store, payloads, clock):
+        spec = JobSpec(name="a", fn=f"{JOBS}:flaky", max_attempts=3, retry_backoff=5.0)
         sink = JobSpec(name="b", fn=f"{JOBS}:double")
         run_id, worker = make_worker(store, payloads, spec, sink)
         store.submit(run_id, "a", [payloads.put(7)])
+
         worker.run_once()
-        worker.run_once()
+        assert worker.run_once() is False, "retried before its backoff elapsed"
+
+        clock.advance(5.0)
+        assert worker.run_once() is True
         assert store.job_status(run_id, "b").ready == 1
 
-    def test_a_permanently_failing_job_is_dead_lettered(self, store, payloads):
-        spec = JobSpec(name="a", fn=f"{JOBS}:explode", max_attempts=2)
+    def test_a_failed_task_is_held_for_its_backoff(self, store, payloads, clock):
+        """Otherwise a rate-limited job spends its whole budget instantly."""
+        spec = JobSpec(
+            name="a", fn=f"{JOBS}:explode", max_attempts=5, retry_backoff=10.0
+        )
         run_id, worker = make_worker(store, payloads, spec)
         store.submit(run_id, "a", [payloads.put(1)])
-        while worker.run_once():
-            pass
+        worker.run_once()
+
+        status = store.job_status(run_id, "a")
+        assert status.ready == 1, "still outstanding"
+        assert status.delayed == 1, "but not leasable"
+        assert status.backlog == 0, "so the autoscaler sees no work to do"
+
+        clock.advance(10.0)
+        assert store.job_status(run_id, "a").backlog == 1
+
+    def test_the_backoff_doubles_with_each_attempt(self, store, payloads, clock):
+        spec = JobSpec(
+            name="a", fn=f"{JOBS}:explode", max_attempts=5, retry_backoff=1.0
+        )
+        run_id, worker = make_worker(store, payloads, spec)
+        store.submit(run_id, "a", [payloads.put(1)])
+
+        for expected in (1.0, 2.0, 4.0):
+            assert worker.run_once() is True
+            clock.advance(expected - 0.01)
+            assert worker.run_once() is False, f"leasable before {expected}s"
+            clock.advance(0.01)
+
+    def test_a_permanently_failing_job_is_dead_lettered(self, store, payloads, clock):
+        spec = JobSpec(
+            name="a", fn=f"{JOBS}:explode", max_attempts=2, retry_backoff=1.0
+        )
+        run_id, worker = make_worker(store, payloads, spec)
+        store.submit(run_id, "a", [payloads.put(1)])
+        for _ in range(4):
+            worker.run_once()
+            clock.advance(60)
         assert "model went sideways" in store.dead_letters(run_id)[0][2]
 
 

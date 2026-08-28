@@ -11,7 +11,7 @@ import json
 import pytest
 
 from blackfish.pipelines import run_local
-from blackfish.pipelines.example_embed import (
+from blackfish.pipelines.examples.embed import (
     DEFAULT_CHUNK_LINES,
     build_pipeline,
     embed_chunk,

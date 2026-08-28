@@ -246,7 +246,7 @@ def build_pipeline(
         jobs=(
             JobSpec(
                 name="plan",
-                fn="blackfish.pipelines.example_embed:plan_chunks",
+                fn="blackfish.pipelines.examples.embed:plan_chunks",
                 params={"chunk_lines": chunk_lines},
                 cardinality=Cardinality.ONE_TO_MANY,
                 placement=Placement.LOGIN,
@@ -254,8 +254,8 @@ def build_pipeline(
             ),
             JobSpec(
                 name="embed",
-                fn="blackfish.pipelines.example_embed:embed_chunk",
-                setup="blackfish.pipelines.example_embed:load_encoder",
+                fn="blackfish.pipelines.examples.embed:embed_chunk",
+                setup="blackfish.pipelines.examples.embed:load_encoder",
                 params={"shard_dir": shard_dir, "dim": dim},
                 # One task already holds a batch of lines, so a worker takes
                 # one task per call. Raising this batches *chunks*, which only
@@ -267,7 +267,7 @@ def build_pipeline(
             ),
             JobSpec(
                 name="manifest",
-                fn="blackfish.pipelines.example_embed:merge_manifests",
+                fn="blackfish.pipelines.examples.embed:merge_manifests",
                 cardinality=Cardinality.MANY_TO_ONE,
                 batch_size=32,
                 placement=Placement.LOGIN,

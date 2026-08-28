@@ -33,6 +33,9 @@ The pieces, in the order they matter:
 - :mod:`~blackfish.pipelines.coordinator` -- the thing that ties them together.
 - :mod:`~blackfish.pipelines.backends` -- where workers actually run: threads,
   subprocesses, or Ray actors inside Slurm allocations.
+- :mod:`~blackfish.pipelines.examples` -- six worked pipelines, each covering a
+  shape the others do not. They run anywhere and are covered by tests, so they
+  are documentation that cannot quietly go stale.
 """
 
 from __future__ import annotations

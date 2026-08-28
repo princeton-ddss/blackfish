@@ -81,22 +81,22 @@ def build_pipeline(**overrides: Any) -> Any:
         jobs=(
             JobSpec(
                 name="read",
-                fn="blackfish.pipelines.example:split_lines",
+                fn="blackfish.pipelines.examples.word_count:split_lines",
                 cardinality=Cardinality.ONE_TO_MANY,
                 batch_size=2,
                 **common,
             ),
             JobSpec(
                 name="count",
-                fn="blackfish.pipelines.example:count_words",
-                setup="blackfish.pipelines.example:load_stopwords",
+                fn="blackfish.pipelines.examples.word_count:count_words",
+                setup="blackfish.pipelines.examples.word_count:load_stopwords",
                 cardinality=Cardinality.ONE_TO_ONE,
                 batch_size=8,
                 **common,
             ),
             JobSpec(
                 name="merge",
-                fn="blackfish.pipelines.example:merge_counts",
+                fn="blackfish.pipelines.examples.word_count:merge_counts",
                 cardinality=Cardinality.MANY_TO_ONE,
                 batch_size=4,
                 **common,

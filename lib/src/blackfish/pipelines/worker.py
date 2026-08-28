@@ -254,6 +254,7 @@ class Worker:
             task_ids,
             error,
             self.job.max_attempts,
+            self.job.retry_backoff,
         )
         logger.warning(
             "Worker %s: job '%s' batch failed (%s); %d retried, %d dead-lettered",

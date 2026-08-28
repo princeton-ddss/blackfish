@@ -32,6 +32,12 @@ DEFAULT_LEASE_SECONDS = 300
 # The default number of times a task is attempted before it is dead-lettered.
 DEFAULT_MAX_ATTEMPTS = 3
 
+# Base delay before a failed task is retried, doubling per attempt. Non-zero by
+# default: retrying instantly burns a task's whole attempt budget in
+# milliseconds, which gives a transient condition -- a rate limit, a briefly
+# unavailable filesystem -- no chance to clear, and hammers whatever failed.
+DEFAULT_RETRY_BACKOFF = 1.0
+
 
 class Cardinality(StrEnum):
     """How a job's output stream relates to its input stream."""
@@ -127,6 +133,11 @@ class JobSpec:
         resources: Slurm resources for a ``COMPUTE`` job (``cpus``, ``mem``,
             ``gpus``, ``time``, ``partition``, ...). Ignored for ``LOGIN``.
         max_attempts: Attempts before a task is dead-lettered.
+        retry_backoff: Base seconds before a failed task becomes leasable
+            again, doubling per attempt and capped at
+            :data:`~blackfish.pipelines.store.MAX_RETRY_BACKOFF`. Raise it for
+            a job that calls a rate-limited service; ``0`` retries instantly,
+            which is almost never what you want.
         lease_seconds: Visibility timeout for a leased batch. Must exceed the
             wall-clock duration of a single ``fn`` call, or a slow worker's
             tasks will be handed to a second worker while it is still running
@@ -144,6 +155,7 @@ class JobSpec:
     placement: Placement = Placement.COMPUTE
     resources: dict[str, Any] = field(default_factory=dict)
     max_attempts: int = DEFAULT_MAX_ATTEMPTS
+    retry_backoff: float = DEFAULT_RETRY_BACKOFF
     lease_seconds: int = DEFAULT_LEASE_SECONDS
 
     def __post_init__(self) -> None:
@@ -179,6 +191,8 @@ class JobSpec:
             )
         if self.max_attempts < 1:
             raise ValueError(f"Job '{self.name}': max_attempts must be >= 1")
+        if self.retry_backoff < 0:
+            raise ValueError(f"Job '{self.name}': retry_backoff must be >= 0")
         if self.lease_seconds < 1:
             raise ValueError(f"Job '{self.name}': lease_seconds must be >= 1")
 
@@ -311,6 +325,7 @@ class Pipeline:
                     "placement": str(job.placement),
                     "resources": job.resources,
                     "max_attempts": job.max_attempts,
+                    "retry_backoff": job.retry_backoff,
                     "lease_seconds": job.lease_seconds,
                 }
                 for job in self.jobs
@@ -334,6 +349,7 @@ class Pipeline:
                 placement=Placement(job.get("placement", "compute")),
                 resources=job.get("resources") or {},
                 max_attempts=job.get("max_attempts", DEFAULT_MAX_ATTEMPTS),
+                retry_backoff=job.get("retry_backoff", DEFAULT_RETRY_BACKOFF),
                 lease_seconds=job.get("lease_seconds", DEFAULT_LEASE_SECONDS),
             )
             for job in data["jobs"]

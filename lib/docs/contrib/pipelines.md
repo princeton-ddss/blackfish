@@ -153,6 +153,21 @@ to the queue on its next tick. The attempt count survives reclamation, so a task
 that kills its worker every time is eventually dead-lettered instead of
 retrying forever.
 
+A failed batch is held for `retry_backoff * 2 ** (attempts - 1)` seconds, capped
+at five minutes, before it can be leased again. The default is non-zero on
+purpose: retrying instantly spends a task's whole attempt budget in
+milliseconds, which gives a transient condition no chance to clear and hammers
+whatever just failed. Tasks serving a backoff still count as outstanding — a
+job holding one is emphatically not complete — but are excluded from the
+backlog the autoscaler reacts to, so a queue of nothing but waiting retries
+does not hold workers that have nothing to do.
+
+**The batch is the unit of retry.** If the fifth item in a batch of eight
+fails, all eight are retried. For pure work that is wasted time; against a
+metered API it costs quota, and against a non-idempotent write it is a bug. So
+`batch_size` is a throughput knob for cheap-to-repeat work and a *blast radius*
+for everything else.
+
 The one failure a worker genuinely cannot diagnose is a commit whose reply was
 lost: it does not know whether its outputs landed. So it retries, and the store
 makes that safe. Every task ID is a UUIDv5 derived from the run, the job, the
@@ -306,75 +321,110 @@ assessment is a contained piece of work rather than a rewrite.
 
 ## Worked examples
 
-Two, in `blackfish.pipelines`. Both run anywhere — no GPU, no model download —
-because the expensive part is stubbed and everything around it is what real
-code does.
+Six, in `blackfish.pipelines.examples`. Each runs anywhere — no GPU, no model
+download, no scheduler — because the expensive part is stubbed and everything
+around it is what real code does. They are documentation that executes: each is
+covered by tests, so a change to the core that breaks an idiom breaks a build.
 
-### `example.py` — word count
+| Example | Shape | What it is for |
+|---|---|---|
+| `word_count` | `1:N → 1:1 → N:1` | the smallest pipeline using all three cardinalities |
+| `embed` | `plan → embed → manifest` | running a model over one very large file |
+| `resumable` | `1:1`, standing run | a growing directory, surviving a restart |
+| `compare` | diamond | two models of different speeds, joined per document |
+| `transcribe` | three-stage chain | stages exchanging artifacts on disk |
+| `summarize` | `LOGIN → COMPUTE` | cheap IO feeding expensive GPU work |
 
-`read (1:N) → count (1:1) → merge (N:1)`. Small enough to read in one sitting
-and exercises all three cardinalities.
+Each earns its place by teaching something the others do not.
+
+### `word_count` — the three cardinalities
+
+`read (1:N) → count (1:1) → merge (N:1)`, small enough to read in one sitting.
 
 ```python
-import asyncio
 from blackfish.pipelines import run_local
-from blackfish.pipelines.example import build_pipeline
+from blackfish.pipelines.examples.word_count import build_pipeline
 
-documents = ["the quick brown fox\njumps over the lazy dog", ...]
-status, results = asyncio.run(run_local(build_pipeline(max_workers=3), documents))
+status, results = await run_local(build_pipeline(max_workers=3), documents)
 ```
 
-### `example_embed.py` — embed every line of a large file
-
-`plan (1:N) → embed (1:1) → manifest (N:1)`. The shape most "run a model over a
-big pile of data" jobs want, and it teaches four things the naive version gets
-wrong.
+### `embed` — a model over one large file
 
 **A task is a chunk, not a line.** The queue is an index, not an array: every
 task carries a UUID, a state, an attempt counter and timestamps, so one task per
 line spends a few hundred bytes of bookkeeping on a sentence — and the GPU wants
-a batch anyway, so you would be splitting the data apart only to have workers
-glue it back together. The chunk *is* the batch, which is why `embed` runs with
-`batch_size=1`. (Rule of thumb, not measured: under ~100k items, one task each is
-fine and simpler.)
+a batch anyway. The chunk *is* the batch, which is why `embed` runs with
+`batch_size=1`. (Rule of thumb, not measured: under ~100k items, one task each
+is fine and simpler.)
 
 **Chunks are byte ranges found in one pass.** `plan` scans the file once,
-sequentially, recording offsets; workers then `seek()` straight to their range.
-A descriptor saying "skip 4096 lines, take 512" makes every worker re-read from
-the top, which is quadratic.
+recording offsets; workers `seek()` straight to their range. A descriptor saying
+"skip 4096 lines, take 512" makes every worker re-read from the top, which is
+quadratic.
 
-**Output goes to disk; the queue gets a path.** Each chunk writes one shard and
-emits a reference. A few hundred thousand individual vector payloads would be a
-few hundred thousand tiny files, which is an abusive access pattern on a
-parallel filesystem.
+**Output goes to disk; the queue gets a path.** A few hundred thousand
+individual vector payloads would be a few hundred thousand tiny files, which is
+an abusive access pattern on a parallel filesystem.
 
 **Side effects need their own idempotency.** Shards are named by a hash of the
 chunk descriptor, so a redelivered chunk rewrites the same path with the same
-bytes instead of leaving a second, divergent shard. The queue makes its own
-bookkeeping idempotent; what a job writes is the job's to protect —
-`payload.write_atomic` is exported for exactly this.
+bytes. The queue makes its own bookkeeping idempotent; what a job writes is the
+job's to protect — `payload.write_atomic` is exported for exactly this.
 
-It also surfaces two constraints of the tree reduce that shape the types
-upstream:
+### `resumable` — a standing run over a growing directory
 
-- **The fold must be closed over its own output.** A reduce queue holds a mix
-  of upstream outputs and its own partials, so `embed` emits
-  `{"shards": [one], "rows": n}` — a manifest of one shard — rather than a bare
-  shard record.
-- **A commutative fold cannot preserve order.** Partials combine in whatever
-  grouping the workers happen to lease, so each shard records `(source, index)`.
-  `index` alone is not enough once a run covers several files.
+Two kinds of continuity, which are different problems with different answers.
 
-```python
-from blackfish.pipelines.example_embed import build_pipeline
+**Surviving a restart** is free, and deliberately so. Nothing about a run lives
+in the coordinator's memory: reopen the store, tick again. Finished work is not
+redone; work that was in flight comes back through lease expiry. There is no
+checkpoint to write and no resume protocol to get right.
 
-pipeline = build_pipeline(shard_dir="/scratch/embeddings", chunk_lines=512)
-status, results = await run_local(pipeline, ["/scratch/corpus.txt"])
-manifest = results[0]          # {"shards": [...], "rows": 23}
-```
+**Picking up new inputs** is what `keys` is for. Passing each file's path as its
+key makes submission idempotent within the run, so re-scanning the directory
+enqueues only what is new and the pipeline needs no manifest of its own.
 
-Swapping `load_encoder` for one that returns a real `SentenceTransformer` is
-the whole diff between this and production.
+The trade-off: this is idempotent *within a run*. Task IDs are derived from the
+run, so the same key in a new run is new work — which is usually what someone
+means by re-running, but it makes "process this directory forever" one
+long-lived unsealed run rather than a series of runs.
+
+### `compare` — a diamond with asymmetric branches
+
+**Fan-out is a copy, not a split.** Both branches see every document.
+
+**Branches scale independently.** Separate queues, separate worker counts, so
+the slow branch accumulates backlog and gets more workers while the fast one
+drains and releases its own. Nothing coordinates them; it falls out of scaling
+each job on its own queue depth.
+
+**There is no built-in keyed join.** A reduce gives you "everything in one
+place"; matching a document's two scores is something the fold does, keyed on an
+ID both branches carry. If you want a relational join, you build it in the fold
+— and the values must be keyed *before* they arrive, which is why both branches
+emit `{doc_id: {...}}` rather than a bare score.
+
+### `transcribe` — a chain that exchanges artifacts
+
+**Establish an item key at ingestion, then carry it.** Every stage writes under
+`<output_dir>/<key>/`, so an item's outputs are co-located and predictable and a
+retried stage overwrites its own artifact.
+
+**The payload is a record that grows.** A task only ever sees what its immediate
+upstream emitted, so anything a later stage needs must be carried forward. The
+corollary matters on a long chain: a stage that drops a field silently starves
+every stage after it, and nothing in the type system will say so.
+
+### `summarize` — login-node IO feeding GPU work
+
+Two jobs with opposite economics, which is why they are two jobs: many cheap
+`LOGIN` workers waiting on a network service, feeding one expensive `COMPUTE`
+worker per GPU. A single job doing both would have to size for the worse of the
+two, leaving the GPU idle on HTTP.
+
+It is also the example that motivated `retry_backoff`, and the one that shows
+the batch-as-blast-radius rule above with a measurement: with `fail_once`
+enabled, a batch of two costs three fetches for two documents.
 
 ### Running them for real
 
@@ -388,10 +438,11 @@ Stated plainly, because the difference matters:
 
 - **Covered by tests:** DAG validation, cardinality semantics, job params and
   the call convention, queue leases and expiry, at-least-once delivery,
-  idempotent replay, fan-in completion (including a diamond join), the tree
-  reduce and its finalization gate, dead letters, autoscaling policy, the worker
-  loop, the HTTP queue API and its client, and end-to-end runs of both worked
-  examples on both local backends.
+  idempotent replay, retry backoff and its effect on the backlog, fan-in
+  completion (including a diamond join), the tree reduce and its finalization
+  gate, dead letters, autoscaling policy, the worker loop, the HTTP queue API
+  and its client, coordinator restart over a durable store, and end-to-end runs
+  of all six worked examples.
 - **Not run on a cluster:** the Ray actor lifecycle, `sbatch`/`scancel` against
   a real scheduler, Apptainer image bring-up on compute nodes, and the HTTP path
   under real network conditions. The sizing arithmetic and the rendered sbatch
@@ -405,7 +456,7 @@ Stated plainly, because the difference matters:
 
 - **No streaming emit.** A `1:N` job returns all of its outputs from one call,
   and they are inserted in a single transaction. Chunked fan-out keeps that
-  bounded — which is what `example_embed`'s `plan` job does — but a fan-out
+  bounded — which is what the `embed` example's `plan` job does — but a fan-out
   producing millions of outputs from one call would be one enormous
   transaction with the whole list in memory. Another chunking level is the
   workaround; streaming would be the fix.

@@ -5,7 +5,7 @@ apptainer run {{ '--nv' if job_config.gres else '' }} \
   --env PYTHONNOUSERSITE=1 \
   --bind {{ container_config.model_dir }}:/data \
   {{ profile.cache_dir }}/images/{{ image.sif }} \
-  --model /data/snapshots/{{ container_config['revision'] }} \
+  /data/snapshots/{{ container_config['revision'] }} \
   --port $port \
   --revision {{ container_config.revision }} \
   --trust-remote-code \

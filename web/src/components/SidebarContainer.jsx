@@ -38,7 +38,6 @@ SystemMessageInput.propTypes = {
  * @param {string} options.task
  * @param {object} options.defaultContainerOptions
  * @param {string} options.defaultContainerOptions.input_dir
- * @param {boolean} options.defaultContainerOptions.disable_custom_kernels
  * @param {JSX.Element} options.ContainerOptionsFormComponent
  * @param {JSX.Element} options.ParametersFormComponent
  * @param {object} options.parametersFormProps
@@ -83,7 +82,6 @@ SidebarContainer.propTypes = {
   task: PropTypes.string,
   defaultContainerOptions: PropTypes.shape({
     input_dir: PropTypes.string,
-    disable_custom_kernels: PropTypes.bool,
   }),
   ContainerOptionsFormComponent: PropTypes.elementType,
   ParametersFormComponent: PropTypes.elementType,

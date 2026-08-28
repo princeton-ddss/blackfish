@@ -48,8 +48,7 @@ test("SidebarContainer", () => {
       <SidebarContainer
         task="speech-recognition"
         defaultContainerOptions={{
-          input_dir: "",
-          disable_custom_kernels: false
+          input_dir: ""
         }}
         ContainerOptionsFormComponent={
           TextGenerationContainerOptionsForm

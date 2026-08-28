@@ -14,7 +14,7 @@ def test_remote_slurm():
         "scheduler": "slurm",
         "grace_period": 180,
         "mount": "/home/cs7101",
-        "container_options": {"disable_custom_kernels": True, "revision": "latest"},
+        "container_options": {"revision": "latest"},
         "job_options": {
             "ntasks_per_node": 8,
             "mem": "16",
@@ -42,7 +42,7 @@ def test_local_slurm():
         "provider": "apptainer",
         "grace_period": 180,
         "mount": "/home/cs7101",
-        "container_options": {"disable_custom_kernels": True, "revision": "latest"},
+        "container_options": {"revision": "latest"},
         "job_options": {
             "ntasks_per_node": 8,
             "mem": "16",
@@ -66,7 +66,7 @@ def test_local():
         "cache_dir": "/home/cs7101/.blackfish",
         "provider": "docker",
         "grace_period": 180,
-        "container_options": {"disable_custom_kernels": True, "revision": "latest"},
+        "container_options": {"revision": "latest"},
         "job_options": {
             "ntasks_per_node": 8,
             "mem": "16",

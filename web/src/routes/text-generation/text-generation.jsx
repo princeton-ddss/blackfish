@@ -200,7 +200,6 @@ export default function TextGenerationPage() {
 
   const defaultContainerOptions = useMemo(() => {
     return {
-      disable_custom_kernels: false,
       disable_thinking: true,
     };
   }, []);

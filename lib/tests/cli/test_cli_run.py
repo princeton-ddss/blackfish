@@ -8,7 +8,7 @@ This module tests the CLI commands for running inference services:
 import shlex
 import pytest
 import requests
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 from blackfish.cli.__main__ import main
 from blackfish.server.models.profile import LocalProfile, SlurmProfile
 
@@ -99,9 +99,6 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.text_generation.TextGeneration"
-            ) as mock_service_class,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -109,16 +106,15 @@ class TestRunTextGeneration:
             mock_get_latest.return_value = "abc123"
             mock_get_model_dir.return_value = "/path/to/model"
 
-            mock_service = MagicMock()
-            mock_service.image = "text_generation"
-            mock_service.render_job_script.return_value = "#!/bin/bash\necho test"
-            mock_service_class.return_value = mock_service
-
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0, result.exception
         assert "Rendering job script" in result.output
         assert "model: openai/gpt-2" in result.output
         assert "profile: default" in result.output
+        # The script itself, not just the echoed metadata above it.
+        script = result.output.split("> image_ref:")[-1]
+        assert "docker run" in script
 
     def test_dry_run_slurm_profile(self, cli_runner, mock_config, slurm_profile):
         """Test dry run with SlurmProfile renders job script."""
@@ -147,9 +143,6 @@ class TestRunTextGeneration:
             patch(
                 "blackfish.cli.services.text_generation.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.text_generation.TextGeneration"
-            ) as mock_service_class,
         ):
             mock_deserialize.return_value = slurm_profile
             mock_get_models.return_value = ["openai/gpt-2"]
@@ -157,17 +150,16 @@ class TestRunTextGeneration:
             mock_get_latest.return_value = "abc123"
             mock_get_model_dir.return_value = "/path/to/model"
 
-            mock_service = MagicMock()
-            mock_service.scheduler = "slurm"
-            mock_service.render_job_script.return_value = "#!/bin/bash\n#SBATCH"
-            mock_service_class.return_value = mock_service
-
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0, result.exception
         assert "Rendering job script" in result.output
         assert "model: openai/gpt-2" in result.output
         assert "profile: cluster" in result.output
         assert "host: hpc.example.com" in result.output
+        # The script itself, not just the echoed metadata above it.
+        script = result.output.split("> image_ref:")[-1]
+        assert "#SBATCH" in script
 
     def test_success_local_profile(self, cli_runner, mock_config, local_profile):
         """Test successful API call with LocalProfile."""
@@ -627,9 +619,6 @@ class TestRunSpeechRecognition:
             patch(
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.speech_recognition.SpeechRecognition"
-            ) as mock_service_class,
         ):
             mock_deserialize.return_value = local_profile
             mock_get_models.return_value = ["openai/whisper-tiny"]
@@ -637,16 +626,15 @@ class TestRunSpeechRecognition:
             mock_get_latest.return_value = "abc123"
             mock_get_model_dir.return_value = "/path/to/models/whisper-tiny"
 
-            mock_service = MagicMock()
-            mock_service.image = "speech_recognition"
-            mock_service.render_job_script.return_value = "#!/bin/bash\necho test"
-            mock_service_class.return_value = mock_service
-
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0, result.exception
         assert "Rendering job script" in result.output
         assert "model: openai/whisper-tiny" in result.output
         assert "profile: default" in result.output
+        # The script itself, not just the echoed metadata above it.
+        script = result.output.split("> image_ref:")[-1]
+        assert "docker run" in script
 
     def test_dry_run_slurm_profile(self, cli_runner, mock_config, slurm_profile):
         """Test dry run with SlurmProfile renders job script."""
@@ -675,9 +663,6 @@ class TestRunSpeechRecognition:
             patch(
                 "blackfish.cli.services.speech_recognition.get_model_dir"
             ) as mock_get_model_dir,
-            patch(
-                "blackfish.cli.services.speech_recognition.SpeechRecognition"
-            ) as mock_service_class,
         ):
             mock_deserialize.return_value = slurm_profile
             mock_get_models.return_value = ["openai/whisper-tiny"]
@@ -685,17 +670,16 @@ class TestRunSpeechRecognition:
             mock_get_latest.return_value = "abc123"
             mock_get_model_dir.return_value = "/path/to/models/whisper-tiny"
 
-            mock_service = MagicMock()
-            mock_service.scheduler = "slurm"
-            mock_service.render_job_script.return_value = "#!/bin/bash\n#SBATCH"
-            mock_service_class.return_value = mock_service
-
             result = cli_runner.invoke(main, cmd)
 
+        assert result.exit_code == 0, result.exception
         assert "Rendering job script" in result.output
         assert "model: openai/whisper-tiny" in result.output
         assert "profile: cluster" in result.output
         assert "host: hpc.example.com" in result.output
+        # The script itself, not just the echoed metadata above it.
+        script = result.output.split("> image_ref:")[-1]
+        assert "#SBATCH" in script
 
     def test_success_local_profile(self, cli_runner, mock_config, local_profile):
         """Test successful API call with LocalProfile."""

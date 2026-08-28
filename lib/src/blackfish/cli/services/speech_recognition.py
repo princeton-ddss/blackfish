@@ -209,6 +209,7 @@ def run_speech_recognition(
 
         if dry_run:
             service = SpeechRecognition(
+                id=uuid4(),
                 name=name,
                 model=repo_id,
                 profile=profile.name,

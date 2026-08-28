@@ -1,13 +1,16 @@
 """Discover which container images are actually staged on a profile.
 
 Images are staged out of band by administrators (``apptainer pull`` into
-``{cache_dir}/images/``). ``config.IMAGES`` records only the *pinned* spec per
-service, so it cannot answer "which versions could this profile run?" — that is
-what this module is for.
+``{cache_dir}/images/`` for Apptainer, or ``docker pull`` into the local Docker
+daemon). ``config.IMAGES`` records only the *pinned* spec per service, so it
+cannot answer "which versions could this profile run?" — that is what this
+module is for.
 
-The repo always comes from configuration and only the tag from the filename:
-``ImageSpec.sif`` drops the registry prefix (``<host>/<org>/<name>:<tag>`` ->
-``<name>_<tag>.sif``), so a filename alone cannot identify a repo.
+The repo always comes from configuration and only the tag from what is on the
+host: ``ImageSpec.sif`` drops the registry prefix (``<host>/<org>/<name>:<tag>``
+-> ``<name>_<tag>.sif``), so an Apptainer filename alone cannot identify a
+repo. For Docker, ``docker image ls`` reports the fully qualified repo, so
+matching is exact.
 """
 
 from __future__ import annotations
@@ -18,6 +21,7 @@ from typing import TYPE_CHECKING
 
 from packaging.version import InvalidVersion, Version
 
+from blackfish.server.config import ContainerProvider
 from blackfish.server.jobs.client import LocalRunner, SSHRunner
 
 if TYPE_CHECKING:
@@ -96,22 +100,64 @@ async def _list_sif_files(profile: "BlackfishProfile") -> list[str]:
     ]
 
 
+async def _list_docker_refs(profile: "BlackfishProfile") -> list[str]:
+    """List ``repo:tag`` refs of images present in the local Docker daemon.
+
+    ``docker image ls`` reports ``<none>`` for untagged images and can surface
+    ``<none>:<none>`` rows; those are filtered out because they cannot be
+    matched against a configured repo. A missing docker binary or daemon is
+    treated the same as a fresh profile: no images, no error.
+    """
+    command = "docker image ls --format '{{.Repository}}:{{.Tag}}' 2>/dev/null || true"
+
+    runner = _runner_for(profile)
+    _, stdout, _ = await runner.run(command)
+    return [
+        line.strip()
+        for line in stdout.decode("utf-8").splitlines()
+        if line.strip() and "<none>" not in line
+    ]
+
+
+def extract_docker_tag(ref: str, spec: "ImageSpec") -> str | None:
+    """Return the tag in ``ref`` (``repo:tag``) for ``spec``, or None."""
+    if ":" not in ref:
+        return None
+    repo, tag = ref.rsplit(":", 1)
+    if repo != spec.repo or not tag:
+        return None
+    return tag
+
+
 async def list_staged_tags(
-    profile: "BlackfishProfile", images: dict[str, "ImageSpec"]
+    profile: "BlackfishProfile",
+    images: dict[str, "ImageSpec"],
+    provider: ContainerProvider | None = None,
 ) -> dict[str, list[str]]:
     """Map each configured service to the tags staged on ``profile``.
 
     Every service in ``images`` appears in the result, with an empty list when
-    nothing is staged for it. Staged files matching no configured service (for
+    nothing is staged for it. Staged images matching no configured service (for
     example a deprecated image left on disk) are ignored — without a repo there
     is nothing launchable to attach them to.
+
+    ``provider`` selects the discovery backend. Docker inspects the local
+    daemon; anything else falls back to the Apptainer SIF layout, which is the
+    only sensible default for Slurm profiles.
 
     Raises:
         TigerFlowError: the profile could not be reached.
     """
-    filenames = await _list_sif_files(profile)
+    if provider == ContainerProvider.Docker:
+        refs = await _list_docker_refs(profile)
+        staged: dict[str, list[str]] = {}
+        for service, spec in images.items():
+            tags = [t for r in refs if (t := extract_docker_tag(r, spec)) is not None]
+            staged[service] = sort_tags(tags)
+        return staged
 
-    staged: dict[str, list[str]] = {}
+    filenames = await _list_sif_files(profile)
+    staged = {}
     for service, spec in images.items():
         tags = [t for f in filenames if (t := extract_tag(f, spec)) is not None]
         staged[service] = sort_tags(tags)

@@ -254,6 +254,7 @@ def run_text_generation(
 
         if dry_run:
             service = TextGeneration(
+                id=uuid4(),
                 name=name,
                 model=repo_id,
                 profile=profile.name,

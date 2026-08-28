@@ -207,3 +207,90 @@ describe("JobsContainer stop and delete outcomes", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("JobsTable pagination", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // 50 jobs per page. Descending created_at, so sorted order matches index.
+  function makeJobs(n) {
+    return Array.from({ length: n }, (_, i) => ({
+      ...STOPPED_JOB,
+      id: `job-${i}`,
+      name: `Job ${i}`,
+      created_at: new Date(Date.UTC(2024, 0, 1) - i * 60000).toISOString(),
+    }));
+  }
+
+  function setJobs(jobs) {
+    useJobs.mockReturnValue({
+      jobs,
+      error: null,
+      isLoading: false,
+      isRefreshing: false,
+      mutate,
+    });
+    useJobResults.mockReturnValue({
+      results: [],
+      error: null,
+      isLoading: false,
+      isRefreshing: false,
+      mutate: vi.fn(),
+    });
+  }
+
+  function renderJobs(jobs) {
+    setJobs(jobs);
+    return render(
+      <ProfileContext.Provider value={{ profile: { name: "adroit", schema: "slurm" } }}>
+        <JobsContainer />
+      </ProfileContext.Provider>,
+    );
+  }
+
+  test("clamps to a valid page when a refresh drops the last page", async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderJobs(makeJobs(150)); // 3 pages
+
+    await user.click(screen.getByRole("button", { name: "3" }));
+    expect(screen.getByText("Job 100")).toBeInTheDocument();
+
+    // A refresh that drops rows shrinks the list to 2 pages.
+    setJobs(makeJobs(100));
+    rerender(
+      <ProfileContext.Provider value={{ profile: { name: "adroit", schema: "slurm" } }}>
+        <JobsContainer />
+      </ProfileContext.Provider>,
+    );
+
+    await waitFor(() => expect(screen.getByText("Job 50")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "3" })).not.toBeInTheDocument();
+  });
+
+  test("stays put when the job list grows back", async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderJobs(makeJobs(150));
+
+    await user.click(screen.getByRole("button", { name: "3" }));
+
+    setJobs(makeJobs(100));
+    rerender(
+      <ProfileContext.Provider value={{ profile: { name: "adroit", schema: "slurm" } }}>
+        <JobsContainer />
+      </ProfileContext.Provider>,
+    );
+    await waitFor(() => expect(screen.getByText("Job 50")).toBeInTheDocument());
+
+    // New jobs arriving must not pull the user forward to the stale page 3.
+    setJobs(makeJobs(150));
+    rerender(
+      <ProfileContext.Provider value={{ profile: { name: "adroit", schema: "slurm" } }}>
+        <JobsContainer />
+      </ProfileContext.Provider>,
+    );
+
+    await waitFor(() => expect(screen.getByText("Job 50")).toBeInTheDocument());
+    expect(screen.queryByText("Job 100")).not.toBeInTheDocument();
+  });
+});

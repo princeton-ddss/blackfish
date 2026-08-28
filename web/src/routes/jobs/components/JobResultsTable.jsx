@@ -87,10 +87,14 @@ function JobResultsTable({
         defaultSort: { key: "started_at", dir: "desc" },
     });
 
-    // Filtering can shrink the list under the current page; clamp to page 1
-    // whenever the query changes rather than stranding the user on an empty page.
+    // Filtering (or a refresh that drops rows) can shrink the list under the
+    // current page; clamp to a valid page. Adjust the state too, so the view
+    // doesn't jump back to the stale page once the list grows again.
     const pageCount = Math.max(1, Math.ceil(visibleResults.length / resultsPerPage));
     const page = Math.min(currentPage, pageCount);
+    if (currentPage > pageCount) {
+        setCurrentPage(pageCount);
+    }
     const indexOfLastResult = page * resultsPerPage;
     const indexOfFirstResult = indexOfLastResult - resultsPerPage;
 

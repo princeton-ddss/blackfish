@@ -75,9 +75,6 @@ function FileManagerTable({
         setCurrentPage(1);
     }, [path, query]);
 
-    const indexOfLastFile = currentPage * filesPerPage;
-    const indexOfFirstFile = indexOfLastFile - filesPerPage;
-
     const filteredContent = query === ""
         ? content
         : content?.filter((item) => item.name.toLowerCase().includes(query.toLowerCase()));
@@ -87,6 +84,19 @@ function FileManagerTable({
         if (!a.is_dir && b.is_dir) return 1;
         return new Date(b.modified_at) - new Date(a.modified_at);
     }) : [];
+
+    // Content can shrink under the current page without `path` or `query`
+    // changing (deleting the last rows on a page, for instance). Clamping only
+    // the derived page would leave `currentPage` out of range and the view
+    // would jump back the moment the list grew again, so adjust the state
+    // itself during render.
+    const pageCount = Math.max(1, Math.ceil(sortedContent.length / filesPerPage));
+    const page = Math.min(currentPage, pageCount);
+    if (currentPage > pageCount) {
+        setCurrentPage(pageCount);
+    }
+    const indexOfLastFile = page * filesPerPage;
+    const indexOfFirstFile = indexOfLastFile - filesPerPage;
 
     const currentFiles = showPagination
         ? sortedContent.slice(indexOfFirstFile, indexOfLastFile)
@@ -348,7 +358,7 @@ function FileManagerTable({
                     <Pagination
                         filesPerPage={filesPerPage}
                         totalFiles={sortedContent.length}
-                        currentPage={currentPage}
+                        currentPage={page}
                         setCurrentPage={setCurrentPage}
                         disabled={isDisabled}
                     />

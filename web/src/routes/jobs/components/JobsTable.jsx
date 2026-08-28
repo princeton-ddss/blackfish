@@ -155,9 +155,14 @@ function JobsTable({ jobs, onJobClick, onJobDrillIn, selectedJob, isLoading = fa
         defaultSort: { key: "created_at", dir: "desc" },
     });
 
-    // Filtering can shrink the list under the current page; clamp to a valid page.
+    // Filtering (or a refresh that drops rows) can shrink the list under the
+    // current page; clamp to a valid page. Adjust the state too, so the view
+    // doesn't jump back to the stale page once the list grows again.
     const pageCount = Math.max(1, Math.ceil(visibleJobs.length / jobsPerPage));
     const page = Math.min(currentPage, pageCount);
+    if (currentPage > pageCount) {
+        setCurrentPage(pageCount);
+    }
     const indexOfLastJob = page * jobsPerPage;
     const indexOfFirstJob = indexOfLastJob - jobsPerPage;
 

@@ -318,7 +318,16 @@ function AudioFileBrowser({ root, setAudioPath, status, children }) {
       ? files
       : files?.filter((item) => item.name.toLowerCase().includes(query.toLowerCase()));
   const totalFiles = filteredContent ? filteredContent.length : 0;
-  const indexOfLastFile = currentPage * FILES_PER_PAGE;
+  // The file list can shrink under the current page without `path` or `query`
+  // changing. Clamping only the derived page would leave `currentPage` out of
+  // range and the view would jump back the moment the list grew again, so
+  // adjust the state itself during render.
+  const pageCount = Math.max(1, Math.ceil(totalFiles / FILES_PER_PAGE));
+  const page = Math.min(currentPage, pageCount);
+  if (currentPage > pageCount) {
+    setCurrentPage(pageCount);
+  }
+  const indexOfLastFile = page * FILES_PER_PAGE;
   const currentFiles = filteredContent
     ? filteredContent.slice(indexOfLastFile - FILES_PER_PAGE, indexOfLastFile)
     : [];
@@ -369,7 +378,7 @@ function AudioFileBrowser({ root, setAudioPath, status, children }) {
         <Pagination
           filesPerPage={FILES_PER_PAGE}
           totalFiles={totalFiles}
-          currentPage={currentPage}
+          currentPage={page}
           setCurrentPage={setCurrentPage}
           disabled={status.disabled}
         />

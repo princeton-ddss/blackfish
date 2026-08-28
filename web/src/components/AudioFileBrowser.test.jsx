@@ -502,6 +502,53 @@ test("resets to the first page when the filter changes", async () => {
   expect(queryByText("3")).not.toBeInTheDocument();
 });
 
+test("falls back to a valid page when the file list shrinks in place", async () => {
+  mockFiles(50); // 3 pages
+  const user = userEvent.setup();
+  const { getByText, queryByText, rerender } = await act(async () =>
+    render(<AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }} />)
+  );
+  // Go to page 3.
+  await act(async () => {
+    await user.click(getByText("3"));
+  });
+  expect(getByText("file 40")).toBeInTheDocument();
+
+  // The list shrinking without `path` or `query` changing doesn't fire the
+  // reset effect, so the page has to be clamped at render instead.
+  mockFiles(40); // 2 pages
+  await act(async () => {
+    rerender(<AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }} />);
+  });
+
+  expect(getByText("file 20")).toBeInTheDocument();
+  expect(queryByText("3")).not.toBeInTheDocument();
+});
+
+test("does not jump back to a stale page when the file list grows again", async () => {
+  mockFiles(50); // 3 pages
+  const user = userEvent.setup();
+  const { getByText, rerender } = await act(async () =>
+    render(<AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }} />)
+  );
+  await act(async () => {
+    await user.click(getByText("3"));
+  });
+
+  mockFiles(40); // 2 pages -> clamped to page 2
+  await act(async () => {
+    rerender(<AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }} />);
+  });
+  expect(getByText("file 20")).toBeInTheDocument();
+
+  // The list growing back must not pull the user forward to the stale page.
+  mockFiles(50);
+  await act(async () => {
+    rerender(<AudioFileBrowser root="/" setAudioPath={(e) => e} status={{ disabled: false }} />);
+  });
+  expect(getByText("file 20")).toBeInTheDocument();
+});
+
 afterAll(() => {
   global.Date = originalDate;
 });

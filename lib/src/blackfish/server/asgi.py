@@ -94,7 +94,7 @@ from blackfish.server.jobs.base import (
 from blackfish.server.jobs.tasks import (
     get_default_output_ext,
 )
-from blackfish.server.config import config as blackfish_config
+from blackfish.server.config import ContainerProvider, config as blackfish_config
 from blackfish.server.utils import find_port
 from blackfish.server.models.profile import (
     deserialize_profiles,
@@ -1070,11 +1070,18 @@ async def list_containers(profile: str) -> list[StagedContainer]:
     if resolved is None:
         raise NotFoundException(detail=f"Profile '{profile}' not found.")
 
+    # CONTAINER_PROVIDER reflects what is installed on the server host, which
+    # is only relevant for local profiles. Slurm clusters run Apptainer — the
+    # server's own Docker install (common on dev boxes) must not misroute the
+    # probe into `docker image ls` over SSH on a login node.
+    provider = (
+        ContainerProvider.Apptainer
+        if isinstance(resolved, SlurmProfile)
+        else blackfish_config.CONTAINER_PROVIDER
+    )
     try:
         staged = await list_staged_tags(
-            resolved,
-            blackfish_config.IMAGES,
-            provider=blackfish_config.CONTAINER_PROVIDER,
+            resolved, blackfish_config.IMAGES, provider=provider
         )
     except TigerFlowError as e:
         logger.warning(f"Failed to list containers for {profile}: {e.error_type}")

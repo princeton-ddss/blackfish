@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pytest
 from litestar.testing import AsyncTestClient
 
+from blackfish.server.config import ContainerProvider
 from blackfish.server.images import ImageSpec
 from blackfish.server.jobs.client import TigerFlowError
 
@@ -100,6 +101,55 @@ class TestListContainersAPI:
 
         assert response.status_code == 200
         assert all(row["tags"] == [] for row in response.json())
+
+    async def test_slurm_profile_forces_apptainer_provider(
+        self, client: AsyncTestClient
+    ) -> None:
+        """CONTAINER_PROVIDER reflects the server host, not the target. A
+        Slurm profile must not send `docker image ls` over SSH to a login
+        node, even when the server itself has Docker installed."""
+        seen: dict[str, ContainerProvider | None] = {}
+
+        async def _spy(profile, images, provider=None):
+            seen["provider"] = provider
+            return {"text_generation": [], "tigerflow_ml": []}
+
+        with (
+            patch("blackfish.server.asgi.blackfish_config.IMAGES", IMAGES),
+            patch(
+                "blackfish.server.asgi.blackfish_config.CONTAINER_PROVIDER",
+                ContainerProvider.Docker,
+            ),
+            patch("blackfish.server.asgi.list_staged_tags", new=_spy),
+        ):
+            response = await client.get("/api/containers?profile=hpc")
+
+        assert response.status_code == 200
+        assert seen["provider"] == ContainerProvider.Apptainer
+
+    async def test_local_profile_uses_configured_container_provider(
+        self, client: AsyncTestClient
+    ) -> None:
+        """The server's CONTAINER_PROVIDER only applies to local profiles,
+        which run on the same host."""
+        seen: dict[str, ContainerProvider | None] = {}
+
+        async def _spy(profile, images, provider=None):
+            seen["provider"] = provider
+            return {"text_generation": [], "tigerflow_ml": []}
+
+        with (
+            patch("blackfish.server.asgi.blackfish_config.IMAGES", IMAGES),
+            patch(
+                "blackfish.server.asgi.blackfish_config.CONTAINER_PROVIDER",
+                ContainerProvider.Docker,
+            ),
+            patch("blackfish.server.asgi.list_staged_tags", new=_spy),
+        ):
+            response = await client.get("/api/containers?profile=default")
+
+        assert response.status_code == 200
+        assert seen["provider"] == ContainerProvider.Docker
 
     async def test_unreachable_profile_returns_a_friendly_500(
         self, client: AsyncTestClient

@@ -50,6 +50,7 @@ nav:
   - 'Contributing':
     - Guidelines: 'contrib/guidelines.md'
     - 'Developer Guide': 'contrib/developer_guide.md'
+    - 'Pipelines (prototype)': 'contrib/pipelines.md'
   - 'API Reference':
     - 'Core': 'api/core.md'
     - 'Services': 'api/services.md'

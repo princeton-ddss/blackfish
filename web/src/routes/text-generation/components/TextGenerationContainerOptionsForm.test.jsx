@@ -4,7 +4,6 @@ import { describe, it, expect, vi } from "vitest";
 import TextGenerationContainerOptionsForm from "./TextGenerationContainerOptionsForm";
 
 const defaultOptions = {
-  disable_custom_kernels: false,
   disable_thinking: true,
 };
 
@@ -37,7 +36,6 @@ describe("TextGenerationContainerOptionsForm", () => {
     expect(queryByText("Disable Thinking")).not.toBeInTheDocument();
     await user.click(getByText("Deployment Options"));
     expect(checkboxFor(container, "Disable Thinking")).toBeInTheDocument();
-    expect(checkboxFor(container, "Disable Custom Kernels")).toBeInTheDocument();
   });
 
   it("renders Disable Thinking checked when disable_thinking is true", async () => {

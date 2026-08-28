@@ -1090,7 +1090,11 @@ async def list_containers(profile: str) -> list[StagedContainer]:
         raise NotFoundException(detail=f"Profile '{profile}' not found.")
 
     try:
-        staged = await list_staged_tags(resolved, blackfish_config.IMAGES)
+        staged = await list_staged_tags(
+            resolved,
+            blackfish_config.IMAGES,
+            provider=blackfish_config.CONTAINER_PROVIDER,
+        )
     except TigerFlowError as e:
         logger.warning(f"Failed to list containers for {profile}: {e.error_type}")
         raise InternalServerException(detail=e.user_message())

@@ -305,7 +305,7 @@ class Blackfish:
             mount: Optional directory to mount
             grace_period: Time in seconds to wait before marking unhealthy
             image_ref: Pin the container image as "repo:tag" (e.g.
-                "vllm/vllm-openai:v0.20.0"). None uses the configured image,
+                "vllm/vllm-openai:v0.26.0"). None uses the configured image,
                 which is then recorded on the service so restarts reuse it.
             auto_cleanup: If True, automatically stop and delete this service when the
                 Python script exits (default: True)

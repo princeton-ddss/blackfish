@@ -405,7 +405,7 @@ def start(reload: bool | None) -> None:  # pragma: no cover
     type=str,
     default=None,
     help=(
-        "Pin the container image, e.g. 'vllm/vllm-openai:v0.20.0'. Defaults to"
+        "Pin the container image, e.g. 'vllm/vllm-openai:v0.26.0'. Defaults to"
         " the configured image. See `blackfish ls` for the version in use."
     ),
 )

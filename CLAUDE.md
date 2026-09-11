@@ -74,7 +74,16 @@ Work is tracked in GitHub Projects (Kanban boards). Run `/project-setup` to add 
 
 ### When creating issues
 
-1. Create the issue: `gh issue create --title "..." --body "..."`
+1. Write the body following `.github/ISSUE_TEMPLATE/work_item.md` — Summary, then
+   only the sections that apply (Root cause, Scope, Tests, Out of scope, Related).
+   Open with "Part of #N" when it belongs to a larger effort. Then create it:
+   ```bash
+   gh issue create --title "..." --body "..." --label "<type>[,<area>...]"
+   ```
+   Type label is required: `bug`, `enhancement`, `documentation`, or `refactor`.
+   Add area labels when they apply: `frontend`, `cli`, `tests`, `infra`.
+   (`gh issue create` does not apply issue templates — they only populate the
+   web "New issue" form.)
 2. Ask user: "Ready to implement or Backlog?"
 3. Read `.claude/projects.json` and ask user which project to use (if multiple)
 4. Add to project and set status:
@@ -83,7 +92,7 @@ Work is tracked in GitHub Projects (Kanban boards). Run `/project-setup` to add 
    gh project item-add <project_number> --owner <owner> --url <issue-url>
 
    # Get item ID
-   ITEM_ID=$(gh project item-list <project_number> --owner <owner> --format json | jq -r '.items[] | select(.content.url == "<issue-url>") | .id')
+   ITEM_ID=$(gh project item-list <project_number> --owner <owner> --limit 500 --format json | jq -r '.items[] | select(.content.url == "<issue-url>") | .id')
 
    # Set status (use IDs from .claude/project.json)
    gh project item-edit --id "$ITEM_ID" --project-id "<project_id>" --field-id "<status.id>" --single-select-option-id "<status.options[status]>"

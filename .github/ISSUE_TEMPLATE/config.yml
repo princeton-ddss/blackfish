@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or usage help
+    url: https://github.com/princeton-ddss/blackfish/discussions
+    about: Not sure it's a bug? Ask here — setup, cluster profiles, and model support.
+  - name: Documentation
+    url: https://princeton-ddss.github.io/blackfish/
+    about: Installation, CLI reference, and the Python API.

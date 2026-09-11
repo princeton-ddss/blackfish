@@ -20,7 +20,7 @@ assignees: ''
 - Install: <!-- pip / uv / from source -->
 - Profile type: <!-- local or slurm -->
 - Cluster (if slurm): <!-- e.g. Della -->
-- Python / browser, if relevant:
+- Python / browser, if relevant: <!-- Python version; browser + version for web UI issues -->
 
 ## Logs and output
 

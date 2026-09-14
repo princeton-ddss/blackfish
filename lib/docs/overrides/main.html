@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {#- Open Graph / Twitter tags. The theme emits a description but no social
+      metadata, so links shared elsewhere render without a title or preview. -#}
+  {% set title = config.site_name if not page or not page.title or page.url in ("", "/", "index.html") else page.title ~ " - " ~ config.site_name %}
+  {% set description = page.meta.description if page and page.meta and page.meta.description else config.site_description %}
+  {% set image = config.site_url ~ "/assets/img/logo.png" %}
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ description }}">
+  <meta property="og:image" content="{{ image }}">
+  <meta property="og:url" content="{{ page.canonical_url if page and page.canonical_url else config.site_url }}">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{ title }}">
+  <meta name="twitter:description" content="{{ description }}">
+  <meta name="twitter:image" content="{{ image }}">
+{% endblock %}

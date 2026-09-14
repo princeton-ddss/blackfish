@@ -1,6 +1,8 @@
 [project]
 site_name = "Blackfish AI"
 site_url = "https://princeton-ddss.github.io/blackfish"
+site_description = "Blackfish AI turns your HPC cluster into a private AI inference API. Run open source text generation and speech recognition models on the research computing resources your university already has."
+site_author = "Colin Swaney and The Trustees of Princeton University"
 repo_url = "https://github.com/princeton-ddss/blackfish"
 copyright = "Copyright &copy; 2024 Colin Swaney and The Trustees of Princeton University"
 

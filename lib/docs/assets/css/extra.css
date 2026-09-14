@@ -44,17 +44,17 @@
 
 /* The orca mark is near-black, so it needs separating from the header in both
  * themes, as the UI does (web/src/components/Navbar.jsx). Tinted to the accent
- * rather than the UI's white so it reads as brand color. A glow only registers
- * when it is lighter than the backdrop, so light mode uses a darker, tighter
- * one than dark mode. */
+ * rather than the UI's white so it reads as brand color. Both themes share a
+ * bright core and a wide falloff; light mode uses a darker blue at lower
+ * opacity, since a glow reads more strongly against white than near-black. */
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
-  filter: drop-shadow(0 0 8px rgba(37, 99, 235, .5));
+  filter: drop-shadow(0 0 6px rgba(37, 99, 235, .7)) drop-shadow(0 0 22px rgba(37, 99, 235, .35));
 }
 
 [data-md-color-scheme="slate"] .md-header__button.md-logo img,
 [data-md-color-scheme="slate"] .md-header__button.md-logo svg {
-  filter: drop-shadow(0 0 11px rgba(96, 165, 250, .7));
+  filter: drop-shadow(0 0 6px rgba(96, 165, 250, .9)) drop-shadow(0 0 22px rgba(96, 165, 250, .45));
 }
 
 /* Match the bolder site title Zensical's own header uses. The orca mark is

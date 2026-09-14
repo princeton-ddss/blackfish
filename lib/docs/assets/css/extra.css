@@ -74,15 +74,6 @@
   color: var(--md-default-fg-color);
 }
 
-/* Header logo, sized for the orca mark. */
-.md-header__button.md-logo img,
-.md-header__button.md-logo svg {
-  fill: currentcolor;
-  display: block;
-  height: 2.0rem;
-  width: auto;
-}
-
 /* The orca mark is near-black and sinks into the dark header, so lift it off
  * the background with the same halo the UI uses (web/src/components/Navbar.jsx). */
 [data-md-color-scheme="slate"] .md-header__button.md-logo img,
@@ -90,12 +81,9 @@
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, .6));
 }
 
-[dir="ltr"] .md-header__title {
-  margin-left: .5rem;
-}
-
+/* Match the bolder site title Zensical's own header uses. */
 .md-header__topic span {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Center standalone figures. */

@@ -79,14 +79,16 @@
  * flex-grow:1 the text column then stretches by the sidebar's 12.1rem. Keep
  * the column reserved so a page without a TOC lines up with every other page. */
 @media screen and (min-width: 76.25em) {
-  .md-sidebar--secondary[hidden] {
+  /* ...except on the hero page, which hides both sidebars and should centre
+   * on the viewport rather than align to the text column. */
+  .md-container:not(:has(.bf-hero)) .md-sidebar--secondary[hidden] {
     display: block !important;
     visibility: hidden;
   }
 
   /* The theme's spacing rules are all scoped to :not([hidden]), so restore the
    * gutter the reserved column would otherwise lose. */
-  [dir="ltr"] .md-sidebar--secondary[hidden] ~ .md-content > .md-content__inner {
+  [dir="ltr"] .md-container:not(:has(.bf-hero)) .md-sidebar--secondary[hidden] ~ .md-content > .md-content__inner {
     margin-left: 1.2rem;
     margin-right: 1.2rem;
   }

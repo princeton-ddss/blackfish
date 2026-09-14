@@ -89,9 +89,15 @@
   filter: drop-shadow(0 0 11px rgba(96, 165, 250, .7));
 }
 
-/* Match the bolder site title Zensical's own header uses. */
+/* Match the bolder site title Zensical's own header uses. The orca mark is
+ * wider than Zensical's square logo and its halo bleeds into the default gap,
+ * so give the title a little more room. */
 .md-header__topic span {
   font-weight: 700;
+}
+
+[dir="ltr"] .md-header__title {
+  margin-left: 1rem;
 }
 
 /* Center standalone figures. */

@@ -1,12 +1,18 @@
 ---
 hide:
   - navigation
+  - toc
 ---
 
-# Blackfish AI
+<div class="bf-hero" markdown>
 
-Open source "ML-as-a-Service" (MLaaS) for researchers — run state-of-the-art AI
-models on the HPC resources your university already has.
+<div class="bf-hero__prompt" data-typewriter data-words='["Summarize 10,000 interview transcripts.","Transcribe a year of field recordings.","Classify 50,000 survey responses.","Run Llama 3.3 on your own cluster."]'><span class="tw-text"></span><span class="tw-cursor" aria-hidden="true">|</span></div>
 
-[What is Blackfish AI?](about/index.md){ .md-button .md-button--primary }
+# AI infrastructure for High-Performance Computing
+
+Blackfish AI turns your HPC cluster into a private AI inference API.
+
+[Learn more](about/index.md){ .md-button .md-button--primary }
 [Get started](setup/installation.md){ .md-button }
+
+</div>

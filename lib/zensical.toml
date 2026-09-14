@@ -35,6 +35,7 @@ nav = [
 ]
 
 extra_css = ["assets/css/extra.css"]
+extra_javascript = ["assets/js/typewriter.js"]
 
 [project.theme]
 variant = "modern"

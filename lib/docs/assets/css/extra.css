@@ -27,6 +27,8 @@
   --md-primary-fg-color: #3b82f6;         /* blue-500  */
   --md-accent-fg-color: #60a5fa;          /* blue-400, UI dark-mode accent */
   --md-accent-fg-color--transparent: #60a5fa1a;
+  --md-primary-fg-color--light: #3b82f6;  /* blue-500 */
+  --md-primary-fg-color--dark: #2563eb;   /* blue-600 */
   --md-typeset-a-color: #60a5fa;          /* blue-400  */
 }
 
@@ -109,6 +111,138 @@
 .md-typeset .grid.cards > ol > li > p:first-child > .twemoji,
 .md-typeset .grid > .card > p:first-child > .twemoji {
   color: var(--md-accent-fg-color);
+}
+
+/* The hero only exists on the home page, so it doubles as the page hook:
+ * drop the footer there and wash the page in a soft accent gradient. */
+.md-container:has(.bf-hero) > .md-footer {
+  display: none;
+}
+
+body:has(.bf-hero) .md-main {
+  background:
+    radial-gradient(60rem 30rem at 50% -12%, var(--md-accent-fg-color--transparent), transparent 70%),
+    var(--md-default-bg-color);
+}
+
+/* Home hero. The typed prompt mirrors the dashboard's monospace hero
+ * (web/src/routes/dashboard/dashboard.jsx). */
+.md-typeset .bf-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4rem 0 3rem;
+}
+
+.md-typeset .bf-hero__prompt {
+  font-family: var(--md-code-font-family, monospace);
+  font-size: .8rem;
+  color: var(--md-default-fg-color--light);
+  margin-bottom: 2.5rem;
+  min-height: 1.6em;
+}
+
+.md-typeset .bf-hero__prompt .tw-cursor {
+  animation: bf-blink 1s step-end infinite;
+  color: var(--md-accent-fg-color);
+  font-weight: 400;
+}
+
+@keyframes bf-blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .bf-hero__prompt .tw-cursor {
+    animation: none;
+  }
+}
+
+.md-typeset .bf-hero h1 {
+  font-size: 1.9rem;
+  line-height: 1.25;
+  margin: 0 0 .6rem;
+  max-width: 20em;
+}
+
+.md-typeset .bf-hero > p {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--md-default-fg-color--light);
+  max-width: 36em;
+  margin: 0 0 2.2rem;
+}
+
+.md-typeset .bf-hero > p:last-child {
+  font-size: .8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+.md-typeset .bf-hero .md-button {
+  margin: 0;
+  border: none;
+  transition: filter .2s, box-shadow .2s, transform .2s;
+}
+
+/* Primary: accent gradient, lighter at the top-left. */
+.md-typeset .bf-hero .md-button--primary {
+  background: linear-gradient(135deg, var(--md-primary-fg-color--light), var(--md-primary-fg-color--dark));
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 4px 12px var(--md-accent-fg-color--transparent);
+}
+
+/* Secondary: a neutral wash so the pair reads as a set. */
+.md-typeset .bf-hero .md-button:not(.md-button--primary) {
+  background: linear-gradient(135deg,
+    var(--md-default-fg-color--lightest),
+    var(--md-default-bg-color--lightest));
+  color: var(--md-default-fg-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+.md-typeset .bf-hero .md-button:hover,
+.md-typeset .bf-hero .md-button:focus-visible {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+.md-typeset .bf-hero .md-button:not(.md-button--primary):hover,
+.md-typeset .bf-hero .md-button:not(.md-button--primary):focus-visible {
+  color: var(--md-default-fg-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .bf-hero .md-button {
+    transition: none;
+  }
+  .md-typeset .bf-hero .md-button:hover,
+  .md-typeset .bf-hero .md-button:focus-visible {
+    transform: none;
+  }
+}
+
+/* The hero is set for desktop; scale it down on narrow screens and keep the
+ * typed prompt inside a gutter so it never runs to the edge. */
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .bf-hero {
+    padding: 2.5rem .8rem 2rem;
+  }
+
+  .md-typeset .bf-hero h1 {
+    font-size: 1.45rem;
+  }
+
+  .md-typeset .bf-hero__prompt {
+    font-size: .68rem;
+    margin-bottom: 1.8rem;
+  }
 }
 
 /* Keep prompts and output unselectable so console blocks copy cleanly. */

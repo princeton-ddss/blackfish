@@ -22,48 +22,12 @@
   --md-typeset-a-color: #2563eb;          /* blue-600  */
 }
 
-/* The slate palette derives ~20 tokens from hsla(var(--md-hue), 15-20%, ...),
- * where --md-hue is 225deg (blue). That tint reads as navy rather than a
- * neutral dark. Restate the same tokens at 0% saturation, keeping the theme's
- * lightness and alpha values so contrast relationships are unchanged. */
 [data-md-color-scheme="slate"],
 [data-md-color-scheme="slate"][data-md-color-primary] {
   --md-primary-fg-color: #3b82f6;         /* blue-500  */
   --md-accent-fg-color: #60a5fa;          /* blue-400, UI dark-mode accent */
   --md-accent-fg-color--transparent: #60a5fa1a;
   --md-typeset-a-color: #60a5fa;          /* blue-400  */
-
-  --md-default-fg-color: hsla(0, 0%, 90%, .82);
-  --md-default-fg-color--light: hsla(0, 0%, 90%, .56);
-  --md-default-fg-color--lighter: hsla(0, 0%, 90%, .32);
-  --md-default-fg-color--lightest: hsla(0, 0%, 90%, .12);
-
-  --md-default-bg-color: hsla(0, 0%, 5%, 1);
-  --md-default-bg-color--light: hsla(0, 0%, 5%, .54);
-  --md-default-bg-color--lighter: hsla(0, 0%, 5%, .26);
-  --md-default-bg-color--lightest: hsla(0, 0%, 5%, .07);
-
-  --md-code-fg-color: hsla(0, 0%, 80%, 1);
-  --md-code-bg-color: hsla(0, 0%, 10%, 1);
-  --md-code-bg-color--light: hsla(0, 0%, 10%, .9);
-  --md-code-bg-color--lighter: hsla(0, 0%, 10%, .54);
-
-  --md-footer-bg-color: hsla(0, 0%, 10%, .87);
-  --md-footer-bg-color--dark: hsla(0, 0%, 8%, 1);
-
-  --md-typeset-kbd-color: hsla(0, 0%, 90%, .12);
-  --md-typeset-kbd-accent-color: hsla(0, 0%, 90%, .2);
-  --md-typeset-kbd-border-color: hsla(0, 0%, 90%, .05);
-
-  --md-typeset-table-color: hsla(0, 0%, 95%, .12);
-  --md-typeset-table-color--light: hsla(0, 0%, 95%, .035);
-
-  --md-typeset-color: var(--md-default-fg-color);
-
-  /* Surface tokens used by the modern variant's chrome (header, sidebar). */
-  --color-background: 10 10 10;
-  --color-background-subtle: 26 26 26;
-  --color-backdrop: 5 5 5;
 }
 
 /* The UI sits at 400-600; headings are semibold (600), matching the

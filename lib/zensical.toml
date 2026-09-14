@@ -4,6 +4,8 @@ site_url = "https://princeton-ddss.github.io/blackfish"
 site_description = "Blackfish AI turns your HPC cluster into a private AI inference API. Run open source text generation and speech recognition models on the research computing resources your university already has."
 site_author = "Colin Swaney and The Trustees of Princeton University"
 repo_url = "https://github.com/princeton-ddss/blackfish"
+repo_name = "princeton-ddss/blackfish"
+edit_uri = "edit/main/lib/docs/"
 copyright = "Copyright &copy; 2024 Colin Swaney and The Trustees of Princeton University"
 
 nav = [
@@ -37,7 +39,7 @@ nav = [
 ]
 
 extra_css = ["assets/css/extra.css"]
-extra_javascript = ["assets/js/typewriter.js"]
+extra_javascript = ["assets/js/typewriter.js", "assets/js/external-links.js"]
 
 [project.theme]
 variant = "modern"
@@ -54,6 +56,7 @@ features = [
   "content.code.copy",
   "content.code.select",
   "content.code.annotate",
+  "content.action.edit",
 ]
 
 # Matches the web UI (web/tailwind.config.js: font-sans = Inter)

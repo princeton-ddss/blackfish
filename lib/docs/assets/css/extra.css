@@ -14,6 +14,7 @@
   --md-primary-fg-color--light: #60a5fa;  /* blue-400  */
   --md-primary-fg-color--dark: #2563eb;   /* blue-600  */
   --md-accent-fg-color: #2563eb;          /* blue-600  */
+  --md-accent-fg-color--transparent: #2563eb1a;
 
   --md-default-fg-color: #111827;         /* gray-900  */
   --md-default-bg-color: #ffffff;
@@ -29,6 +30,7 @@
 [data-md-color-scheme="slate"][data-md-color-primary] {
   --md-primary-fg-color: #3b82f6;         /* blue-500  */
   --md-accent-fg-color: #60a5fa;          /* blue-400, UI dark-mode accent */
+  --md-accent-fg-color--transparent: #60a5fa1a;
   --md-typeset-a-color: #60a5fa;          /* blue-400  */
 
   --md-default-fg-color: hsla(0, 0%, 90%, .82);
@@ -107,13 +109,42 @@
   margin-right: auto;
 }
 
-/* Drop cap on the landing page intro. */
-.custom-intro::first-letter {
-  -webkit-initial-letter: 3;
-  initial-letter: 3;
-  font-weight: 600;
-  padding-right: .5em;
-  color: var(--md-primary-fg-color);
+/* `hide: toc` drops the right sidebar entirely, and since .md-content is
+ * flex-grow:1 the text column then stretches by the sidebar's 12.1rem. Keep
+ * the column reserved so a page without a TOC lines up with every other page. */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--secondary[hidden] {
+    display: block !important;
+    visibility: hidden;
+  }
+
+  /* The theme's spacing rules are all scoped to :not([hidden]), so restore the
+   * gutter the reserved column would otherwise lose. */
+  [dir="ltr"] .md-sidebar--secondary[hidden] ~ .md-content > .md-content__inner {
+    margin-left: 1.2rem;
+    margin-right: 1.2rem;
+  }
+}
+
+/* Tint cards with the same wash the active nav item uses. */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid.cards > ol > li,
+.md-typeset .grid > .card {
+  background-color: var(--md-accent-fg-color--transparent);
+  border-color: transparent;
+}
+
+/* Card titles pick up the accent, like the active nav item. */
+.md-typeset .grid.cards > ul > li > p:first-child > strong,
+.md-typeset .grid.cards > ol > li > p:first-child > strong,
+.md-typeset .grid > .card > p:first-child > strong {
+  color: var(--md-accent-fg-color);
+}
+
+.md-typeset .grid.cards > ul > li > p:first-child > .twemoji,
+.md-typeset .grid.cards > ol > li > p:first-child > .twemoji,
+.md-typeset .grid > .card > p:first-child > .twemoji {
+  color: var(--md-accent-fg-color);
 }
 
 /* Keep prompts and output unselectable so console blocks copy cleanly. */

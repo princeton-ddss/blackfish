@@ -5,8 +5,11 @@ repo_url = "https://github.com/princeton-ddss/blackfish"
 copyright = "Copyright &copy; 2024 Colin Swaney and The Trustees of Princeton University"
 
 nav = [
-  { "Home" = [
-    { "Welcome" = "index.md" },
+  { "Home" = "index.md" },
+  { "About" = [
+    { "Overview" = "about/index.md" },
+    { "Roadmap" = "about/roadmap.md" },
+    { "License" = "about/license.md" },
   ] },
   { "Setup" = [
     { "Installation" = "setup/installation.md" },
@@ -41,6 +44,7 @@ favicon = "assets/img/favicon.png"
 language = "en"
 features = [
   "navigation.tabs",
+  "navigation.path",
   "navigation.sections",
   "navigation.footer",
   "content.footnote.tooltips",
@@ -83,6 +87,8 @@ show_signature_annotations = true
 [project.markdown_extensions]
 footnotes = {}
 admonition = {}
+attr_list = {}
+md_in_html = {}
 pymdownx.highlight.use_pygments = true
 pymdownx.highlight.pygments_lang_class = true
 pymdownx.highlight.anchor_linenums = true

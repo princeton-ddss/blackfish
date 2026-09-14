@@ -1,15 +1,14 @@
 name: Docs
 on:
   push:
-    branches: [main, dev, "*-dev"]
     tags: ['v*.*.*']
-    paths:
-      - 'lib/docs/**'
-      - '.github/workflows/docs.yml'
   pull_request:
     branches: [main, dev, "*-dev"]
     paths:
       - 'lib/docs/**'
+      - 'lib/src/**'
+      - 'lib/zensical.toml'
+      - 'lib/pyproject.toml'
       - '.github/workflows/docs.yml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -38,7 +37,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: 3.x
-      - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag mike
+      - run: pip install 'zensical>=0.0.62,<0.1' 'mkdocstrings[python]' mike
       - name: Build and deploy documentation
         run: mike deploy --push --allow-empty --deploy-prefix pr-preview pr-${{ github.event.number }} --message "Deploying docs preview for PR ${{ github.event.number }} 🛫"
 
@@ -59,6 +58,6 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: 3.x
-      - run: pip install mkdocs-material mkdocstrings 'mkdocstrings[python]' mkdocs-swagger-ui-tag mike
+      - run: pip install 'zensical>=0.0.62,<0.1' 'mkdocstrings[python]' mike
       - name: Build and deploy documentation
         run: mike deploy --push --update-aliases --allow-empty ${{ github.ref_name }} latest --message "Deploying docs version ${{ github.ref_name }} 🛫"

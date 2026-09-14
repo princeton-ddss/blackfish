@@ -1,89 +1,93 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+/* Blackfish docs theme.
+ *
+ * Colors and typography mirror the web UI so the docs and the app read as one
+ * product. Tokens below are sourced from web/tailwind.config.js and the
+ * `dark:` variants used across web/src/components/.
+ *
+ * Fonts (Inter + JetBrains Mono) are configured in zensical.toml under
+ * [project.theme.font] and are not restated here.
+ */
 
-.md-header__button.md-logo img, .md-header__button.md-logo svg {
-    fill: currentcolor;
-    display: block;
-    height: 4.0rem;
-    width:auto
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #3b82f6;         /* blue-500  */
+  --md-primary-fg-color--light: #60a5fa;  /* blue-400  */
+  --md-primary-fg-color--dark: #2563eb;   /* blue-600  */
+  --md-accent-fg-color: #2563eb;          /* blue-600  */
+
+  --md-default-fg-color: #111827;         /* gray-900  */
+  --md-default-bg-color: #ffffff;
+  --md-typeset-color: #111827;            /* gray-900  */
+  --md-typeset-a-color: #2563eb;          /* blue-600  */
 }
 
-.language-pycon .gp, .language-pycon .go { /* Generic.Prompt, Generic.Output */
-    user-select: none;
-    -webkit-user-select: none;
+[data-md-color-scheme="slate"],
+[data-md-color-scheme="slate"][data-md-color-primary] {
+  --md-primary-fg-color: #3b82f6;         /* blue-500  */
+  --md-accent-fg-color: #60a5fa;          /* blue-400, UI dark-mode accent */
+
+  --md-default-fg-color: #f3f4f6;         /* gray-100  */
+  --md-default-bg-color: #111827;         /* gray-900  */
+  --md-typeset-color: #f3f4f6;            /* gray-100  */
+  --md-typeset-a-color: #60a5fa;          /* blue-400  */
 }
 
-[dir=ltr] .md-header__title {
-    margin-left: .5rem;
-    font-family: 'Playfair Display', sans-serif;
+/* The UI sits at 400-600; headings are semibold (600), matching the
+ * `text-base font-semibold` recipe used for section headings in the app. */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  font-weight: 600;
+  color: var(--md-default-fg-color);
+}
+
+/* Header logo, sized for the orca mark. */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  fill: currentcolor;
+  display: block;
+  height: 2.0rem;
+  width: auto;
+}
+
+[dir="ltr"] .md-header__title {
+  margin-left: .5rem;
 }
 
 .md-header__topic span {
-    line-height: 3.0rem;
-    font-size: 2.0rem;
-    font-weight: 800;
+  font-weight: 600;
 }
 
-@media screen and (max-width: 1220px) { /* For smaller screens */
-    .md-header__topic span {
-        line-height: 2.4rem;
-        font-size: 1.2rem;
-        font-weight: 800;
-    }
-}
-
+/* Center standalone figures. */
 .md-typeset img {
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
 
-.md-typeset h1 {
-    font-family: 'Playfair Display', sans-serif;
-    color: var(--md-default-fg-color);
+/* Drop cap on the landing page intro. */
+.custom-intro::first-letter {
+  -webkit-initial-letter: 3;
+  initial-letter: 3;
+  font-weight: 600;
+  padding-right: .5em;
+  color: var(--md-primary-fg-color);
 }
 
-.md-typeset h2 {
-    font-weight: 300;
-    font-family: 'Playfair Display', sans-serif;
+/* Keep prompts and output unselectable so console blocks copy cleanly. */
+.language-pycon .gp,
+.language-pycon .go { /* Generic.Prompt, Generic.Output */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.md-typeset h3 {
-    font-weight: 300;
-    font-family: 'Playfair Display', sans-serif;
-}
-
-.md-typeset p {
-    font-weight: 100;
-}
-
-.md-typeset li {
-    font-weight: 100;
-}
-
-.md-nav__title {
-    font-family: 'Playfair Display', sans-serif;
-    color: var(--md-default-fg-color);
-    font-weight: 800;
-}
-
-.md-nav__item {
-    font-weight: 100;
-}
-
+/* Heroicons render as strokes, not fills. */
 .md-typeset .twemoji {
-    --md-icon-size: 1.25em;
+  --md-icon-size: 1.25em;
 }
 
 .md-typeset .twemoji svg {
-    fill: none !important;
-    stroke: currentcolor;
-}
-
-.custom-intro::first-letter {
-    -webkit-initial-letter: 3;
-    initial-letter: 3;
-    /* font-size: 200%; */
-    font-weight: 800;
-    font-family: 'Playfair Display', sans-serif;
-    padding-right: .5em;
+  fill: none !important;
+  stroke: currentcolor;
 }

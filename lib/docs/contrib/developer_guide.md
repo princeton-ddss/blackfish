@@ -27,7 +27,8 @@ Development tasks run through a `justfile` in `lib/`. From that directory:
 - `just lint` — run pre-commit hooks
 - `just test` — run pytest with coverage
 - `just coverage` — refresh the coverage badge
-- `just docs` — build the MkDocs site
+- `just docs` — build the documentation site
+- `just docs-serve` — preview the documentation site locally
 
 ### SSH
 

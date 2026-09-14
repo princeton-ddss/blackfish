@@ -1,0 +1,95 @@
+[project]
+site_name = "Blackfish Docs"
+site_url = "https://princeton-ddss.github.io/blackfish"
+repo_url = "https://github.com/princeton-ddss/blackfish"
+copyright = "Copyright &copy; 2024 Colin Swaney and The Trustees of Princeton University"
+
+nav = [
+  { "Home" = [
+    { "Welcome" = "index.md" },
+  ] },
+  { "Setup" = [
+    { "Installation" = "setup/installation.md" },
+    { "Management" = "setup/management.md" },
+  ] },
+  { "User Guide" = [
+    { "Guides" = [
+      { "Command Line" = "usage/cli.md" },
+      { "Web Interface" = "usage/ui.md" },
+      { "Python API" = "usage/client.md" },
+    ] },
+    { "Examples" = "https://github.com/princeton-ddss/blackfish-examples" },
+  ] },
+  { "Contributing" = [
+    { "Guidelines" = "contrib/guidelines.md" },
+    { "Developer Guide" = "contrib/developer_guide.md" },
+  ] },
+  { "API Reference" = [
+    { "Core" = "api/core.md" },
+    { "Services" = "api/services.md" },
+    { "Jobs" = "api/jobs.md" },
+  ] },
+]
+
+extra_css = ["assets/css/extra.css"]
+
+[project.theme]
+variant = "modern"
+custom_dir = "docs/overrides"
+logo = "assets/img/logo.png"
+favicon = "assets/img/favicon.png"
+language = "en"
+features = [
+  "navigation.tabs",
+  "navigation.sections",
+  "navigation.footer",
+  "content.footnote.tooltips",
+  "content.code.copy",
+  "content.code.select",
+  "content.code.annotate",
+]
+
+# Matches the web UI (web/tailwind.config.js: font-sans = Inter)
+[project.theme.font]
+text = "Inter"
+code = "JetBrains Mono"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[project.extra.version]
+provider = "mike"
+
+[project.plugins.search]
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_section_style = "list"
+show_root_heading = true
+show_source = false
+show_signature_annotations = true
+
+[project.markdown_extensions]
+footnotes = {}
+admonition = {}
+pymdownx.highlight.use_pygments = true
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.line_spans = "__span"
+pymdownx.inlinehilite = {}
+pymdownx.snippets = {}
+pymdownx.superfences = {}
+pymdownx.emoji.emoji_index = "zensical.extensions.emoji.twemoji"
+pymdownx.emoji.emoji_generator = "zensical.extensions.emoji.to_svg"
+pymdownx.emoji.options.custom_icons = ["docs/overrides/.icons"]

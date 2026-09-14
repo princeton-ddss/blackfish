@@ -35,7 +35,7 @@ Inclusion of type hints is checked by `mypy` as part of our `pre-commit` and Git
 
 ## Documentation Contributions
 
-Improving documentation is a great way to contribute to Blackfish. You'll find all our documentation in the `lib/docs/` directory. We use [`mkdocs-material`](https://squidfunk.github.io/mkdocs-material/) for documentation. You can preview changes by running `just docs` from `lib/`.
+Improving documentation is a great way to contribute to Blackfish. You'll find all our documentation in the `lib/docs/` directory. We use [Zensical](https://zensical.org/) for documentation. You can preview changes by running `just docs-serve` from `lib/`.
 
 ## Bug Reports
 

@@ -51,6 +51,13 @@
   width: auto;
 }
 
+/* The orca mark is near-black and sinks into the dark header, so lift it off
+ * the background with the same halo the UI uses (web/src/components/Navbar.jsx). */
+[data-md-color-scheme="slate"] .md-header__button.md-logo img,
+[data-md-color-scheme="slate"] .md-header__button.md-logo svg {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, .6));
+}
+
 [dir="ltr"] .md-header__title {
   margin-left: .5rem;
 }

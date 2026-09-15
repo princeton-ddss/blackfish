@@ -104,6 +104,12 @@
   }
 }
 
+/* The theme's 1em block margin runs the cards up against the paragraph above,
+ * so they don't read as a separate block. */
+.md-typeset .grid.cards {
+  margin-top: 2.2em;
+}
+
 /* Tint cards with the same wash the active nav item uses. */
 .md-typeset .grid.cards > ul > li,
 .md-typeset .grid.cards > ol > li,

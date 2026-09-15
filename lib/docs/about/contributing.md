@@ -13,6 +13,12 @@ For advice on setting up your development environment, see our [Developer Guide]
 3. **Implement your fix or feature.** The fun part! Don't be afraid to ask for help or advice. Make sure your test(s) pass.
 4. **Open a GitHub Pull Request to the `main` branch.** If the PR closes an issue, make sure to note this in the description (e.g., "Closes #78").
 
+!!! tip "Before you open the PR"
+
+    [`CONTRIBUTING.md`](https://github.com/princeton-ddss/blackfish/blob/main/CONTRIBUTING.md)
+    in the repository root has the full pre-flight checklist — tests, linting,
+    and the release steps for maintainers.
+
 ### Code Review
 
 In addition to passing automated tests, PRs must pass code review before they are merged. Feedback will include optional changes and required changes. Required changes must be addressed in order for the PR to be merged. If you disagree with required changes, you can argue your position respectfully, but understand that maintainers have the final say.

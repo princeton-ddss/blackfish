@@ -15,6 +15,6 @@ hide:
 Blackfish AI turns your HPC cluster into a private AI inference API.
 
 [Learn more](about/index.md){ .md-button .md-button--primary }
-[Get started](setup/installation.md){ .md-button }
+[Get started](getting-started/installation.md){ .md-button }
 
 </div>

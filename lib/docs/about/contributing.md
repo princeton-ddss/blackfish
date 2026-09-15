@@ -4,7 +4,7 @@
 
 ## Code Contributions
 
-For advice on setting up your development environment, see our [Developer Guide](developer_guide.md).
+For advice on setting up your development environment, see our [Developer Guide](../developer/index.md).
 
 ### Steps
 

@@ -13,11 +13,12 @@ nav = [
   { "About" = [
     { "Overview" = "about/index.md" },
     { "Roadmap" = "about/roadmap.md" },
+    { "Contributing" = "about/contributing.md" },
     { "License" = "about/license.md" },
   ] },
-  { "Setup" = [
-    { "Installation" = "setup/installation.md" },
-    { "Management" = "setup/management.md" },
+  { "Getting Started" = [
+    { "Installation" = "getting-started/installation.md" },
+    { "Basic Usage" = "getting-started/basic-usage.md" },
   ] },
   { "User Guide" = [
     { "Guides" = [
@@ -27,14 +28,16 @@ nav = [
     ] },
     { "Examples" = "https://github.com/princeton-ddss/blackfish-examples" },
   ] },
-  { "Contributing" = [
-    { "Guidelines" = "contrib/guidelines.md" },
-    { "Developer Guide" = "contrib/developer_guide.md" },
+  { "Admin Guide" = [
+    { "Management" = "admin/management.md" },
   ] },
-  { "API Reference" = [
-    { "Core" = "api/core.md" },
-    { "Services" = "api/services.md" },
-    { "Jobs" = "api/jobs.md" },
+  { "Developer Guide" = [
+    { "Overview" = "developer/index.md" },
+    { "API Reference" = [
+      { "Core" = "developer/api/core.md" },
+      { "Services" = "developer/api/services.md" },
+      { "Jobs" = "developer/api/jobs.md" },
+    ] },
   ] },
 ]
 
@@ -80,6 +83,17 @@ toggle.name = "Switch to light mode"
 provider = "mike"
 
 [project.plugins.search]
+
+# The Setup section became Getting Started and Management moved to the Admin
+# Guide; keep the published URLs working.
+[project.plugins.redirects.redirect_maps]
+"setup/installation.md" = "getting-started/installation.md"
+"setup/management.md" = "admin/management.md"
+"contrib/guidelines.md" = "about/contributing.md"
+"contrib/developer_guide.md" = "developer/index.md"
+"api/core.md" = "developer/api/core.md"
+"api/services.md" = "developer/api/services.md"
+"api/jobs.md" = "developer/api/jobs.md"
 
 [project.plugins.mkdocstrings.handlers.python]
 paths = ["src"]

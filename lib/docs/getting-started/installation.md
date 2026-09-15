@@ -18,7 +18,7 @@ In order to facilitate reproducibility and minimize dependencies, Blackfish uses
 
 ### Container Images
 
-Blackfish does not ship container images. Your HPC admin may provide these in a shared cache directory. Otherwise, you will need to obtain them yourself. See [Images](management.md#images) for details.
+Blackfish does not ship container images. Your HPC admin may provide these in a shared cache directory. Otherwise, you will need to obtain them yourself. See [Images](../admin/management.md#images) for details.
 
 ## Install Blackfish
 

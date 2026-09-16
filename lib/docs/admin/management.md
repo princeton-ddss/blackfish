@@ -32,7 +32,7 @@ flowchart TB
 
   slurm{{"Slurm scheduler"}}
   svc["Service API<br><i>compute node</i>"]
-  fs[("Remote filesystem<br>(home, scratch)")]
+  fs[("Cluster filesystem<br>(home, scratch)")]
 
   py -->|submits jobs| slurm
   api -->|submits jobs| slurm
@@ -41,7 +41,7 @@ flowchart TB
   svc <-->|"models, images, data files"| fs
 ```
 
-**Figure 1** The Blackfish architecture for running remote services on a Slurm cluster.
+**Figure 1** The Blackfish architecture for running services on a Slurm cluster.
 
 The Blackfish REST API automates the process of hosting AI models as APIs. Users instruct the Blackfish API via the CLI or UI to deploy a model and the REST API creates a "service API" running that model. The researcher that starts a service "owns" that service and can secure it with an API key. Blackfish tracks service status and provides methods to stop and delete services when they are no longer needed.
 

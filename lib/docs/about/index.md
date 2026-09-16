@@ -5,129 +5,86 @@ hide:
 
 # What is Blackfish AI?
 
-Welcome to Blackfish! Blackfish is an open source "ML-as-a-Service" (MLaaS) platform that helps researchers use state-of-the-art, open source artificial intelligence and machine learning models. With Blackfish, researchers can spin up their own version of popular public cloud services (e.g., ChatGPT, Amazon Transcribe, etc.) using high-performance computing (HPC) resources already available on campus.
-
-The primary goal of Blackfish is to facilitate **transparent** and **reproducible** research based on **open source** machine learning and artificial intelligence. We do this by providing mechanisms to run user-specified models with user-defined configurations. For academic research, open source models present several advantages over closed source models. First, whereas large-scale projects using public cloud services might cost $10K to $100K for [similar quality results](https://www.frontiersin.org/journals/big-data/articles/10.3389/fdata.2023.1210559/full), open source models running on HPC resources are free to researchers. Second, with open source models you know *exactly* what model you are using and you can easily provide a copy of that model to other researchers. Closed source models can and do change without notice. Third, using open source models allows complete transparency into how *your* data is being used.
+Blackfish helps researchers use state-of-the-art, open source artificial intelligence and machine learning models on high-performance computing (HPC) clusters. With Blackfish, researchers can spin up their own *private*, OpenAI-compatible inference APIs, and run large-scale batch inference jobs using HPC resources already available on their campus. Blackfish aims to provide an alternative to private public cloud services, such as ChatGPT, Amazon Transcribe, etc. that is safe to use with restricted data, prioritizes customization and replicability, and saves research funds. 
 
 <div class="grid cards" markdown>
 
--   :heroicons-rocket-launch:{ .lg .middle } __Placeholder__
+-   🚀 &nbsp; __OpenAI-compatible APIs__
 
     ---
 
-    Placeholder copy for the first card. Replace with a short description.
+    Launch `vllm` on high-powered GPUs and pointing your existing `openai` scripts at them works out of the box — no new SDK, no rewrite required.
 
--   :heroicons-server:{ .lg .middle } __Placeholder__
-
-    ---
-
-    Placeholder copy for the second card. Replace with a short description.
-
--   :heroicons-cpu-chip:{ .lg .middle } __Placeholder__
+-   🔒 &nbsp; __Private by design__
 
     ---
 
-    Placeholder copy for the third card. Replace with a short description.
+    Designed for IRB-restricted, DUA-bound, or otherwise unshippable data. Models run on your institution's cluster and your allocation — nothing leaves the cluster.
 
--   :heroicons-code-bracket:{ .lg .middle } __Placeholder__
+-   📌 &nbsp; __Reproducible to the commit__
+
+    ---
+    
+    Pin a model and API version and your run today is repeatable in a year — no silent version creep, and you have full control over API settings.
+
+-   🍪 &nbsp; __Point-and-click batching__
 
     ---
 
-    Placeholder copy for the fourth card. Replace with a short description.
+    Transcribe, translate, detect, OCR, or prompt across an entire folder. Resumable across allocations, and it picks up files added in mid-run.
+
+-   🎛️ &nbsp; __No installation necessary__
+
+    ---
+
+    Ships with a CLI, web UI, and Python API. Open OnDemand provides researchers access via a web browser —  zero install required.
+
+-   ⚙️ &nbsp; __Built for Slurm__
+
+    ---
+
+    Apptainer containers, shared model and image caches, and admin-defined resource tiers that constrain what users resource requests.
 
 </div>
 
-## Why should you use Blackfish?
+## What problem does this solve?
 
-### 1. It's easy! 🌈
+Researchers increasingly rely on AI to unlock new sources of data and fill the role of non-specialist assistants, e.g., coding data sources. Public cloud providers have for years offered AI services that perform essential data preprocessing tasks, such as transcribing recordings, performing object detection tasks, and labeling content. While relatively easy to use, these services:
+
+- can be prohibitively expensive,
+- not customizable,
+- are opaque, and suffer from model creep / non-reproducible,
+- are no longer clearly superior to open source models,
+- may not satisfy data handling requiremenets,
+
+The tools to perform such tasks locally are now widely available, but their adoption is limited to researchers that have the time, funding, and inclination to learn how to use them. Moreover, most state-of-the-art AI models rely on high-powered GPUs, which are typically only available to researchers through their institution's cluster, presenting a further hurdle to adoption.
+
+### Adoption
+Blackfish aims to make it easy for researchers to realize the benefits of open source models by automating the tricky bits of deployment and providing standardized workflows to save researchers time and energy.
 
 Researchers should focus on research, not tooling. We try to meet researchers where they're at by providing multiple ways to work with Blackfish, including a Python API, a command-line tool (CLI), and a browser-based user interface (UI).
 
-Don't want to install anything? Ask your HPC admins to install [Blackfish OnDemand](https://github.com/princeton-ddss/blackfish-ondemand)!
+Don't want to install anything? Ask your HPC admins to install [Blackfish OnDemand](https://github.com/princeton-ddss/blackfish-ondemand).
 
-### 2. It's transparent 🧐
+### Transparency
 
 You decide what model to run (down to the Git commit) and how you want it configured. There are no unexpected (or undetected) changes in performance because the model is always the same. All services are *private*, so you know exactly how your data is being handled.
 
-### 3. It's free! 💸
+### Privacy
 
-You have an HPC cluster. We have software to run on it.
-
-## Requirements
-
-- **Python 3.12+**
-- **Docker or Apptainer** — Blackfish runs services inside containers. HPC-based services require Apptainer to be installed on your university cluster.
-- **Container images** — Blackfish does not ship container images. Your HPC admin may provide these in a shared cache directory, or you can [add them yourself](../setup/management.md#images).
-
-## Quickstart
-
-Here's what the typical Blackfish workflow looks like on an HPC cluster:
-
-### Step 1 - Install Blackfish
-
-```shell
-python -m venv .venv
-source .venv/bin/activate
-pip install blackfish-ai
-```
-
-### Step 2 - Create a profile
-
-```shell
-blackfish init
-
-# Example responses
-# > name: default
-# > type: slurm
-# > host: localhost
-# > user: shamu
-# > home: /home/shamu/.blackfish
-# > cache: /scratch/gpfs/shared/.blackfish
-```
-
-### Step 3 - Start Blackfish
-
-```shell
-blackfish start
-```
-
-### Step 4 - Obtain a model
-
-```shell
-blackfish model add TinyLlama/TinyLlama-1.1B-Chat-v1.0  # This will take a minute...
-```
-
-### Step 5 - Run a service
-
-```shell
-blackfish run --gres 1 --time 00:30:00 text-generation TinyLlama/TinyLlama-1.1B-Chat-v1.0 --api-key sealsaretasty
-```
-
-### Step 6 - Submit a request
-
-```shell
-# First, check the service status...
-blackfish ls
-
-# Once the service is healthy...
-curl http://localhost:8080/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sealsaretasty" \
-  -d '{
-        "messages": [
-            {"role": "system", "content": "You are an expert marine biologist."},
-            {"role": "user", "content": "Why are orcas so awesome?"}
-        ],
-        "max_completion_tokens": 100,
-        "temperature": 0.1,
-        "stream": false
-    }' | jq
-```
+Researchers often work under data restrictions that preclude the use of public cloud offerings. Blackfish runs entirely on your cluster and (optionally) laptop. Data never leaves your servers. APIs and batch jobs run on compute allocataions owned and authenticated by the user, and the codebase is open source so you can see exactly how all data is handled.
 
 ## Next Steps
 
-Ready to get started? The [setup guide](../setup/installation.md) walks through each step in detail.
+Ready to get started? The [setup guide](../getting-started/installation.md) walks through each step in detail.
 
 ## Acknowledgements
 
-Blackfish is maintained by research software engineers at Princeton University's [Data Driven Social Science Initiative](https://ddss.princeton.edu/).
+Blackfish is maintained by research software engineers at the [Data Driven Social Science Initiative](https://ddss.princeton.edu/), a part of [Data and Intelligent Systems](http://dais.princeton.edu/) at Princeton University.
+
+<div class="bf-logos" markdown>
+
+[![Data Driven Social Science Initiative](../assets/img/ddss-logo.png){ .bf-logo }](https://ddss.princeton.edu/)
+[![Data and Intelligent Systems](../assets/img/dais-logo.png){ .bf-logo }](http://dais.princeton.edu/)
+
+</div>

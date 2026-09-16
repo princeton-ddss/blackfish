@@ -285,6 +285,47 @@ body:has(.bf-hero) .md-main {
   display: none;
 }
 
+/* Partner wordmarks in the acknowledgements. Both are black artwork on a
+ * transparent ground, so they need lifting out of the dark theme. */
+.md-typeset .bf-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4rem;
+  margin: 2em 0;
+}
+
+.md-typeset .bf-logos a {
+  display: inline-flex;
+  border-bottom: none;
+}
+
+.md-typeset .bf-logo {
+  height: 2.2rem;
+  width: auto;
+  margin: 0;
+  opacity: .85;
+  transition: opacity .2s;
+}
+
+.md-typeset .bf-logos a:hover .bf-logo {
+  opacity: 1;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .bf-logo {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .bf-logos {
+    gap: 2.4rem;
+  }
+
+  .md-typeset .bf-logo {
+    height: 1.8rem;
+  }
+}
+
 /* Keep prompts and output unselectable so console blocks copy cleanly. */
 .language-pycon .gp,
 .language-pycon .go { /* Generic.Prompt, Generic.Output */

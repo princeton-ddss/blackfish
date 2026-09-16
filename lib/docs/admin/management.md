@@ -8,7 +8,38 @@ If you are a system admin, or you do not have access to Blackfish OnDemand, thes
 
 Blackfish consists of four components: a core REST API, a command-line interface (CLI), a browser-based user interface (UI), and a Python API. The core REST API performs all key service management operations while the Blackfish CLI and UI provide convenient methods for interacting with the Blackfish API. The Python API allows researchers to use Blackfish within Python scripts and pipelines.
 
-![image](../assets/img/architecture-slurm.png)
+```mermaid
+---
+config:
+  flowchart:
+    nodeSpacing: 60
+    rankSpacing: 70
+---
+flowchart TB
+  subgraph client_host["Laptop or login node"]
+    direction LR
+    py["Python API"]
+    cli["Blackfish CLI"]
+    ui["Blackfish UI"]
+    api["Blackfish REST API"]
+    db[("SQLite")]
+
+    py ~~~ api
+    cli --> api
+    ui --> api
+    api <--> db
+  end
+
+  slurm{{"Slurm scheduler"}}
+  svc["Service API<br><i>compute node</i>"]
+  fs[("Remote filesystem<br>(home, scratch)")]
+
+  py -->|submits jobs| slurm
+  api -->|submits jobs| slurm
+  slurm -->|allocates| svc
+  client_host <-.->|"SSH tunnel"| svc
+  svc <-->|"models, images, data files"| fs
+```
 
 **Figure 1** The Blackfish architecture for running remote services on a Slurm cluster.
 

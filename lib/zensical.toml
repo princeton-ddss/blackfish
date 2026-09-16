@@ -29,7 +29,9 @@ nav = [
     { "Examples" = "https://github.com/princeton-ddss/blackfish-examples" },
   ] },
   { "Admin Guide" = [
-    { "Management" = "admin/management.md" },
+    { "Architecture Overview" = "admin/architecture.md" },
+    { "Cache Management" = "admin/cache.md" },
+    { "Resource Tiers" = "admin/resource-tiers.md" },
   ] },
   { "Developer Guide" = [
     { "Overview" = "developer/index.md" },
@@ -88,7 +90,8 @@ provider = "mike"
 # Guide; keep the published URLs working.
 [project.plugins.redirects.redirect_maps]
 "setup/installation.md" = "getting-started/installation.md"
-"setup/management.md" = "admin/management.md"
+"setup/management.md" = "admin/architecture.md"
+"admin/management.md" = "admin/architecture.md"
 "contrib/guidelines.md" = "about/contributing.md"
 "contrib/developer_guide.md" = "developer/index.md"
 "api/core.md" = "developer/api/core.md"

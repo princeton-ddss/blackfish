@@ -181,7 +181,7 @@ blackfish profile repair --name <profile>
 ```
 
 This recreates the profile's directories and checks that the tigerflow-ml image used for batch
-jobs is available in the profile's cache (see [Images](../admin/management.md#images)).
+jobs is available in the profile's cache (see [Images](../admin/cache.md#images)).
 
 #### rm - Delete a profile
 
@@ -464,7 +464,7 @@ Services are great for interactive work, but sometimes you need to run an ML tas
 
 !!! note
 
-    Batch jobs require a Slurm profile with the tigerflow-ml image staged in its cache. See the [Management Guide](../admin/management.md#batch-jobs) for details.
+    Batch jobs require a Slurm profile with the tigerflow-ml image staged in its cache. See the [Cache Management](../admin/cache.md#batch-jobs) for details.
 
 ### Supported tasks
 

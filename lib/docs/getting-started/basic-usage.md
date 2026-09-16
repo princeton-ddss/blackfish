@@ -4,7 +4,7 @@
 
 - **Python 3.12+**
 - **Docker or Apptainer** — Blackfish runs services inside containers. HPC-based services require Apptainer to be installed on your university cluster.
-- **Container images** — Blackfish does not ship container images. Your HPC admin may provide these in a shared cache directory, or you can [add them yourself](../admin/management.md#images).
+- **Container images** — Blackfish does not ship container images. Your HPC admin may provide these in a shared cache directory, or you can [add them yourself](../admin/cache.md#images).
 
 ## Quickstart
 

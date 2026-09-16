@@ -3,6 +3,13 @@
 Blackfish stages container images and model files into a
 profile's cache before services and batch jobs can run.
 
+## Storage locations
+
+Blackfish stores data in several different locations:
+
+- Core application data is stored in `BLACKFISH_HOME_DIR` on the system where Blackfish is running (`~/.blackfish` by default). Core application data includes profile configuration, application logs, and database storage.
+- Models and images are stored in the user-defined locations `home_dir` and `cache_dir`. These are profile-specific locations that need not reside on the machine where Blackfish is running. `home_dir` also stores job files created each time a service launches.
+
 ## Images
 
 Blackfish does **not** ship with the container images required to run services and batch jobs. These images should be downloaded before use[^1]. To see the images required by your installed version of Blackfish, run:

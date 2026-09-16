@@ -45,11 +45,6 @@ In general, service APIs do not run on the same machine as the Blackfish applica
 
     Blackfish doesn't synchronize application data across machines. Services started from your laptop will not appear when running `blackfish ls` on the cluster, and vice versa.
 
-## Application Data
-
-Blackfish stores data in several different locations:
-
-- Core application data is stored in `BLACKFISH_HOME_DIR` on the system where Blackfish is running (`~/.blackfish` by default). Core application data includes profile configuration, application logs, and database storage.
-- Models and images are stored in the user-defined locations `home_dir` and `cache_dir`. These are profile-specific locations that need not reside on the machine where Blackfish is running. `home_dir` also stores job files created each time a service launches.
+## How a service launches
 
 Let's consider what happens when a user launches a service from their laptop targeting a remote HPC cluster (Figure 1). The user will specify a profile that tells Blackfish the `host` and `user` of the targeted cluster. Blackfish uses this information to look for the required model and image files in both `home_dir` and `cache_dir`—also specified by the profile—on the cluster. If the required files exist, Blackfish creates a Slurm job script, stores it in `$BLACKFISH_HOME_DIR/jobs/$service_id`, and copies that job script to `$home_dir/jobs/$service_id` on the remote cluster. Finally, Blackfish remotely submits the Slurm job and stores its log files to `$home_dir/jobs/$service_id`.

@@ -5,7 +5,7 @@ hide:
 
 # What is Blackfish AI?
 
-Blackfish helps researchers use state-of-the-art, open source artificial intelligence and machine learning models on high-performance computing (HPC) clusters. With Blackfish, researchers can spin up their own *private*, OpenAI-compatible inference APIs, and run large-scale batch inference jobs using HPC resources already available on their campus. Blackfish aims to provide an alternative to private public cloud services, such as ChatGPT, Amazon Transcribe, etc. that is safe to use with restricted data, prioritizes customization and replicability, and saves research funds. 
+Blackfish helps researchers use state-of-the-art, open source artificial intelligence and machine learning models on high-performance computing (HPC) clusters. With Blackfish, researchers can spin up their own *private*, OpenAI-compatible inference APIs, and run large-scale batch inference jobs using HPC resources already available on their campus. Blackfish aims to provide an alternative to public cloud services, such as ChatGPT, Amazon Transcribe, etc. that is safe to use with restricted data, prioritizes customization and replicability, and saves research funds.
 
 <div class="grid cards" markdown>
 
@@ -13,7 +13,7 @@ Blackfish helps researchers use state-of-the-art, open source artificial intelli
 
     ---
 
-    Launch `vllm` on high-powered GPUs and pointing your existing `openai` scripts at them works out of the box — no new SDK, no rewrite required.
+    Launch `vllm` on high-powered GPUs and point your existing `openai` scripts at them — it works out of the box — no new SDK, no rewrite required.
 
 -   🔒 &nbsp; __Private by design__
 
@@ -24,7 +24,7 @@ Blackfish helps researchers use state-of-the-art, open source artificial intelli
 -   📌 &nbsp; __Reproducible to the commit__
 
     ---
-    
+
     Pin a model and API version and your run today is repeatable in a year — no silent version creep, and you have full control over API settings.
 
 -   🍪 &nbsp; __Point-and-click batching__
@@ -37,46 +37,44 @@ Blackfish helps researchers use state-of-the-art, open source artificial intelli
 
     ---
 
-    Ships with a CLI, web UI, and Python API. Open OnDemand provides researchers access via a web browser —  zero install required.
+    Ships with a CLI, web UI, and Python API. Open OnDemand provides researchers access via a web browser — zero install required.
 
 -   ⚙️ &nbsp; __Built for Slurm__
 
     ---
 
-    Apptainer containers, shared model and image caches, and admin-defined resource tiers that constrain what users resource requests.
+    Apptainer containers, shared model and image caches, and admin-defined resource tiers that offer users named hardware bundles.
 
 </div>
 
 ## What problem does this solve?
 
-Researchers increasingly rely on AI to unlock new sources of data and fill the role of non-specialist assistants, e.g., coding data sources. Public cloud providers have for years offered AI services that perform essential data preprocessing tasks, such as transcribing recordings, performing object detection tasks, and labeling content. While relatively easy to use, these services:
+Researchers increasingly rely on AI to unlock new sources of data and augment or replace non-specialist assistants, e.g., coding data sources. Public cloud providers have for years offered AI services that perform essential data preprocessing tasks, such as transcribing recordings, performing object detection tasks, and labeling content. While relatively easy to use, these services:
 
 - can be prohibitively expensive,
-- not customizable,
-- are opaque, and suffer from model creep / non-reproducible,
-- are no longer clearly superior to open source models,
-- may not satisfy data handling requiremenets,
+- are opaque and not customizable,
+- suffer from model creep, making results hard to reproduce,
+- may not satisfy data handling requirements,
+- and, for many research tasks, are no longer clearly better than open source alternatives.
 
-The tools to perform such tasks locally are now widely available, but their adoption is limited to researchers that have the time, funding, and inclination to learn how to use them. Moreover, most state-of-the-art AI models rely on high-powered GPUs, which are typically only available to researchers through their institution's cluster, presenting a further hurdle to adoption.
+For many preprocessing tasks research depends on — transcription, classification, annotation, extraction — open source models now perform comparably to commercial services, and sometimes better.[^1][^2][^3] In addition, they cost nothing to run on an institutional cluster, can be inspected and pinned to an exact version, and provide complete control over sensitive data. For researchers working under an IRB protocol or a data use agreement, open source may be the only game in town.
 
-### Adoption
-Blackfish aims to make it easy for researchers to realize the benefits of open source models by automating the tricky bits of deployment and providing standardized workflows to save researchers time and energy.
+However, the benefits of open source come with their own costs. Researchers need to learn how to work with the HPC clusters that provide access to high-powered GPUs: writing Slurm batch scripts, running Apptainer containers, navigating Hugging Face cache layouts, setting up port forwarding off a compute node, and working out which GPU will fit a 70-billion parameter model. These barriers limit adoption to researchers with the time, funding, and inclination to keep up with a fast-moving ecosystem.
 
-Researchers should focus on research, not tooling. We try to meet researchers where they're at by providing multiple ways to work with Blackfish, including a Python API, a command-line tool (CLI), and a browser-based user interface (UI).
+Blackfish automates the tricky parts of deployment and provides standardized workflows so that launching a private inference API or running batch inference against a collection of documents is a single command — or a few clicks. Researchers should focus on their research, not on an evolving toolset. We meet researchers where they are by providing multiple ways to work, including a Python API, a command-line tool (CLI), and a browser-based user interface (UI). And because everything runs on your cluster, under your allocation, and using the model version you chose, you keep the transparency, privacy, and reproducibility benefits of open source.
 
-Don't want to install anything? Ask your HPC admins to install [Blackfish OnDemand](https://github.com/princeton-ddss/blackfish-ondemand).
+!!! tip
+    Blackfish offers a zero-installation option for users that are uncomfortable managing Python environments. Ask your HPC cluster admins about adding Blackfish to Open OnDemand. For admins, we offer a [template app](https://github.com/princeton-ddss/blackfish-ondemand) to get you started.
 
-### Transparency
+[^1]: Ferraro, A., Galli, A., La Gatta, V., & Postiglione, M. (2023). [Benchmarking open source and paid services for speech to text: an analysis of quality and input variety](https://doi.org/10.3389/fdata.2023.1210559). *Frontiers in Big Data*, 6.
 
-You decide what model to run (down to the Git commit) and how you want it configured. There are no unexpected (or undetected) changes in performance because the model is always the same. All services are *private*, so you know exactly how your data is being handled.
+[^2]: Alizadeh et al. (2023), [Open-Source LLMs for Text Annotation](https://arxiv.org/abs/2307.02179).
 
-### Privacy
-
-Researchers often work under data restrictions that preclude the use of public cloud offerings. Blackfish runs entirely on your cluster and (optionally) laptop. Data never leaves your servers. APIs and batch jobs run on compute allocataions owned and authenticated by the user, and the codebase is open source so you can see exactly how all data is handled.
+[^3]: Epoch AI, [Open models lag state-of-the-art closed models by 4 months](https://epoch.ai/data-insights/open-closed-eci-gap) (January 2026).
 
 ## Next Steps
 
-Ready to get started? The [setup guide](../getting-started/installation.md) walks through each step in detail.
+Ready to get started? Our [getting started](../getting-started/installation.md) page walks through each step in detail.
 
 ## Acknowledgements
 

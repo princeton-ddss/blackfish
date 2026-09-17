@@ -30,6 +30,7 @@ nav = [
   ] },
   { "Admin Guide" = [
     { "Architecture Overview" = "admin/architecture.md" },
+    { "Adopting Blackfish" = "admin/adopting.md" },
     { "Cache Management" = "admin/cache.md" },
     { "Resource Tiers" = "admin/resource-tiers.md" },
   ] },

@@ -46,7 +46,7 @@ hardware and exposes them through OpenAI-compatible APIs.
 - [ ] **Object detection**.
 - [ ] Scalable, multi-instance APIs.
 - [ ] Auto job resubmission.
-  
+
 
 **Batch Jobs**
 
@@ -63,7 +63,7 @@ hardware and exposes them through OpenAI-compatible APIs.
 **Python API**
 
 - [ ] Improved ergonomics.
-  
+
 **Admin**
 
 - [ ] Built-in container image management.

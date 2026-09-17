@@ -113,6 +113,7 @@ footnotes = {}
 admonition = {}
 attr_list = {}
 md_in_html = {}
+pymdownx.tasklist.custom_checkbox = true
 pymdownx.highlight.use_pygments = true
 pymdownx.highlight.pygments_lang_class = true
 pymdownx.highlight.anchor_linenums = true

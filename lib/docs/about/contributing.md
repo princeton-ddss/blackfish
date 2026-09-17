@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-**All contributions are welcome as long as everyone involved is treated with respect.**
+Blackfish is happy to consider contributions from the research community. **All contributions are welcome as long as everyone involved is treated with respect.**
 
 ## Code Contributions
 
@@ -8,10 +8,20 @@ For advice on setting up your development environment, see our [Developer Guide]
 
 ### Steps
 
-1. **Clone the repository and create a feature branch.** If you're addressing an open issue, create a feature branch from the issue. Otherwise, give the feature branch a descriptive name (e.g., `feature/support-hdf5-files`).
-2. **Write some tests.** If fixing a bug, write a test and confirm that it fails. If adding a feature, write appropriate tests to check functionality. Make sure `pre-commit` is installed. If not, your PR is *very* likely to fail.
-3. **Implement your fix or feature.** The fun part! Don't be afraid to ask for help or advice. Make sure your test(s) pass.
-4. **Open a GitHub Pull Request to the `main` branch.** If the PR closes an issue, make sure to note this in the description (e.g., "Closes #78").
+1. **Start from an issue.** For anything beyond a small fix, open an issue
+   first, or comment on an existing one, so we can agree on the approach
+   before you write code — see [Early Feedback](#early-feedback).
+2. **Fork the repository and create a branch.** Give it a descriptive name
+   (e.g. `feature/support-hdf5-files`). Maintainers with write access can
+   branch directly from the issue instead of forking.
+3. **Set up your environment.** The [Developer Guide](../developer/index.md)
+   covers installation and the `pre-commit` hooks. Install the hooks — the
+   same checks run on every PR, so skipping them usually means a failed build.
+4. **Write a test.** For a bug, write one that fails before your fix. For a
+   feature, write enough to show it works.
+5. **Implement your change.** Don't be afraid to ask for help or advice.
+6. **Open a pull request against `main`.** If it closes an issue, say so in
+   the description (e.g. "Closes #78").
 
 !!! tip "Before you open the PR"
 
@@ -25,7 +35,7 @@ In addition to passing automated tests, PRs must pass code review before they ar
 
 #### Early Feedback
 
-Getting early feedback is one way to avoid wasted effort and disappointment. There are two ways to request feedback on your ideas. First, you can create an issue describing the issue you wish to resolve or feature that you want to contribute. This is a good option if you are not sure about how to approach the issue and want to avoid heading down the wrong path. The other option is to open a draft PR. This option works well if you know what you're doing (you have an implementation of some sort), but would like a second opinion before you get too far.
+Getting early feedback is one way to avoid wasted effort and disappointment. There are two ways to request feedback on your ideas. First, you can create an issue describing the bug you wish to fix or feature that you want to contribute. This is a good option if you are not sure about how to approach the issue and want to avoid heading down the wrong path. The other option is to open a draft PR. This option works well if you know what you're doing (you have an implementation of some sort), but would like a second opinion before you get too far.
 
 ### Code Style
 
@@ -41,7 +51,15 @@ Inclusion of type hints is checked by `mypy` as part of our `pre-commit` and Git
 
 ## Documentation Contributions
 
-Improving documentation is a great way to contribute to Blackfish. You'll find all our documentation in the `lib/docs/` directory. We use [Zensical](https://zensical.org/) for documentation. You can preview changes by running `just docs-serve` from `lib/`.
+Improving documentation is a great way to contribute to Blackfish.
+
+For a typo or a small correction, use the edit icon at the top of any page. It
+opens that page on GitHub and forks the repository for you — so the whole
+change happens in the browser, without cloning anything.
+
+For anything larger, the documentation lives in `lib/docs/` and is built with
+[Zensical](https://zensical.org/). Preview your changes by running
+`just docs-serve` from `lib/`.
 
 ## Bug Reports
 

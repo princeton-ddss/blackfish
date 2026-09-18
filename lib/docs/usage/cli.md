@@ -1,10 +1,10 @@
 # Command Line
 
-This guide walks through usage of the Blackfish command line tool (CLI). Most operations are also available through the UI, but the CLI is currently the only way to upgrade or repair profiles. It's recommended that users develop some level of familiarity with the CLI even if they intend to primarily use the UI or Python API[^1].
+This guide walks through usage of the Blackfish command line tool (CLI). Most operations are also available through the UI, but the CLI is currently the only way to upgrade or repair profiles. It's recommended that users develop some level of familiarity with the CLI even if they intend to primarily use the UI or Python API.[^1]
 
 ## Configuration
 
-The Blackfish application (i.e., REST API) and command-line interface (CLI) pull settings from environment variables and/or (for the application) arguments provided at start-up. The most important environment variables are:
+The Blackfish application (i.e., REST API) and command-line interface (CLI) pull settings from environment variables and arguments provided at start-up. The most important environment variables are:
 
 - `BLACKFISH_HOST`: host for local instance of the Blackfish app (default: `'localhost'`)
 - `BLACKFISH_PORT`: port for local instance of the Blackfish app (default: `8000`)
@@ -35,7 +35,7 @@ commands work in any shell as long as `BLACKFISH_HOME_DIR` matches the server's.
 The token is regenerated every time the server starts, so restarting invalidates both the
 old token and any dashboard session — log in again with the new link.
 
-!!! note
+!!! warning
 
     The CLI communicates with the API over plain HTTP and is only intended
     to be used with an API running on the same system. The token file is readable only by
@@ -47,9 +47,9 @@ old token and any dashboard session — log in again with the new link.
 
 ## Profiles
 
-Blackfish's primary function is to launch services that perform AI tasks. These services are, in general, detached from the system Blackfish runs on. Thus, we require a method to instruct Blackfish *how* we want to run services: what cluster should Blackfish use, and where should it look for any resources it needs? *Profiles* are Blackfish's method of saving this information and applying it across commands. A default profile is *required*, but multiple profiles are useful if you have access to multiple HPC resources or have multiple accounts on a single HPC cluster.
+Blackfish's primary function is to launch services that perform AI tasks. Services are generally detached from the system Blackfish runs on, so Blackfish needs to know *how* to run them: what cluster should Blackfish use, and where should it find resources it needs? *Profiles* are Blackfish's method of saving this information and applying it across commands. A default profile is *required*, but multiple profiles may be useful if you have access to multiple HPC clusters or multiple accounts on a single HPC cluster.
 
-!!! tip
+!!! note
 
     Blackfish profiles are stored in `$BLACKFISH_HOME/profiles.cfg`. On Linux, this is
     `$HOME/.blackfish/profiles.cfg` by default. You can modify this file directly, if needed, but you'll
@@ -57,31 +57,29 @@ Blackfish's primary function is to launch services that perform AI tasks. These 
 
 ### Schemas
 
-Every profile specifies a number of attributes that allow Blackfish to find resources (e.g., model
-files) and deploy services accordingly. The exact attributes depend on the profile *schema*. There are currently two profile schemas: Slurm and Local. All profiles require the following attributes:
+Each profile specifies attributes that allow Blackfish to find resources (e.g., model
+files) and deploy services accordingly. The attributes required depend on the profile *schema*. There are currently two profile schemas: Slurm and local. All profiles use the following attributes:
 
 - `name`: a unique profile name. Profiles can be named freely.
 - `schema`: one of "slurm" or "local". The profile schema determines how services associated with this
-profile are deployed by Blackfish. Use "slurm" if this profile will run jobs on an HPC cluster (via a Slurm job scheduler) and "local" to run services on your laptop.
-- `default`: an optional boolean. Exactly one profile is the *default*, used by Blackfish whenever a
-profile isn't explicitly provided. The default is the profile with `default = true`; for backward
-compatibility, a profile literally named "default" is treated as the default if no profile sets the
-flag. Use `blackfish profile default <name>` to change it.
+profile are deployed by Blackfish. Use "slurm" if this profile will run jobs on compute nodes via a Slurm job scheduler and "local" to run services on your laptop.
+- `default`: an optional boolean. Exactly one profile is the default, used by Blackfish whenever a
+profile isn't explicitly provided. The current default is the profile with `default = true`.[^2] Use `blackfish profile default <name>` to change it.
 
 The additional attribute requirements for specific types are listed below.
 
 #### Slurm
 
-A *Slurm profile* specifies how to schedule services *on* a (possibly) remote server (e.g., HPC cluster) running Slurm.
+A *Slurm profile* specifies how to schedule services *on* a (possibly) remote HPC cluster running Slurm.
 
-- `host`: a server to run services on, e.g. `<cluster>.<university>.edu` or `localhost` if also running Blackfish on the cluster.
-- `user`: a user name used to connect to server.
-- `home`: a location on the server to store application model, image and job data, e.g., `/home/<user>/.blackfish`. User should have read-write access to this directory.
-- `cache`: a location on the server to source additional shared model and images files from. Blackfish does *not* attempt to create this directory for you, but it does require that it can be found. User should *at least* have read access to this directory.
+- `host`: a server to run services on, e.g. `<cluster>.<university>.edu` or `localhost` if running Blackfish on the cluster itself.
+- `user`: the user name used to connect to `host`.
+- `home`: a location on the server to store application data, e.g., `/home/<user>/.blackfish`. The user should have read-write access to this directory.
+- `cache`: a location on the server to source additional shared model and image files from. Blackfish does *not* attempt to create this directory for you, but it does require that it can be found. User should have *at least* read access to this directory.
 
 #### Local
 
-A *local profile* specifies how to run services on a local machine, i.e., your laptop or desktop, *without a job scheduler*. This is useful for development and running models that do not require significant resources, especially if the model is able to use the GPU on your laptop.
+A *local profile* specifies how to run services on a local machine, i.e., your laptop or desktop, *without a job scheduler*. This is useful for development and running models that do not require significant resources, especially if the model has access to a GPU on your laptop.
 
 - `home_dir`: a user-owned location to store model and image files on the local machine, e.g., `/home/<user>/.blackfish`. User should have read-write access to this directory.
 - `cache_dir`: a shared location to source model and image files from. Blackfish does *not* attempt to create this directory for you, but it does require that it can be found. User should *at least* have read access to this directory.
@@ -146,10 +144,11 @@ blackfish profile rename default della
 ✔ Renamed profile 'default' to 'della'.
 ```
 
-A profile name is referenced by the models, downloads, services, and jobs associated with it, so
-renaming cascades the new name to all of them in a single transaction. Because that cascade touches
-the database, this command **requires the Blackfish server to be running** (unlike other `profile`
-subcommands). Renaming fails if the new name is already in use:
+!!! note
+
+    A profile name is referenced by the models, downloads, services, and jobs associated with it, so renaming cascades the new name to all of them in a single transaction. Because that cascade touches the database, this command **requires the Blackfish server to be running** (unlike other `profile` subcommands).
+
+Renaming fails if the new name is already in use:
 
 ```shell
 blackfish profile rename della macbook
@@ -236,7 +235,7 @@ Remote resources on any cluster you targeted need to be removed on the cluster u
 
 ## Services
 
-Once you've initialized Blackfish and created a profile, you're ready to get to work! The entrypoint for working with the Blackfish CLI is to type
+Once you've initialized Blackfish and created a profile, you're ready to get to work. The entrypoint for working with the Blackfish CLI is to type
 
 ```shell
 blackfish start
@@ -281,16 +280,20 @@ openai/whisper-tiny                    169d4a4341b33bc18d8881c4b69c2e104e1cc0af 
 TinyLlama/TinyLlama-1.1B-Chat-v1.0     4f42c91d806a19ae1a46af6c3fb5f4990d884cd6   macbook   text-generation
 ```
 
-As you can see, there are a number of models available[^2]. Notice that `TinyLlama/TinyLlama-1.1B-Chat-v1.0` is listed twice. The first listing refers to a specific "revision" (i.e., version) of this model—
+As you can see, there are a number of models available.[^3] Notice that `TinyLlama/TinyLlama-1.1B-Chat-v1.0` is listed twice. The first listing refers to a specific "revision" (i.e., version) of this model—
 `ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971`—that is available to the `default` profile; the second listing refers to a different version of the same model—`4f42c91d806a19ae1a46af6c3fb5f4990d884cd6`—that is available to the `macbook` profile. For reproducibility, it's important to keep track of the exact revision used.
 
-Let's say you would really prefer to use a smaller version of `Llama` than the 70 billion parameter model shown above, say `meta-llama/Meta-Llama-3-1B`. To add the new model, simply type
+Suppose you would prefer to use a smaller version of `Llama` than the 70 billion parameter model shown above, say `meta-llama/Meta-Llama-3-1B`. To add the new model, simply type
 
 ```shell
 blackfish model add meta-llama/Meta-Llama-3-1B
 ```
 
-This command downloads the model files, stores them in the default profile's `home_dir`, and updates the model database. Note that `model add` currently only supports Slurm profiles configured with `host=localhost` (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself.
+This command downloads the model files, stores them in the default profile's `home_dir`, and updates the model database.
+
+!!! note
+
+    Currently, `model add` only supports Slurm profiles configured with `host=localhost` (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself. `model rm` works with any profile, but for a remote profile it only removes the database record — the files stay on the cluster.
 
 To remove a model, use `blackfish model rm`:
 
@@ -304,12 +307,12 @@ Let's go ahead and run a service using one of these models.
 
 ### Managing Services
 
-A *service* is a containerized API that is called to perform a specific task, such as text generation, using a model specified by the user when the API is created. Services perform inference in an "online" fashion, meaning that, in general, they process requests one at a time[^3]. Users can create as many services as they like (up to resource availability) and interact with them simultaneously. Services are completely managed by the user: as the creator of a service, you can stop or restart the service, and you control access to the service via an authentication token.
+A *service* is a containerized API that is called to perform a specific task, such as text generation, using a model specified by the user when the API is created. Services perform inference in an "online" fashion, meaning that, in general, they process requests one at a time.[^4] Users can create as many services as they like (up to resource availability) and interact with them simultaneously. Services are completely managed by the user: as the creator of a service, you can stop or restart the service, and you control access to the service via an authentication token.
 
 #### `run` - Start a service
 
-Looking back at the help message for `blackfish run`, we see that there are a few items that we should provide. First, we need to select the type of service to run. We've already decided to run
-`text-generation`, so we're good there. Next, there are a number of job options that we can provide. With the exception of `profile`, job options are based on the Slurm `sbatch` command and tell Blackfish the resources required to run a service. Finally, there are a number of "container options" available. To get a list of these, type `blackfish run text-generation --help`:
+Looking at the help message for `blackfish run`, we see that there are a few values we must provide. First, we need to select the type of service to run. We've already decided to run
+`text-generation`, so we're good there. Next, there are a number of job options that we can specify. With the exception of `profile`, job options are based on the Slurm `sbatch` command and tell Blackfish the resources required to run a service. Finally, there are a number of "container options" available. To get a list of these, type `blackfish run text-generation --help`:
 
 ```shell
 blackfish run text-generation --help
@@ -344,7 +347,7 @@ If everything worked, you should see output that looks something like this:
 ```
 
 What just happened? First, Blackfish checked to make sure that the requested model is available to the `default` profile. Next, it found a list of available revisions of the model and selected the
-most recently published version because no revision was specified. Finally, it sent a request to deploy the model. Helpfully, the CLI returned an ID associated with the new service `fed36739-70b4-4dc4-8017-a4277563aef9`, which you can use to get information about our service via the `blackfish ls` command.
+most recently published version because no revision was specified. Finally, it sent a request to deploy the model. Helpfully, the CLI returned an ID associated with the new service, `fed36739-70b4-4dc4-8017-a4277563aef9`, which you can use to get information about our service via the `blackfish ls` command.
 
 !!! note
 
@@ -371,7 +374,7 @@ SERVICE ID      IMAGE                MODEL                                CREATE
 fed36739-70b4   text_generation      TinyLlama/TinyLlama-1.1B-Chat-v1.0   7 sec ago     5 sec ago   PENDING   None   blackfish-89359   default
 ```
 
-The last item in this list is the service we just started. In this case, the `default` profile happens to be set up to connect to a remote HPC cluster, so the service is run as a Slurm job. It may take a few minutes for our Slurm job to start, and it will require additional time for the service to be ready after that[^4]. Until then, our service's status will be either `PENDING` or `STARTING`. Now would be a good time to brew a hot beverage ☕️.
+The last item in this list is the service we just started. In this case, the `default` profile happens to be set up to connect to a remote HPC cluster, so the service is run as a Slurm job. It may take a few minutes for our Slurm job to start, and it will require additional time for the service to be ready after that.[^5] Until then, our service's status will be either `PENDING` or `STARTING`. Now would be a good time to brew a hot beverage ☕️.
 
 !!! tip
 
@@ -448,7 +451,7 @@ When you are done with a service, you should shut it down and return its resourc
 blackfish stop fed36739-70b4-4dc4-8017-a4277563aef9
 ```
 
-You should receive a nice message stating that the service was stopped, which you can confirm by checking its status with `blackfish ls`.
+You should receive a message stating that the service was stopped, which you can confirm by checking its status with `blackfish ls`.
 
 #### `rm` - Delete a service
 
@@ -571,6 +574,9 @@ blackfish batch rm <job-id>
 Removes a batch job record from Blackfish's internal database.
 
 [^1]: Researchers that only intend to use Blackfish OnDemand should not generally need to interact with the CLI.
-[^2]: The list of models displayed depends on your environment. If you do not have access to a shared HPC cache, your list of models is likely empty. Not to worry—we will see how to add models later on. If this is your first time running the command, use the `--refresh` flag to tell Blackfish to search for models in your cache directories and update the model database.
-[^3]: In practice, services like `vLLM` can use dynamic batching to process requests concurrently. The number of concurrent requests these services can process is limited by a number of factors including the amount of memory available and properties of the requests themselves.
-[^4]: The bulk of this time is spent loading model weights into memory. For small models (< 1B parameters), the service might be ready in a matter of seconds. Large models (~8B) might take 5-10 minutes to load.
+[^2]: For backward
+compatibility, a profile literally named "default" is treated as the default if no profile sets the
+flag.
+[^3]: The list of models displayed depends on your environment. If you do not have access to a shared HPC cache, your list of models is likely empty. Not to worry—we will see how to add models later on. If this is your first time running the command, use the `--refresh` flag to tell Blackfish to search for models in your cache directories and update the model database.
+[^4]: In practice, services like `vLLM` can use dynamic batching to process requests concurrently. The number of concurrent requests these services can process is limited by a number of factors including the amount of memory available and properties of the requests themselves.
+[^5]: The bulk of this time is spent loading model weights into memory. For small models (< 1B parameters), the service might be ready in a matter of seconds. Large models (~8B) might take 5-10 minutes to load.

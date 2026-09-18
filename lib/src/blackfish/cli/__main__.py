@@ -288,9 +288,9 @@ profile.add_command(rename_profile, "rename")
     "-r",
     default=None,
     help=(
-        "Automatically reload changes to the application. "
-        "Off by default: on shared/HPC filesystems the watcher's lstat "
-        "polling can starve the event loop."
+        "Automatically reload changes to the application. Requires debug mode "
+        "(BLACKFISH_DEBUG=1): the watcher's lstat polling starves the event "
+        "loop on shared/HPC filesystems, where the API normally runs."
     ),
 )
 def start(reload: bool | None) -> None:  # pragma: no cover
@@ -315,6 +315,17 @@ def start(reload: bool | None) -> None:  # pragma: no cover
 
     import blackfish.server as server
     from blackfish.server.bootstrap import bootstrap
+
+    # Refuse before bootstrapping or writing a token, so a rejected start
+    # leaves nothing behind.
+    if reload and not config.DEBUG:
+        raise click.UsageError(
+            "--reload requires debug mode. The file watcher starves the event"
+            " loop on the shared filesystems the API normally runs on. To"
+            " develop against a reloading server, set BLACKFISH_DEBUG=1 —"
+            " which also disables authentication, so only do this on a host"
+            " you do not share."
+        )
 
     # `start` runs the server in-process, so this is where the
     # BLACKFISH_DEBUG env var actually applies.
@@ -393,7 +404,7 @@ def start(reload: bool | None) -> None:  # pragma: no cover
         logger.warning(f"tigerflow-ml image check failed: {e}")
 
     if reload is None:
-        reload = False
+        reload = config.DEBUG
 
     if auth_token is not None:
         _echo_auth_banner(auth_token)

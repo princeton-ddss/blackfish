@@ -38,6 +38,11 @@ From any service page, click :heroicons-rocket-launch: in the service container 
   queue wait times and model size. Once the job starts, small models
   (~1B) typically load in about a minute, while large models (~70B) can
   take 5–10 minutes.
+
+<video class="bf-screencast" autoplay loop muted playsinline>
+  <source src="../assets/video/launching-transcription.webm" type="video/webm">
+  Launching a speech recognition service from the web interface.
+</video>
 - When you're done, click :heroicons-stop: in the service container
   header. The service transitions to `STOPPED`; :heroicons-trash:
   appears next to it so you can remove the record entirely.

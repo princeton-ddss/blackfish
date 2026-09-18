@@ -332,6 +332,15 @@ body:has(.bf-hero) .md-main {
   }
 }
 
+/* Screencasts in the UI guide. Framed so a recording of the interface reads
+ * as a screenshot of it rather than as page content. */
+.md-typeset img.bf-screencast {
+  border: .05rem solid var(--md-default-fg-color--lightest);
+  border-radius: .4rem;
+  max-width: 100%;
+  box-shadow: var(--md-shadow-z1);
+}
+
 /* Keep prompts and output unselectable so console blocks copy cleanly. */
 .language-pycon .gp,
 .language-pycon .go { /* Generic.Prompt, Generic.Output */

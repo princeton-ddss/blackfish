@@ -577,6 +577,8 @@ def stop(service_id: str) -> None:  # pragma: no cover
                     or f"Failed to fetch services (status={res.status_code})."
                 )
                 spinner.fail(f"{LogSymbols.ERROR.value}")
+                if api.auth_hint(res):
+                    click.echo(api.auth_help())
                 return
 
             services = res.json()
@@ -608,6 +610,8 @@ def stop(service_id: str) -> None:  # pragma: no cover
                 or f"Failed to stop service {full_service_id[:DISPLAY_ID_LENGTH]} (status={res.status_code})."
             )
             spinner.fail(f"{LogSymbols.ERROR.value}")
+            if api.auth_hint(res):
+                click.echo(api.auth_help())
         else:
             spinner.text = f"Stopped service {full_service_id[:DISPLAY_ID_LENGTH]}."
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
@@ -649,6 +653,8 @@ def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
                 or f"Failed to remove services (status={res.status_code})."
             )
             spinner.fail(f"{LogSymbols.ERROR.value}")
+            if api.auth_hint(res):
+                click.echo(api.auth_help())
         else:
             data = res.json()
             if len(data) == 0:
@@ -724,6 +730,8 @@ def details(service_id: str) -> None:  # pragma: no cover
                 or f"Failed to fetch service {service_id} (status={res.status_code})."
             )
             spinner.fail(f"{LogSymbols.ERROR.value}")
+            if api.auth_hint(res):
+                click.echo(api.auth_help())
             return
         else:
             spinner.text = f"Found service {service_id}"
@@ -855,6 +863,8 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
                 or f"Failed to fetch services. Status code: {res.status_code}."
             )
             spinner.fail(f"{LogSymbols.ERROR.value}")
+            if api.auth_hint(res):
+                click.echo(api.auth_help())
             return
 
     def is_active(service: Any) -> bool:

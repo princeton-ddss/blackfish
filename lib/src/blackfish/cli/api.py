@@ -19,6 +19,8 @@ don't reach for generic ``**kwargs``.
 from __future__ import annotations
 
 import os
+import shutil
+import textwrap
 from typing import Any
 
 import requests
@@ -39,20 +41,38 @@ def _headers() -> dict[str, str]:
 
 
 def auth_hint(res: requests.Response) -> str | None:
-    """Return an explanation for an auth failure, or `None` for other statuses.
+    """Return a one-line auth failure message, or `None` for other statuses.
 
-    A bare `status=401` gives the user nothing to act on. The usual cause is a
-    `BLACKFISH_HOME_DIR` that differs from the one the server used, so name the
-    path the CLI actually looked at.
+    Short by necessity: callers assign this to `spinner.text`, and yaspin
+    truncates that to the terminal width rather than wrapping. The part that
+    tells the user what to do goes to `auth_help`, printed after the spinner
+    stops.
     """
     if res.status_code in (401, 403):
-        return (
-            "Not authorized. The server requires authentication; expected a token"
-            f" at {token_file_path(config.HOME_DIR)}. Check that BLACKFISH_HOME_DIR"
-            " matches the server's, or set BLACKFISH_AUTH_TOKEN to the token"
-            " printed at startup."
-        )
+        return "Not authorized. The server requires authentication."
     return None
+
+
+def auth_help() -> str:
+    """Return the remedy for an auth failure, wrapped to the terminal.
+
+    Printed rather than set as spinner text, so nothing is truncated. The usual
+    cause is a `BLACKFISH_HOME_DIR` that differs from the one the server used,
+    so name the path the CLI actually looked at.
+    """
+    width = min(shutil.get_terminal_size().columns, 100)
+    body = (
+        "Check that BLACKFISH_HOME_DIR matches the server's, or set"
+        " BLACKFISH_AUTH_TOKEN to the token printed at startup."
+    )
+    lines = [
+        # Not wrapped: breaking a path across lines makes it uncopyable.
+        f"  Expected a token at {token_file_path(config.HOME_DIR)}",
+        *textwrap.wrap(
+            body, width=width - 2, initial_indent="  ", subsequent_indent="  "
+        ),
+    ]
+    return "\n".join(lines)
 
 
 def get(

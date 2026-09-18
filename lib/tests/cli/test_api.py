@@ -71,13 +71,23 @@ def test_empty_env_token_falls_back_to_file(
     assert api._headers() == {"Authorization": "Bearer fromfile"}
 
 
-def test_auth_hint_names_the_token_path(_empty_home) -> None:
-    """A bare `status=401` gives the user nothing to act on."""
+def test_auth_hint_is_short_enough_for_a_spinner(_empty_home) -> None:
+    """yaspin truncates `spinner.text` to the terminal width rather than
+    wrapping, so the hint has to fit on one line — the remedy goes to
+    `auth_help`."""
     res = requests.Response()
     res.status_code = 401
     hint = api.auth_hint(res)
     assert hint is not None
-    assert str(_empty_home) in hint
+    assert len(hint) < 70
+
+
+def test_auth_help_names_the_token_path(_empty_home) -> None:
+    """A bare `status=401` gives the user nothing to act on."""
+    help_text = api.auth_help()
+    assert str(_empty_home) in help_text
+    assert "BLACKFISH_HOME_DIR" in help_text
+    assert "BLACKFISH_AUTH_TOKEN" in help_text
 
 
 def test_auth_hint_is_none_for_other_statuses() -> None:

@@ -44,7 +44,7 @@ lib/
 |----------|-------------|---------|
 | `BLACKFISH_HOST` | Server host | `localhost` |
 | `BLACKFISH_PORT` | Server port | `8000` |
-| `BLACKFISH_DEBUG` | Enable debug mode (0/1) | `1` |
+| `BLACKFISH_DEBUG` | Enable debug mode, disabling API authentication (0/1) | `0` |
 | `BLACKFISH_HOME_DIR` | Blackfish home directory | `~/.blackfish` |
 | `BLACKFISH_BASE_PATH` | API base path | `/` |
 | `BLACKFISH_STATIC_DIR` | Static files directory | (bundled) |

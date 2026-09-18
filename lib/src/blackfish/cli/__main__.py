@@ -6,6 +6,7 @@ from rich_click import Context
 import configparser
 import requests
 import os
+from urllib.parse import quote
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 from typing import TYPE_CHECKING, Optional, cast
@@ -38,6 +39,13 @@ from blackfish.cli.profile import (
 )
 from blackfish.server.models.profile import get_default_profile_name
 from blackfish.cli.image import list_images
+from blackfish.server.auth import (
+    generate_token,
+    read_token_file,
+    remove_token_file,
+    token_file_path,
+    write_token_file,
+)
 from blackfish.server.config import config
 from blackfish.server.logger import logger
 from blackfish.cli.classes import ServiceOptions
@@ -61,6 +69,67 @@ def _warn_if_no_profiles(home_dir: str) -> None:
             "`blackfish profile add` to register one. "
             "Service deployment will fail until then."
         )
+
+
+def _setup_auth_token() -> str | None:
+    """Settle the auth token for the server about to start.
+
+    Returns the token, or `None` in debug mode (where the API is unprotected).
+
+    Two things have to agree, and they are reached differently:
+
+    - Without `--reload`, uvicorn runs the app in this process, and `asgi`
+      reads the `config` singleton that was built when the CLI was imported —
+      before this function runs. So the token is assigned onto that singleton
+      directly; setting only the environment would leave `asgi` on the random
+      token the singleton minted at import.
+    - With `--reload`, uvicorn spawns a worker that imports everything afresh.
+      That worker inherits `BLACKFISH_AUTH_TOKEN` from the environment.
+    """
+    if config.DEBUG:
+        # Nothing accepts a token now; a leftover file would only mislead.
+        config.AUTH_TOKEN = None
+        remove_token_file(config.HOME_DIR)
+        return None
+
+    # An explicitly set token wins, so the user can pick their own secret.
+    token = os.getenv("BLACKFISH_AUTH_TOKEN") or generate_token()
+
+    if read_token_file(config.HOME_DIR) is not None:
+        # Usually left by a server killed with SIGTERM, where uvicorn exits the
+        # process before the cleanup below can run. Harmless — the token it
+        # holds is already dead — but it also means a second server sharing
+        # this home directory is about to lose the CLI to this one.
+        logger.debug(
+            f"Overwriting an existing auth token file at "
+            f"{token_file_path(config.HOME_DIR)}."
+        )
+
+    write_token_file(config.HOME_DIR, token)
+    config.AUTH_TOKEN = token  # in-process uvicorn
+    os.environ["BLACKFISH_AUTH_TOKEN"] = token  # reload worker
+    return token
+
+
+def _echo_auth_banner(token: str) -> None:
+    """Print the login link and token.
+
+    `click.echo` rather than `logger`: the log file is persistent, and this is
+    a credential. It also keeps the URL free of the log prefix, which stops
+    terminals from linkifying it.
+    """
+    # A wildcard bind is not a usable hostname in a browser.
+    host = "localhost" if config.HOST in ("0.0.0.0", "::", "") else config.HOST
+    url = (
+        f"http://{host}:{config.PORT}{config.BASE_PATH}"
+        f"/login?token={quote(token, safe='')}"
+    )
+    click.echo("")
+    click.echo("Blackfish is running with authentication enabled.")
+    click.echo(f"  Dashboard:  {url}")
+    click.echo(f"  Token:      {token}")
+    click.echo(f"  Saved to {token_file_path(config.HOME_DIR)} for the CLI.")
+    click.echo("")
 
 
 # blackfish
@@ -220,9 +289,8 @@ profile.add_command(rename_profile, "rename")
     default=None,
     help=(
         "Automatically reload changes to the application. "
-        "Defaults to on when BLACKFISH_DEBUG=1, off otherwise. "
-        "Pass --no-reload to disable on shared/HPC filesystems where "
-        "the watcher's lstat polling can starve the event loop."
+        "Off by default: on shared/HPC filesystems the watcher's lstat "
+        "polling can starve the event loop."
     ),
 )
 def start(reload: bool | None) -> None:  # pragma: no cover
@@ -236,9 +304,9 @@ def start(reload: bool | None) -> None:  # pragma: no cover
 
     - BLACKFISH_HOME_DIR: the location of Blackfish application file. Default: $HOME/.blackfish.
 
-    - BLACKFISH_DEBUG: run the API in debug mode. Default: 1 (true).
+    - BLACKFISH_DEBUG: run the API in debug mode, disabling authentication. Default: 0 (false).
 
-    - BLACKFISH_AUTH_TOKEN: an auth token to use for the API. Ignored in debug mode. Default: a random 32-byte token if not set.
+    - BLACKFISH_AUTH_TOKEN: an auth token to use for the API. Ignored in debug mode. Default: a fresh random token per start, written to $BLACKFISH_HOME_DIR/auth_token so the CLI picks it up automatically.
 
     - BLACKFISH_CONTAINER_PROVIDER: the container management system to use for local service deployment. Defaults: Docker, if available, else Apptainer.
     """
@@ -253,6 +321,8 @@ def start(reload: bool | None) -> None:  # pragma: no cover
     set_logging_level("DEBUG" if config.DEBUG else "INFO")
 
     bootstrap(config.HOME_DIR)
+
+    auth_token = _setup_auth_token()
 
     _warn_if_no_profiles(config.HOME_DIR)
 
@@ -323,20 +393,28 @@ def start(reload: bool | None) -> None:  # pragma: no cover
         logger.warning(f"tigerflow-ml image check failed: {e}")
 
     if reload is None:
-        reload = config.DEBUG
+        reload = False
+
+    if auth_token is not None:
+        _echo_auth_banner(auth_token)
 
     if __name__ == "blackfish.cli.__main__":
-        uvicorn.run(
-            "blackfish.server.asgi:app",
-            host=config.HOST,
-            port=config.PORT,
-            log_level="info",
-            app_dir=os.path.abspath(os.path.join(server.__file__, "..", "..")),
-            reload_dirs=os.path.abspath(os.path.join(server.__file__, ".."))
-            if reload
-            else None,
-            reload=reload,
-        )
+        try:
+            uvicorn.run(
+                "blackfish.server.asgi:app",
+                host=config.HOST,
+                port=config.PORT,
+                log_level="info",
+                app_dir=os.path.abspath(os.path.join(server.__file__, "..", "..")),
+                reload_dirs=os.path.abspath(os.path.join(server.__file__, ".."))
+                if reload
+                else None,
+                reload=reload,
+            )
+        finally:
+            # The token is only valid for this server; leaving it behind would
+            # point the CLI at a token nothing accepts.
+            remove_token_file(config.HOME_DIR)
 
 
 # blackfish run [OPTIONS] COMMAND
@@ -483,7 +561,10 @@ def stop(service_id: str) -> None:  # pragma: no cover
                 spinner.fail(f"{LogSymbols.ERROR.value}")
                 return
             if not res.ok:
-                spinner.text = f"Failed to fetch services (status={res.status_code})."
+                spinner.text = (
+                    api.auth_hint(res)
+                    or f"Failed to fetch services (status={res.status_code})."
+                )
                 spinner.fail(f"{LogSymbols.ERROR.value}")
                 return
 
@@ -511,7 +592,10 @@ def stop(service_id: str) -> None:  # pragma: no cover
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
         if not res.ok:
-            spinner.text = f"Failed to stop service {full_service_id[:DISPLAY_ID_LENGTH]} (status={res.status_code})."
+            spinner.text = (
+                api.auth_hint(res)
+                or f"Failed to stop service {full_service_id[:DISPLAY_ID_LENGTH]} (status={res.status_code})."
+            )
             spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
             spinner.text = f"Stopped service {full_service_id[:DISPLAY_ID_LENGTH]}."
@@ -549,7 +633,10 @@ def rm(filters: Optional[str] = None) -> None:  # pragma: no cover
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
         if not res.ok:
-            spinner.text = f"Failed to remove services (status={res.status_code})."
+            spinner.text = (
+                api.auth_hint(res)
+                or f"Failed to remove services (status={res.status_code})."
+            )
             spinner.fail(f"{LogSymbols.ERROR.value}")
         else:
             data = res.json()
@@ -622,7 +709,8 @@ def details(service_id: str) -> None:  # pragma: no cover
             return
         if not res.ok:
             spinner.text = (
-                f"Failed to fetch service {service_id} (status={res.status_code})."
+                api.auth_hint(res)
+                or f"Failed to fetch service {service_id} (status={res.status_code})."
             )
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
@@ -751,7 +839,10 @@ def ls(filters: Optional[str], all: bool = False) -> None:  # pragma: no cover
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
         if not res.ok:
-            spinner.text = f"Failed to fetch services. Status code: {res.status_code}."
+            spinner.text = (
+                api.auth_hint(res)
+                or f"Failed to fetch services. Status code: {res.status_code}."
+            )
             spinner.fail(f"{LogSymbols.ERROR.value}")
             return
 

@@ -9,7 +9,7 @@ The Blackfish application (i.e., REST API) and command-line interface (CLI) pull
 - `BLACKFISH_HOST`: host for local instance of the Blackfish app (default: `'localhost'`)
 - `BLACKFISH_PORT`: port for local instance of the Blackfish app (default: `8000`)
 - `BLACKFISH_HOME_DIR`: location to store application data (default: `'~/.blackfish'`)
-- `BLACKFISH_DEBUG`: whether to run the application in debug mode (default: `0`)
+- `BLACKFISH_DEBUG`: whether to run the application in debug mode (default: `0`; set `1`, `true`, `yes` or `on` to enable)
 - `BLACKFISH_AUTH_TOKEN`: a user-defined secret authentication token. Ignored if debug mode is on.
 
 ## Authentication
@@ -32,16 +32,14 @@ Blackfish is running with authentication enabled.
 commands work in any shell as long as `BLACKFISH_HOME_DIR` matches the server's. Set
 `BLACKFISH_AUTH_TOKEN` only to pin a token of your own; it takes precedence over the file.
 
-!!! note
-
-    The token is regenerated every time the server starts, and the file is removed on
-    shutdown. Restarting also invalidates dashboard sessions, so you will need to log in
-    again with the new link.
+The token is regenerated every time the server starts, so restarting invalidates both the
+old token and any dashboard session — log in again with the new link.
 
 !!! note
 
     The CLI communicates with the API over plain HTTP and is only intended
-    to be used with an API running on the same system.
+    to be used with an API running on the same system. The token file is readable only by
+    you (`0600`), which is what keeps it private on a shared machine.
 
 !!! note
 

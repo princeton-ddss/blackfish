@@ -88,17 +88,23 @@ blackfish start
 If everything is working, you should see output like the following:
 
 ```shell
-INFO:     Added class SpeechRecognition to service class dictionary. [2025-02-24 11:55:06.639]
-INFO:     Added class TextGeneration to service class dictionary. [2025-02-24 11:55:06.639]
-WARNING:  Blackfish is running in debug mode. API endpoints are unprotected. In a production
-          environment, set BLACKFISH_DEBUG=0 to require user authentication. [2025-02-24 11:55:06.639]
-INFO:     Upgrading database... [2025-02-24 11:55:06.915]
-WARNING:  Current configuration will not reload as not all conditions are met, please refer to documentation.
-INFO:     Started server process [58591]
+Blackfish is running with authentication enabled.
+  Dashboard:  http://localhost:8000/login?token=...
+  Token:      ...
+  Saved to ~/.blackfish/auth_token for the CLI.
+
+INFO:     Starting Blackfish version: 1.0.0 [2026-09-18 14:20:40.788]
+INFO:     Blackfish API is protected. See startup output for the auth token. [2026-09-18 14:20:40.956]
+INFO:     Started server process [29830]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://localhost:8000 (Press CTRL+C to quit)
 ```
+
+Open the `Dashboard` link to log in — the token is filled in for you. CLI commands in
+another terminal need no setup: they read the token from `~/.blackfish/auth_token`. See
+[Authentication](https://princeton-ddss.github.io/blackfish/latest/usage/cli/#authentication)
+for details, including how to disable authentication for local development.
 
 Congratulations—Blackfish is now up and running! The application serves the user interface as well as endpoints to manage services and Blackfish itself. The rest of this guide will walk through how to use the CLI to interact with these endpoints.
 

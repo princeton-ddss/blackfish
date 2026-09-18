@@ -28,7 +28,7 @@ from litestar.datastructures import State
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
-from blackfish.server.config import BlackfishConfig, config
+from blackfish.server.config import DEFAULT_DEBUG, BlackfishConfig, config
 from blackfish.server.http_client import create_http_client
 from blackfish.server.models.profile import (
     deserialize_profile,
@@ -112,7 +112,8 @@ class Blackfish:
             home_dir: Path to Blackfish home directory (default: ~/.blackfish)
             host: API host (default: localhost)
             port: API port (default: 8000)
-            debug: Debug mode (default: True)
+            debug: Debug mode, which disables API authentication
+                (default: False)
             auth_token: Authentication token (optional)
             config: Optional BlackfishConfig instance for advanced configuration.
                    Individual parameters will override config values if provided.
@@ -141,7 +142,7 @@ class Blackfish:
                 home_dir=home_dir or os.path.expanduser("~/.blackfish"),
                 host=host or "localhost",
                 port=port or 8000,
-                debug=debug if debug is not None else True,
+                debug=debug if debug is not None else DEFAULT_DEBUG,
                 auth_token=auth_token,
             )
         else:

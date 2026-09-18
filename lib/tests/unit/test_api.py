@@ -135,7 +135,7 @@ class TestBlackfishClient:
         # Test 4: Default initialization
         bf4 = Blackfish()
         assert bf4.config.HOME_DIR == str(Path.home() / ".blackfish")
-        assert bf4.config.DEBUG is True
+        assert bf4.config.DEBUG is False
 
 
 class TestSyncAPI:

@@ -40,7 +40,10 @@ def write_token_file(home_dir: str | os.PathLike[str], token: str) -> None:
     and renamed so a concurrent reader never sees a partial token.
     """
     path = token_file_path(home_dir)
-    tmp = path.with_name(f"{path.name}.tmp")
+    # Per-PID temp name: two concurrent starts sharing a HOME_DIR would
+    # otherwise write and rename the same file, and one could end up serving a
+    # token the other had already replaced.
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     fd = os.open(tmp, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
     try:
         with os.fdopen(fd, "w") as f:

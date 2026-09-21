@@ -226,9 +226,10 @@ def auth_guard(connection: ASGIConnection, _: BaseRouteHandler) -> None:  # type
 PAGE_MIDDLEWARE = [] if blackfish_config.DEBUG else [AuthMiddleware]
 ENDPOINT_GUARDS = [] if blackfish_config.DEBUG else [auth_guard]
 if not blackfish_config.DEBUG:
-    logger.info(
-        f"Blackfish API is protected with AUTH_TOKEN = {blackfish_config.AUTH_TOKEN}"
-    )
+    # Deliberately not logged: the token would land in the log file, which is
+    # readable for as long as it exists. `blackfish start` prints it to the
+    # terminal instead, and writes it to the token file for the CLI.
+    logger.info("Blackfish API is protected. See startup output for the auth token.")
 else:
     logger.warning(
         """Blackfish is running in debug mode. API endpoints are unprotected. In a production
@@ -407,13 +408,28 @@ async def dashboard() -> Template:
 
 
 @get(path="/login")
-async def dashboard_login(request: Request) -> Template | Redirect:  # type: ignore
+async def dashboard_login(
+    request: Request,  # type: ignore
+    token: str | None = None,
+) -> Template | Redirect:
     if AUTH_TOKEN is None:
         logger.error("AUTH_TOKEN is not set. Redirecting to dashboard.")
         return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
-    token = request.session.get("token")
+
+    # A `?token=` query parameter lets the link printed at startup log the user
+    # straight in, exchanging the token for a session cookie the same way the
+    # login form's POST does.
     if token is not None:
         if bcrypt.checkpw(token.encode(), AUTH_TOKEN):
+            logger.debug("Token accepted from query parameter.")
+            request.set_session({"token": token})
+            return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
+        logger.debug("Invalid token in query parameter.")
+        return Redirect(f"{blackfish_config.BASE_PATH}/login?success=false")
+
+    session_token = request.session.get("token")
+    if session_token is not None:
+        if bcrypt.checkpw(session_token.encode(), AUTH_TOKEN):
             logger.debug("User authenticated. Redirecting to dashboard.")
             return Redirect(f"{blackfish_config.BASE_PATH}/dashboard")
 

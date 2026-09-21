@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { buildContainerConfig, setDefaultProfile, resumeJob } from "@/lib/requests";
+import {
+  buildContainerConfig,
+  setDefaultProfile,
+  resumeJob,
+  fetchAppInfo,
+} from "@/lib/requests";
 
 describe("buildContainerConfig", () => {
   it("strips disable_thinking when false and adds no launch_kwargs", () => {
@@ -131,5 +136,51 @@ describe("resumeJob", () => {
     );
 
     await expect(resumeJob("job-001")).rejects.toThrow("Failed to resume job");
+  });
+});
+
+describe("fetchAppInfo", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns the body when the request succeeds", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ DEBUG: false, PORT: 8000 }),
+      })
+    );
+
+    await expect(fetchAppInfo()).resolves.toEqual({ DEBUG: false, PORT: 8000 });
+  });
+
+  it("redirects to the login page on 401", async () => {
+    // /api/info is guarded whenever authentication is enabled, and the session
+    // dies on every server restart — returning null would leave the user on a
+    // silently empty panel instead of the login form.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 401 })
+    );
+    const location = { href: "" };
+    vi.stubGlobal("window", { location });
+
+    await expect(fetchAppInfo()).resolves.toBeNull();
+    expect(location.href).toMatch(/\/login$/);
+  });
+
+  it("returns null without redirecting on other errors", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 500 })
+    );
+    const location = { href: "untouched" };
+    vi.stubGlobal("window", { location });
+
+    await expect(fetchAppInfo()).resolves.toBeNull();
+    expect(location.href).toBe("untouched");
   });
 });

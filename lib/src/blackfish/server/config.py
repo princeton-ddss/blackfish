@@ -14,7 +14,7 @@ DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8000
 DEFAULT_STATIC_DIR = Path(__file__).parent.parent
 DEFAULT_HOME_DIR = os.path.expanduser("~/.blackfish")
-DEFAULT_DEBUG = True
+DEFAULT_DEBUG = False
 DEFAULT_MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 DEFAULT_GRACE_PERIOD = 600  # seconds
 
@@ -22,6 +22,18 @@ DEFAULT_GRACE_PERIOD = 600  # seconds
 class ContainerProvider(StrEnum):
     Docker = auto()
     Apptainer = auto()
+
+
+def _parse_bool(value: Optional[str], default: bool) -> bool:
+    """Parse a boolean environment variable.
+
+    Accepts the spellings people actually use. The previous `int()` conversion
+    raised ValueError on `BLACKFISH_DEBUG=true`, which the docs had advertised.
+    """
+    if value is None:
+        # `bool()` so callers passing 0/1 still get a real bool back.
+        return bool(default)
+    return value.strip().lower() in ("1", "true", "yes", "on")
 
 
 def get_container_provider() -> Optional[ContainerProvider]:
@@ -68,7 +80,7 @@ class BlackfishConfig:
         self.PORT = int(os.getenv("BLACKFISH_PORT", port))
         self.STATIC_DIR = Path(os.getenv("BLACKFISH_STATIC_DIR", static_dir))
         self.HOME_DIR = os.getenv("BLACKFISH_HOME_DIR", home_dir)
-        self.DEBUG = bool(int(os.getenv("BLACKFISH_DEBUG", debug)))
+        self.DEBUG = _parse_bool(os.getenv("BLACKFISH_DEBUG"), debug)
         if self.DEBUG:
             self.AUTH_TOKEN = None
         elif auth_token is None:

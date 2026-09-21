@@ -1,4 +1,4 @@
-import { blackfishApiURL } from "../config";
+import { blackfishApiURL, basePath } from "../config";
 import { dirname } from "./pathUtils";
 
 /* Return a list of local files with resolved path */
@@ -562,6 +562,13 @@ export async function downloadModel({ repo_id, profile, revision = null, use_cac
 /** Fetch app info/config. */
 export async function fetchAppInfo() {
   const res = await fetch(`${blackfishApiURL}/api/info`);
+  if (res.status === 401) {
+    // /api/info is guarded whenever authentication is enabled. Returning null
+    // here would render an empty settings panel rather than saying the session
+    // has expired — which it does on every server restart.
+    window.location.href = `${basePath}/login`;
+    return null;
+  }
   if (!res.ok) {
     console.debug(`from fetchAppInfo: failed to fetch info (status=${res.status})`);
     return null;

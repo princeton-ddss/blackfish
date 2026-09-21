@@ -133,3 +133,54 @@ class TestAuthenticationAPI:
             headers={"Authorization": "Bearer wrong_token"},
         )
         assert response.status_code == 401
+
+
+class TestLoginLink:
+    """The pre-authenticated `/login?token=` link printed at server startup."""
+
+    async def test_valid_token_sets_session_and_redirects(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """A valid token logs the user straight in, no form needed."""
+        response = await no_auth_client.get(
+            "/login?token=sealsaretasty", follow_redirects=False
+        )
+
+        assert response.status_code == 302
+        assert response.headers["location"].endswith("/dashboard")
+
+        # The token was exchanged for a session, so a guarded endpoint works.
+        assert (await no_auth_client.get("/api/info")).status_code == 200
+
+    async def test_invalid_token_redirects_to_failed_login(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """A wrong token reports failure rather than silently showing the form."""
+        response = await no_auth_client.get(
+            "/login?token=notthetoken", follow_redirects=False
+        )
+
+        assert response.status_code == 302
+        assert "success=false" in response.headers["location"]
+
+    async def test_failed_login_redirect_does_not_loop(
+        self, no_auth_client: AsyncTestClient
+    ):
+        """`?success=false` must serve the page, not bounce back to itself.
+
+        The failure redirect targets this same handler, so a `success` param
+        that fell into the token branch would redirect forever. Asserts only
+        that it is not a redirect — rendering needs a built frontend, which
+        the test environment does not have.
+        """
+        response = await no_auth_client.get(
+            "/login?success=false", follow_redirects=False
+        )
+
+        assert not response.is_redirect
+
+    async def test_no_token_serves_login_page(self, no_auth_client: AsyncTestClient):
+        """Visiting /login without a token falls through to the form."""
+        response = await no_auth_client.get("/login", follow_redirects=False)
+
+        assert not response.is_redirect

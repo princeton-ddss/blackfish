@@ -69,9 +69,17 @@ The application and CLI pull settings from environment variables:
 | `BLACKFISH_HOST` | `localhost` | Host for the Blackfish app |
 | `BLACKFISH_PORT` | `8000` | Port for the Blackfish app |
 | `BLACKFISH_HOME_DIR` | `~/.blackfish` | Application data directory |
-| `BLACKFISH_DEBUG` | `true` | Run in debug mode (no auth) |
+| `BLACKFISH_DEBUG` | `0` | Run in debug mode (no auth, hot reload). Truthy values: `1`, `true`, `yes`, `on`. |
 | `BLACKFISH_CONTAINER_PROVIDER` | `docker` | Container runtime (`docker` or `apptainer`) |
-| `BLACKFISH_AUTH_TOKEN` | — | Authentication token. In non-debug mode, the CLI sends it as `Authorization: Bearer <token>`; the dashboard exchanges it for a session cookie via `/api/login`. Ignored in debug mode. |
+| `BLACKFISH_AUTH_TOKEN` | (generated) | Authentication token. Generated fresh on each `blackfish start` and written to `$BLACKFISH_HOME_DIR/auth_token`, which the CLI reads automatically — set this only to pin your own token. The dashboard exchanges it for a session cookie via `/api/login`. Ignored in debug mode. |
+
+### Hot reload
+
+`blackfish start` reloads on source changes in debug mode, and `--reload` is
+refused outside it — the watcher's `lstat` polling starves the event loop on the
+shared filesystems the API normally runs on. To develop against a reloading
+server, set `BLACKFISH_DEBUG=1`, which also disables authentication; do that
+only on a host you don't share.
 
 ### Database Migrations
 

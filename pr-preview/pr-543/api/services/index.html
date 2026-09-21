@@ -1738,16 +1738,14 @@
 
 
 
-<div class="doc doc-object doc-attribute">
 
+
+
+<div class="doc doc-object doc-function">
 
 
 <h4 id="blackfish.server.services.base.Service.api_key_hint" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">api_key_hint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
+            <code class="highlight language-python"><span class="n">api_key_hint</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
 
 </h4>
 
@@ -1757,13 +1755,16 @@
         <p>The last four characters of the configured key, or None.</p>
 <p>Enough to tell <em>which</em> key is set without being a readback. A key of
 four characters or fewer collapses to "..." rather than echoing itself.</p>
+<p>A method rather than a property: the serialization plugin picks up
+properties, which would put this in every service payload, and <code>details</code>
+(cli/<strong>main</strong>.py) round-trips that payload back through
+<code>Service(**body)</code> — where a read-only attribute has no setter. The hint
+belongs to <code>GET /api/services/{id}/api_key</code>, not to the service object.</p>
+
 
     </div>
 
 </div>
-
-
-
 
 <div class="doc doc-object doc-function">
 

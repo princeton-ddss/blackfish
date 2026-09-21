@@ -6,6 +6,8 @@ from rich_click import Context
 import configparser
 import requests
 import os
+import logging
+import re
 from urllib.parse import quote
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -109,6 +111,28 @@ def _setup_auth_token() -> str | None:
     config.AUTH_TOKEN = token  # in-process uvicorn
     os.environ["BLACKFISH_AUTH_TOKEN"] = token  # reload worker
     return token
+
+
+class _RedactQueryTokens(logging.Filter):
+    """Strip `token=` values out of uvicorn's access log.
+
+    The login link carries the token in the query string, and uvicorn's access
+    logger writes the full request line to stdout — so a secret we took care to
+    keep out of the log file would land in anything capturing stdout (systemd,
+    a `tee`'d shell, a multiplexer's scrollback) instead.
+    """
+
+    _PATTERN = re.compile(r"(token=)[^&\s\"']+")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.args:
+            record.args = tuple(
+                self._PATTERN.sub(r"\1<redacted>", a) if isinstance(a, str) else a
+                for a in record.args
+            )
+        if isinstance(record.msg, str):
+            record.msg = self._PATTERN.sub(r"\1<redacted>", record.msg)
+        return True
 
 
 def _echo_auth_banner(token: str) -> None:
@@ -410,6 +434,8 @@ def start(reload: bool | None) -> None:  # pragma: no cover
         _echo_auth_banner(auth_token)
 
     if __name__ == "blackfish.cli.__main__":
+        logging.getLogger("uvicorn.access").addFilter(_RedactQueryTokens())
+
         try:
             uvicorn.run(
                 "blackfish.server.asgi:app",

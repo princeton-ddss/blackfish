@@ -2,10 +2,13 @@
 
 from unittest.mock import patch
 
+import logging
+
 import pytest
 import requests
 
 from blackfish.cli import api
+from blackfish.cli.__main__ import _RedactQueryTokens
 from blackfish.server.auth import write_token_file
 
 
@@ -103,3 +106,43 @@ def test_url_uses_config_host_and_port() -> None:
         patch.object(api.config, "PORT", 9999),
     ):
         assert api._url("/api/services") == "http://example.test:9999/api/services"
+
+
+class TestAccessLogRedaction:
+    """The login link puts the token in a query string, which uvicorn's access
+    logger would otherwise write to stdout verbatim."""
+
+    def _record(self, msg: str, args: tuple) -> logging.LogRecord:
+        return logging.LogRecord(
+            name="uvicorn.access",
+            level=logging.INFO,
+            pathname=__file__,
+            lineno=1,
+            msg=msg,
+            args=args,
+            exc_info=None,
+        )
+
+    def test_redacts_token_in_args(self) -> None:
+        f = _RedactQueryTokens()
+        record = self._record('%s - "%s %s"', ("::1", "GET", "/login?token=secret123"))
+        f.filter(record)
+        assert "secret123" not in record.getMessage()
+        assert "token=<redacted>" in record.getMessage()
+
+    def test_redacts_token_in_msg(self) -> None:
+        f = _RedactQueryTokens()
+        record = self._record("GET /login?token=secret123 HTTP/1.1", ())
+        f.filter(record)
+        assert "secret123" not in record.getMessage()
+
+    def test_leaves_other_query_params_alone(self) -> None:
+        f = _RedactQueryTokens()
+        record = self._record("%s", ("/login?success=false",))
+        f.filter(record)
+        assert "success=false" in record.getMessage()
+
+    def test_filter_always_passes_the_record(self) -> None:
+        """Redaction must not drop log lines."""
+        f = _RedactQueryTokens()
+        assert f.filter(self._record("%s", ("/api/info",))) is True

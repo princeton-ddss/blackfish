@@ -1456,9 +1456,14 @@ class TestServiceApiKey:
             result = cli_runner.invoke(main, cmd)
 
         assert "Ignoring --api-key in the pass-through" in result.output
-        # The declared option is authoritative.
+        # The declared option is authoritative, and the pass-through key must
+        # not survive into launch_kwargs: vLLM's argparse takes the last
+        # occurrence, so a stale second --api-key would launch the container
+        # with a key Blackfish does not hold, 401-ing every proxied request.
         container_config = mock_post.call_args[1]["json"]["container_config"]
         assert container_config["api_key"] == "sk-declared"
+        assert "sk-passthrough" not in (container_config["launch_kwargs"] or "")
+        assert "--api-key" not in (container_config["launch_kwargs"] or "")
 
     def test_dry_run_renders_the_key_into_the_script(
         self, cli_runner, mock_config, slurm_profile

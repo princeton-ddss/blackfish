@@ -29,6 +29,29 @@ from blackfish.cli.classes import ServiceOptions
 
 
 # blackfish run [OPTIONS] text-generation [OPTIONS]
+def _strip_api_key(args: list[str]) -> list[str]:
+    """Drop any `--api-key` from pass-through arguments.
+
+    The declared option is what Blackfish records and replays when proxying.
+    Leaving a second `--api-key` in the arguments handed to `vllm serve` would
+    launch the container with that one instead — argparse takes the last
+    occurrence — so the service would reject the key Blackfish holds.
+    """
+    stripped: list[str] = []
+    skip_next = False
+    for arg in args:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg == "--api-key":
+            skip_next = True  # also drop its value
+            continue
+        if arg.startswith("--api-key="):
+            continue
+        stripped.append(arg)
+    return stripped
+
+
 @click.command(
     context_settings=dict(
         ignore_unknown_options=True,
@@ -139,7 +162,8 @@ def run_text_generation(
     if name is None:
         name = f"blackfish-{randint(10_000, 99_999)}"
 
-    if "--api-key" in ctx.args:
+    extra_args = _strip_api_key(list(ctx.args))
+    if len(extra_args) != len(ctx.args):
         click.echo(
             f"{LogSymbols.WARNING.value} Ignoring --api-key in the pass-through"
             " arguments. Use the --api-key option instead, so that Blackfish can"
@@ -151,7 +175,7 @@ def run_text_generation(
         model_dir=model_dir,
         revision=revision,
         api_key=api_key,
-        launch_kwargs=shlex.join(ctx.args),
+        launch_kwargs=shlex.join(extra_args),
     )
 
     job_config: JobConfig

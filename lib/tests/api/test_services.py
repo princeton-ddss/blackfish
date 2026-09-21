@@ -547,3 +547,97 @@ class TestCreateServiceErrorHandling:
             # Should NOT leak internal error details
             assert "Internal database connection failed" not in result["detail"]
             assert result["detail"] == "Failed to launch service."
+
+
+class TestServiceApiKeyRedaction:
+    """The raw API key must not appear in any service payload.
+
+    Every service endpoint returns the ORM object directly and the
+    serialization plugin publishes each mapped column, so the key is kept under
+    a private attribute (`Service._api_key`) rather than excluded per handler.
+    These assertions scan the whole response body so they keep catching a leak
+    if the serialization shape changes (#534).
+    """
+
+    SECRET = "sk-do-not-leak-me"
+
+    async def _keyed_service(self, session: AsyncSession) -> Service:
+        """The first seeded service, given an API key."""
+        from sqlalchemy import select
+
+        service = (await session.execute(select(Service))).scalars().first()
+        assert service is not None, "expected the seed fixture to add a service"
+        service._api_key = self.SECRET
+        await session.commit()
+        return service
+
+    async def test_key_absent_from_service_list(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        await self._keyed_service(session)
+
+        response = await client.get("/api/services")
+
+        assert response.status_code == 200
+        assert self.SECRET not in response.text
+
+    async def test_key_absent_from_single_service(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        service = await self._keyed_service(session)
+
+        response = await client.get(f"/api/services/{service.id}")
+
+        assert response.status_code == 200
+        assert self.SECRET not in response.text
+
+    async def test_status_endpoint_reports_configured_with_a_hint(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """A hint identifies *which* key is set without being a readback."""
+        service = await self._keyed_service(session)
+
+        response = await client.get(f"/api/services/{service.id}/api_key")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["configured"] is True
+        assert body["hint"] == "...k-me"
+        assert self.SECRET not in response.text
+
+    async def test_status_endpoint_reports_unconfigured(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        from sqlalchemy import select
+
+        service = (await session.execute(select(Service))).scalars().first()
+        service._api_key = None
+        await session.commit()
+
+        response = await client.get(f"/api/services/{service.id}/api_key")
+
+        assert response.status_code == 200
+        assert response.json() == {"configured": False, "hint": None}
+
+    async def test_short_key_is_not_echoed_in_full(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """`key[-4:]` on a short key would return the whole thing."""
+        from sqlalchemy import select
+
+        service = (await session.execute(select(Service))).scalars().first()
+        service._api_key = "ab"
+        await session.commit()
+
+        response = await client.get(f"/api/services/{service.id}/api_key")
+
+        assert response.json()["hint"] == "..."
+
+    async def test_status_endpoint_requires_authentication(
+        self, no_auth_client: AsyncTestClient
+    ):
+        service_id = "4c2216ea-df22-4bf6-bcea-56964df12af5"
+
+        response = await no_auth_client.get(f"/api/services/{service_id}/api_key")
+
+        assert response.status_code == 401

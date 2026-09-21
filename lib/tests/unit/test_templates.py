@@ -1,5 +1,6 @@
 """Smoke tests for the service Jinja templates."""
 
+import shlex
 from types import SimpleNamespace
 
 import pytest
@@ -11,6 +12,8 @@ from blackfish.server.images import DEFAULT_IMAGES
 
 def _render(template_name: str, **ctx) -> str:
     env = Environment(loader=PackageLoader("blackfish.server", "templates"))
+    # Mirrors `Service.render_job_script`, which registers the same filter.
+    env.filters["shquote"] = shlex.quote
     return env.get_template(template_name).render(**ctx)
 
 
@@ -32,6 +35,7 @@ def _ctx(provider: str, image_key: str) -> dict:
             model_dir="/models",
             revision="main",
             launch_kwargs="",
+            api_key=None,
         ),
         "job_config": SimpleNamespace(
             gres=1, ntasks=1, partition="gpu", time="01:00:00"
@@ -147,3 +151,52 @@ def test_batch_local_renders_apptainer_run():
     assert "--env VLLM_USE_FLASHINFER_SAMPLER=0" in rendered
     assert f"/images/{sif}" in rendered
     assert "docker run" not in rendered
+
+
+# (template, image_key, provider, flag) — the two images disagree on the flag
+# name: vLLM takes --api-key, speech-recognition-inference --auth-token.
+API_KEY_TEMPLATES = [
+    ("text_generation_slurm.sh", "text_generation", "apptainer", "--api-key"),
+    ("text_generation_local.sh", "text_generation", "docker", "--api-key"),
+    ("speech_recognition_slurm.sh", "speech_recognition", "apptainer", "--auth-token"),
+    ("speech_recognition_local.sh", "speech_recognition", "docker", "--auth-token"),
+    ("speech_recognition_local.sh", "speech_recognition", "apptainer", "--auth-token"),
+]
+
+
+@pytest.mark.parametrize("template,image_key,provider,flag", API_KEY_TEMPLATES)
+def test_no_auth_flag_when_no_api_key(template, image_key, provider, flag):
+    """An unset key emits nothing — not an empty flag."""
+    ctx = _ctx(provider, image_key)
+    ctx["container_config"].api_key = None
+
+    rendered = _render(template, **ctx)
+
+    assert flag not in rendered
+
+
+@pytest.mark.parametrize("template,image_key,provider,flag", API_KEY_TEMPLATES)
+def test_auth_flag_rendered_when_api_key_set(template, image_key, provider, flag):
+    ctx = _ctx(provider, image_key)
+    ctx["container_config"].api_key = "sk-secret"
+
+    rendered = _render(template, **ctx)
+
+    assert f"{flag} sk-secret" in rendered
+
+
+@pytest.mark.parametrize("template,image_key,provider,flag", API_KEY_TEMPLATES)
+def test_api_key_is_shell_quoted(template, image_key, provider, flag):
+    """The key is interpolated into a script that runs as the user.
+
+    Without quoting, a key containing `;` or a space would execute as shell
+    rather than being passed as one argument.
+    """
+    nasty = "a b;touch /tmp/pwned"
+    ctx = _ctx(provider, image_key)
+    ctx["container_config"].api_key = nasty
+
+    rendered = _render(template, **ctx)
+
+    assert f"{flag} {shlex.quote(nasty)}" in rendered
+    assert f"{flag} {nasty}" not in rendered

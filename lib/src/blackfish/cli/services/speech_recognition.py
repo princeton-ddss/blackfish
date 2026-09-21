@@ -61,6 +61,15 @@ from blackfish.cli.classes import ServiceOptions
     help="Run server on the given port.",
 )
 @click.option(
+    "--api-key",
+    type=str,
+    default=None,
+    help=(
+        "Require this key on requests to the service. Blackfish stores it and"
+        " attaches it automatically when calling the service through its API."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -73,6 +82,7 @@ def run_speech_recognition(
     name: Optional[str],
     revision: Optional[str],
     port: int,
+    api_key: Optional[str],
     dry_run: bool,
 ) -> None:  # pragma: no cover
     """Start a speech recognition service hosting MODEL. MODEL is specified as a repo ID, e.g., openai/whisper-large-v3.
@@ -131,6 +141,7 @@ def run_speech_recognition(
         port=port,
         model_dir=os.path.dirname(model_dir),  # type: ignore
         revision=revision,
+        api_key=api_key,
     )
 
     job_config: JobConfig

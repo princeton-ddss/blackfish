@@ -341,3 +341,9 @@ class TextGeneration(Service):
     __mapper_args__ = {
         "polymorphic_identity": "text_generation",
     }
+
+    def auth_headers(self) -> dict[str, str]:
+        """vLLM's AuthenticationMiddleware requires a bearer scheme."""
+        if not self._api_key:
+            return {}
+        return {"Authorization": f"Bearer {self._api_key}"}

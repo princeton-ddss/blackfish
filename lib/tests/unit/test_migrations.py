@@ -509,3 +509,74 @@ class TestAddImageRefColumns:
 
             for table in ("service", "jobs"):
                 assert "image_ref" not in _get_columns(conn, table)
+
+
+class TestAddServiceApiKeyColumn:
+    """Tests for 2026-09-21_add_service_api_key_column (revision 3245496daa70).
+
+    Adds a nullable `api_key` to `service`, recording the upstream key a
+    service was launched with so the proxy can replay it (#534). The Python
+    attribute is `Service._api_key`; the column keeps the plain name.
+    """
+
+    FILENAME = "2026-09-21_add_service_api_key_column_3245496daa70.py"
+
+    def test_schema_upgrade_adds_nullable_api_key(self, engine: Engine) -> None:
+        with engine.connect() as conn:
+            _create_minimal_service_table(conn)
+            conn.commit()
+
+            migration = load_migration(self.FILENAME)
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.schema_upgrades()
+            conn.commit()
+
+            cols = _get_columns(conn, "service")
+            assert "api_key" in cols
+            # A service legitimately has no key, so NULL must be allowed.
+            assert not cols["api_key"]["notnull"]
+
+    def test_existing_rows_survive_with_null_api_key(self, engine: Engine) -> None:
+        """Services launched before this migration are simply unauthenticated."""
+        with engine.connect() as conn:
+            _create_minimal_service_table(conn)
+            conn.execute(
+                text(
+                    "INSERT INTO service (id, name, image, model) "
+                    "VALUES (:id, :n, :i, :m)"
+                ),
+                {"id": "svc-1", "n": "existing", "i": "text_generation", "m": "m"},
+            )
+            conn.commit()
+
+            migration = load_migration(self.FILENAME)
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.schema_upgrades()
+            conn.commit()
+
+            row = conn.execute(
+                text("SELECT name, api_key FROM service WHERE id = :id"),
+                {"id": "svc-1"},
+            ).one()
+            assert row[0] == "existing"
+            assert row[1] is None
+
+    def test_schema_downgrade_removes_api_key(self, engine: Engine) -> None:
+        with engine.connect() as conn:
+            _create_minimal_service_table(conn)
+            conn.commit()
+
+            migration = load_migration(self.FILENAME)
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.schema_upgrades()
+            conn.commit()
+
+            ctx = MigrationContext.configure(conn)
+            with Operations.context(ctx):
+                migration.schema_downgrades()
+            conn.commit()
+
+            assert "api_key" not in _get_columns(conn, "service")

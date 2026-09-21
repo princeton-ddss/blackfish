@@ -66,6 +66,15 @@ from blackfish.cli.classes import ServiceOptions
     help="Run server on the given port.",
 )
 @click.option(
+    "--api-key",
+    type=str,
+    default=None,
+    help=(
+        "Require this key on requests to the service. Blackfish stores it and"
+        " attaches it automatically when calling the service through its API."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -78,11 +87,12 @@ def run_text_generation(
     name: Optional[str],
     revision: Optional[str],
     port: int,
+    api_key: Optional[str],
     dry_run: bool,
 ) -> None:  # pragma: no cover
     """Start a text generation service hosting MODEL. MODEL is specified as a repo ID, e.g., google/gemma-3-27b-it.
 
-    In addition to the options listed by `--help`, you can pass any arguments of the `vllm serve` command, such as `--api-key`, `enable_reasoning`, or `seed`.
+    In addition to the options listed by `--help`, you can pass any arguments of the `vllm serve` command, such as `enable_reasoning` or `seed`.
     """
 
     from uuid import uuid4
@@ -129,10 +139,18 @@ def run_text_generation(
     if name is None:
         name = f"blackfish-{randint(10_000, 99_999)}"
 
+    if "--api-key" in ctx.args:
+        click.echo(
+            f"{LogSymbols.WARNING.value} Ignoring --api-key in the pass-through"
+            " arguments. Use the --api-key option instead, so that Blackfish can"
+            " attach the key when proxying requests to the service."
+        )
+
     container_config = TextGenerationConfig(
         port=port,
         model_dir=model_dir,
         revision=revision,
+        api_key=api_key,
         launch_kwargs=shlex.join(ctx.args),
     )
 

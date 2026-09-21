@@ -13,5 +13,8 @@ apptainer run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --model-id {{ model }} \
   --revision {{ container_config.revision }} \
   --host 0.0.0.0 \
+{%- if container_config.api_key %}
+  --auth-token {{ container_config.api_key | shquote }} \
+{%- endif %}
   --port $port
 {%- endblock %}

@@ -14,6 +14,9 @@ docker run -d {{ '--runtime nvidia --gpus all' if job_config.gres else '' }} \
   --revision {{container_config.revision }} \
   {%- endif %}
   --host 0.0.0.0 \
+{%- if container_config.api_key %}
+  --auth-token {{ container_config.api_key | shquote }} \
+{%- endif %}
   --port {{ container_config.port }}
 {%- elif provider == 'apptainer' %}
 apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
@@ -29,6 +32,9 @@ apptainer instance run {{ ' --nv' if job_config.gres > 0 else '' }} \
   --revision {{ container_config.revision }}\
   {%- endif %}
   --host 0.0.0.0 \
+{%- if container_config.api_key %}
+  --auth-token {{ container_config.api_key | shquote }} \
+{%- endif %}
   --port {{ container_config.port }}
 {%- endif %}
 {%- endblock %}

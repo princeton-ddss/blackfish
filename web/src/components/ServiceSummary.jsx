@@ -8,9 +8,11 @@ import {
   FireIcon,
   CubeTransparentIcon,
   CircleStackIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 import { formattedTimeInterval, isServiceRunning } from "@/lib/util";
+import { fetchServiceApiKeyStatus } from "@/lib/requests";
 
 /**
  * Timer
@@ -46,6 +48,27 @@ function ServiceSummary({
   service,
   profile,
 }) {
+  // Declared before the early returns below: hooks must run unconditionally.
+  const [apiKeyStatus, setApiKeyStatus] = React.useState({
+    configured: false,
+    hint: null,
+  });
+
+  const serviceId = service?.id;
+  React.useEffect(() => {
+    if (!serviceId) {
+      setApiKeyStatus({ configured: false, hint: null });
+      return;
+    }
+    let cancelled = false;
+    fetchServiceApiKeyStatus(serviceId).then((status) => {
+      if (!cancelled) setApiKeyStatus(status);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [serviceId]);
+
   if (profile && !service) {
     return <></>;
   }
@@ -78,6 +101,11 @@ function ServiceSummary({
             <div className="mb-1 ml-0 inline-flex items-center">
               <CloudIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
               <div className="grow font-regular text-sm mr-1">Host </div>
+              <span className="mr-2">-</span>
+            </div>
+            <div className="mb-1 ml-0 inline-flex items-center">
+              <LockClosedIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
+              <div className="grow font-regular text-sm mr-1">API Key </div>
               <span className="mr-2">-</span>
             </div>
             <div className="mb-1 ml-0 inline-flex items-center">
@@ -149,6 +177,16 @@ function ServiceSummary({
                 ? `${service.host}:${service.port}`
                 : service.host
               : "-"}
+          </div>
+          <div className="mb-1 ml-0 inline-flex items-center">
+            <LockClosedIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />
+            <div className="grow font-medium text-sm mr-1">API Key </div>
+            {/* The hint, never the key: enough to tell which key is set. An
+                unkeyed service says so plainly rather than showing "-", since
+                "no key" is a meaningful state, not missing data. */}
+            <span className="service-summary__api-key">
+              {apiKeyStatus.configured ? apiKeyStatus.hint : "None"}
+            </span>
           </div>
           <div className="mb-1 ml-0 inline-flex items-center">
             <CpuChipIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />

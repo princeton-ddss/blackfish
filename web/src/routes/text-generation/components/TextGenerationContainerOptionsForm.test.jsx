@@ -5,6 +5,7 @@ import TextGenerationContainerOptionsForm from "./TextGenerationContainerOptions
 
 const defaultOptions = {
   disable_thinking: true,
+  api_key: "",
 };
 
 function renderForm({ containerOptions = defaultOptions, setContainerOptions = vi.fn(), disabled = false } = {}) {
@@ -57,5 +58,39 @@ describe("TextGenerationContainerOptionsForm", () => {
       ...defaultOptions,
       disable_thinking: false,
     });
+  });
+
+  it("records an API key as the user types", async () => {
+    const user = userEvent.setup();
+    const setContainerOptions = vi.fn();
+    const { getByText, getByLabelText } = renderForm({ setContainerOptions });
+    await user.click(getByText("Deployment Options"));
+
+    await user.type(getByLabelText("API Key"), "s");
+
+    const updater = setContainerOptions.mock.calls[0][0];
+    expect(updater(defaultOptions)).toEqual({ ...defaultOptions, api_key: "s" });
+  });
+
+  it("masks the API key input", async () => {
+    const user = userEvent.setup();
+    const { getByText, getByLabelText } = renderForm();
+    await user.click(getByText("Deployment Options"));
+
+    expect(getByLabelText("API Key")).toHaveAttribute("type", "password");
+  });
+
+  it("treats an empty API key as valid", async () => {
+    // The field is optional: an over-eager validator would block Launch via
+    // the isDeepEmpty(validationErrors) gate in ServiceModal. The component
+    // shows an error message when invalid, so its absence is the assertion.
+    const user = userEvent.setup();
+    const { getByText, getByLabelText, queryByText } = renderForm();
+    await user.click(getByText("Deployment Options"));
+
+    await user.type(getByLabelText("API Key"), "x");
+    await user.clear(getByLabelText("API Key"));
+
+    expect(queryByText(/required/i)).not.toBeInTheDocument();
   });
 });

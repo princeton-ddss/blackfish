@@ -201,6 +201,7 @@ export default function TextGenerationPage() {
   const defaultContainerOptions = useMemo(() => {
     return {
       disable_thinking: true,
+      api_key: "",
     };
   }, []);
 

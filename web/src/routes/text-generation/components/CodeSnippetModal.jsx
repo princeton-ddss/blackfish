@@ -17,6 +17,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
+import { fetchServiceApiKeyStatus } from "@/lib/requests";
 import PropTypes from "prop-types";
 import Prism from "prismjs";
 import "prismjs/components/prism-python";
@@ -52,7 +53,7 @@ function buildSampleBody(mode, parameters) {
  * @param {object} service - The selected service
  * @returns {string} Python code
  */
-function generatePythonCode(mode, parameters, service) {
+function generatePythonCode(mode, parameters, service, hasApiKey) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
   const body = buildSampleBody(mode, parameters);
@@ -61,6 +62,17 @@ function generatePythonCode(mode, parameters, service) {
     .split("\n")
     .map((line, i) => (i === 0 ? line : "    " + line))
     .join("\n");
+
+  if (hasApiKey) {
+    return `import requests
+
+response = requests.post(
+    "http://localhost:${port}/${endpoint}",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    json=${bodyJson}
+)
+print(response.json())`;
+  }
 
   return `import requests
 
@@ -78,7 +90,7 @@ print(response.json())`;
  * @param {object} service - The selected service
  * @returns {string} R code
  */
-function generateRCode(mode, parameters, service) {
+function generateRCode(mode, parameters, service, hasApiKey) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
   const body = buildSampleBody(mode, parameters);
@@ -104,6 +116,19 @@ function generateRCode(mode, parameters, service) {
 
   const bodyR = formatRValue(body, 1);
 
+  if (hasApiKey) {
+    return `library(httr)
+
+response <- POST(
+  "http://localhost:${port}/${endpoint}",
+  add_headers(Authorization = paste("Bearer", api_key)),
+  body = ${bodyR},
+  encode = "json"
+)
+
+content(response, "parsed")`;
+  }
+
   return `library(httr)
 
 response <- POST(
@@ -122,7 +147,7 @@ content(response, "parsed")`;
  * @param {object} service - The selected service
  * @returns {string} Shell code
  */
-function generateShellCode(mode, parameters, service) {
+function generateShellCode(mode, parameters, service, hasApiKey) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
   const body = buildSampleBody(mode, parameters);
@@ -130,6 +155,13 @@ function generateShellCode(mode, parameters, service) {
   const bodyJson = JSON.stringify(body, null, 2);
   // Escape single quotes for shell
   const escapedJson = bodyJson.replace(/'/g, "'\\''");
+
+  if (hasApiKey) {
+    return `curl -X POST "http://localhost:${port}/${endpoint}" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $API_KEY" \\
+  -d '${escapedJson}'`;
+  }
 
   return `curl -X POST "http://localhost:${port}/${endpoint}" \\
   -H "Content-Type: application/json" \\
@@ -162,11 +194,25 @@ function CodeSnippetModal({
   const selectedService = serviceContext?.selectedService;
   const [copied, setCopied] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [apiKeyStatus, setApiKeyStatus] = useState({ configured: false, hint: null });
   const timeoutRef = useRef(null);
 
+  // Snippets that omit the auth header would 401 against a keyed service, so
+  // ask whether one is set. Only the hint comes back, never the key.
+  useEffect(() => {
+    if (!open || !selectedService?.id) return;
+    let cancelled = false;
+    fetchServiceApiKeyStatus(selectedService.id).then((status) => {
+      if (!cancelled) setApiKeyStatus(status);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, selectedService?.id]);
+
   const allCode = useMemo(
-    () => languages.map((lang) => lang.generate(mode, parameters, selectedService)),
-    [mode, parameters, selectedService]
+    () => languages.map((lang) => lang.generate(mode, parameters, selectedService, apiKeyStatus.configured)),
+    [mode, parameters, selectedService, apiKeyStatus.configured]
   );
 
   const code = allCode[selectedIndex];
@@ -286,6 +332,14 @@ function CodeSnippetModal({
                       ))}
                     </TabPanels>
                   </TabGroup>
+
+                  {apiKeyStatus.configured && (
+                    <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      This service requires an API key (
+                      <code className="font-mono">{apiKeyStatus.hint}</code>
+                      ). Substitute the key you set when launching it.
+                    </p>
+                  )}
                 </div>
 
               </DialogPanel>

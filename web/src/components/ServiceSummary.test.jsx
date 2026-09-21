@@ -11,6 +11,15 @@ vi.mock("@/lib/util", async () => {
   };
 });
 
+// The summary asks whether the service has an API key. Default to "no key" so
+// existing cases render without hitting the network.
+vi.mock("@/lib/requests", () => ({
+  fetchServiceApiKeyStatus: vi.fn(() =>
+    Promise.resolve({ configured: false, hint: null })
+  ),
+}));
+import { fetchServiceApiKeyStatus } from "@/lib/requests";
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -214,4 +223,26 @@ describe("ServiceSummary", () => {
     });
   });
 
+
+  it("shows the API key hint when the service has one", async () => {
+    fetchServiceApiKeyStatus.mockResolvedValueOnce({
+      configured: true,
+      hint: "...cdef",
+    });
+
+    const { findByText } = render(
+      <ServiceSummary service={mockService} profile={mockProfile} />
+    );
+
+    expect(await findByText("...cdef")).toBeInTheDocument();
+  });
+
+  it("says None when the service has no API key", async () => {
+    // "None" rather than "-": unauthenticated is a real state, not missing data.
+    const { findByText } = render(
+      <ServiceSummary service={mockService} profile={mockProfile} />
+    );
+
+    expect(await findByText("None")).toBeInTheDocument();
+  });
 });

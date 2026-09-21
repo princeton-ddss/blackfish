@@ -18,6 +18,7 @@ export default function SpeechRecognitionPage() {
   const defaultContainerOptions = useMemo(() => {
     return {
       input_dir: "",
+      api_key: "",
     };
   }, []);
 

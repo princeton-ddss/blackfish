@@ -54,6 +54,24 @@ function SpeechRecognitionContainerOptionsForm({
           disabled={disabled}
         />
 
+        <ServiceModalValidatedInput
+          label="API Key"
+          help="Optional. Require this key on requests to the service. Anyone who can reach the service can use it without one."
+          value={containerOptions.api_key}
+          setValue={(value) => {
+            setContainerOptions((prevContainerOptions) => {
+              return {
+                ...prevContainerOptions,
+                api_key: value,
+              }
+            })
+          }}
+          // Optional: an empty key is valid and means "unauthenticated".
+          validate={() => ({ ok: true })}
+          type="password"
+          disabled={disabled}
+        />
+
       </fieldset>
     </>
   )

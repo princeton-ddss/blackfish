@@ -9,6 +9,7 @@ tests stop at the mocked HTTP boundary, so this is the coverage for it (#534).
 
 from __future__ import annotations
 
+
 class TestBuildServiceApiKey:
     """`build_service` is the one place a container_config field reaches the row.
 
@@ -77,4 +78,3 @@ class TestBuildServiceApiKey:
         assert service._api_key is None
         assert service.auth_headers() == {}
         assert service.api_key_hint is None
-

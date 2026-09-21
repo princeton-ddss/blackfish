@@ -633,6 +633,32 @@ class TestServiceApiKeyRedaction:
 
         assert response.json()["hint"] == "..."
 
+    async def test_service_payload_round_trips_through_the_orm(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """`blackfish details` feeds the response back into `Service(**body)`.
+
+        Every serialized field therefore has to be a settable constructor
+        kwarg. A read-only property on the model is picked up by the
+        serialization plugin and then explodes on the way back in with
+        "property ... has no setter" — which is how `api_key_hint` shipped
+        broken in the first place.
+        """
+        from datetime import datetime
+        from uuid import UUID
+
+        service = await self._keyed_service(session)
+
+        response = await client.get(f"/api/services/{service.id}")
+        body = response.json()
+
+        body["created_at"] = datetime.fromisoformat(body["created_at"])
+        body["updated_at"] = datetime.fromisoformat(body["updated_at"])
+        body["id"] = UUID(body["id"])
+        rebuilt = Service(**body)
+
+        assert rebuilt.name == service.name
+
     async def test_status_endpoint_requires_authentication(
         self, no_auth_client: AsyncTestClient
     ):

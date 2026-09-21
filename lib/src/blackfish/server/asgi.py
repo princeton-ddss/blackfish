@@ -1278,7 +1278,7 @@ async def get_service_api_key_status(
     if service is None:
         raise NotFoundException(detail=f"Service {service_id} not found")
 
-    hint = service.api_key_hint
+    hint = service.api_key_hint()
     return ServiceApiKeyStatusResponse(configured=hint is not None, hint=hint)
 
 

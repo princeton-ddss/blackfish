@@ -148,12 +148,17 @@ class Service(UUIDAuditBase):
         "polymorphic_identity": "base",
     }
 
-    @property
     def api_key_hint(self) -> Optional[str]:
         """The last four characters of the configured key, or None.
 
         Enough to tell *which* key is set without being a readback. A key of
         four characters or fewer collapses to "..." rather than echoing itself.
+
+        A method rather than a property: the serialization plugin picks up
+        properties, which would put this in every service payload, and `details`
+        (cli/__main__.py) round-trips that payload back through
+        `Service(**body)` — where a read-only attribute has no setter. The hint
+        belongs to `GET /api/services/{id}/api_key`, not to the service object.
         """
         if not self._api_key:
             return None

@@ -40,10 +40,12 @@ describe("SpeechRecognitionContainerOptionsForm", () => {
     expect(updater(defaultOptions)).toEqual({ ...defaultOptions, api_key: "s" });
   });
 
-  it("masks the API key input", () => {
+  it("shows the API key rather than masking it", () => {
+    // The key is only readable at launch; masking it would hide the one value
+    // the user needs to copy before it becomes unrecoverable.
     const { getByLabelText } = renderForm();
 
-    expect(getByLabelText("API Key")).toHaveAttribute("type", "password");
+    expect(getByLabelText("API Key")).toHaveAttribute("type", "text");
   });
 
   it("does not register a validation error for an empty API key", async () => {

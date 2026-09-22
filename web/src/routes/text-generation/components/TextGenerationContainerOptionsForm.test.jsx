@@ -72,12 +72,14 @@ describe("TextGenerationContainerOptionsForm", () => {
     expect(updater(defaultOptions)).toEqual({ ...defaultOptions, api_key: "s" });
   });
 
-  it("masks the API key input", async () => {
+  it("shows the API key rather than masking it", async () => {
+    // The key is only readable at launch; masking it would hide the one value
+    // the user needs to copy before it becomes unrecoverable.
     const user = userEvent.setup();
     const { getByText, getByLabelText } = renderForm();
     await user.click(getByText("Deployment Options"));
 
-    expect(getByLabelText("API Key")).toHaveAttribute("type", "password");
+    expect(getByLabelText("API Key")).toHaveAttribute("type", "text");
   });
 
   it("treats an empty API key as valid", async () => {

@@ -1,4 +1,5 @@
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput"
+import ServiceModalApiKeyInput from "@/components/ServiceModalApiKeyInput"
 import PropTypes from "prop-types";
 
 
@@ -54,9 +55,7 @@ function SpeechRecognitionContainerOptionsForm({
           disabled={disabled}
         />
 
-        <ServiceModalValidatedInput
-          label="API Key"
-          help="Optional. Require this key on requests to the service. Anyone who can reach the service can use it without one."
+        <ServiceModalApiKeyInput
           value={containerOptions.api_key}
           setValue={(value) => {
             setContainerOptions((prevContainerOptions) => {
@@ -66,9 +65,6 @@ function SpeechRecognitionContainerOptionsForm({
               }
             })
           }}
-          // Optional: an empty key is valid and means "unauthenticated".
-          validate={() => ({ ok: true })}
-          type="password"
           disabled={disabled}
         />
 

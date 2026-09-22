@@ -197,7 +197,11 @@ describe("ServiceModal", () => {
           <ServiceModal {...defaultProps} open={true} />
         </ServiceContext.Provider>
       );
-      expect(mockSetContainerOptions).toHaveBeenCalledWith({ port: 8080 });
+      // A generated API key is mixed into the defaults, so match the shape
+      // rather than an exact object.
+      expect(mockSetContainerOptions).toHaveBeenCalledWith(
+        expect.objectContaining({ port: 8080, api_key: expect.any(String) })
+      );
       expect(mockSetLaunchSuccess).toHaveBeenCalledWith(false);
       expect(mockSetIsLaunching).toHaveBeenCalledWith(false);
       expect(mockSetLaunchError).toHaveBeenCalledWith(null);
@@ -382,6 +386,34 @@ describe("ServiceModal", () => {
       });
       // Local profiles should work without slurm-specific fields
       expect(screen.getByTestId("service-modal-form")).toBeInTheDocument();
+    });
+  });
+
+  describe("API key generation", () => {
+    it("generates a different key each time the modal opens", () => {
+      // Memoizing the key would reuse one value across every service the
+      // user launches from this page.
+      const { rerender } = renderServiceModal({ open: false });
+      const openModal = () =>
+        rerender(
+          <ServiceContext.Provider value={mockServiceContext}>
+            <ServiceModal {...defaultProps} open={true} />
+          </ServiceContext.Provider>
+        );
+
+      openModal();
+      const first = mockSetContainerOptions.mock.calls.at(-1)[0].api_key;
+
+      rerender(
+        <ServiceContext.Provider value={mockServiceContext}>
+          <ServiceModal {...defaultProps} open={false} />
+        </ServiceContext.Provider>
+      );
+      openModal();
+      const second = mockSetContainerOptions.mock.calls.at(-1)[0].api_key;
+
+      expect(first).toBeTruthy();
+      expect(second).not.toBe(first);
     });
   });
 });

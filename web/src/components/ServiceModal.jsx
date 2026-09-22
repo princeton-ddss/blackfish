@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { generateApiKey } from "@/components/ServiceModalApiKeyInput";
 import { Fragment, useRef, useState, useEffect } from "react";
 import {
   Dialog,
@@ -161,7 +162,10 @@ function ServiceModal({
   useEffect(() => {
     if (open) {
       setJobOptions(getDefaultJobOptions(profile))
-      setContainerOptions({ ...defaultContainerOptions })
+      // A fresh key per launch, not per mount: `defaultContainerOptions` is
+      // memoized for the life of the page, so generating there would reuse one
+      // key across every service the user starts.
+      setContainerOptions({ ...defaultContainerOptions, api_key: generateApiKey() })
       setLaunchSuccess(false)
       setIsLaunching(false)
       setLaunchError(null)

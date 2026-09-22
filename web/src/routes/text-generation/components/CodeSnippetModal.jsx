@@ -194,11 +194,11 @@ function CodeSnippetModal({
   const selectedService = serviceContext?.selectedService;
   const [copied, setCopied] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [apiKeyStatus, setApiKeyStatus] = useState({ configured: false, hint: null });
+  const [apiKeyStatus, setApiKeyStatus] = useState({ configured: false });
   const timeoutRef = useRef(null);
 
   // Snippets that omit the auth header would 401 against a keyed service, so
-  // ask whether one is set. Only the hint comes back, never the key.
+  // ask whether one is set. Only that fact comes back, never the key.
   useEffect(() => {
     if (!open || !selectedService?.id) return;
     let cancelled = false;
@@ -335,9 +335,8 @@ function CodeSnippetModal({
 
                   {apiKeyStatus.configured && (
                     <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                      This service requires an API key (
-                      <code className="font-mono">{apiKeyStatus.hint}</code>
-                      ). Substitute the key you set when launching it.
+                      This service is protected. Substitute the API key you
+                      set when launching it.
                     </p>
                   )}
                 </div>

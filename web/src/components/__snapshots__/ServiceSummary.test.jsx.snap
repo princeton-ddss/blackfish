@@ -174,12 +174,13 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -458,12 +459,13 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -740,12 +742,13 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -1024,12 +1027,13 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -1305,12 +1309,13 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -1587,12 +1592,13 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -1874,12 +1880,13 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -2158,12 +2165,13 @@ exports[`ServiceSummary > renders service information when service and profile a
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -2442,12 +2450,13 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
             <div
               class="grow font-medium text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="service-summary__api-key"
+              title="Anyone who can reach this service can use it"
             >
-              None
+              Unprotected
             </span>
           </div>
           <div
@@ -2736,7 +2745,7 @@ exports[`ServiceSummary > renders without a profile 1`] = `
             <div
               class="grow font-regular text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="mr-2"
@@ -3038,7 +3047,7 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
             <div
               class="grow font-regular text-sm mr-1"
             >
-              API Key 
+              Access 
             </div>
             <span
               class="mr-2"

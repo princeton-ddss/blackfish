@@ -46,22 +46,25 @@ describe("CodeSnippetModal", () => {
     );
   });
 
-  it("shows the hint so the user knows which key to substitute", async () => {
+  it("tells the user the service is protected", async () => {
     fetchServiceApiKeyStatus.mockResolvedValue({ configured: true, hint: "...cdef" });
 
-    const { findByText } = renderModal();
+    renderModal();
 
-    expect(await findByText("...cdef")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(document.body.textContent).toContain("This service is protected")
+    );
   });
 
-  it("never renders a full key, only the hint", async () => {
-    // The endpoint is hint-only by construction; assert the modal doesn't
-    // reintroduce a readback path.
+  it("renders no part of the key", async () => {
+    // The endpoint is hint-only by construction; the modal shows neither the
+    // key nor the hint, just that one is required.
     fetchServiceApiKeyStatus.mockResolvedValue({ configured: true, hint: "...cdef" });
 
     renderModal();
 
     await waitFor(() => expect(document.body.textContent).toContain("Authorization"));
     expect(document.body.textContent).not.toContain("sk-");
+    expect(document.body.textContent).not.toContain("cdef");
   });
 });

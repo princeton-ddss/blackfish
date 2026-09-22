@@ -594,17 +594,18 @@ export async function fetchHfTokenStatus() {
 }
 
 /**
- * Whether a service was launched with an API key, and a hint identifying which.
+ * Whether a service was launched with an API key.
  *
  * Never returns the key itself: the backend attaches it when proxying, so the
- * browser has no use for it. The hint is the last four characters, enough to
- * recognise which key is set.
+ * browser has no use for it. The response also carries a hint (the key's last
+ * characters) for `blackfish details`; the UI reports only whether a key is
+ * set, since the user chose it and a fragment would not remind them.
  */
 export async function fetchServiceApiKeyStatus(serviceId) {
   const res = await fetch(`${blackfishApiURL}/api/services/${serviceId}/api_key`);
   if (!res.ok) {
     console.debug(`from fetchServiceApiKeyStatus: failed (status=${res.status})`);
-    return { configured: false, hint: null };
+    return { configured: false };
   }
   return res.json();
 }

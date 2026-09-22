@@ -224,7 +224,7 @@ describe("ServiceSummary", () => {
   });
 
 
-  it("shows the API key hint when the service has one", async () => {
+  it("reports that a keyed service is protected", async () => {
     fetchServiceApiKeyStatus.mockResolvedValueOnce({
       configured: true,
       hint: "...cdef",
@@ -234,15 +234,32 @@ describe("ServiceSummary", () => {
       <ServiceSummary service={mockService} profile={mockProfile} />
     );
 
-    expect(await findByText("...cdef")).toBeInTheDocument();
+    expect(await findByText("Protected")).toBeInTheDocument();
   });
 
-  it("says None when the service has no API key", async () => {
-    // "None" rather than "-": unauthenticated is a real state, not missing data.
+  it("does not show any part of the key", async () => {
+    // The user set the key; four characters would not remind them which it is,
+    // and putting them on screen is exposure without a purpose.
+    fetchServiceApiKeyStatus.mockResolvedValueOnce({
+      configured: true,
+      hint: "...cdef",
+    });
+
+    const { container, findByText } = render(
+      <ServiceSummary service={mockService} profile={mockProfile} />
+    );
+
+    await findByText("Protected");
+    expect(container.textContent).not.toContain("cdef");
+  });
+
+  it("says an unkeyed service is unprotected", async () => {
+    // "Unprotected" rather than "-": no key is a real state, not missing data,
+    // and it is the one a user would want to notice.
     const { findByText } = render(
       <ServiceSummary service={mockService} profile={mockProfile} />
     );
 
-    expect(await findByText("None")).toBeInTheDocument();
+    expect(await findByText("Unprotected")).toBeInTheDocument();
   });
 });

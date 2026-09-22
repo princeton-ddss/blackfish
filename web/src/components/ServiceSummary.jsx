@@ -49,15 +49,12 @@ function ServiceSummary({
   profile,
 }) {
   // Declared before the early returns below: hooks must run unconditionally.
-  const [apiKeyStatus, setApiKeyStatus] = React.useState({
-    configured: false,
-    hint: null,
-  });
+  const [apiKeyStatus, setApiKeyStatus] = React.useState({ configured: false });
 
   const serviceId = service?.id;
   React.useEffect(() => {
     if (!serviceId) {
-      setApiKeyStatus({ configured: false, hint: null });
+      setApiKeyStatus({ configured: false });
       return;
     }
     let cancelled = false;
@@ -105,7 +102,7 @@ function ServiceSummary({
             </div>
             <div className="mb-1 ml-0 inline-flex items-center">
               <LockClosedIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
-              <div className="grow font-regular text-sm mr-1">API Key </div>
+              <div className="grow font-regular text-sm mr-1">Access </div>
               <span className="mr-2">-</span>
             </div>
             <div className="mb-1 ml-0 inline-flex items-center">
@@ -180,12 +177,20 @@ function ServiceSummary({
           </div>
           <div className="mb-1 ml-0 inline-flex items-center">
             <LockClosedIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />
-            <div className="grow font-medium text-sm mr-1">API Key </div>
-            {/* The hint, never the key: enough to tell which key is set. An
-                unkeyed service says so plainly rather than showing "-", since
-                "no key" is a meaningful state, not missing data. */}
-            <span className="service-summary__api-key">
-              {apiKeyStatus.configured ? apiKeyStatus.hint : "None"}
+            <div className="grow font-medium text-sm mr-1">Access </div>
+            {/* Whether the service requires a key, not which key it is: the
+                user set it, and four characters would not remind them. An
+                unprotected service says so plainly rather than showing "-",
+                since "no key" is a meaningful state, not missing data. */}
+            <span
+              className="service-summary__api-key"
+              title={
+                apiKeyStatus.configured
+                  ? "Requests to this service must carry its API key"
+                  : "Anyone who can reach this service can use it"
+              }
+            >
+              {apiKeyStatus.configured ? "Protected" : "Unprotected"}
             </span>
           </div>
           <div className="mb-1 ml-0 inline-flex items-center">

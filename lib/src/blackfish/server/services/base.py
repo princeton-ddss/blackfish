@@ -141,7 +141,7 @@ class Service(UUIDAuditBase):
     # a private attribute so the serialization plugin never sees it: every
     # service endpoint returns the ORM object directly, so a plainly-named
     # column would be published on all of them. Read it in-process (the proxy,
-    # `auth_headers`); expose only `api_key_hint` to callers.
+    # `auth_headers`); callers see only `protected`.
     _api_key: Mapped[Optional[str]] = mapped_column("api_key", nullable=True)
 
     __mapper_args__ = {
@@ -173,24 +173,6 @@ class Service(UUIDAuditBase):
         serialized service back through `Service(**body)`, and every field on
         the payload has to be accepted on the way back in.
         """
-
-    def api_key_hint(self) -> Optional[str]:
-        """The last four characters of the configured key, or None.
-
-        Enough to tell *which* key is set without being a readback. A key of
-        four characters or fewer collapses to "..." rather than echoing itself.
-
-        A method rather than a property: the serialization plugin picks up
-        properties, which would put this in every service payload, and `details`
-        (cli/__main__.py) round-trips that payload back through
-        `Service(**body)` — where a read-only attribute has no setter. The hint
-        belongs to `GET /api/services/{id}/api_key`, not to the service object.
-        """
-        if not self._api_key:
-            return None
-        if len(self._api_key) > 4:
-            return f"...{self._api_key[-4:]}"
-        return "..."
 
     def auth_headers(self) -> dict[str, str]:
         """Headers that authenticate a proxied request to this service.

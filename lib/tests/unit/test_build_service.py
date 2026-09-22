@@ -77,4 +77,3 @@ class TestBuildServiceApiKey:
 
         assert service._api_key is None
         assert service.auth_headers() == {}
-        assert service.api_key_hint() is None

@@ -6,7 +6,6 @@ from litestar.testing import AsyncTestClient
 
 from blackfish.server.services.base import Service, ServiceLaunchError
 
-
 pytestmark = pytest.mark.anyio
 
 
@@ -591,48 +590,6 @@ class TestServiceApiKeyRedaction:
         assert response.status_code == 200
         assert self.SECRET not in response.text
 
-    async def test_status_endpoint_reports_configured_with_a_hint(
-        self, client: AsyncTestClient, session: AsyncSession
-    ):
-        """A hint identifies *which* key is set without being a readback."""
-        service = await self._keyed_service(session)
-
-        response = await client.get(f"/api/services/{service.id}/api_key")
-
-        assert response.status_code == 200
-        body = response.json()
-        assert body["configured"] is True
-        assert body["hint"] == "...k-me"
-        assert self.SECRET not in response.text
-
-    async def test_status_endpoint_reports_unconfigured(
-        self, client: AsyncTestClient, session: AsyncSession
-    ):
-        from sqlalchemy import select
-
-        service = (await session.execute(select(Service))).scalars().first()
-        service._api_key = None
-        await session.commit()
-
-        response = await client.get(f"/api/services/{service.id}/api_key")
-
-        assert response.status_code == 200
-        assert response.json() == {"configured": False, "hint": None}
-
-    async def test_short_key_is_not_echoed_in_full(
-        self, client: AsyncTestClient, session: AsyncSession
-    ):
-        """`key[-4:]` on a short key would return the whole thing."""
-        from sqlalchemy import select
-
-        service = (await session.execute(select(Service))).scalars().first()
-        service._api_key = "ab"
-        await session.commit()
-
-        response = await client.get(f"/api/services/{service.id}/api_key")
-
-        assert response.json()["hint"] == "..."
-
     async def test_payload_says_whether_the_service_is_protected(
         self, client: AsyncTestClient, session: AsyncSession
     ):
@@ -687,12 +644,3 @@ class TestServiceApiKeyRedaction:
         rebuilt = Service(**body)
 
         assert rebuilt.name == service.name
-
-    async def test_status_endpoint_requires_authentication(
-        self, no_auth_client: AsyncTestClient
-    ):
-        service_id = "4c2216ea-df22-4bf6-bcea-56964df12af5"
-
-        response = await no_auth_client.get(f"/api/services/{service_id}/api_key")
-
-        assert response.status_code == 401

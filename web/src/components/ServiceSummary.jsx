@@ -44,6 +44,39 @@ Timer.propTypes = {
  * @param {object} options.profile
  * @return {JSX.Element}
  */
+/**
+ * Access badge: whether a service requires an API key.
+ *
+ * Amber rather than red for an unprotected service — running one open is a
+ * deliberate choice, not a failure, and red here would cry wolf next to the
+ * status badge that uses it for real faults.
+ * @param {object} options
+ * @param {boolean} options.protected
+ * @return {JSX.Element}
+ */
+const AccessBadge = ({ protected: isProtected }) => {
+  const colors = isProtected
+    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+    : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300";
+
+  return (
+    <span
+      className={`text-xs px-1.5 py-0.5 rounded ${colors}`}
+      title={
+        isProtected
+          ? "Requests to this service must carry its API key"
+          : "Anyone who can reach this service can use it"
+      }
+    >
+      {isProtected ? "Protected" : "Unprotected"}
+    </span>
+  );
+};
+
+AccessBadge.propTypes = {
+  protected: PropTypes.bool,
+};
+
 function ServiceSummary({
   service,
   profile,
@@ -167,21 +200,14 @@ function ServiceSummary({
                 user set it, and four characters would not remind them. An
                 unprotected service says so plainly rather than showing "-",
                 since "no key" is a meaningful state, not missing data. */}
-            <span
-              className="service-summary__api-key"
-              title={
-                apiKeyConfigured
-                  ? "Requests to this service must carry its API key"
-                  : "Anyone who can reach this service can use it"
-              }
-            >
+            <span className="service-summary__api-key">
               {/* Undefined until the status resolves: say nothing rather than
                   claiming a protected service is open. */}
-              {apiKeyConfigured === undefined
-                ? "-"
-                : apiKeyConfigured
-                  ? "Protected"
-                  : "Unprotected"}
+              {apiKeyConfigured === undefined ? (
+                "-"
+              ) : (
+                <AccessBadge protected={apiKeyConfigured} />
+              )}
             </span>
           </div>
           <div className="mb-1 ml-0 inline-flex items-center">

@@ -254,4 +254,29 @@ describe("ServiceSummary", () => {
 
     expect(getByText("Unprotected")).toBeInTheDocument();
   });
+
+  it("distinguishes the two access states by color, not just text", async () => {
+    // The badge is the at-a-glance signal; if both states rendered the same
+    // color it would be no better than plain text.
+    useServiceApiKeyStatus.mockReturnValueOnce({ configured: true });
+    const { container: protectedRender } = render(
+      <ServiceSummary service={mockService} profile={mockProfile} />
+    );
+    const protectedBadge = protectedRender
+      .querySelector(".service-summary__api-key span")
+      .className;
+
+    useServiceApiKeyStatus.mockReturnValueOnce({ configured: false });
+    const { container: openRender } = render(
+      <ServiceSummary service={mockService} profile={mockProfile} />
+    );
+    const openBadge = openRender
+      .querySelector(".service-summary__api-key span")
+      .className;
+
+    expect(protectedBadge).not.toBe(openBadge);
+    // Amber, not red: running a service open is a choice, not a fault.
+    expect(openBadge).toContain("amber");
+    expect(openBadge).not.toContain("red");
+  });
 });

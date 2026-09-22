@@ -13,12 +13,10 @@ vi.mock("@/lib/util", async () => {
 
 // The summary asks whether the service has an API key. Default to "no key" so
 // existing cases render without hitting the network.
-vi.mock("@/lib/requests", () => ({
-  fetchServiceApiKeyStatus: vi.fn(() =>
-    Promise.resolve({ configured: false, hint: null })
-  ),
+vi.mock("@/lib/loaders", () => ({
+  useServiceApiKeyStatus: vi.fn(() => ({ configured: false })),
 }));
-import { fetchServiceApiKeyStatus } from "@/lib/requests";
+import { useServiceApiKeyStatus } from "@/lib/loaders";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -225,41 +223,35 @@ describe("ServiceSummary", () => {
 
 
   it("reports that a keyed service is protected", async () => {
-    fetchServiceApiKeyStatus.mockResolvedValueOnce({
-      configured: true,
-      hint: "...cdef",
-    });
+    useServiceApiKeyStatus.mockReturnValueOnce({ configured: true });
 
-    const { findByText } = render(
+    const { getByText } = render(
       <ServiceSummary service={mockService} profile={mockProfile} />
     );
 
-    expect(await findByText("Protected")).toBeInTheDocument();
+    expect(getByText("Protected")).toBeInTheDocument();
   });
 
   it("does not show any part of the key", async () => {
     // The user set the key; four characters would not remind them which it is,
     // and putting them on screen is exposure without a purpose.
-    fetchServiceApiKeyStatus.mockResolvedValueOnce({
-      configured: true,
-      hint: "...cdef",
-    });
+    useServiceApiKeyStatus.mockReturnValueOnce({ configured: true });
 
-    const { container, findByText } = render(
+    const { container, getByText } = render(
       <ServiceSummary service={mockService} profile={mockProfile} />
     );
 
-    await findByText("Protected");
+    getByText("Protected");
     expect(container.textContent).not.toContain("cdef");
   });
 
   it("says an unkeyed service is unprotected", async () => {
     // "Unprotected" rather than "-": no key is a real state, not missing data,
     // and it is the one a user would want to notice.
-    const { findByText } = render(
+    const { getByText } = render(
       <ServiceSummary service={mockService} profile={mockProfile} />
     );
 
-    expect(await findByText("Unprotected")).toBeInTheDocument();
+    expect(getByText("Unprotected")).toBeInTheDocument();
   });
 });

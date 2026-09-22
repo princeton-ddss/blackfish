@@ -12,7 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 import { formattedTimeInterval, isServiceRunning } from "@/lib/util";
-import { fetchServiceApiKeyStatus } from "@/lib/requests";
+import { useServiceApiKeyStatus } from "@/lib/loaders";
 
 /**
  * Timer
@@ -49,22 +49,7 @@ function ServiceSummary({
   profile,
 }) {
   // Declared before the early returns below: hooks must run unconditionally.
-  const [apiKeyStatus, setApiKeyStatus] = React.useState({ configured: false });
-
-  const serviceId = service?.id;
-  React.useEffect(() => {
-    if (!serviceId) {
-      setApiKeyStatus({ configured: false });
-      return;
-    }
-    let cancelled = false;
-    fetchServiceApiKeyStatus(serviceId).then((status) => {
-      if (!cancelled) setApiKeyStatus(status);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [serviceId]);
+  const { configured: apiKeyConfigured } = useServiceApiKeyStatus(service?.id);
 
   if (profile && !service) {
     return <></>;
@@ -185,12 +170,18 @@ function ServiceSummary({
             <span
               className="service-summary__api-key"
               title={
-                apiKeyStatus.configured
+                apiKeyConfigured
                   ? "Requests to this service must carry its API key"
                   : "Anyone who can reach this service can use it"
               }
             >
-              {apiKeyStatus.configured ? "Protected" : "Unprotected"}
+              {/* Undefined until the status resolves: say nothing rather than
+                  claiming a protected service is open. */}
+              {apiKeyConfigured === undefined
+                ? "-"
+                : apiKeyConfigured
+                  ? "Protected"
+                  : "Unprotected"}
             </span>
           </div>
           <div className="mb-1 ml-0 inline-flex items-center">

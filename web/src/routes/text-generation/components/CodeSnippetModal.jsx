@@ -17,7 +17,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
-import { fetchServiceApiKeyStatus } from "@/lib/requests";
+import { useServiceApiKeyStatus } from "@/lib/loaders";
 import PropTypes from "prop-types";
 import Prism from "prismjs";
 import "prismjs/components/prism-python";
@@ -63,21 +63,14 @@ function generatePythonCode(mode, parameters, service, hasApiKey) {
     .map((line, i) => (i === 0 ? line : "    " + line))
     .join("\n");
 
-  if (hasApiKey) {
-    return `import requests
-
-response = requests.post(
-    "http://localhost:${port}/${endpoint}",
-    headers={"Authorization": f"Bearer {API_KEY}"},
-    json=${bodyJson}
-)
-print(response.json())`;
-  }
+  const auth = hasApiKey
+    ? '\n    headers={"Authorization": f"Bearer {API_KEY}"},'
+    : "";
 
   return `import requests
 
 response = requests.post(
-    "http://localhost:${port}/${endpoint}",
+    "http://localhost:${port}/${endpoint}",${auth}
     json=${bodyJson}
 )
 print(response.json())`;
@@ -116,23 +109,14 @@ function generateRCode(mode, parameters, service, hasApiKey) {
 
   const bodyR = formatRValue(body, 1);
 
-  if (hasApiKey) {
-    return `library(httr)
-
-response <- POST(
-  "http://localhost:${port}/${endpoint}",
-  add_headers(Authorization = paste("Bearer", api_key)),
-  body = ${bodyR},
-  encode = "json"
-)
-
-content(response, "parsed")`;
-  }
+  const auth = hasApiKey
+    ? '\n  add_headers(Authorization = paste("Bearer", api_key)),'
+    : "";
 
   return `library(httr)
 
 response <- POST(
-  "http://localhost:${port}/${endpoint}",
+  "http://localhost:${port}/${endpoint}",${auth}
   body = ${bodyR},
   encode = "json"
 )
@@ -156,16 +140,13 @@ function generateShellCode(mode, parameters, service, hasApiKey) {
   // Escape single quotes for shell
   const escapedJson = bodyJson.replace(/'/g, "'\\''");
 
-  if (hasApiKey) {
-    return `curl -X POST "http://localhost:${port}/${endpoint}" \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $API_KEY" \\
-  -d '${escapedJson}'`;
-  }
+  const auth = hasApiKey
+    ? '  -H "Authorization: Bearer $API_KEY" \\\n'
+    : "";
 
   return `curl -X POST "http://localhost:${port}/${endpoint}" \\
   -H "Content-Type: application/json" \\
-  -d '${escapedJson}'`;
+${auth}  -d '${escapedJson}'`;
 }
 
 const languages = [
@@ -194,25 +175,17 @@ function CodeSnippetModal({
   const selectedService = serviceContext?.selectedService;
   const [copied, setCopied] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [apiKeyStatus, setApiKeyStatus] = useState({ configured: false });
   const timeoutRef = useRef(null);
 
   // Snippets that omit the auth header would 401 against a keyed service, so
   // ask whether one is set. Only that fact comes back, never the key.
-  useEffect(() => {
-    if (!open || !selectedService?.id) return;
-    let cancelled = false;
-    fetchServiceApiKeyStatus(selectedService.id).then((status) => {
-      if (!cancelled) setApiKeyStatus(status);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, selectedService?.id]);
+  const { configured: apiKeyConfigured } = useServiceApiKeyStatus(
+    selectedService?.id
+  );
 
   const allCode = useMemo(
-    () => languages.map((lang) => lang.generate(mode, parameters, selectedService, apiKeyStatus.configured)),
-    [mode, parameters, selectedService, apiKeyStatus.configured]
+    () => languages.map((lang) => lang.generate(mode, parameters, selectedService, apiKeyConfigured)),
+    [mode, parameters, selectedService, apiKeyConfigured]
   );
 
   const code = allCode[selectedIndex];
@@ -333,7 +306,7 @@ function CodeSnippetModal({
                     </TabPanels>
                   </TabGroup>
 
-                  {apiKeyStatus.configured && (
+                  {apiKeyConfigured && (
                     <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
                       This service is protected. Substitute the API key you
                       set when launching it.

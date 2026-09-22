@@ -17,7 +17,24 @@ function TextGenerationContainerOptionsForm({
 
   return (
     <>
-      <fieldset>
+      {/* Outside "Deployment Options", which starts collapsed: the field is
+          pre-filled with a generated key, and a user who never expands the
+          section would launch a protected service whose key they never saw.
+          Access control is not a deployment detail. */}
+      <ServiceModalApiKeyInput
+        value={containerOptions.api_key}
+        setValue={(value) => {
+          setContainerOptions((prevContainerOptions) => {
+            return {
+              ...prevContainerOptions,
+              api_key: value,
+            }
+          })
+        }}
+        disabled={disabled}
+      />
+
+      <fieldset className="mt-4">
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
@@ -47,18 +64,6 @@ function TextGenerationContainerOptionsForm({
               disabled={disabled}
             />
 
-            <ServiceModalApiKeyInput
-              value={containerOptions.api_key}
-              setValue={(value) => {
-                setContainerOptions((prevContainerOptions) => {
-                  return {
-                    ...prevContainerOptions,
-                    api_key: value,
-                  }
-                })
-              }}
-              disabled={disabled}
-            />
           </div>
         )}
       </fieldset>

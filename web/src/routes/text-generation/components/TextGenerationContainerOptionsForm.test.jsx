@@ -60,11 +60,21 @@ describe("TextGenerationContainerOptionsForm", () => {
     });
   });
 
+  it("shows the API key without expanding Deployment Options", () => {
+    // The field is pre-filled with a generated key. If it were inside the
+    // collapsed section, a user who never expanded it would launch a protected
+    // service whose key they never saw and cannot retrieve.
+    const { getByLabelText, queryByText } = renderForm();
+
+    expect(getByLabelText("API Key")).toBeInTheDocument();
+    // Still collapsed: the section's own options remain hidden.
+    expect(queryByText("Disable Thinking")).not.toBeInTheDocument();
+  });
+
   it("records an API key as the user types", async () => {
     const user = userEvent.setup();
     const setContainerOptions = vi.fn();
-    const { getByText, getByLabelText } = renderForm({ setContainerOptions });
-    await user.click(getByText("Deployment Options"));
+    const { getByLabelText } = renderForm({ setContainerOptions });
 
     await user.type(getByLabelText("API Key"), "s");
 
@@ -72,23 +82,19 @@ describe("TextGenerationContainerOptionsForm", () => {
     expect(updater(defaultOptions)).toEqual({ ...defaultOptions, api_key: "s" });
   });
 
-  it("shows the API key rather than masking it", async () => {
+  it("shows the API key rather than masking it", () => {
     // The key is only readable at launch; masking it would hide the one value
     // the user needs to copy before it becomes unrecoverable.
-    const user = userEvent.setup();
-    const { getByText, getByLabelText } = renderForm();
-    await user.click(getByText("Deployment Options"));
+    const { getByLabelText } = renderForm();
 
     expect(getByLabelText("API Key")).toHaveAttribute("type", "text");
   });
 
   it("treats an empty API key as valid", async () => {
     // The field is optional: an over-eager validator would block Launch via
-    // the isDeepEmpty(validationErrors) gate in ServiceModal. The component
-    // shows an error message when invalid, so its absence is the assertion.
+    // the isDeepEmpty(validationErrors) gate in ServiceModal.
     const user = userEvent.setup();
-    const { getByText, getByLabelText, queryByText } = renderForm();
-    await user.click(getByText("Deployment Options"));
+    const { getByLabelText, queryByText } = renderForm();
 
     await user.type(getByLabelText("API Key"), "x");
     await user.clear(getByLabelText("API Key"));

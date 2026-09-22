@@ -178,7 +178,7 @@ export async function setDefaultProfile(name) {
  */
 export function buildContainerConfig(containerConfig) {
   const { disable_thinking, api_key, ...rest } = containerConfig;
-  const config = { ...rest, api_key: api_key ? api_key : null };
+  const config = { ...rest, api_key: api_key || null };
   if (!disable_thinking) return config;
   return {
     ...config,

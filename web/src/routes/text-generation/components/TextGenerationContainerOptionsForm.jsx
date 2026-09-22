@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
 import ServiceModalCheckbox from "@/components/ServiceModalCheckbox"
-import ServiceModalApiKeyInput from "@/components/ServiceModalApiKeyInput"
 import { useScrollOnExpand } from "@/lib/useScrollOnExpand";
 import PropTypes from "prop-types";
 
@@ -17,24 +16,7 @@ function TextGenerationContainerOptionsForm({
 
   return (
     <>
-      {/* Outside "Deployment Options", which starts collapsed: the field is
-          pre-filled with a generated key, and a user who never expands the
-          section would launch a protected service whose key they never saw.
-          Access control is not a deployment detail. */}
-      <ServiceModalApiKeyInput
-        value={containerOptions.api_key}
-        setValue={(value) => {
-          setContainerOptions((prevContainerOptions) => {
-            return {
-              ...prevContainerOptions,
-              api_key: value,
-            }
-          })
-        }}
-        disabled={disabled}
-      />
-
-      <fieldset className="mt-4">
+      <fieldset>
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}

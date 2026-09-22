@@ -55,6 +55,8 @@ describe("ServiceModalForm – Partition Input", () => {
       account: null,
     },
     setJobOptions: vi.fn(),
+    containerOptions: { api_key: "generated-key" },
+    setContainerOptions: vi.fn(),
     setValidationErrors: vi.fn(),
     disabled: false,
     profile: { schema: "slurm", host: "test-host", user: "testuser" },
@@ -196,5 +198,47 @@ describe("ServiceModalForm – Partition Input", () => {
     // Should still show default tiers, not gpu tiers
     expect(screen.getByTestId("tier-Default-Tier")).toBeInTheDocument();
     expect(screen.queryByTestId("tier-A100-Small")).not.toBeInTheDocument();
+  });
+
+  describe("API key", () => {
+    it("is visible without expanding Advanced", () => {
+      // The field is pre-filled with a generated key. Inside a collapsed
+      // section, a user who never expanded it would launch a protected service
+      // whose key they never saw and cannot retrieve.
+      const { getByLabelText, queryByText } = renderForm();
+
+      expect(getByLabelText("API Key")).toBeInTheDocument();
+      // Advanced itself stays collapsed.
+      expect(queryByText("Account")).not.toBeInTheDocument();
+    });
+
+    it("shows the key rather than masking it", () => {
+      const { getByLabelText } = renderForm();
+
+      expect(getByLabelText("API Key")).toHaveValue("generated-key");
+      expect(getByLabelText("API Key")).toHaveAttribute("type", "text");
+    });
+
+    it("records a key the user supplies", async () => {
+      const user = userEvent.setup();
+      const setContainerOptions = vi.fn();
+      const { getByLabelText } = renderForm({
+        containerOptions: { api_key: "" },
+        setContainerOptions,
+      });
+
+      await user.type(getByLabelText("API Key"), "m");
+
+      const updater = setContainerOptions.mock.calls[0][0];
+      expect(updater({ api_key: "" })).toEqual({ api_key: "m" });
+    });
+
+    it("is offered on local profiles too", () => {
+      const { getByLabelText } = renderForm({
+        profile: { schema: "local", host: "localhost" },
+      });
+
+      expect(getByLabelText("API Key")).toBeInTheDocument();
+    });
   });
 });

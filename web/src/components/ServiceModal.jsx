@@ -308,6 +308,8 @@ function ServiceModal({
                         setImageRef={setImageRef}
                         jobOptions={jobOptions}
                         setJobOptions={setJobOptions}
+                        containerOptions={containerOptions}
+                        setContainerOptions={setContainerOptions}
                         setValidationErrors={setValidationErrors}
                         disabled={isLaunching || launchSuccess}
                         profile={profile}

@@ -1,5 +1,4 @@
 import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput"
-import ServiceModalApiKeyInput from "@/components/ServiceModalApiKeyInput"
 import PropTypes from "prop-types";
 
 
@@ -52,19 +51,6 @@ function SpeechRecognitionContainerOptionsForm({
           }}
           validate={validate}
           type="text"
-          disabled={disabled}
-        />
-
-        <ServiceModalApiKeyInput
-          value={containerOptions.api_key}
-          setValue={(value) => {
-            setContainerOptions((prevContainerOptions) => {
-              return {
-                ...prevContainerOptions,
-                api_key: value,
-              }
-            })
-          }}
           disabled={disabled}
         />
 

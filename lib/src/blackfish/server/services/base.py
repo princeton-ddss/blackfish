@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shlex
 import subprocess
 import os
 from pathlib import Path
@@ -11,7 +12,7 @@ import httpx
 from enum import StrEnum, auto
 from dataclasses import dataclass
 
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncSession
 from advanced_alchemy.base import UUIDAuditBase
 
@@ -78,6 +79,13 @@ class ServiceLaunchError(Exception):
 @dataclass
 class BaseConfig:
     port: Optional[int]
+    # Optional upstream API key. Declared here rather than on the individual
+    # configs because `ContainerConfig` is an undiscriminated union whose left
+    # arm (TextGenerationConfig) matches any speech recognition payload (#541):
+    # a field on one arm only would be kept by the mis-resolved config and then
+    # dropped by a template that never emits it, launching an unauthenticated
+    # service while the UI reported a key was set.
+    api_key: Optional[str] = None
     # host: Optional[str]
 
 
@@ -128,10 +136,44 @@ class Service(UUIDAuditBase):
     mount: Mapped[Optional[str]]
     grace_period: Mapped[int]
 
+    # The upstream API key this service was launched with, if any. Stored under
+    # a private attribute so the serialization plugin never sees it: every
+    # service endpoint returns the ORM object directly, so a plainly-named
+    # column would be published on all of them. Read it in-process (the proxy,
+    # `auth_headers`); expose only `api_key_hint` to callers.
+    _api_key: Mapped[Optional[str]] = mapped_column("api_key", nullable=True)
+
     __mapper_args__ = {
         "polymorphic_on": "image",
         "polymorphic_identity": "base",
     }
+
+    def api_key_hint(self) -> Optional[str]:
+        """The last four characters of the configured key, or None.
+
+        Enough to tell *which* key is set without being a readback. A key of
+        four characters or fewer collapses to "..." rather than echoing itself.
+
+        A method rather than a property: the serialization plugin picks up
+        properties, which would put this in every service payload, and `details`
+        (cli/__main__.py) round-trips that payload back through
+        `Service(**body)` — where a read-only attribute has no setter. The hint
+        belongs to `GET /api/services/{id}/api_key`, not to the service object.
+        """
+        if not self._api_key:
+            return None
+        if len(self._api_key) > 4:
+            return f"...{self._api_key[-4:]}"
+        return "..."
+
+    def auth_headers(self) -> dict[str, str]:
+        """Headers that authenticate a proxied request to this service.
+
+        Empty when no key is set. Overridden per service because the upstream
+        images disagree on the scheme: vLLM wants `Authorization: Bearer`,
+        speech-recognition-inference a bare `Token`.
+        """
+        return {}
 
     def __repr__(self) -> str:
         return f"Service(id={self.id}, name={self.name}, image={self.image}, image_ref={self.image_ref}, model={self.model}, profile={self.profile}, host={self.host}, user={self.user}, home_dir={self.home_dir}, cache_dir={self.cache_dir}, job_id={self.job_id}, port={self.port}, status={self.status}, scheduler={self.scheduler}, provider={self.provider}, grace_period={self.grace_period}, mount={self.mount})"
@@ -697,6 +739,10 @@ class Service(UUIDAuditBase):
         job_config: JobConfig,
     ) -> str:
         env = Environment(loader=PackageLoader("blackfish.server", "templates"))
+        # Values interpolated into a shell script must be quoted at the render
+        # boundary: an API key containing a space, `;` or `$` would otherwise
+        # run as shell in a script submitted under the user's own account.
+        env.filters["shquote"] = shlex.quote
         template = env.get_template(f"{self.image}_{self.scheduler or 'local'}.sh")
         image = resolve_image(self.image_ref, blackfish_config.IMAGES[self.image])
 

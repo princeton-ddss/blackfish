@@ -729,6 +729,22 @@ def prune() -> None:  # pragma: no cover
 
 
 # blackfish details [OPTIONS] SERVICE
+def _fetch_api_key_hint(service_id: str) -> Optional[str]:
+    """A hint identifying the service's API key, or None when it has none.
+
+    Failures are reported as None rather than raised: a missing hint should not
+    stop `details` from printing everything else it knows.
+    """
+    try:
+        res = api.get(f"/api/services/{service_id}/api_key")
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        return None
+    if not res.ok:
+        return None
+    body = res.json()
+    return body.get("hint") if body.get("configured") else None
+
+
 @main.command()
 @click.argument("service_id", required=True, type=str)
 def details(service_id: str) -> None:  # pragma: no cover
@@ -787,6 +803,11 @@ def details(service_id: str) -> None:  # pragma: no cover
             "host": service.host,
             "port": service.port,
             "mount": service.mount,
+            # Whether the service requires a key, and enough of it to tell
+            # which one. Fetched separately: the hint is deliberately kept off
+            # the service payload so it can't be round-tripped back into the
+            # ORM, and the key itself is never returned by any endpoint.
+            "api_key": _fetch_api_key_hint(service_id),
         },
     }
 

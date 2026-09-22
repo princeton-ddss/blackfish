@@ -389,8 +389,8 @@ class TestRunTextGeneration:
             "text-generation",
             "openai/gpt-2",
             "--",
-            "--api-key",
-            "secret",
+            "--max-model-len",
+            "4096",
             "--seed",
             "42",
         ]
@@ -430,8 +430,8 @@ class TestRunTextGeneration:
         # Verify launch_kwargs contains the extra arguments
         call_args = mock_post.call_args
         launch_kwargs = call_args[1]["json"]["container_config"]["launch_kwargs"]
-        assert "--api-key" in launch_kwargs
-        assert "secret" in launch_kwargs
+        assert "--max-model-len" in launch_kwargs
+        assert "4096" in launch_kwargs
         assert "--seed" in launch_kwargs
         assert "42" in launch_kwargs
 
@@ -1289,3 +1289,220 @@ class TestRunGroupOptions:
         from blackfish.server.images import DEFAULT_IMAGES
 
         assert DEFAULT_IMAGES["text_generation"].sif not in script
+
+
+class TestServiceApiKey:
+    """`--api-key` is a declared option feeding the first-class config field.
+
+    It used to work only by accident on text generation, falling through
+    `ignore_unknown_options` into `launch_kwargs`, and did not work at all on
+    speech recognition. Declaring it lets the server record the key and attach
+    it when proxying (#534).
+    """
+
+    def _tg_patches(self, local_profile):
+        return (
+            patch("blackfish.server.models.profile.deserialize_profile"),
+            patch("blackfish.cli.services.text_generation.get_models"),
+            patch("blackfish.cli.services.text_generation.get_revisions"),
+            patch("blackfish.cli.services.text_generation.get_latest_commit"),
+            patch("blackfish.cli.services.text_generation.get_model_dir"),
+            patch("blackfish.cli.services.text_generation.api.post"),
+        )
+
+    def test_text_generation_api_key_populates_container_config(
+        self, cli_runner, mock_config, local_profile
+    ):
+        """The key lands in `container_config`, not in `launch_kwargs`."""
+        cmd = [
+            "run",
+            "-p",
+            "default",
+            "text-generation",
+            "openai/gpt-2",
+            "--api-key",
+            "sk-secret",
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.text_generation.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.text_generation.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.text_generation.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.text_generation.get_model_dir"
+            ) as mock_get_model_dir,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/gpt-2"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model"
+            mock_response = Mock()
+            mock_response.ok = True
+            mock_response.json.return_value = {"id": "service-uuid-123"}
+            mock_post.return_value = mock_response
+
+            result = cli_runner.invoke(main, cmd)
+
+        assert "Started service" in result.output
+        container_config = mock_post.call_args[1]["json"]["container_config"]
+        assert container_config["api_key"] == "sk-secret"
+        # Not duplicated into the vLLM pass-through string.
+        assert "sk-secret" not in (container_config["launch_kwargs"] or "")
+
+    def test_speech_recognition_api_key_populates_container_config(
+        self, cli_runner, mock_config, local_profile
+    ):
+        """Speech recognition could not take a key from any interface before."""
+        cmd = [
+            "run",
+            "-p",
+            "default",
+            "speech-recognition",
+            "openai/whisper-large-v3",
+            "--api-key",
+            "sk-secret",
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.speech_recognition.get_model_dir"
+            ) as mock_get_model_dir,
+            patch("blackfish.cli.services.speech_recognition.api.post") as mock_post,
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/whisper-large-v3"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model/snapshots/abc123"
+            mock_response = Mock()
+            mock_response.ok = True
+            mock_response.json.return_value = {"id": "service-uuid-123"}
+            mock_post.return_value = mock_response
+
+            result = cli_runner.invoke(main, cmd)
+
+        assert "Started service" in result.output
+        container_config = mock_post.call_args[1]["json"]["container_config"]
+        assert container_config["api_key"] == "sk-secret"
+
+    def test_api_key_in_pass_through_args_warns(
+        self, cli_runner, mock_config, local_profile
+    ):
+        """Silently preferring one of two keys would be the worst outcome."""
+        cmd = [
+            "run",
+            "-p",
+            "default",
+            "text-generation",
+            "openai/gpt-2",
+            "--api-key",
+            "sk-declared",
+            "--",
+            "--api-key",
+            "sk-passthrough",
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.text_generation.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.text_generation.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.text_generation.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.text_generation.get_model_dir"
+            ) as mock_get_model_dir,
+            patch("blackfish.cli.services.text_generation.api.post") as mock_post,
+        ):
+            mock_deserialize.return_value = local_profile
+            mock_get_models.return_value = ["openai/gpt-2"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model"
+            mock_response = Mock()
+            mock_response.ok = True
+            mock_response.json.return_value = {"id": "service-uuid-123"}
+            mock_post.return_value = mock_response
+
+            result = cli_runner.invoke(main, cmd)
+
+        assert "Ignoring --api-key in the pass-through" in result.output
+        # The declared option is authoritative, and the pass-through key must
+        # not survive into launch_kwargs: vLLM's argparse takes the last
+        # occurrence, so a stale second --api-key would launch the container
+        # with a key Blackfish does not hold, 401-ing every proxied request.
+        container_config = mock_post.call_args[1]["json"]["container_config"]
+        assert container_config["api_key"] == "sk-declared"
+        assert "sk-passthrough" not in (container_config["launch_kwargs"] or "")
+        assert "--api-key" not in (container_config["launch_kwargs"] or "")
+
+    def test_dry_run_renders_the_key_into_the_script(
+        self, cli_runner, mock_config, slurm_profile
+    ):
+        """A dry run creates nothing, so it stays faithful to what would run."""
+        cmd = [
+            "run",
+            "-p",
+            "default",
+            "text-generation",
+            "openai/gpt-2",
+            "--api-key",
+            "sk-secret",
+            "--dry-run",
+        ]
+
+        with (
+            patch(
+                "blackfish.server.models.profile.deserialize_profile"
+            ) as mock_deserialize,
+            patch(
+                "blackfish.cli.services.text_generation.get_models"
+            ) as mock_get_models,
+            patch(
+                "blackfish.cli.services.text_generation.get_revisions"
+            ) as mock_get_revisions,
+            patch(
+                "blackfish.cli.services.text_generation.get_latest_commit"
+            ) as mock_get_latest,
+            patch(
+                "blackfish.cli.services.text_generation.get_model_dir"
+            ) as mock_get_model_dir,
+        ):
+            mock_deserialize.return_value = slurm_profile
+            mock_get_models.return_value = ["openai/gpt-2"]
+            mock_get_revisions.return_value = ["abc123"]
+            mock_get_latest.return_value = "abc123"
+            mock_get_model_dir.return_value = "/path/to/model"
+
+            result = cli_runner.invoke(main, cmd)
+
+        assert "--api-key sk-secret" in result.output

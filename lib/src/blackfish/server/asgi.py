@@ -1164,6 +1164,11 @@ def build_service(data: ServiceRequest) -> Service:
         "cache_dir": data.profile.cache_dir,
         "mount": data.mount,
         "grace_period": data.grace_period,
+        # The only field carried over from container_config. The template gets
+        # it via `start(container_options=...)`, but the proxy needs it on the
+        # row to replay on each forwarded request, and container_config is not
+        # otherwise persisted.
+        "_api_key": data.container_config.api_key,
     }
 
     if isinstance(data.profile, LocalProfile):
@@ -1249,6 +1254,32 @@ async def fetch_service(
         await service.refresh(session, state.http_client)
 
     return service
+
+
+@dataclass
+class ServiceApiKeyStatusResponse:
+    """Whether a service has an API key, and enough of it to recognise which.
+
+    Deliberately not a readback: the key is write-only once set, matching how
+    `HfTokenStatusResponse` treats the Hugging Face token.
+    """
+
+    configured: bool
+    hint: Optional[str] = None
+
+
+@get("/api/services/{service_id:str}/api_key", guards=ENDPOINT_GUARDS)
+async def get_service_api_key_status(
+    service_id: UUID,
+    session: AsyncSession,
+) -> ServiceApiKeyStatusResponse:
+    """Report whether a service was launched with an API key."""
+    service = await session.get(Service, service_id)
+    if service is None:
+        raise NotFoundException(detail=f"Service {service_id} not found")
+
+    hint = service.api_key_hint()
+    return ServiceApiKeyStatusResponse(configured=hint is not None, hint=hint)
 
 
 @get("/api/services", guards=ENDPOINT_GUARDS)
@@ -1924,6 +1955,48 @@ async def asyncpost(
     return response.json()
 
 
+async def _service_auth_headers(session: AsyncSession, port: int) -> dict[str, str]:
+    """Auth headers for the service listening on `port`, or none.
+
+    The proxy is addressed by port rather than service id, so the row has to be
+    recovered here. Filtered to live statuses because `find_port` only
+    guarantees uniqueness among running services — stopped rows accumulate on
+    reused ports, and sourcing a key from one would send the wrong credential.
+
+    A port with no matching row is not an error: the proxy forwards to anything
+    listening locally, and the upstream service is the authority on whether a
+    request is authorized. It answers 401, which propagates as-is.
+    """
+    service = (
+        (
+            await session.execute(
+                sa.select(Service)
+                .where(Service.port == port)
+                .where(
+                    Service.status.in_(
+                        (
+                            ServiceStatus.HEALTHY,
+                            ServiceStatus.STARTING,
+                            ServiceStatus.UNHEALTHY,
+                        )
+                    )
+                )
+                .order_by(Service.updated_at.desc())
+            )
+        )
+        .scalars()
+        .first()
+    )
+
+    if service is None:
+        logger.debug(
+            f"No live service found on port {port}; forwarding unauthenticated."
+        )
+        return {}
+
+    return service.auth_headers()
+
+
 @post(
     [
         "/proxy/{port:int}/{cmd:str}",
@@ -1950,8 +2023,10 @@ async def proxy_service(
     else:
         url = f"http://localhost:{port}/{cmd}"
 
+    headers = {"Content-Type": "application/json"}
+    headers.update(await _service_auth_headers(session, port))
+
     if streaming:
-        headers = {"Content-Type": "application/json"}
         req = state.http_client.build_request(
             "POST", url, json=data, headers=headers, timeout=STREAM_TIMEOUT
         )
@@ -1986,7 +2061,7 @@ async def proxy_service(
             state.http_client,
             url,
             json.dumps(data),
-            {"Content-Type": "application/json"},
+            headers,
         )
         return res
 
@@ -3786,6 +3861,7 @@ app = Litestar(
         stop_service,
         fetch_service,
         fetch_services,
+        get_service_api_key_status,
         delete_service,
         prune_services,
         proxy_service,

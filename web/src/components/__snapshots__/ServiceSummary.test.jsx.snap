@@ -166,6 +166,41 @@ exports[`ServiceSummary > Timer component > renders Timer for running service cr
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
                 d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -420,6 +455,41 @@ exports[`ServiceSummary > Timer component > renders Timer for updated_at when it
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
                 d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -657,6 +727,41 @@ exports[`ServiceSummary > Timer component > renders dash for non-running service
               Host 
             </div>
             -
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
           </div>
           <div
             class="mb-1 ml-0 inline-flex items-center"
@@ -926,6 +1031,41 @@ exports[`ServiceSummary > Timer component > renders empty div when service doesn
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
                 d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -1162,6 +1302,41 @@ exports[`ServiceSummary > renders GPU as ice cube when gres is 0 1`] = `
               Host 
             </div>
             localhost:8080
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
           </div>
           <div
             class="mb-1 ml-0 inline-flex items-center"
@@ -1414,6 +1589,41 @@ exports[`ServiceSummary > renders dashes for missing service properties 1`] = `
               Host 
             </div>
             -
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
           </div>
           <div
             class="mb-1 ml-0 inline-flex items-center"
@@ -1686,6 +1896,41 @@ exports[`ServiceSummary > renders host without port when port is not provided 1`
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
                 d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -1940,6 +2185,41 @@ exports[`ServiceSummary > renders service information when service and profile a
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
                 d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -2179,6 +2459,41 @@ exports[`ServiceSummary > renders service with model without slash 1`] = `
               Host 
             </div>
             localhost:8080
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-medium text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="service-summary__api-key"
+            >
+              <span
+                class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                title="Anyone who can reach this service can use it"
+              >
+                Unprotected
+              </span>
+            </span>
           </div>
           <div
             class="mb-1 ml-0 inline-flex items-center"
@@ -2458,6 +2773,36 @@ exports[`ServiceSummary > renders without a profile 1`] = `
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-regular text-sm mr-1"
+            >
+              Access 
+            </div>
+            <span
+              class="mr-2"
+            >
+              -
+            </span>
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
                 d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -2709,6 +3054,36 @@ exports[`ServiceSummary > renders without a profile and a service 1`] = `
               class="grow font-regular text-sm mr-1"
             >
               Host 
+            </div>
+            <span
+              class="mr-2"
+            >
+              -
+            </span>
+          </div>
+          <div
+            class="mb-1 ml-0 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1"
+              data-slot="icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div
+              class="grow font-regular text-sm mr-1"
+            >
+              Access 
             </div>
             <span
               class="mr-2"

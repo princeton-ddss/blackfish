@@ -11,6 +11,8 @@ vi.mock("@/lib/util", async () => {
   };
 });
 
+
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -214,4 +216,67 @@ describe("ServiceSummary", () => {
     });
   });
 
+
+  it("reports that a keyed service is protected", async () => {
+
+    const { getByText } = render(
+      <ServiceSummary service={{ ...mockService, protected: true }} profile={mockProfile} />
+    );
+
+    expect(getByText("Protected")).toBeInTheDocument();
+  });
+
+  it("does not show any part of the key", async () => {
+    // The user set the key; four characters would not remind them which it is,
+    // and putting them on screen is exposure without a purpose.
+
+    const { container, getByText } = render(
+      <ServiceSummary service={{ ...mockService, protected: true }} profile={mockProfile} />
+    );
+
+    getByText("Protected");
+    expect(container.textContent).not.toContain("cdef");
+  });
+
+  it("says an unkeyed service is unprotected", () => {
+    // "Unprotected" rather than "-": no key is a real state, not missing data,
+    // and it is the one a user would want to notice.
+    const { getByText } = render(
+      <ServiceSummary
+        service={{ ...mockService, protected: false }}
+        profile={mockProfile}
+      />
+    );
+
+    expect(getByText("Unprotected")).toBeInTheDocument();
+  });
+
+  it("distinguishes the two access states by color, not just text", () => {
+    // The badge is the at-a-glance signal; if both states rendered the same
+    // color it would be no better than plain text.
+    const { container: protectedRender } = render(
+      <ServiceSummary
+        service={{ ...mockService, protected: true }}
+        profile={mockProfile}
+      />
+    );
+    const protectedBadge = protectedRender
+      .querySelector(".service-summary__api-key span")
+      .className;
+
+    const { container: openRender } = render(
+      <ServiceSummary
+        service={{ ...mockService, protected: false }}
+        profile={mockProfile}
+      />
+    );
+    const openBadge = openRender
+      .querySelector(".service-summary__api-key span")
+      .className;
+
+    expect(protectedBadge).not.toBe(openBadge);
+    // Amber, not red: running a service open is a choice, not a fault.
+    expect(openBadge).toContain("amber");
+    expect(openBadge).not.toContain("red");
+  });
 });

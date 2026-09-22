@@ -8,6 +8,7 @@ import {
   FireIcon,
   CubeTransparentIcon,
   CircleStackIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 import { formattedTimeInterval, isServiceRunning } from "@/lib/util";
@@ -42,10 +43,44 @@ Timer.propTypes = {
  * @param {object} options.profile
  * @return {JSX.Element}
  */
+/**
+ * Access badge: whether a service requires an API key.
+ *
+ * Amber rather than red for an unprotected service — running one open is a
+ * deliberate choice, not a failure, and red here would cry wolf next to the
+ * status badge that uses it for real faults.
+ * @param {object} options
+ * @param {boolean} options.protected
+ * @return {JSX.Element}
+ */
+const AccessBadge = ({ protected: isProtected }) => {
+  const colors = isProtected
+    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+    : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300";
+
+  return (
+    <span
+      className={`text-xs px-1.5 py-0.5 rounded ${colors}`}
+      title={
+        isProtected
+          ? "Requests to this service must carry its API key"
+          : "Anyone who can reach this service can use it"
+      }
+    >
+      {isProtected ? "Protected" : "Unprotected"}
+    </span>
+  );
+};
+
+AccessBadge.propTypes = {
+  protected: PropTypes.bool,
+};
+
 function ServiceSummary({
   service,
   profile,
 }) {
+
   if (profile && !service) {
     return <></>;
   }
@@ -78,6 +113,11 @@ function ServiceSummary({
             <div className="mb-1 ml-0 inline-flex items-center">
               <CloudIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
               <div className="grow font-regular text-sm mr-1">Host </div>
+              <span className="mr-2">-</span>
+            </div>
+            <div className="mb-1 ml-0 inline-flex items-center">
+              <LockClosedIcon className="h-6 w-6 text-gray-300 dark:text-gray-600 mr-1" />
+              <div className="grow font-regular text-sm mr-1">Access </div>
               <span className="mr-2">-</span>
             </div>
             <div className="mb-1 ml-0 inline-flex items-center">
@@ -149,6 +189,17 @@ function ServiceSummary({
                 ? `${service.host}:${service.port}`
                 : service.host
               : "-"}
+          </div>
+          <div className="mb-1 ml-0 inline-flex items-center">
+            <LockClosedIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />
+            <div className="grow font-medium text-sm mr-1">Access </div>
+            {/* Whether the service requires a key, not which key it is: the
+                user set it, and four characters would not remind them. Read
+                off the service itself, so it renders with the rest of the row
+                instead of appearing a moment later. */}
+            <span className="service-summary__api-key">
+              {service ? <AccessBadge protected={!!service.protected} /> : "-"}
+            </span>
           </div>
           <div className="mb-1 ml-0 inline-flex items-center">
             <CpuChipIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />

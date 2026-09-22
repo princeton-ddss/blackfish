@@ -1256,32 +1256,6 @@ async def fetch_service(
     return service
 
 
-@dataclass
-class ServiceApiKeyStatusResponse:
-    """Whether a service has an API key, and enough of it to recognise which.
-
-    Deliberately not a readback: the key is write-only once set, matching how
-    `HfTokenStatusResponse` treats the Hugging Face token.
-    """
-
-    configured: bool
-    hint: Optional[str] = None
-
-
-@get("/api/services/{service_id:str}/api_key", guards=ENDPOINT_GUARDS)
-async def get_service_api_key_status(
-    service_id: UUID,
-    session: AsyncSession,
-) -> ServiceApiKeyStatusResponse:
-    """Report whether a service was launched with an API key."""
-    service = await session.get(Service, service_id)
-    if service is None:
-        raise NotFoundException(detail=f"Service {service_id} not found")
-
-    hint = service.api_key_hint()
-    return ServiceApiKeyStatusResponse(configured=hint is not None, hint=hint)
-
-
 @get("/api/services", guards=ENDPOINT_GUARDS)
 async def fetch_services(
     session: AsyncSession,
@@ -3861,7 +3835,6 @@ app = Litestar(
         stop_service,
         fetch_service,
         fetch_services,
-        get_service_api_key_status,
         delete_service,
         prune_services,
         proxy_service,

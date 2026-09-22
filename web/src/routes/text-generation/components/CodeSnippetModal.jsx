@@ -52,7 +52,7 @@ function buildSampleBody(mode, parameters) {
  * @param {object} service - The selected service
  * @returns {string} Python code
  */
-function generatePythonCode(mode, parameters, service) {
+function generatePythonCode(mode, parameters, service, hasApiKey) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
   const body = buildSampleBody(mode, parameters);
@@ -62,10 +62,14 @@ function generatePythonCode(mode, parameters, service) {
     .map((line, i) => (i === 0 ? line : "    " + line))
     .join("\n");
 
+  const auth = hasApiKey
+    ? '\n    headers={"Authorization": f"Bearer {API_KEY}"},'
+    : "";
+
   return `import requests
 
 response = requests.post(
-    "http://localhost:${port}/${endpoint}",
+    "http://localhost:${port}/${endpoint}",${auth}
     json=${bodyJson}
 )
 print(response.json())`;
@@ -78,7 +82,7 @@ print(response.json())`;
  * @param {object} service - The selected service
  * @returns {string} R code
  */
-function generateRCode(mode, parameters, service) {
+function generateRCode(mode, parameters, service, hasApiKey) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
   const body = buildSampleBody(mode, parameters);
@@ -104,10 +108,14 @@ function generateRCode(mode, parameters, service) {
 
   const bodyR = formatRValue(body, 1);
 
+  const auth = hasApiKey
+    ? '\n  add_headers(Authorization = paste("Bearer", api_key)),'
+    : "";
+
   return `library(httr)
 
 response <- POST(
-  "http://localhost:${port}/${endpoint}",
+  "http://localhost:${port}/${endpoint}",${auth}
   body = ${bodyR},
   encode = "json"
 )
@@ -122,7 +130,7 @@ content(response, "parsed")`;
  * @param {object} service - The selected service
  * @returns {string} Shell code
  */
-function generateShellCode(mode, parameters, service) {
+function generateShellCode(mode, parameters, service, hasApiKey) {
   const port = service?.port || 8000;
   const endpoint = mode === "completion" ? "v1/completions" : "v1/chat/completions";
   const body = buildSampleBody(mode, parameters);
@@ -131,9 +139,13 @@ function generateShellCode(mode, parameters, service) {
   // Escape single quotes for shell
   const escapedJson = bodyJson.replace(/'/g, "'\\''");
 
+  const auth = hasApiKey
+    ? '  -H "Authorization: Bearer $API_KEY" \\\n'
+    : "";
+
   return `curl -X POST "http://localhost:${port}/${endpoint}" \\
   -H "Content-Type: application/json" \\
-  -d '${escapedJson}'`;
+${auth}  -d '${escapedJson}'`;
 }
 
 const languages = [
@@ -164,9 +176,14 @@ function CodeSnippetModal({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const timeoutRef = useRef(null);
 
+  // Snippets that omit the auth header would 401 against a keyed service. The
+  // service row says whether one is required; the key itself never leaves the
+  // server, so the snippets carry a placeholder.
+  const apiKeyConfigured = !!selectedService?.protected;
+
   const allCode = useMemo(
-    () => languages.map((lang) => lang.generate(mode, parameters, selectedService)),
-    [mode, parameters, selectedService]
+    () => languages.map((lang) => lang.generate(mode, parameters, selectedService, apiKeyConfigured)),
+    [mode, parameters, selectedService, apiKeyConfigured]
   );
 
   const code = allCode[selectedIndex];
@@ -286,6 +303,13 @@ function CodeSnippetModal({
                       ))}
                     </TabPanels>
                   </TabGroup>
+
+                  {apiKeyConfigured && (
+                    <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      This service is protected. Substitute the API key you
+                      set when launching it.
+                    </p>
+                  )}
                 </div>
 
               </DialogPanel>

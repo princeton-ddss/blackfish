@@ -14,9 +14,37 @@ describe("buildContainerConfig", () => {
     });
     expect(out).toEqual({
       input_dir: "/data",
+      api_key: null,
     });
     expect(out).not.toHaveProperty("disable_thinking");
     expect(out).not.toHaveProperty("launch_kwargs");
+  });
+
+  it("passes an api_key through to the backend", () => {
+    const out = buildContainerConfig({
+      disable_thinking: false,
+      api_key: "sk-secret",
+    });
+    expect(out.api_key).toBe("sk-secret");
+  });
+
+  it("normalizes an empty api_key to null", () => {
+    // A blank field means "unauthenticated"; storing "" would say the same
+    // thing less clearly, and `--api-key ''` is not what we want rendered.
+    for (const blank of ["", undefined]) {
+      const out = buildContainerConfig({ disable_thinking: false, api_key: blank });
+      expect(out.api_key).toBeNull();
+    }
+  });
+
+  it("keeps the api_key when disable_thinking also sets launch_kwargs", () => {
+    // The two features write different fields; neither should clobber the other.
+    const out = buildContainerConfig({
+      disable_thinking: true,
+      api_key: "sk-secret",
+    });
+    expect(out.api_key).toBe("sk-secret");
+    expect(out.launch_kwargs).toContain("enable_thinking");
   });
 
   it("translates disable_thinking=true into launch_kwargs and strips the flag", () => {

@@ -12,6 +12,7 @@ import httpx
 from enum import StrEnum, auto
 from dataclasses import dataclass
 
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncSession
 from advanced_alchemy.base import UUIDAuditBase
@@ -140,7 +141,7 @@ class Service(UUIDAuditBase):
     # a private attribute so the serialization plugin never sees it: every
     # service endpoint returns the ORM object directly, so a plainly-named
     # column would be published on all of them. Read it in-process (the proxy,
-    # `auth_headers`); expose only `api_key_hint` to callers.
+    # `auth_headers`); callers see only `protected`.
     _api_key: Mapped[Optional[str]] = mapped_column("api_key", nullable=True)
 
     __mapper_args__ = {
@@ -148,23 +149,30 @@ class Service(UUIDAuditBase):
         "polymorphic_identity": "base",
     }
 
-    def api_key_hint(self) -> Optional[str]:
-        """The last four characters of the configured key, or None.
+    @hybrid_property
+    def protected(self) -> bool:
+        """Whether this service requires an API key on its requests.
 
-        Enough to tell *which* key is set without being a readback. A key of
-        four characters or fewer collapses to "..." rather than echoing itself.
+        Serialized with the service, unlike the key itself: that a service is
+        protected is not a secret — anyone who can reach it learns as much from
+        a 401 — and the UI needs it on the same response as the rest of the
+        row, or the field renders empty and then pops once a second request
+        lands.
 
-        A method rather than a property: the serialization plugin picks up
-        properties, which would put this in every service payload, and `details`
-        (cli/__main__.py) round-trips that payload back through
-        `Service(**body)` — where a read-only attribute has no setter. The hint
-        belongs to `GET /api/services/{id}/api_key`, not to the service object.
+        A hybrid_property rather than a plain one so SQLAlchemy treats it as a
+        derived value; `details` round-trips the payload back through
+        `Service(**body)`, which a read-only plain property would break.
         """
-        if not self._api_key:
-            return None
-        if len(self._api_key) > 4:
-            return f"...{self._api_key[-4:]}"
-        return "..."
+        return self._api_key is not None
+
+    @protected.setter  # type: ignore[no-redef]
+    def protected(self, value: bool) -> None:
+        """Ignore writes: `protected` is derived from whether a key is set.
+
+        A setter exists only because `details` (cli/__main__.py) round-trips a
+        serialized service back through `Service(**body)`, and every field on
+        the payload has to be accepted on the way back in.
+        """
 
     def auth_headers(self) -> dict[str, str]:
         """Headers that authenticate a proxied request to this service.

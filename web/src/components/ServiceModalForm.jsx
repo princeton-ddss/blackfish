@@ -6,7 +6,8 @@ import RevisionSelect from "@/components/RevisionSelect"
 import ImageVersionSelect from "@/components/ImageVersionSelect"
 import { useScrollOnExpand } from "@/lib/useScrollOnExpand"
 import TierSelect from "@/components/TierSelect";
-import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput";
+import ServiceModalValidatedInput from "@/components/ServiceModalValidatedInput"
+import ServiceModalApiKeyInput from "@/components/ServiceModalApiKeyInput";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { classNames, selectTierByModelSize } from "@/lib/util";
@@ -35,6 +36,8 @@ function ServiceModalForm({
   setImageRef,
   jobOptions,
   setJobOptions,
+  containerOptions,
+  setContainerOptions,
   setValidationErrors,
   disabled,
   profile,
@@ -446,6 +449,22 @@ function ServiceModalForm({
               />
             </div>
 
+            {/* Above Advanced, which starts collapsed: the field is pre-filled
+                with a generated key, and a user who never expanded that section
+                would launch a protected service whose key they never saw. */}
+            <ServiceModalApiKeyInput
+              value={containerOptions?.api_key}
+              setValue={(value) => {
+                setContainerOptions((prevContainerOptions) => {
+                  return {
+                    ...prevContainerOptions,
+                    api_key: value,
+                  }
+                })
+              }}
+              disabled={disabled}
+            />
+
             {/* Advanced options (collapsed by default) */}
             <fieldset>
               <button
@@ -554,6 +573,23 @@ function ServiceModalForm({
               </div>
             </fieldset>
 
+
+            {/* Above Advanced, which starts collapsed: the field is pre-filled
+                with a generated key, and a user who never expanded that section
+                would launch a protected service whose key they never saw. */}
+            <ServiceModalApiKeyInput
+              value={containerOptions?.api_key}
+              setValue={(value) => {
+                setContainerOptions((prevContainerOptions) => {
+                  return {
+                    ...prevContainerOptions,
+                    api_key: value,
+                  }
+                })
+              }}
+              disabled={disabled}
+            />
+
             {/* Advanced options (collapsed by default). Local profiles have no
                 Slurm settings, but they still run containers, so the image
                 version belongs here too. */}
@@ -608,6 +644,8 @@ ServiceModalForm.propTypes = {
   imageRef: PropTypes.string,
   setImageRef: PropTypes.func,
   jobOptions: PropTypes.object,
+  containerOptions: PropTypes.object,
+  setContainerOptions: PropTypes.func,
   setJobOptions: PropTypes.func,
   setValidationErrors: PropTypes.func,
   disabled: PropTypes.bool,

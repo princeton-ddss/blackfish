@@ -171,12 +171,17 @@ export async function setDefaultProfile(name) {
  * Translate UI-only container option flags into backend fields. Currently:
  * `disable_thinking` becomes `launch_kwargs: --default-chat-template-kwargs '{...}'`.
  * The UI flag itself is stripped from the returned object.
+ *
+ * An empty `api_key` is normalized to null so a blank field stores NULL rather
+ * than an empty string: both mean "unauthenticated", and only one of them says
+ * so in the database.
  */
 export function buildContainerConfig(containerConfig) {
-  const { disable_thinking, ...rest } = containerConfig;
-  if (!disable_thinking) return rest;
+  const { disable_thinking, api_key, ...rest } = containerConfig;
+  const config = { ...rest, api_key: api_key || null };
+  if (!disable_thinking) return config;
   return {
-    ...rest,
+    ...config,
     launch_kwargs: `--default-chat-template-kwargs '{"enable_thinking": false, "thinking": false}'`,
   };
 }
@@ -240,7 +245,9 @@ export async function runService(pipeline, model, jobConfig, containerConfig, pr
   } else {
     throw new Error(`Unsupported job profile type: ${profile.schema}`)
   }
-  console.debug("from runService: body =", body)
+  // Logged with container_config redacted: it carries the service API key, and
+  // the browser console is readable by anyone with the page open.
+  console.debug("from runService: body =", { ...body, container_config: "[redacted]" })
 
   const res = await fetch(`${blackfishApiURL}/api/services`, {
     method: "POST",

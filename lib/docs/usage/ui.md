@@ -61,6 +61,11 @@ the page becomes active:
   snippet modal, which shows the equivalent request body in
   Python, R, and Bash.
 
+<video class="bf-screencast" autoplay loop muted playsinline>
+  <source src="../assets/video/text-generation-demo.webm" type="video/webm">
+  Launching a text generation service and opening its chat interface.
+</video>
+
 #### Speech Recognition
 
 Once the service is `HEALTHY`:

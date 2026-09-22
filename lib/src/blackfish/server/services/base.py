@@ -12,6 +12,7 @@ import httpx
 from enum import StrEnum, auto
 from dataclasses import dataclass
 
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncSession
 from advanced_alchemy.base import UUIDAuditBase
@@ -147,6 +148,31 @@ class Service(UUIDAuditBase):
         "polymorphic_on": "image",
         "polymorphic_identity": "base",
     }
+
+    @hybrid_property
+    def protected(self) -> bool:
+        """Whether this service requires an API key on its requests.
+
+        Serialized with the service, unlike the key itself: that a service is
+        protected is not a secret — anyone who can reach it learns as much from
+        a 401 — and the UI needs it on the same response as the rest of the
+        row, or the field renders empty and then pops once a second request
+        lands.
+
+        A hybrid_property rather than a plain one so SQLAlchemy treats it as a
+        derived value; `details` round-trips the payload back through
+        `Service(**body)`, which a read-only plain property would break.
+        """
+        return self._api_key is not None
+
+    @protected.setter  # type: ignore[no-redef]
+    def protected(self, value: bool) -> None:
+        """Ignore writes: `protected` is derived from whether a key is set.
+
+        A setter exists only because `details` (cli/__main__.py) round-trips a
+        serialized service back through `Service(**body)`, and every field on
+        the payload has to be accepted on the way back in.
+        """
 
     def api_key_hint(self) -> Optional[str]:
         """The last four characters of the configured key, or None.

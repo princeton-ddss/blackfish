@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
-import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults, fetchStagedContainers, fetchServiceApiKeyStatus } from "./requests";
+import { fetchModels, fetchServices, fetchProfiles, fetchFiles, fetchClusterStatus, fetchJobs, fetchJobResults, fetchStagedContainers } from "./requests";
 import { ServiceStatus, isRemoteProfile } from "./util";
 import { useRemoteFileSystem } from "@/providers/RemoteFileSystemProvider";
 
@@ -283,30 +283,5 @@ export const useStagedContainers = (profile, service) => {
     isLoading: isLoading,
     isRefreshing: isValidating,
     refresh: mutate,
-  };
-};
-
-/**
- * Whether a service requires an API key on its requests.
- *
- * SWR rather than a hand-rolled effect so the two consumers (the service
- * summary and the code snippet modal) share one cached request, and so a
- * service switch clears the previous service's answer instead of showing it
- * until the new one resolves — reporting a protected service as unprotected,
- * or generating snippets without the header it needs.
- * @param {string} serviceId
- * @return {object}
- */
-export const useServiceApiKeyStatus = (serviceId) => {
-  const key = serviceId ? `services/${serviceId}/api_key` : null;
-  const { data, error, isLoading } = useSWR(key, () =>
-    fetchServiceApiKeyStatus(serviceId)
-  );
-  return {
-    // Undefined until the first response: callers should not assume
-    // "unprotected" while the answer is still unknown.
-    configured: data?.configured,
-    error: error,
-    isLoading: isLoading,
   };
 };

@@ -12,7 +12,6 @@ import {
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 import { formattedTimeInterval, isServiceRunning } from "@/lib/util";
-import { useServiceApiKeyStatus } from "@/lib/loaders";
 
 /**
  * Timer
@@ -81,8 +80,6 @@ function ServiceSummary({
   service,
   profile,
 }) {
-  // Declared before the early returns below: hooks must run unconditionally.
-  const { configured: apiKeyConfigured } = useServiceApiKeyStatus(service?.id);
 
   if (profile && !service) {
     return <></>;
@@ -197,17 +194,11 @@ function ServiceSummary({
             <LockClosedIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mr-1" />
             <div className="grow font-medium text-sm mr-1">Access </div>
             {/* Whether the service requires a key, not which key it is: the
-                user set it, and four characters would not remind them. An
-                unprotected service says so plainly rather than showing "-",
-                since "no key" is a meaningful state, not missing data. */}
+                user set it, and four characters would not remind them. Read
+                off the service itself, so it renders with the rest of the row
+                instead of appearing a moment later. */}
             <span className="service-summary__api-key">
-              {/* Undefined until the status resolves: say nothing rather than
-                  claiming a protected service is open. */}
-              {apiKeyConfigured === undefined ? (
-                "-"
-              ) : (
-                <AccessBadge protected={apiKeyConfigured} />
-              )}
+              {service ? <AccessBadge protected={!!service.protected} /> : "-"}
             </span>
           </div>
           <div className="mb-1 ml-0 inline-flex items-center">

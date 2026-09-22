@@ -3,18 +3,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import CodeSnippetModal from "./CodeSnippetModal";
 
-// The modal asks the backend whether the service has a key; only that fact
-// comes back, never the key itself.
-vi.mock("@/lib/loaders", () => ({
-  useServiceApiKeyStatus: vi.fn(() => ({ configured: false })),
-}));
-import { useServiceApiKeyStatus } from "@/lib/loaders";
-
-const service = { id: "svc-1", port: 8080 };
-
-function renderModal() {
+// Whether a key is required comes with the service row itself, so the modal
+// reads it directly — no second request, and no window where the snippet is
+// generated without the header it needs.
+function renderModal({ isProtected = false } = {}) {
   return render(
-    <ServiceContext.Provider value={{ selectedService: service }}>
+    <ServiceContext.Provider
+      value={{ selectedService: { id: "svc-1", port: 8080, protected: isProtected } }}
+    >
       <CodeSnippetModal open onClose={vi.fn()} mode="chat" parameters={{}} />
     </ServiceContext.Provider>
   );
@@ -26,20 +22,19 @@ describe("CodeSnippetModal", () => {
   });
 
   it("omits an auth header when the service has no key", async () => {
-    useServiceApiKeyStatus.mockReturnValue({ configured: false });
+    renderModal({ isProtected: false });
 
-    renderModal();
-
-    await waitFor(() => expect(useServiceApiKeyStatus).toHaveBeenCalled());
+    // The modal opens on the Python tab.
+    await waitFor(() =>
+      expect(document.body.textContent).toContain("import requests")
+    );
     expect(document.body.textContent).not.toContain("Authorization");
   });
 
   it("includes an auth header when the service has a key", async () => {
     // Without this the generated snippets 401 against a keyed service, which
     // is the main way users learn to call it from outside the UI.
-    useServiceApiKeyStatus.mockReturnValue({ configured: true });
-
-    renderModal();
+    renderModal({ isProtected: true });
 
     await waitFor(() =>
       expect(document.body.textContent).toContain("Authorization")
@@ -47,9 +42,7 @@ describe("CodeSnippetModal", () => {
   });
 
   it("tells the user the service is protected", async () => {
-    useServiceApiKeyStatus.mockReturnValue({ configured: true });
-
-    renderModal();
+    renderModal({ isProtected: true });
 
     await waitFor(() =>
       expect(document.body.textContent).toContain("This service is protected")
@@ -59,9 +52,7 @@ describe("CodeSnippetModal", () => {
   it("renders no part of the key", async () => {
     // The endpoint is hint-only by construction; the modal shows neither the
     // key nor the hint, just that one is required.
-    useServiceApiKeyStatus.mockReturnValue({ configured: true });
-
-    renderModal();
+    renderModal({ isProtected: true });
 
     await waitFor(() => expect(document.body.textContent).toContain("Authorization"));
     expect(document.body.textContent).not.toContain("sk-");

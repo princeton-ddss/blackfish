@@ -17,7 +17,6 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ServiceContext } from "@/providers/ServiceProvider";
-import { useServiceApiKeyStatus } from "@/lib/loaders";
 import PropTypes from "prop-types";
 import Prism from "prismjs";
 import "prismjs/components/prism-python";
@@ -177,11 +176,10 @@ function CodeSnippetModal({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const timeoutRef = useRef(null);
 
-  // Snippets that omit the auth header would 401 against a keyed service, so
-  // ask whether one is set. Only that fact comes back, never the key.
-  const { configured: apiKeyConfigured } = useServiceApiKeyStatus(
-    selectedService?.id
-  );
+  // Snippets that omit the auth header would 401 against a keyed service. The
+  // service row says whether one is required; the key itself never leaves the
+  // server, so the snippets carry a placeholder.
+  const apiKeyConfigured = !!selectedService?.protected;
 
   const allCode = useMemo(
     () => languages.map((lang) => lang.generate(mode, parameters, selectedService, apiKeyConfigured)),

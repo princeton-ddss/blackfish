@@ -11,12 +11,7 @@ vi.mock("@/lib/util", async () => {
   };
 });
 
-// The summary asks whether the service has an API key. Default to "no key" so
-// existing cases render without hitting the network.
-vi.mock("@/lib/loaders", () => ({
-  useServiceApiKeyStatus: vi.fn(() => ({ configured: false })),
-}));
-import { useServiceApiKeyStatus } from "@/lib/loaders";
+
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -223,10 +218,9 @@ describe("ServiceSummary", () => {
 
 
   it("reports that a keyed service is protected", async () => {
-    useServiceApiKeyStatus.mockReturnValueOnce({ configured: true });
 
     const { getByText } = render(
-      <ServiceSummary service={mockService} profile={mockProfile} />
+      <ServiceSummary service={{ ...mockService, protected: true }} profile={mockProfile} />
     );
 
     expect(getByText("Protected")).toBeInTheDocument();
@@ -235,40 +229,46 @@ describe("ServiceSummary", () => {
   it("does not show any part of the key", async () => {
     // The user set the key; four characters would not remind them which it is,
     // and putting them on screen is exposure without a purpose.
-    useServiceApiKeyStatus.mockReturnValueOnce({ configured: true });
 
     const { container, getByText } = render(
-      <ServiceSummary service={mockService} profile={mockProfile} />
+      <ServiceSummary service={{ ...mockService, protected: true }} profile={mockProfile} />
     );
 
     getByText("Protected");
     expect(container.textContent).not.toContain("cdef");
   });
 
-  it("says an unkeyed service is unprotected", async () => {
+  it("says an unkeyed service is unprotected", () => {
     // "Unprotected" rather than "-": no key is a real state, not missing data,
     // and it is the one a user would want to notice.
     const { getByText } = render(
-      <ServiceSummary service={mockService} profile={mockProfile} />
+      <ServiceSummary
+        service={{ ...mockService, protected: false }}
+        profile={mockProfile}
+      />
     );
 
     expect(getByText("Unprotected")).toBeInTheDocument();
   });
 
-  it("distinguishes the two access states by color, not just text", async () => {
+  it("distinguishes the two access states by color, not just text", () => {
     // The badge is the at-a-glance signal; if both states rendered the same
     // color it would be no better than plain text.
-    useServiceApiKeyStatus.mockReturnValueOnce({ configured: true });
     const { container: protectedRender } = render(
-      <ServiceSummary service={mockService} profile={mockProfile} />
+      <ServiceSummary
+        service={{ ...mockService, protected: true }}
+        profile={mockProfile}
+      />
     );
     const protectedBadge = protectedRender
       .querySelector(".service-summary__api-key span")
       .className;
 
-    useServiceApiKeyStatus.mockReturnValueOnce({ configured: false });
     const { container: openRender } = render(
-      <ServiceSummary service={mockService} profile={mockProfile} />
+      <ServiceSummary
+        service={{ ...mockService, protected: false }}
+        profile={mockProfile}
+      />
     );
     const openBadge = openRender
       .querySelector(".service-summary__api-key span")

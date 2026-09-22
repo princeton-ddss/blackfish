@@ -633,6 +633,35 @@ class TestServiceApiKeyRedaction:
 
         assert response.json()["hint"] == "..."
 
+    async def test_payload_says_whether_the_service_is_protected(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        """Carried on the service itself, not a second request.
+
+        Whether a key is required is not a secret — a 401 tells anyone who
+        asks — and the UI needs it on the same response as the rest of the row,
+        or the field renders empty and then pops when a later request lands.
+        """
+        service = await self._keyed_service(session)
+
+        response = await client.get(f"/api/services/{service.id}")
+
+        assert response.json()["protected"] is True
+        assert self.SECRET not in response.text
+
+    async def test_unkeyed_service_reports_unprotected(
+        self, client: AsyncTestClient, session: AsyncSession
+    ):
+        from sqlalchemy import select
+
+        service = (await session.execute(select(Service))).scalars().first()
+        service._api_key = None
+        await session.commit()
+
+        response = await client.get(f"/api/services/{service.id}")
+
+        assert response.json()["protected"] is False
+
     async def test_service_payload_round_trips_through_the_orm(
         self, client: AsyncTestClient, session: AsyncSession
     ):

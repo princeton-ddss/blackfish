@@ -11,8 +11,8 @@ Blackfish ships with a browser-based UI served alongside the API at `http://loca
       Whisper service.
     - More services on the way.
 - **Models** — inventory, download, and delete models per profile.
-- **Files** — browse, upload, download, and delete files on a remote
-  Slurm profile over SFTP.
+- **Files** — browse, upload, and delete files on a remote Slurm profile
+  over SFTP.
 - **Batch Jobs**
     - **Chat** — prompt a chat model with text, image, audio, or video files.
     - **Transcription** — transcribe audio files using Whisper.
@@ -129,8 +129,8 @@ when a Slurm profile is selected.
   input and output file names, start time, elapsed time, and status (success
   or failure). Click a file row to open a side panel with a preview of
   the output and additional details. Binary outputs have no preview —
-  embedding results (`.npy`) show "Preview not available" and can be
-  downloaded instead.
+  embedding results (`.npy`) show "Preview not available"; read them from
+  the output directory on the cluster.
 
 === "Creating a job"
 

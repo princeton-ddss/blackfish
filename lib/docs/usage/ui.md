@@ -45,14 +45,14 @@ From any service page, click :heroicons-rocket-launch: in the service container 
 
 === "Text generation"
 
-    <video class="bf-screencast" autoplay loop muted playsinline>
+    <video class="bf-screencast" autoplay loop muted playsinline controls>
       <source src="../assets/video/text-generation-demo.webm" type="video/webm">
       Launching a text generation service from the web interface.
     </video>
 
 === "Speech recognition"
 
-    <video class="bf-screencast" autoplay loop muted playsinline>
+    <video class="bf-screencast" autoplay loop muted playsinline controls>
       <source src="../assets/video/launching-transcription.webm" type="video/webm">
       Launching a speech recognition service from the web interface.
     </video>
@@ -71,6 +71,11 @@ the page becomes active:
   snippet modal, which shows the equivalent request body in
   Python, R, and Bash.
 
+<video class="bf-screencast" autoplay loop muted playsinline controls>
+  <source src="../assets/video/text-generation.webm" type="video/webm">
+  Chatting with a text generation service and adjusting its parameters.
+</video>
+
 #### Speech Recognition
 
 Once the service is `HEALTHY`:
@@ -81,6 +86,11 @@ Once the service is `HEALTHY`:
   language.
 - Click the submit button to start transcription. The result appears
   in the output area once processing completes.
+
+<video class="bf-screencast" autoplay loop muted playsinline controls>
+  <source src="../assets/video/speech-recognition.webm" type="video/webm">
+  Transcribing an audio file in the web interface.
+</video>
 
 ### Create a batch job
 
@@ -116,6 +126,20 @@ when a Slurm profile is selected.
   the output and additional details. Binary outputs have no preview —
   embedding results (`.npy`) show "Preview not available" and can be
   downloaded instead.
+
+=== "Creating a job"
+
+    <video class="bf-screencast" autoplay loop muted playsinline controls>
+      <source src="../assets/video/batch-job.webm" type="video/webm">
+      Creating an object detection batch job.
+    </video>
+
+=== "Viewing results"
+
+    <video class="bf-screencast" autoplay loop muted playsinline controls>
+      <source src="../assets/video/batch-job-results.webm" type="video/webm">
+      Inspecting the per-file results of a finished batch job.
+    </video>
 
 ### Manage models
 

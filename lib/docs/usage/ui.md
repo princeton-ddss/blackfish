@@ -46,14 +46,14 @@ From any service page, click :heroicons-rocket-launch: in the service container 
 === "Text generation"
 
     <video class="bf-screencast" autoplay loop muted playsinline controls>
-      <source src="../assets/video/text-generation-demo.webm" type="video/webm">
+      <source src="../assets/video/text-generation-launch.webm" type="video/webm">
       Launching a text generation service from the web interface.
     </video>
 
 === "Speech recognition"
 
     <video class="bf-screencast" autoplay loop muted playsinline controls>
-      <source src="../assets/video/launching-transcription.webm" type="video/webm">
+      <source src="../assets/video/speech-recognition-launch.webm" type="video/webm">
       Launching a speech recognition service from the web interface.
     </video>
 

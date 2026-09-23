@@ -98,11 +98,15 @@ Batch jobs require a Slurm profile — the Jobs page is only accessible
 when a Slurm profile is selected.
 
 - From the **Jobs** page, click **New Job** — this is a dropdown menu.
-- Pick the task you want to run: **Transcription**, **Translation**,
-  **Object Detection**, **OCR**, or **Embedding**.
+- Pick the task you want to run: **Chat**, **Transcription**,
+  **Translation**, **Object Detection**, **OCR**, or **Embedding**.
 - The New Job modal opens as a stepper:
     1. **Model** — pick a model and revision.
     2. **Task parameters** — fields vary by task:
+        - *Chat*: a prompt is required — use `{text}` to mark where each
+          file's contents belong, or omit it and the contents follow the
+          prompt. Also temperature, max image pixels, audio sampling rate,
+          video sample FPS, and an optional response schema.
         - *Transcription*: language, output format.
         - *Translation*: source language, target language.
         - *Object Detection*: labels, threshold, batch size, sample FPS.

@@ -34,6 +34,10 @@ From any service page, click :heroicons-rocket-launch: in the service container 
     - **Model** and **Revision** — pick from the available list.
     - On a Slurm profile, pick a **Partition**, a **Resource tier**, and
       set the **Time** limit. **Account** is available under the expandable **Advanced** section.
+    - **API Key** — pre-filled with a generated key that the service will
+      require on every request. Copy it with the button beside the field, or
+      replace it with one of your own. Clear the field to leave the service
+      open to anyone who can reach its port.
 - Click **Launch**. The service status badge moves from `PENDING` →
   `STARTING` → `HEALTHY`. The time to reach `HEALTHY` depends on Slurm
   queue wait times and model size. Once the job starts, small models

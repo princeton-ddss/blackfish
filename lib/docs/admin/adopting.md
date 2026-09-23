@@ -68,33 +68,28 @@ Blackfish opens; no listening port has to be opened on the cluster for them.
 
 ### Authentication
 
-!!! warning "Blackfish currently starts in debug mode"
+Authentication is on by default. Every API request requires a bearer token,
+which Blackfish generates at start-up and writes to
+`$BLACKFISH_HOME_DIR/auth_token` at mode `0600` — readable only by the user
+running it, which is what keeps it private on a shared machine. The CLI reads
+the same file, so it needs no setup of its own.
 
-    `BLACKFISH_DEBUG` defaults to `1`, and debug mode disables the
-    authentication middleware and endpoint guards — the API is unprotected.
-    Users should set `BLACKFISH_DEBUG=0` for any shared or long-running
-    instance. This default is expected to change; see
-    [#533](https://github.com/princeton-ddss/blackfish/issues/533).
-
-With `BLACKFISH_DEBUG=0`, every API request requires a bearer token.
-`BLACKFISH_AUTH_TOKEN` sets it; if unset, Blackfish generates a random 32-byte
-token at startup. The token is stored as a bcrypt hash, never in plaintext.
+Debug mode (`BLACKFISH_DEBUG=1`) turns authentication off entirely and is for
+development only; on a login node it leaves the API open to every other user
+on that host.
 
 ### Service authentication
 
-The bearer token above protects the Blackfish API. A running service exposes
-its own API on a compute node, and that one is authenticated separately — by
-the container image, not by Blackfish. Blackfish passes launch arguments
-through to `apptainer run`, so the image's own options apply: a text
-generation service backed by vLLM takes `--api-key`, for example.
+The token above protects the Blackfish API. A running service exposes its own
+API on a compute node, and that one takes a separate key: `--api-key` on
+`blackfish run`, or the field in the web launcher. Blackfish stores the key
+with the service and attaches it when proxying requests.
 
-!!! warning "Services are unauthenticated unless the user asks for it"
+!!! note "Services are open unless a key is set"
 
-    A service started without an API key accepts requests from anyone who can
-    reach its port on the compute node. The flag is available from the CLI and
-    the Python API — the web UI does not currently expose it, so services
-    launched there are unauthenticated. Worth mentioning to users when you
-    announce Blackfish; the [CLI guide](../usage/cli.md) covers the flag.
+    The key is optional. A service started without one accepts requests from
+    anyone who can reach its port on the compute node — worth mentioning to
+    users when you announce Blackfish.
 
 ### Data residency
 

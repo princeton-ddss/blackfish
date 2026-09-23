@@ -14,6 +14,7 @@ Blackfish ships with a browser-based UI served alongside the API at `http://loca
 - **Files** — browse, upload, download, and delete files on a remote
   Slurm profile over SFTP.
 - **Batch Jobs**
+    - **Chat** — prompt a chat model with text, image, audio, or video files.
     - **Transcription** — transcribe audio files using Whisper.
     - **Translation** — translate text files between languages.
     - **Object Detection** — zero-shot object detection on images.

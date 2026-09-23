@@ -1,0 +1,8 @@
+# Shim so `mike deploy` works: mike shells out to `mkdocs build`, and the hook
+# below hands the actual build to Zensical. Real configuration is in
+# zensical.toml.
+site_name: Blackfish AI
+site_url: https://princeton-ddss.github.io/blackfish/
+site_dir: site
+hooks:
+  - .mike/hook.py

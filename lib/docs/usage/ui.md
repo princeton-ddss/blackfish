@@ -39,13 +39,23 @@ From any service page, click :heroicons-rocket-launch: in the service container 
   (~1B) typically load in about a minute, while large models (~70B) can
   take 5–10 minutes.
 
-<video class="bf-screencast" autoplay loop muted playsinline>
-  <source src="../assets/video/launching-transcription.webm" type="video/webm">
-  Launching a speech recognition service from the web interface.
-</video>
 - When you're done, click :heroicons-stop: in the service container
   header. The service transitions to `STOPPED`; :heroicons-trash:
   appears next to it so you can remove the record entirely.
+
+=== "Text generation"
+
+    <video class="bf-screencast" autoplay loop muted playsinline>
+      <source src="../assets/video/text-generation-demo.webm" type="video/webm">
+      Launching a text generation service from the web interface.
+    </video>
+
+=== "Speech recognition"
+
+    <video class="bf-screencast" autoplay loop muted playsinline>
+      <source src="../assets/video/launching-transcription.webm" type="video/webm">
+      Launching a speech recognition service from the web interface.
+    </video>
 
 #### Text Generation
 
@@ -60,11 +70,6 @@ the page becomes active:
 - Click :heroicons-code-bracket: in the toolbar to open the code
   snippet modal, which shows the equivalent request body in
   Python, R, and Bash.
-
-<video class="bf-screencast" autoplay loop muted playsinline>
-  <source src="../assets/video/text-generation-demo.webm" type="video/webm">
-  Launching a text generation service and opening its chat interface.
-</video>
 
 #### Speech Recognition
 

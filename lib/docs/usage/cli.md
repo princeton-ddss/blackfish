@@ -443,6 +443,50 @@ You can, of course, use any language you like for communicating with services: P
 
     The `text-generation` service runs [vLLM's](https://docs.vllm.ai/en/latest/serving/openai_compatible_server/) OpenAI-compatible server. If you are used to working with ChatGPT, this API should be familiar and your scripts will generally "just work" if you point them to Blackfish instead. `vllm serve` supports a number of endpoints depending on the arguments provided. Any unrecognized arguments passed to the `text-generation` command are passed through to `vllm serve`, allowing users to control the precise deploy details of the `vllm` server.
 
+#### Speech recognition
+
+The `speech-recognition` service transcribes audio files with Whisper models. It runs [speech-recognition-inference](https://github.com/princeton-ddss/speech-recognition-inference), which reads audio from a directory on the cluster rather than accepting uploads. Use the `--mount` job option to choose that directory (it defaults to the profile's `home_dir`):
+
+```shell
+blackfish run \
+  --gres 1 \
+  --time 00:30:00 \
+  --mount /scratch/gpfs/shamu/audio \
+  speech-recognition openai/whisper-large-v3 \
+  --api-key sealsaretasty
+```
+
+Inside the service, the mounted directory appears as `/data/audio`, so a file at `/scratch/gpfs/shamu/audio/interview.wav` is requested as `/data/audio/interview.wav`. Once the service is `HEALTHY`, send a request to its `/transcribe` endpoint:
+
+```shell
+curl http://localhost:8082/transcribe \
+  -H "Content-Type: application/json" \
+  -H "Token: sealsaretasty" \
+  -d '{
+        "audio_path": "/data/audio/interview.wav",
+        "response_format": "json"
+    }' | jq
+```
+
+!!! note
+
+    Speech recognition services expect the API key in a bare `Token` header, not the `Authorization: Bearer` header used by `text-generation`. The `--api-key` option is the same for both commands.
+
+The response contains the transcript and the detected language. With `"response_format": "json"`, it also includes timestamped segments; use `"text"` to get the transcript alone.
+
+```json
+{
+  "audio_path": "/data/audio/interview.wav",
+  "text": " Orcas live in every ocean on Earth.",
+  "language": "english",
+  "segments": [
+    {"text": " Orcas live in every ocean on Earth.", "start": 0.0, "end": 2.6}
+  ]
+}
+```
+
+Whisper detects the language automatically. To skip detection, add a `language` field to the request, such as `"language": "spanish"`.
+
 #### `stop` - Stop a service
 
 When you are done with a service, you should shut it down and return its resources to the cluster. To do so, simply type:

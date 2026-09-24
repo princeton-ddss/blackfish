@@ -77,7 +77,7 @@ home=/home/shamu/.blackfish
 cache=/scratch/gpfs/shared/.blackfish
 ```
 
-`cache` is a shared directory set up by your HPC admin for storing shared model and image files. This quickstart assumes you have access to a cache directory with all required container images downloaded. If your HPC does not have a cache set up, you can assign the same directory used for `home` and [add the images yourself](https://princeton-ddss.github.io/blackfish/latest/setup/management/#images).
+`cache` is a shared directory set up by your HPC admin for storing shared model and image files. This quickstart assumes you have access to a cache directory with all required container images downloaded. If your HPC does not have a cache set up, you can assign the same directory used for `home` and [add the images yourself](https://princeton-ddss.github.io/blackfish/latest/admin/management/#images).
 
 Once Blackfish is properly initialized, you can run the `blackfish start` command to launch the application:
 

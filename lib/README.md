@@ -35,7 +35,7 @@ lib/
 │   ├── server/           # Litestar app, routes, models
 │   └── build/            # Built frontend (generated)
 ├── tests/                # pytest tests
-└── docs/                 # MkDocs documentation
+└── docs/                 # Zensical documentation
 ```
 
 ## Environment Variables

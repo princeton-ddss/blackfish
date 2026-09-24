@@ -1,89 +1,366 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+/* Blackfish docs theme.
+ *
+ * Colors and typography mirror the web UI so the docs and the app read as one
+ * product. Tokens below are sourced from web/tailwind.config.js and the
+ * `dark:` variants used across web/src/components/.
+ *
+ * Fonts (Inter + JetBrains Mono) are configured in zensical.toml under
+ * [project.theme.font] and are not restated here.
+ */
 
-.md-header__button.md-logo img, .md-header__button.md-logo svg {
-    fill: currentcolor;
-    display: block;
-    height: 4.0rem;
-    width:auto
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #3b82f6;         /* blue-500  */
+  --md-primary-fg-color--light: #60a5fa;  /* blue-400  */
+  --md-primary-fg-color--dark: #2563eb;   /* blue-600  */
+  --md-accent-fg-color: #2563eb;          /* blue-600  */
+  --md-accent-fg-color--transparent: #2563eb1a;
+
+  --md-default-fg-color: #111827;         /* gray-900  */
+  --md-default-bg-color: #ffffff;
+  --md-typeset-color: #111827;            /* gray-900  */
+  --md-typeset-a-color: #2563eb;          /* blue-600  */
 }
 
-.language-pycon .gp, .language-pycon .go { /* Generic.Prompt, Generic.Output */
-    user-select: none;
-    -webkit-user-select: none;
+[data-md-color-scheme="slate"],
+[data-md-color-scheme="slate"][data-md-color-primary] {
+  --md-primary-fg-color: #3b82f6;         /* blue-500  */
+  --md-accent-fg-color: #60a5fa;          /* blue-400, UI dark-mode accent */
+  --md-accent-fg-color--transparent: #60a5fa1a;
+  --md-primary-fg-color--light: #3b82f6;  /* blue-500 */
+  --md-primary-fg-color--dark: #2563eb;   /* blue-600 */
+  --md-typeset-a-color: #60a5fa;          /* blue-400  */
 }
 
-[dir=ltr] .md-header__title {
-    margin-left: .5rem;
-    font-family: 'Playfair Display', sans-serif;
+/* The UI sits at 400-600; headings are semibold (600), matching the
+ * `text-base font-semibold` recipe used for section headings in the app. */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  font-weight: 600;
+  color: var(--md-default-fg-color);
 }
 
+/* The orca mark is near-black, so it needs separating from the header in both
+ * themes, as the UI does (web/src/components/Navbar.jsx). Tinted to the accent
+ * rather than the UI's white so it reads as brand color. Both themes share a
+ * bright core and a wide falloff; light mode uses a darker blue at lower
+ * opacity, since a glow reads more strongly against white than near-black. */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg,
+.md-nav__button.md-logo img,
+.md-nav__button.md-logo svg {
+  filter: drop-shadow(0 0 5px rgba(37, 99, 235, .55)) drop-shadow(0 0 18px rgba(37, 99, 235, .25));
+}
+
+[data-md-color-scheme="slate"] .md-header__button.md-logo img,
+[data-md-color-scheme="slate"] .md-header__button.md-logo svg,
+[data-md-color-scheme="slate"] .md-nav__button.md-logo img,
+[data-md-color-scheme="slate"] .md-nav__button.md-logo svg {
+  filter: drop-shadow(0 0 5px rgba(96, 165, 250, .7)) drop-shadow(0 0 18px rgba(96, 165, 250, .32));
+}
+
+/* Match the bolder site title Zensical's own header uses. The orca mark is
+ * wider than Zensical's square logo and its halo bleeds into the default gap,
+ * so give the title a little more room. */
 .md-header__topic span {
-    line-height: 3.0rem;
-    font-size: 2.0rem;
-    font-weight: 800;
+  font-weight: 700;
 }
 
-@media screen and (max-width: 1220px) { /* For smaller screens */
-    .md-header__topic span {
-        line-height: 2.4rem;
-        font-size: 1.2rem;
-        font-weight: 800;
-    }
+[dir="ltr"] .md-header__title {
+  margin-left: .8rem;
 }
 
+/* The drawer title is a flex row with its own gap, so the header's margin
+ * does not reach it. Match the spacing there too. */
+.md-nav .md-nav__title[for="__drawer"] {
+  gap: .8rem;
+}
+
+/* Center standalone figures. */
 .md-typeset img {
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
 
-.md-typeset h1 {
-    font-family: 'Playfair Display', sans-serif;
-    color: var(--md-default-fg-color);
+/* `hide: toc` drops the right sidebar entirely, and since .md-content is
+ * flex-grow:1 the text column then stretches by the sidebar's 12.1rem. Keep
+ * the column reserved so a page without a TOC lines up with every other page. */
+@media screen and (min-width: 76.25em) {
+  /* ...except on the hero page, which hides both sidebars and should centre
+   * on the viewport rather than align to the text column. */
+  .md-container:not(:has(.bf-hero)) .md-sidebar--secondary[hidden] {
+    display: block !important;
+    visibility: hidden;
+  }
+
+  /* The theme's spacing rules are all scoped to :not([hidden]), so restore the
+   * gutter the reserved column would otherwise lose. */
+  [dir="ltr"] .md-container:not(:has(.bf-hero)) .md-sidebar--secondary[hidden] ~ .md-content > .md-content__inner {
+    margin-left: 1.2rem;
+    margin-right: 1.2rem;
+  }
 }
 
-.md-typeset h2 {
-    font-weight: 300;
-    font-family: 'Playfair Display', sans-serif;
+/* The theme's 1em block margin runs the cards up against the paragraph above,
+ * so they don't read as a separate block. */
+.md-typeset .grid.cards {
+  margin-top: 2.2em;
 }
 
-.md-typeset h3 {
-    font-weight: 300;
-    font-family: 'Playfair Display', sans-serif;
+/* Tint cards with the same wash the active nav item uses. */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid.cards > ol > li,
+.md-typeset .grid > .card {
+  background-color: var(--md-accent-fg-color--transparent);
+  border-color: transparent;
 }
 
-.md-typeset p {
-    font-weight: 100;
+/* Card titles pick up the accent, like the active nav item. */
+.md-typeset .grid.cards > ul > li > p:first-child > strong,
+.md-typeset .grid.cards > ol > li > p:first-child > strong,
+.md-typeset .grid > .card > p:first-child > strong {
+  color: var(--md-accent-fg-color);
 }
 
-.md-typeset li {
-    font-weight: 100;
+.md-typeset .grid.cards > ul > li > p:first-child > .twemoji,
+.md-typeset .grid.cards > ol > li > p:first-child > .twemoji,
+.md-typeset .grid > .card > p:first-child > .twemoji {
+  color: var(--md-accent-fg-color);
 }
 
-.md-nav__title {
-    font-family: 'Playfair Display', sans-serif;
-    color: var(--md-default-fg-color);
-    font-weight: 800;
+/* The hero only exists on the home page, so it doubles as the page hook:
+ * drop the footer there and wash the page in a soft accent gradient. */
+.md-container:has(.bf-hero) > .md-footer {
+  display: none;
 }
 
-.md-nav__item {
-    font-weight: 100;
+body:has(.bf-hero) .md-main {
+  background:
+    radial-gradient(60rem 30rem at 50% -12%, var(--md-accent-fg-color--transparent), transparent 70%),
+    var(--md-default-bg-color);
 }
 
+/* Home hero. The typed prompt mirrors the dashboard's monospace hero
+ * (web/src/routes/dashboard/dashboard.jsx). */
+.md-typeset .bf-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4rem 0 3rem;
+}
+
+.md-typeset .bf-hero__mark {
+  width: auto;
+  height: 5.4rem;
+  margin: 0 auto 1.8rem;
+  /* The same lift the header mark gets, eased off at this size. */
+  filter: drop-shadow(0 0 8px rgba(37, 99, 235, .3)) drop-shadow(0 0 28px rgba(37, 99, 235, .16));
+}
+
+[data-md-color-scheme="slate"] .md-typeset .bf-hero__mark {
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, .42)) drop-shadow(0 0 28px rgba(96, 165, 250, .2));
+}
+
+.md-typeset .bf-hero__prompt {
+  font-family: var(--md-code-font-family, monospace);
+  font-size: .8rem;
+  color: var(--md-default-fg-color--light);
+  margin-bottom: 2.5rem;
+  min-height: 1.6em;
+}
+
+.md-typeset .bf-hero__prompt .tw-cursor {
+  animation: bf-blink 1s step-end infinite;
+  color: var(--md-accent-fg-color);
+  font-weight: 400;
+}
+
+@keyframes bf-blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .bf-hero__prompt .tw-cursor {
+    animation: none;
+  }
+}
+
+.md-typeset .bf-hero h1 {
+  font-size: 1.9rem;
+  line-height: 1.25;
+  margin: 0 0 .6rem;
+  max-width: 20em;
+}
+
+.md-typeset .bf-hero > p {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--md-default-fg-color--light);
+  max-width: 36em;
+  margin: 0 0 2.2rem;
+}
+
+.md-typeset .bf-hero > p:last-child {
+  font-size: .8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+.md-typeset .bf-hero .md-button {
+  margin: 0;
+  border: none;
+  transition: filter .2s, box-shadow .2s, transform .2s;
+}
+
+/* Primary: accent gradient, lighter at the top-left. */
+.md-typeset .bf-hero .md-button--primary {
+  background: linear-gradient(135deg, var(--md-primary-fg-color--light), var(--md-primary-fg-color--dark));
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 4px 12px var(--md-accent-fg-color--transparent);
+}
+
+/* Secondary: a neutral wash so the pair reads as a set. */
+.md-typeset .bf-hero .md-button:not(.md-button--primary) {
+  background: linear-gradient(135deg,
+    var(--md-default-fg-color--lightest),
+    var(--md-default-bg-color--lightest));
+  color: var(--md-default-fg-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+.md-typeset .bf-hero .md-button:hover,
+.md-typeset .bf-hero .md-button:focus-visible {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+.md-typeset .bf-hero .md-button:not(.md-button--primary):hover,
+.md-typeset .bf-hero .md-button:not(.md-button--primary):focus-visible {
+  color: var(--md-default-fg-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .bf-hero .md-button {
+    transition: none;
+  }
+  .md-typeset .bf-hero .md-button:hover,
+  .md-typeset .bf-hero .md-button:focus-visible {
+    transform: none;
+  }
+}
+
+/* The hero is set for desktop; scale it down on narrow screens and keep the
+ * typed prompt inside a gutter so it never runs to the edge. */
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .bf-hero {
+    padding: 2.5rem .8rem 2rem;
+  }
+
+  .md-typeset .bf-hero h1 {
+    font-size: 1.45rem;
+  }
+
+  .md-typeset .bf-hero__prompt {
+    font-size: .68rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .md-typeset .bf-hero__mark {
+    height: 4.2rem;
+    margin-bottom: 1.4rem;
+  }
+}
+
+/* The hero page has no prose to edit, so drop the edit link there. */
+.md-container:has(.bf-hero) .md-content__button {
+  display: none;
+}
+
+/* Partner wordmarks in the acknowledgements. Both are black artwork on a
+ * transparent ground, so they need lifting out of the dark theme. */
+.md-typeset .bf-logos,
+.md-typeset .bf-logos > p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4rem;
+  margin: 0;
+}
+
+.md-typeset .bf-logos {
+  margin: 2em 0;
+}
+
+.md-typeset .bf-logos a {
+  display: inline-flex;
+  border-bottom: none;
+}
+
+.md-typeset .bf-logo {
+  height: 2.2rem;
+  width: auto;
+  margin: 0;
+  opacity: .85;
+  transition: opacity .2s;
+}
+
+.md-typeset .bf-logos a:hover .bf-logo {
+  opacity: 1;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .bf-logo {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .bf-logos {
+    gap: 2.4rem;
+  }
+
+  .md-typeset .bf-logo {
+    height: 1.8rem;
+  }
+}
+
+/* Screencasts in the UI guide. Framed so a recording of the interface reads
+ * as a screenshot of it rather than as page content. */
+.md-typeset img.bf-screencast,
+.md-typeset video.bf-screencast {
+  border: .05rem solid var(--md-default-fg-color--lightest);
+  border-radius: .4rem;
+  max-width: 100%;
+  box-shadow: var(--md-shadow-z1);
+}
+
+.md-typeset video.bf-screencast {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Keep prompts and output unselectable so console blocks copy cleanly. */
+.language-pycon .gp,
+.language-pycon .go { /* Generic.Prompt, Generic.Output */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Heroicons render as strokes, not fills. */
 .md-typeset .twemoji {
-    --md-icon-size: 1.25em;
+  --md-icon-size: 1.25em;
 }
 
 .md-typeset .twemoji svg {
-    fill: none !important;
-    stroke: currentcolor;
-}
-
-.custom-intro::first-letter {
-    -webkit-initial-letter: 3;
-    initial-letter: 3;
-    /* font-size: 200%; */
-    font-weight: 800;
-    font-family: 'Playfair Display', sans-serif;
-    padding-right: .5em;
+  fill: none !important;
+  stroke: currentcolor;
 }

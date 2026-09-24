@@ -1,4 +1,4 @@
-# API Reference
+# Core
 
 ::: blackfish.client
 ::: blackfish.service

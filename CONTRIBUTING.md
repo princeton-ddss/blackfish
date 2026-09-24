@@ -2,11 +2,13 @@
 
 Thanks for your interest in contributing to Blackfish!
 
-## Development Setup
+This file is the checklist you work through when opening a PR or cutting a
+release. For how to set up a development environment, code style, review
+expectations, and reporting bugs, see the contributing guide in the
+documentation:
 
-See the package READMEs for setup instructions:
-- [Python backend](lib/README.md)
-- [Next.js frontend](web/README.md)
+- [Contributing guidelines](https://princeton-ddss.github.io/blackfish/latest/about/contributing/)
+- [Developer guide](https://princeton-ddss.github.io/blackfish/latest/developer/)
 
 ## PR Checklist
 

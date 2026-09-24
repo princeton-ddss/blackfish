@@ -11,9 +11,10 @@ Blackfish ships with a browser-based UI served alongside the API at `http://loca
       Whisper service.
     - More services on the way.
 - **Models** — inventory, download, and delete models per profile.
-- **Files** — browse, upload, download, and delete files on a remote
-  Slurm profile over SFTP.
+- **Files** — browse, upload, and delete files on a remote Slurm profile
+  over SFTP.
 - **Batch Jobs**
+    - **Chat** — prompt a chat model with text, image, audio, or video files.
     - **Transcription** — transcribe audio files using Whisper.
     - **Translation** — translate text files between languages.
     - **Object Detection** — zero-shot object detection on images.
@@ -33,14 +34,33 @@ From any service page, click :heroicons-rocket-launch: in the service container 
     - **Model** and **Revision** — pick from the available list.
     - On a Slurm profile, pick a **Partition**, a **Resource tier**, and
       set the **Time** limit. **Account** is available under the expandable **Advanced** section.
+    - **API Key** — pre-filled with a generated key that the service will
+      require on every request. Copy it with the button beside the field, or
+      replace it with one of your own. Clear the field to leave the service
+      open to anyone who can reach its port.
 - Click **Launch**. The service status badge moves from `PENDING` →
   `STARTING` → `HEALTHY`. The time to reach `HEALTHY` depends on Slurm
   queue wait times and model size. Once the job starts, small models
   (~1B) typically load in about a minute, while large models (~70B) can
   take 5–10 minutes.
+
 - When you're done, click :heroicons-stop: in the service container
   header. The service transitions to `STOPPED`; :heroicons-trash:
   appears next to it so you can remove the record entirely.
+
+=== "Text generation"
+
+    <video class="bf-screencast" autoplay loop muted playsinline controls>
+      <source src="../assets/video/text-generation-launch.webm" type="video/webm">
+      Launching a text generation service from the web interface.
+    </video>
+
+=== "Speech recognition"
+
+    <video class="bf-screencast" autoplay loop muted playsinline controls>
+      <source src="../assets/video/speech-recognition-launch.webm" type="video/webm">
+      Launching a speech recognition service from the web interface.
+    </video>
 
 #### Text Generation
 
@@ -56,6 +76,11 @@ the page becomes active:
   snippet modal, which shows the equivalent request body in
   Python, R, and Bash.
 
+<video class="bf-screencast" autoplay loop muted playsinline controls>
+  <source src="../assets/video/text-generation.webm" type="video/webm">
+  Chatting with a text generation service and adjusting its parameters.
+</video>
+
 #### Speech Recognition
 
 Once the service is `HEALTHY`:
@@ -67,17 +92,26 @@ Once the service is `HEALTHY`:
 - Click the submit button to start transcription. The result appears
   in the output area once processing completes.
 
+<video class="bf-screencast" autoplay loop muted playsinline controls>
+  <source src="../assets/video/speech-recognition.webm" type="video/webm">
+  Transcribing an audio file in the web interface.
+</video>
+
 ### Create a batch job
 
 Batch jobs require a Slurm profile — the Jobs page is only accessible
 when a Slurm profile is selected.
 
 - From the **Jobs** page, click **New Job** — this is a dropdown menu.
-- Pick the task you want to run: **Transcription**, **Translation**,
-  **Object Detection**, **OCR**, or **Embedding**.
+- Pick the task you want to run: **Chat**, **Transcription**,
+  **Translation**, **Object Detection**, **OCR**, or **Embedding**.
 - The New Job modal opens as a stepper:
     1. **Model** — pick a model and revision.
     2. **Task parameters** — fields vary by task:
+        - *Chat*: a prompt is required — use `{text}` to mark where each
+          file's contents belong, or omit it and the contents follow the
+          prompt. Also temperature, max image pixels, audio sampling rate,
+          video sample FPS, and an optional response schema.
         - *Transcription*: language, output format.
         - *Translation*: source language, target language.
         - *Object Detection*: labels, threshold, batch size, sample FPS.
@@ -99,8 +133,22 @@ when a Slurm profile is selected.
   input and output file names, start time, elapsed time, and status (success
   or failure). Click a file row to open a side panel with a preview of
   the output and additional details. Binary outputs have no preview —
-  embedding results (`.npy`) show "Preview not available" and can be
-  downloaded instead.
+  embedding results (`.npy`) show "Preview not available"; read them from
+  the output directory on the cluster.
+
+=== "Creating a job"
+
+    <video class="bf-screencast" autoplay loop muted playsinline controls>
+      <source src="../assets/video/batch-job.webm" type="video/webm">
+      Creating an object detection batch job.
+    </video>
+
+=== "Viewing results"
+
+    <video class="bf-screencast" autoplay loop muted playsinline controls>
+      <source src="../assets/video/batch-job-results.webm" type="video/webm">
+      Inspecting the per-file results of a finished batch job.
+    </video>
 
 ### Manage models
 

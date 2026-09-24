@@ -4,6 +4,12 @@ While the Blackfish CLI and UI are convenient for interactive, time-limited, or 
 
 We provide synchronous and asynchronous APIs.
 
+!!! info "Full signatures"
+
+    This guide walks through the client by example. For every method,
+    parameter and return type, see the generated
+    [API reference](../developer/api/core.md).
+
 ## Synchronous API
 
 The synchronous API is the simplest way to use Blackfish in Python scripts:

@@ -11,4 +11,7 @@ coverage:
   uv run coverage-badge -o docs/assets/img/coverage.svg -f
 
 docs:
-  uv run mkdocs build
+  uv run zensical build
+
+docs-serve:
+  uv run zensical serve --open

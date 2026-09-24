@@ -26,7 +26,8 @@ uv run mypy src/                           # Type check (strict)
 # Just commands
 just test                                  # pytest with coverage
 just lint                                  # pre-commit hooks
-just docs                                  # Build MkDocs
+just docs                                  # Build the docs site
+just docs-serve                            # Preview the docs site
 ```
 
 ## Project Structure
@@ -51,7 +52,7 @@ lib/
 │   ├── api/              # API endpoint tests
 │   ├── cli/              # CLI tests
 │   └── unit/             # Unit tests
-└── docs/                 # MkDocs documentation
+└── docs/                 # Zensical documentation
 ```
 
 ## Code Patterns

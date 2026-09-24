@@ -1,0 +1,129 @@
+[project]
+site_name = "Blackfish AI"
+site_url = "https://princeton-ddss.github.io/blackfish/"
+site_description = "Blackfish AI turns your HPC cluster into a private AI inference API. Run open source text generation and speech recognition models on the research computing resources your university already has."
+site_author = "Colin Swaney and The Trustees of Princeton University"
+repo_url = "https://github.com/princeton-ddss/blackfish"
+repo_name = "princeton-ddss/blackfish"
+edit_uri = "edit/main/lib/docs/"
+copyright = "Copyright &copy; 2024 Colin Swaney and The Trustees of Princeton University"
+
+nav = [
+  { "Home" = "index.md" },
+  { "About" = [
+    { "Overview" = "about/index.md" },
+    { "Roadmap" = "about/roadmap.md" },
+    { "Contributing" = "about/contributing.md" },
+    { "License" = "about/license.md" },
+  ] },
+  { "Getting Started" = [
+    { "Installation" = "getting-started/installation.md" },
+    { "Basic Usage" = "getting-started/basic-usage.md" },
+  ] },
+  { "User Guide" = [
+    { "Guides" = [
+      { "Command Line" = "usage/cli.md" },
+      { "Web Interface" = "usage/ui.md" },
+      { "Python API" = "usage/client.md" },
+    ] },
+    { "Examples" = "https://github.com/princeton-ddss/blackfish-examples" },
+  ] },
+  { "Admin Guide" = [
+    { "Architecture Overview" = "admin/architecture.md" },
+    { "Adopting Blackfish" = "admin/adopting.md" },
+    { "Cache Management" = "admin/cache.md" },
+    { "Resource Tiers" = "admin/resource-tiers.md" },
+  ] },
+  { "Developer Guide" = [
+    { "Overview" = "developer/index.md" },
+    { "API Reference" = [
+      { "Core" = "developer/api/core.md" },
+      { "Services" = "developer/api/services.md" },
+      { "Jobs" = "developer/api/jobs.md" },
+    ] },
+  ] },
+]
+
+extra_css = ["assets/css/extra.css"]
+extra_javascript = ["assets/js/typewriter.js", "assets/js/external-links.js"]
+
+[project.theme]
+variant = "modern"
+custom_dir = "docs/overrides"
+logo = "assets/img/logo.png"
+favicon = "assets/img/favicon.png"
+language = "en"
+features = [
+  "navigation.tabs",
+  "navigation.path",
+  "navigation.sections",
+  "navigation.footer",
+  "content.footnote.tooltips",
+  "content.code.copy",
+  "content.code.select",
+  "content.code.annotate",
+  "content.action.edit",
+]
+
+# Matches the web UI (web/tailwind.config.js: font-sans = Inter)
+[project.theme.font]
+text = "Inter"
+code = "JetBrains Mono"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[project.extra.version]
+provider = "mike"
+
+[project.plugins.search]
+
+# The Setup section became Getting Started and Management moved to the Admin
+# Guide; keep the published URLs working.
+[project.plugins.redirects.redirect_maps]
+"setup/installation.md" = "getting-started/installation.md"
+"setup/management.md" = "admin/architecture.md"
+"admin/management.md" = "admin/architecture.md"
+"contrib/guidelines.md" = "about/contributing.md"
+"contrib/developer_guide.md" = "developer/index.md"
+"api/core.md" = "developer/api/core.md"
+"api/services.md" = "developer/api/services.md"
+"api/jobs.md" = "developer/api/jobs.md"
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_section_style = "list"
+show_root_heading = true
+show_source = false
+show_signature_annotations = true
+
+[project.markdown_extensions]
+footnotes = {}
+admonition = {}
+attr_list = {}
+md_in_html = {}
+pymdownx.tasklist.custom_checkbox = true
+pymdownx.tabbed.alternate_style = true
+pymdownx.highlight.use_pygments = true
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.line_spans = "__span"
+pymdownx.inlinehilite = {}
+pymdownx.snippets = {}
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+pymdownx.emoji.emoji_index = "zensical.extensions.emoji.twemoji"
+pymdownx.emoji.emoji_generator = "zensical.extensions.emoji.to_svg"
+pymdownx.emoji.options.custom_icons = ["docs/overrides/.icons"]

@@ -12,30 +12,36 @@
         <meta name="author" content="Colin Swaney and The Trustees of Princeton University">
       
       
+        <link rel="canonical" href="https://princeton-ddss.github.io/blackfish/pr-528/admin/cache/">
       
+      
+        <link rel="prev" href="../adopting/">
+      
+      
+        <link rel="next" href="../resource-tiers/">
       
       
         
       
       
-      <link rel="icon" href="/blackfish/pr-528/assets/img/favicon.png">
+      <link rel="icon" href="../../assets/img/favicon.png">
       <meta name="generator" content="zensical-0.0.65">
     
     
       
-        <title>Blackfish AI</title>
+        <title>Cache Management - Blackfish AI</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="/blackfish/pr-528/assets/stylesheets/modern/main.40d3fdbb.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.40d3fdbb.min.css">
       
         
           
         
-        <link rel="stylesheet" href="/blackfish/pr-528/assets/stylesheets/modern/palette.812a03bb.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.812a03bb.min.css">
       
       
 
@@ -54,9 +60,9 @@
       
     
     
-      <link rel="stylesheet" href="/blackfish/pr-528/assets/css/extra.css">
+      <link rel="stylesheet" href="../../assets/css/extra.css">
     
-    <script>__md_scope=new URL("/blackfish/pr-528",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -67,13 +73,13 @@
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Blackfish AI">
-  <meta property="og:title" content="Blackfish AI">
+  <meta property="og:title" content="Cache Management - Blackfish AI">
   <meta property="og:description" content="Blackfish AI turns your HPC cluster into a private AI inference API. Run open source text generation and speech recognition models on the research computing resources your university already has.">
   <meta property="og:image" content="https://princeton-ddss.github.io/blackfish/pr-528/assets/img/logo.png">
-  <meta property="og:url" content="https://princeton-ddss.github.io/blackfish/pr-528">
+  <meta property="og:url" content="https://princeton-ddss.github.io/blackfish/pr-528/admin/cache/">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Blackfish AI">
+  <meta name="twitter:title" content="Cache Management - Blackfish AI">
   <meta name="twitter:description" content="Blackfish AI turns your HPC cluster into a private AI inference API. Run open source text generation and speech recognition models on the research computing resources your university already has.">
   <meta name="twitter:image" content="https://princeton-ddss.github.io/blackfish/pr-528/assets/img/logo.png">
 
@@ -95,7 +101,8 @@
     <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
     <div data-md-component="skip">
       
-        <a href="#__skip" class="md-skip">
+        
+        <a href="#cache-management" class="md-skip">
           Skip to content
         </a>
       
@@ -113,9 +120,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/blackfish/pr-528/" title="Blackfish AI" class="md-header__button md-logo" aria-label="Blackfish AI" data-md-component="logo">
+    <a href="../.." title="Blackfish AI" class="md-header__button md-logo" aria-label="Blackfish AI" data-md-component="logo">
       
-  <img src="/blackfish/pr-528/assets/img/logo.png" alt="Blackfish AI">
+  <img src="../../assets/img/logo.png" alt="Blackfish AI">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
@@ -132,7 +139,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Cache Management
             
           </span>
         </div>
@@ -216,7 +223,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/blackfish/pr-528/" class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   Home
@@ -237,7 +244,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/blackfish/pr-528/about/" class="md-tabs__link">
+        <a href="../../about/" class="md-tabs__link">
           
   
   About
@@ -259,7 +266,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/blackfish/pr-528/getting-started/installation/" class="md-tabs__link">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
           
   
   Getting Started
@@ -291,7 +298,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/blackfish/pr-528/usage/cli/" class="md-tabs__link">
+        <a href="../../usage/cli/" class="md-tabs__link">
           
   
   User Guide
@@ -309,14 +316,16 @@
   
   
   
+    
+  
   
     
       
     
     
     
-      <li class="md-tabs__item">
-        <a href="/blackfish/pr-528/admin/architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../architecture/" class="md-tabs__link">
           
   
   Admin Guide
@@ -338,7 +347,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/blackfish/pr-528/developer/" class="md-tabs__link">
+        <a href="../../developer/" class="md-tabs__link">
           
   
   Developer Guide
@@ -371,9 +380,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/blackfish/pr-528/" title="Blackfish AI" class="md-nav__button md-logo" aria-label="Blackfish AI" data-md-component="logo">
+    <a href="../.." title="Blackfish AI" class="md-nav__button md-logo" aria-label="Blackfish AI" data-md-component="logo">
       
-  <img src="/blackfish/pr-528/assets/img/logo.png" alt="Blackfish AI">
+  <img src="../../assets/img/logo.png" alt="Blackfish AI">
 
     </a>
     Blackfish AI
@@ -400,7 +409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/" class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -477,7 +486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/about/" class="md-nav__link">
+      <a href="../../about/" class="md-nav__link">
         
   
   
@@ -504,7 +513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/about/roadmap/" class="md-nav__link">
+      <a href="../../about/roadmap/" class="md-nav__link">
         
   
   
@@ -531,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/about/contributing/" class="md-nav__link">
+      <a href="../../about/contributing/" class="md-nav__link">
         
   
   
@@ -558,7 +567,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/about/license/" class="md-nav__link">
+      <a href="../../about/license/" class="md-nav__link">
         
   
   
@@ -644,7 +653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/getting-started/installation/" class="md-nav__link">
+      <a href="../../getting-started/installation/" class="md-nav__link">
         
   
   
@@ -671,7 +680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/getting-started/basic-usage/" class="md-nav__link">
+      <a href="../../getting-started/basic-usage/" class="md-nav__link">
         
   
   
@@ -808,7 +817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/usage/cli/" class="md-nav__link">
+      <a href="../../usage/cli/" class="md-nav__link">
         
   
   
@@ -835,7 +844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/usage/ui/" class="md-nav__link">
+      <a href="../../usage/ui/" class="md-nav__link">
         
   
   
@@ -862,7 +871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/usage/client/" class="md-nav__link">
+      <a href="../../usage/client/" class="md-nav__link">
         
   
   
@@ -930,26 +939,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -967,7 +981,7 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
             <label class="md-nav__title" for="__nav_5">
               <span class="md-nav__icon md-icon"></span>
               
@@ -984,7 +998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/admin/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1011,7 +1025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/admin/adopting/" class="md-nav__link">
+      <a href="../adopting/" class="md-nav__link">
         
   
   
@@ -1035,10 +1049,36 @@
                   
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/blackfish/pr-528/admin/cache/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Cache Management
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1053,6 +1093,155 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#storage-locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Storage locations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#images" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Images
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#obtaining-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Obtaining Images
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Models
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hugging-face-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Hugging Face Authentication
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hugging Face Authentication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-a-token-via-environment-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Setting a Token via Environment Variable
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-a-token-via-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Setting a Token via CLI
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Automatic Downloads
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Manual Downloads
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Batch Jobs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1065,7 +1254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/admin/resource-tiers/" class="md-nav__link">
+      <a href="../resource-tiers/" class="md-nav__link">
         
   
   
@@ -1151,7 +1340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/developer/" class="md-nav__link">
+      <a href="../../developer/" class="md-nav__link">
         
   
   
@@ -1229,7 +1418,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/developer/api/core/" class="md-nav__link">
+      <a href="../../developer/api/core/" class="md-nav__link">
         
   
   
@@ -1256,7 +1445,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/developer/api/services/" class="md-nav__link">
+      <a href="../../developer/api/services/" class="md-nav__link">
         
   
   
@@ -1283,7 +1472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/blackfish/pr-528/developer/api/jobs/" class="md-nav__link">
+      <a href="../../developer/api/jobs/" class="md-nav__link">
         
   
   
@@ -1334,6 +1523,13 @@
                     
                     
                     
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
                     
                   
                   <div class="md-sidebar__inner">
@@ -1344,6 +1540,144 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#storage-locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Storage locations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#images" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Images
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#obtaining-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Obtaining Images
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Models
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hugging-face-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Hugging Face Authentication
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hugging Face Authentication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-a-token-via-environment-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Setting a Token via Environment Variable
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-a-token-via-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Setting a Token via CLI
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Automatic Downloads
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Manual Downloads
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Batch Jobs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1361,11 +1695,132 @@
   
 
 
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../architecture/" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Admin Guide
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
+  
+    <a href="https://github.com/princeton-ddss/blackfish/edit/main/lib/docs/admin/cache.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-file-pen" viewBox="0 0 24 24"><path d="M12.659 22H18a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v9.34"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10.378 12.622a1 1 0 0 1 3 3.003L8.36 20.637a2 2 0 0 1-.854.506l-2.867.837a.5.5 0 0 1-.62-.62l.836-2.869a2 2 0 0 1 .506-.853z"/></svg>
+    </a>
+  
+  
 
+
+<h1 id="cache-management">Cache Management</h1>
+<p>Blackfish stages container images and model files into a
+profile's cache before services and batch jobs can run.</p>
+<h2 id="storage-locations">Storage locations</h2>
+<p>Blackfish stores data in several different locations:</p>
+<ul>
+<li>Core application data is stored in <code>BLACKFISH_HOME_DIR</code> on the system where Blackfish is running (<code>~/.blackfish</code> by default). Core application data includes profile configuration, application logs, and database storage.</li>
+<li>Models and images are stored in the user-defined locations <code>home_dir</code> and <code>cache_dir</code>. These are profile-specific locations that need not reside on the machine where Blackfish is running. <code>home_dir</code> also stores job files created each time a service launches.</li>
+</ul>
+<h2 id="images">Images</h2>
+<p>Blackfish does <strong>not</strong> ship with the container images required to run services and batch jobs. These images should be downloaded before use[^1]. To see the images required by your installed version of Blackfish, run:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>blackfish<span class="w"> </span>image<span class="w"> </span>ls
+</span></code></pre></div>
+<p>This lists each pinned image — one per service, plus the tigerflow-ml image used for batch jobs — and whether it is available in the configured cache. Pinned versions change over time as Blackfish releases bump the underlying runtimes.</p>
+<h3 id="obtaining-images">Obtaining Images</h3>
+<p>Services deployed on HPC systems require Apptainer, which uses Single Image Format (SIF) images instead of Docker's OCI format. Docker images must be converted to SIF files before Blackfish can use them. For most images—including those hosted on the GitHub container registry—running <code>apptainer pull</code> will do this automatically. For example,</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>apptainer<span class="w"> </span>pull<span class="w"> </span>docker://ghcr.io/princeton-ddss/speech-recognition-inference:&lt;tag&gt;
+</span></code></pre></div>
+<p>This command generates a file <code>speech-recognition-inference_&lt;tag&gt;.sif</code> in the directory where it is run. Use the version reported by <code>blackfish image ls</code>. The tigerflow-ml image used for batch jobs is staged the same way:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>apptainer<span class="w"> </span>pull<span class="w"> </span>docker://ghcr.io/princeton-ddss/tigerflow-ml:&lt;tag&gt;
+</span></code></pre></div>
+<p>Blackfish looks for images in the <code>cache_dir/images</code> directory specified by your profile. If you are an HPC admin setting up a shared environment, move images to the shared cache directory (e.g., <code>/shared/.blackfish/images</code>). If you are an individual user and your cache directory is read-only, ask your admin to add the required images or set your profile's <code>cache_dir</code> to a directory you can write to.</p>
+<h2 id="models">Models</h2>
+<h3 id="hugging-face-authentication">Hugging Face Authentication</h3>
+<p>Some models on Hugging Face are "gated" and require authentication to download. You can create access tokens on the <a href="https://huggingface.co/docs/hub/en/security-tokens">Hugging Face security tokens</a> page. Blackfish uses the <a href="https://github.com/huggingface/huggingface_hub"><code>huggingface_hub</code></a> library, which automatically detects authentication tokens from:</p>
+<ol>
+<li>The <code>HF_TOKEN</code> environment variable</li>
+<li>A token stored at <code>~/.cache/huggingface/token</code> (set via <code>huggingface-cli login</code>)</li>
+</ol>
+<h4 id="setting-a-token-via-environment-variable">Setting a Token via Environment Variable</h4>
+<p>You can set the <code>HF_TOKEN</code> environment variable:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">HF_TOKEN</span><span class="o">=</span>hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+</span></code></pre></div>
+<p>Add this to your shell profile (<code>.bashrc</code>, <code>.zshrc</code>, etc.) for persistence.</p>
+<h4 id="setting-a-token-via-cli">Setting a Token via CLI</h4>
+<p>You can also use the Hugging Face CLI:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>huggingface-cli<span class="w"> </span>login
+</span></code></pre></div>
+<p>This stores the token at <code>~/.cache/huggingface/token</code>.</p>
+<h3 id="automatic-downloads">Automatic Downloads</h3>
+<p>You can download models with the <code>blackfish model add</code> command. Blackfish stores downloaded models in the <code>home_dir</code> of the specified profile by default. If you are downloading models to share with other users, add the <code>--use-cache</code> flag to save files to the <code>cache_dir</code> instead. Model download support is currently limited to Slurm profiles configured with <code>host=localhost</code> (e.g. Blackfish running on the cluster head node, such as within an Open OnDemand session). To download models for use on a remote Slurm cluster, you need to run Blackfish on the cluster itself.</p>
+<h3 id="manual-downloads">Manual Downloads</h3>
+<p>Internally, model downloads and management are performed by <a href="https://github.com/huggingface/huggingface_hub"><code>huggingface_hub</code></a>. You can download models yourself using the same method:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">snapshot_download</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">snapshot_download</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="s2">"meta-llama/Meta-Llama-3-8B"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The <code>snapshot_download</code> method stores model files to <code>~/.cache/huggingface/hub/</code> by default. You should modify the directory by setting <code>HF_HOME</code> in the local environment or providing a <code>cache_dir</code> argument. Otherwise, after the model files are downloaded, they must be manually moved to your home or shared (cache) directory, e.g., <code>/shared/.blackfish/models</code>. For shared models, remember to set permissions on the model directory to <code>755</code> (recursively) to allow all users read and execute access.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In addition to downloading model files, the <code>blackfish model add</code> command extracts metadata from the model and adds it to an internal database of models available to the profile that was used to add the model. Manually added models will not show up when running <code>blackfish model ls</code> (because they are not added to this database), but Blackfish will still be able to discover and run these models.</p>
+</div>
+<h2 id="batch-jobs">Batch Jobs</h2>
+<p>Blackfish runs batch jobs inside the <a href="https://github.com/princeton-ddss/tigerflow-ml">tigerflow-ml</a> container image, a companion project for running task-based pipelines on Slurm clusters. Like service images, the tigerflow-ml image must be available in the profile's cache — see <a href="#images">Images</a> for how to stage it. Once the image is present, any Slurm profile can run batch jobs; <code>blackfish profile repair</code> verifies the image is in place.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1377,6 +1832,44 @@
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../adopting/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Adopting Blackfish">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Adopting Blackfish
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../resource-tiers/" class="md-footer__link md-footer__link--next" aria-label="Next: Resource Tiers">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Resource Tiers
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
     
   
   <div class="md-footer-meta md-typeset">
@@ -1414,14 +1907,14 @@
         
           
         
-      <script id="__config" type="application/json">{"annotate":null,"base":"/blackfish/pr-528","features":["navigation.tabs","navigation.path","navigation.sections","navigation.footer","content.footnote.tooltips","content.code.copy","content.code.select","content.code.annotate","content.action.edit"],"redirect":"/blackfish/pr-528/redirect.json","search":"/blackfish/pr-528/assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"provider":"mike"}}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.tabs","navigation.path","navigation.sections","navigation.footer","content.footnote.tooltips","content.code.copy","content.code.select","content.code.annotate","content.action.edit"],"redirect":"../../redirect.json","search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"provider":"mike"}}</script>
     
     
-      <script src="/blackfish/pr-528/assets/javascripts/bundle.c04ba553.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c04ba553.min.js"></script>
       
-        <script src="/blackfish/pr-528/assets/js/typewriter.js"></script>
+        <script src="../../assets/js/typewriter.js"></script>
       
-        <script src="/blackfish/pr-528/assets/js/external-links.js"></script>
+        <script src="../../assets/js/external-links.js"></script>
       
     
   </body>

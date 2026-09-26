@@ -28,7 +28,6 @@ from pydantic import BaseModel, AfterValidator, ConfigDict
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError, NoResultFound, StatementError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import Result
 
 from litestar import Litestar, Request, get, post, put, delete
 from litestar.utils.module_loader import module_to_os_path
@@ -2101,7 +2100,6 @@ async def get_models(
 ) -> list[Model]:
     profiles = deserialize_profiles(state.HOME_DIR)
 
-    res: list[list[Model]] | Result[Tuple[Model]]
     if refresh:
         # Refresh requires a profile — we need to know which one to scan,
         # and per-profile errors only make sense when the caller picked

@@ -271,17 +271,24 @@ class ManagedService:
         if self._service is None:
             raise RuntimeError("self._service is None")
 
-        start_time = time.time()
+        # monotonic() cannot jump backwards if the system clock is adjusted,
+        # which would otherwise corrupt the deadline and the elapsed time.
+        start_time = time.monotonic()
 
         def _result(
             outcome: WaitOutcome, status: Optional[ServiceStatus]
         ) -> WaitResult:
             return WaitResult(
-                outcome=outcome, status=status, elapsed=time.time() - start_time
+                outcome=outcome, status=status, elapsed=time.monotonic() - start_time
             )
 
         def _timed_out(status: Optional[ServiceStatus]) -> WaitResult:
-            """Tag a timeout by the phase the service was in when we gave up."""
+            """Tag a timeout by the phase the service was in when we gave up.
+
+            An unknown status (None, which `Service.status` permits) is
+            reported as TIMEOUT_STARTING: the job was neither queued nor
+            conclusively finished, so startup is the closest description.
+            """
             outcome = (
                 WaitOutcome.TIMEOUT_PENDING
                 if status in self.PENDING_STATUSES
@@ -312,7 +319,12 @@ class ManagedService:
                     spinner.fail(f"{LogSymbols.ERROR.value}")
                     return _result(WaitOutcome.FAILED, status)
 
-                if timeout is not None and time.time() - start_time >= timeout:
+                remaining = (
+                    None
+                    if timeout is None
+                    else timeout - (time.monotonic() - start_time)
+                )
+                if remaining is not None and remaining <= 0:
                     spinner.text = (
                         "Timeout reached. Current status:"
                         f" {status.value if status else 'unknown'}"
@@ -320,7 +332,13 @@ class ManagedService:
                     spinner.fail(f"{LogSymbols.WARNING.value}")
                     return _timed_out(status)
 
-                await asyncio.sleep(poll_interval)
+                # Clamp the sleep to what is left so the call does not overshoot
+                # the caller's deadline by up to a full interval.
+                await asyncio.sleep(
+                    poll_interval
+                    if remaining is None
+                    else min(poll_interval, remaining)
+                )
                 status = await self._refresh_status()
 
     def wait(

@@ -34,11 +34,11 @@ service = bf.launch_service(
 )
 
 # Wait for service
-service.wait(timeout=300)
-if service.status == "healthy":
+result = service.wait(timeout=300)
+if result:
     print("Yipee!")
 else:
-    print("Shucks!")
+    print(f"Shucks! ({result.outcome})")
 
 # List all services
 services = bf.list_services()
@@ -151,6 +151,51 @@ True
 >>> service.id
 RuntimeError: This service has been deleted and can no longer be accessed.
 ```
+
+## Waiting for a Service
+
+`wait()` blocks until a service becomes healthy and returns a `WaitResult`
+describing what happened. The result is falsy unless the service became
+healthy, so it can be tested directly:
+
+```python
+result = service.wait(timeout=300)
+if result:
+    print(f"Ready on port {service.port}")
+```
+
+Four outcomes are possible, available as `result.outcome`:
+
+| Outcome | Meaning |
+| --- | --- |
+| `HEALTHY` | The service came up. |
+| `FAILED` | The service reached a terminal state (`FAILED`, `TIMEOUT` or `STOPPED`). |
+| `TIMEOUT_PENDING` | Gave up while the job was still queued; the scheduler had not run it. |
+| `TIMEOUT_STARTING` | Gave up after the job started but before the service answered. |
+
+The two `TIMEOUT_*` outcomes mean *you* ran out of patience, not that anything
+is wrong. They are only reachable when `wait()` is given a maximum waiting
+time; passing `timeout=None` waits indefinitely, so only `HEALTHY` and
+`FAILED` can occur.
+
+The distinction matters because the outcomes warrant different responses. A
+`TIMEOUT_PENDING` service is queued and will run, so waiting longer is usually
+right — cancelling and resubmitting only returns it to the back of the queue:
+
+```python
+from blackfish import WaitOutcome
+
+result = service.wait(timeout=600)
+while result.outcome is WaitOutcome.TIMEOUT_PENDING:
+    print(f"Still queued after {result.elapsed:.0f}s; waiting longer")
+    result = service.wait(timeout=600)
+```
+
+!!! note
+
+    `timeout` is how long `wait()` keeps polling, not a limit on the service.
+    When it expires the service keeps running. To limit the service itself,
+    set the job's time limit with `job_config={"time": "01:00:00"}`.
 
 ## Examples
 

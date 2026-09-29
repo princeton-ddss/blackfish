@@ -286,3 +286,161 @@ class TestLoggingControl:
         # Should now be at WARNING
         for handler in logger.handlers:
             assert handler.level == logging.WARNING
+
+
+class TestWaitResult:
+    """Tests for ManagedService.wait's return contract (#470).
+
+    `wait` reports what happened without prescribing a response: HEALTHY and
+    FAILED describe the service, while the TIMEOUT_* outcomes describe the
+    caller giving up, tagged by the phase the service was in.
+    """
+
+    def _managed(self, status):
+        """A ManagedService whose refreshes are driven by the test."""
+        from unittest.mock import MagicMock
+
+        from blackfish import ManagedService
+
+        service = MagicMock()
+        service.status = status
+        return ManagedService(service, MagicMock())
+
+    async def test_cached_healthy_returns_immediately(self):
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.HEALTHY)
+        result = await svc.async_wait(timeout=0)
+
+        assert result.outcome is WaitOutcome.HEALTHY
+        assert result.status == ServiceStatus.HEALTHY
+        assert result  # WaitResult is truthy only when healthy
+
+    async def test_cached_terminal_returns_failed(self):
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.FAILED)
+        result = await svc.async_wait(timeout=0)
+
+        assert result.outcome is WaitOutcome.FAILED
+        assert not result
+
+    async def test_refreshes_before_sleeping(self):
+        """A service that just became healthy is not missed for a full interval.
+
+        The cached status is stale, so the first fresh read must happen before
+        any sleep — otherwise a service healthy moments ago costs poll_interval.
+        """
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.SUBMITTED)
+        refresh = AsyncMock(return_value=ServiceStatus.HEALTHY)
+        with (
+            patch.object(type(svc), "_refresh_status", refresh),
+            patch("blackfish.service.asyncio.sleep", AsyncMock()) as sleep,
+        ):
+            result = await svc.async_wait(timeout=300, poll_interval=10)
+
+        assert result.outcome is WaitOutcome.HEALTHY
+        refresh.assert_awaited_once()
+        sleep.assert_not_awaited()
+
+    async def test_timeout_while_queued_is_tagged_pending(self):
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.SUBMITTED)
+        refresh = AsyncMock(return_value=ServiceStatus.PENDING)
+        with (
+            patch.object(type(svc), "_refresh_status", refresh),
+            patch("blackfish.service.asyncio.sleep", AsyncMock()),
+        ):
+            result = await svc.async_wait(timeout=0.01, poll_interval=0)
+
+        assert result.outcome is WaitOutcome.TIMEOUT_PENDING
+        assert result.status == ServiceStatus.PENDING
+        assert not result
+
+    async def test_timeout_while_starting_is_tagged_starting(self):
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.SUBMITTED)
+        refresh = AsyncMock(return_value=ServiceStatus.STARTING)
+        with (
+            patch.object(type(svc), "_refresh_status", refresh),
+            patch("blackfish.service.asyncio.sleep", AsyncMock()),
+        ):
+            result = await svc.async_wait(timeout=0.01, poll_interval=0)
+
+        assert result.outcome is WaitOutcome.TIMEOUT_STARTING
+        assert result.status == ServiceStatus.STARTING
+
+    async def test_polls_until_healthy(self):
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.SUBMITTED)
+        refresh = AsyncMock(
+            side_effect=[
+                ServiceStatus.PENDING,
+                ServiceStatus.STARTING,
+                ServiceStatus.HEALTHY,
+            ]
+        )
+        with (
+            patch.object(type(svc), "_refresh_status", refresh),
+            patch("blackfish.service.asyncio.sleep", AsyncMock()),
+        ):
+            result = await svc.async_wait(timeout=300, poll_interval=0)
+
+        assert result.outcome is WaitOutcome.HEALTHY
+        assert refresh.await_count == 3
+
+    async def test_terminal_state_during_polling_returns_failed(self):
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.SUBMITTED)
+        refresh = AsyncMock(side_effect=[ServiceStatus.STARTING, ServiceStatus.TIMEOUT])
+        with (
+            patch.object(type(svc), "_refresh_status", refresh),
+            patch("blackfish.service.asyncio.sleep", AsyncMock()),
+        ):
+            result = await svc.async_wait(timeout=300, poll_interval=0)
+
+        assert result.outcome is WaitOutcome.FAILED
+        assert result.status == ServiceStatus.TIMEOUT
+
+    async def test_unbounded_wait_never_times_out(self):
+        """With timeout=None only HEALTHY and FAILED are reachable."""
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.SUBMITTED)
+        refresh = AsyncMock(
+            side_effect=[ServiceStatus.PENDING] * 5 + [ServiceStatus.HEALTHY]
+        )
+        with (
+            patch.object(type(svc), "_refresh_status", refresh),
+            patch("blackfish.service.asyncio.sleep", AsyncMock()),
+        ):
+            result = await svc.async_wait(timeout=None, poll_interval=0)
+
+        assert result.outcome is WaitOutcome.HEALTHY
+        assert refresh.await_count == 6
+
+    async def test_elapsed_is_recorded(self):
+        from blackfish import ServiceStatus
+
+        svc = self._managed(ServiceStatus.HEALTHY)
+        result = await svc.async_wait(timeout=0)
+
+        assert result.elapsed >= 0

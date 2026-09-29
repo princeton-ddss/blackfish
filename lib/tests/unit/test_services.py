@@ -517,6 +517,80 @@ class TestRefreshPingsBeforeJobCheck:
         assert status == ServiceStatus.HEALTHY
         ping.assert_called_once()
 
+    async def test_tunnel_reopen_pings_again_after_a_failed_fast_path(self):
+        """open_tunnel invalidates a failed result too, not just a successful one."""
+        from datetime import datetime, timedelta, timezone
+
+        from blackfish.server.job import JobState, SlurmJob
+        from blackfish.server.services.base import ServiceStatus
+
+        # port is set, so the fast path runs and fails; the job branch then
+        # finds no port (it was cleared) and reopens the tunnel, which must
+        # force a second ping rather than reuse the stale failure.
+        service = self._service()
+        service.created_at = datetime.now(timezone.utc) - timedelta(seconds=30)
+        job = SlurmJob(
+            job_id=1,
+            user="alice",
+            host="localhost",
+            data_dir="/tmp",
+            state=JobState.RUNNING,
+        )
+
+        async def _clear_port(**kwargs):
+            service.port = 9090
+
+        def _drop_port(*args, **kwargs):
+            service.port = None
+            return None
+
+        with (
+            patch.object(service, "get_job", return_value=job),
+            patch.object(service, "open_tunnel", side_effect=_clear_port),
+            patch.object(service, "ping", side_effect=_drop_port) as ping,
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.STARTING
+        assert ping.call_count == 2
+
+    async def test_local_job_reuses_the_failed_fast_path_result(self):
+        """The LocalJob RUNNING branch reuses the result instead of re-pinging."""
+        from datetime import datetime, timedelta, timezone
+        from uuid import UUID
+
+        from blackfish.server.config import ContainerProvider
+        from blackfish.server.job import JobState, LocalJob
+        from blackfish.server.services.base import ServiceStatus
+        from blackfish.server.services.text_generation import TextGeneration
+
+        service = TextGeneration(
+            id=UUID("2a7a8e62-40cc-4240-a825-463e5b11a81f"),
+            name="test-service",
+            model="meta-llama/Llama-3.1-8B-Instruct",
+            profile="default",
+            host="localhost",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/cache",
+            provider=ContainerProvider.Docker,
+            grace_period=180,
+            job_id="abc123",
+            port=8080,
+            status=ServiceStatus.STARTING,
+        )
+        service.created_at = datetime.now(timezone.utc) - timedelta(seconds=30)
+        job = LocalJob("abc123", ContainerProvider.Docker, "test-service")
+        job.state = JobState.RUNNING
+
+        with (
+            patch.object(service, "get_job", return_value=job),
+            patch.object(service, "ping", return_value=None) as ping,
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.STARTING
+        ping.assert_called_once()
+
     async def test_service_without_a_port_goes_straight_to_the_job_check(self):
         """A service with no tunnel cannot be pinged, so don't try."""
         from blackfish.server.job import JobState, SlurmJob

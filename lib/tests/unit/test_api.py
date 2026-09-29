@@ -510,3 +510,79 @@ class TestWaitResult:
         ):
             with _pytest.raises(RuntimeError, match="boom"):
                 await svc.async_wait(timeout=30, poll_interval=0)
+
+
+class TestServiceURL:
+    """Tests for ManagedService.url (#458)."""
+
+    def _managed(self, *, port, status=None, service_id="svc-1"):
+        from unittest.mock import MagicMock
+
+        from blackfish import ManagedService
+
+        service = MagicMock()
+        service.port = port
+        service.status = status
+        service.id = service_id
+        return ManagedService(service, MagicMock())
+
+    def test_url_is_localhost_not_the_login_node(self):
+        """Slurm services are reached through a tunnel, never via `host`."""
+        from blackfish import ServiceStatus
+
+        svc = self._managed(port=8080, status=ServiceStatus.HEALTHY)
+        svc._service.host = "della.princeton.edu"
+
+        assert svc.url == "http://localhost:8080"
+        assert "della" not in svc.url
+
+    def test_url_composes_with_a_client_base_url(self):
+        from blackfish import ServiceStatus
+
+        svc = self._managed(port=9001, status=ServiceStatus.HEALTHY)
+
+        assert f"{svc.url}/v1" == "http://localhost:9001/v1"
+
+    def test_url_raises_when_there_is_no_port(self):
+        import pytest as _pytest
+
+        from blackfish import ServiceNotReachableError, ServiceStatus
+
+        svc = self._managed(port=None, status=ServiceStatus.PENDING)
+
+        with _pytest.raises(ServiceNotReachableError) as exc:
+            _ = svc.url
+
+        # The message should name the service and say what to do about it.
+        assert "svc-1" in str(exc.value)
+        assert "pending" in str(exc.value)
+        assert "wait" in str(exc.value).lower()
+
+    def test_error_carries_the_service_id_and_status(self):
+        import pytest as _pytest
+
+        from blackfish import ServiceNotReachableError, ServiceStatus
+
+        svc = self._managed(port=None, status=ServiceStatus.STOPPED)
+
+        with _pytest.raises(ServiceNotReachableError) as exc:
+            _ = svc.url
+
+        assert exc.value.service_id == "svc-1"
+        assert exc.value.status == ServiceStatus.STOPPED
+
+    def test_error_is_a_runtime_error(self):
+        """Subclasses RuntimeError so existing handlers still catch it."""
+        from blackfish import ServiceNotReachableError
+
+        assert issubclass(ServiceNotReachableError, RuntimeError)
+
+    def test_url_on_a_deleted_service_raises(self):
+        import pytest as _pytest
+
+        from blackfish import ManagedService
+
+        svc = ManagedService(None, None)  # type: ignore[arg-type]
+
+        with _pytest.raises(RuntimeError, match="deleted"):
+            _ = svc.url

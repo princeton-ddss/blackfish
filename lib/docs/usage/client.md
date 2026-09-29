@@ -138,6 +138,34 @@ print(f"Host: {service.host}")
 print(f"Port: {service.port}")
 ```
 
+### Reaching a Service
+
+To send requests to a service, use `service.url`:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url=f"{service.url}/v1", api_key="EMPTY")
+```
+
+`url` is always a `localhost` address. For a Slurm service, requests travel
+through an SSH tunnel, so `service.host` is the cluster's **login node**, not
+where requests go — building a URL from `host` and `port` will not reach the
+service.
+
+Services expose several endpoints, so `url` is a base URL to hand to a client
+library rather than a complete request path. Text generation runs vLLM's
+OpenAI-compatible server, hence the `/v1` suffix above.
+
+A service only has an address once its tunnel is open, which happens while the
+job starts. Requesting `url` before then — or after the service stops — raises
+`ServiceNotReachableError`, so wait for it to become healthy first:
+
+```python
+if service.wait():
+    client = OpenAI(base_url=f"{service.url}/v1", api_key="EMPTY")
+```
+
 !!! note
 
     The status of a service should be understood as the most recently observed status of that service. The current status of a service is only known to the external system running the service, e.g., Slurm. To update the status of a service, use `service.refresh()`.

@@ -19,6 +19,25 @@ if TYPE_CHECKING:
     from blackfish.client import Blackfish
 
 
+class ServiceNotReachableError(RuntimeError):
+    """Raised when a service has no address to send requests to.
+
+    A service is reachable once its tunnel is open and its port recorded. That
+    happens while the job starts, so a service that is still queued, or one
+    that has stopped, has nothing to connect to.
+    """
+
+    def __init__(self, service_id: Any, status: Optional[ServiceStatus] = None):
+        self.service_id = service_id
+        self.status = status
+        detail = f" (status: {status.value})" if status else ""
+        super().__init__(
+            f"Service {service_id} has no port and cannot be reached{detail}."
+            " Wait for it to become healthy before requesting its url,"
+            " e.g. `if service.wait(): ...`."
+        )
+
+
 class WaitOutcome(StrEnum):
     """Why `ManagedService.wait` stopped waiting.
 
@@ -101,6 +120,35 @@ class ManagedService:
     def __repr__(self) -> str:
         """Return string representation."""
         return f"ManagedService({self._service!r})"
+
+    @property
+    def url(self) -> str:
+        """The base URL to send requests to.
+
+        Always a `localhost` address: for a Slurm service, requests travel
+        through an SSH tunnel, so `service.host` is the cluster's login node
+        and *not* where requests go.
+
+        Services expose several endpoints, so this is a base URL to hand to a
+        client library rather than a complete request path. Text generation
+        runs vLLM's OpenAI-compatible server:
+
+        ```pycon
+        >>> from openai import OpenAI
+        >>> client = OpenAI(base_url=f"{service.url}/v1", api_key="EMPTY")
+        ```
+
+        Raises:
+            ServiceNotReachableError: if the service has no port, i.e. it has
+                not started yet or has stopped.
+        """
+        if self._service is None:
+            raise RuntimeError(
+                "This service has been deleted and can no longer be accessed."
+            )
+        if self._service.port is None:
+            raise ServiceNotReachableError(self._service.id, self._service.status)
+        return f"http://localhost:{self._service.port}"
 
     async def async_refresh(self) -> Self:
         """Refresh the service status (async).

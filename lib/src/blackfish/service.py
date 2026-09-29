@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import TYPE_CHECKING, Any, Optional, Self
+from uuid import UUID
 
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -17,6 +18,25 @@ from blackfish.utils import _async_to_sync
 if TYPE_CHECKING:
     from blackfish.server.services.base import Service
     from blackfish.client import Blackfish
+
+
+class ServiceNotReachableError(RuntimeError):
+    """Raised when a service has no address to send requests to.
+
+    A service is reachable once its tunnel is open and its port recorded. That
+    happens while the job starts, so a service that is still queued, or one
+    that has stopped, has nothing to connect to.
+    """
+
+    def __init__(self, service_id: UUID, status: Optional[ServiceStatus] = None):
+        self.service_id = service_id
+        self.status = status
+        detail = f" (status: {status.value})" if status is not None else ""
+        super().__init__(
+            f"Service {service_id} has no port and cannot be reached{detail}."
+            " Wait for it to become healthy before requesting its url,"
+            " e.g. `if service.wait(): ...`."
+        )
 
 
 class WaitOutcome(StrEnum):
@@ -101,6 +121,42 @@ class ManagedService:
     def __repr__(self) -> str:
         """Return string representation."""
         return f"ManagedService({self._service!r})"
+
+    @property
+    def url(self) -> str:
+        """The base URL to send requests to.
+
+        Always a `localhost` address: for a Slurm service, requests travel
+        through an SSH tunnel, so `service.host` is the cluster's login node
+        and *not* where requests go.
+
+        Services expose several endpoints, so this is a base URL to hand to a
+        client library rather than a complete request path. Text generation
+        runs vLLM's OpenAI-compatible server:
+
+        ```pycon
+        >>> from openai import OpenAI
+        >>> client = OpenAI(base_url=f"{service.url}/v1", api_key="EMPTY")
+        ```
+
+        Note:
+            A recorded port means a tunnel was opened, not that it is still
+            up. `stop()` closes the tunnel and clears the port, but a job that
+            dies on its own is only noticed on the next `refresh()`, so until
+            then `url` can return an address that no longer connects. Treat it
+            as the service's last known address.
+
+        Raises:
+            ServiceNotReachableError: if the service has no port, i.e. its
+                tunnel has never been opened or has been closed.
+        """
+        if self._service is None:
+            raise RuntimeError(
+                "This service has been deleted and can no longer be accessed."
+            )
+        if self._service.port is None:
+            raise ServiceNotReachableError(self._service.id, self._service.status)
+        return f"http://localhost:{self._service.port}"
 
     async def async_refresh(self) -> Self:
         """Refresh the service status (async).

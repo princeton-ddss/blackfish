@@ -396,8 +396,14 @@ class Service(UUIDAuditBase):
         """Update the service status. Assumes running in an attached state.
 
         Determines the service status by pinging the service and then checking
-        the Slurm job state if the ping in unsuccessful. Updates the service
+        the Slurm job state if the ping is unsuccessful. Updates the service
         database and returns the status.
+
+        The ping is attempted first (whenever the service has a port) because it
+        is cheap and a success is conclusive: the tunnel is open and the server
+        answered, so the service is HEALTHY. The job check is only needed to
+        explain an unsuccessful ping, and for Slurm services it costs an SSH
+        round-trip to run `sacct` on the login node.
 
         The status returned depends on the starting status because services in a
         "STARTING" status cannot transitionto an "UNHEALTHY" status. The status
@@ -445,6 +451,31 @@ class Service(UUIDAuditBase):
             )
             return self.status
 
+        # Fast path: a successful ping is sufficient evidence that the service is
+        # healthy, because it means the tunnel is open and the server answered.
+        # Checking it first avoids the `get_job` call below, which shells out to
+        # `sacct` over SSH for Slurm services and dominates the cost of a refresh.
+        # A failed ping is ambiguous (queued, still loading, dead job, dropped
+        # tunnel), so it falls through to the job check to determine the status.
+        # `pinged` records that the failed result below still describes the
+        # current tunnel, so the paths that follow can reuse it instead of
+        # paying a second (possibly 5s) health-check timeout.
+        pinged = False
+        res: httpx.Response | None = None
+        if self.port is not None:
+            res = await self.ping(http_client)
+            pinged = True
+            if res is not None and res.is_success:
+                logger.debug(
+                    f"Service {self.id} responded normally. Setting status to HEALTHY."
+                )
+                self.status = ServiceStatus.HEALTHY
+                return ServiceStatus.HEALTHY
+            logger.debug(
+                f"Service {self.id} did not respond to the initial ping. Checking"
+                " the job state to determine status."
+            )
+
         # The logic for cases below is quite similar and can be extracted into
         # reusable functions in places, e.g., for running and failed jobs.
         job = await self.get_job(verbose=True)
@@ -478,7 +509,10 @@ class Service(UUIDAuditBase):
             elif job.state == JobState.RUNNING:
                 if self.port is None:
                     await self.open_tunnel(job=job)
-                res = await self.ping(http_client)
+                    # A tunnel was just opened, so any earlier result is stale.
+                    pinged = False
+                if not pinged:
+                    res = await self.ping(http_client)
                 if res is not None and res.is_success:
                     logger.debug(
                         f"Service {self.id} responded normally. Setting status to"
@@ -558,7 +592,8 @@ class Service(UUIDAuditBase):
                 await self.stop(session)
                 return ServiceStatus.STOPPED
             elif job.state == JobState.RUNNING:
-                res = await self.ping(http_client)
+                if not pinged:
+                    res = await self.ping(http_client)
                 if res is not None and res.is_success:
                     logger.debug(
                         f"Service {self.id} responded normally. Setting status to"

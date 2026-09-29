@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import TYPE_CHECKING, Any, Optional, Self
+from uuid import UUID
 
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -27,10 +28,10 @@ class ServiceNotReachableError(RuntimeError):
     that has stopped, has nothing to connect to.
     """
 
-    def __init__(self, service_id: Any, status: Optional[ServiceStatus] = None):
+    def __init__(self, service_id: UUID, status: Optional[ServiceStatus] = None):
         self.service_id = service_id
         self.status = status
-        detail = f" (status: {status.value})" if status else ""
+        detail = f" (status: {status.value})" if status is not None else ""
         super().__init__(
             f"Service {service_id} has no port and cannot be reached{detail}."
             " Wait for it to become healthy before requesting its url,"
@@ -138,9 +139,16 @@ class ManagedService:
         >>> client = OpenAI(base_url=f"{service.url}/v1", api_key="EMPTY")
         ```
 
+        Note:
+            A recorded port means a tunnel was opened, not that it is still
+            up. `stop()` closes the tunnel and clears the port, but a job that
+            dies on its own is only noticed on the next `refresh()`, so until
+            then `url` can return an address that no longer connects. Treat it
+            as the service's last known address.
+
         Raises:
-            ServiceNotReachableError: if the service has no port, i.e. it has
-                not started yet or has stopped.
+            ServiceNotReachableError: if the service has no port, i.e. its
+                tunnel has never been opened or has been closed.
         """
         if self._service is None:
             raise RuntimeError(

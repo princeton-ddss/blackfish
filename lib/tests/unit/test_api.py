@@ -4,7 +4,15 @@ import pytest
 import logging
 from pathlib import Path
 from collections.abc import AsyncGenerator
-from blackfish import Blackfish, set_logging_level
+from blackfish import (
+    Blackfish,
+    ManagedService,
+    Service,
+    ServiceNotReachableError,
+    ServiceStatus,
+    WaitOutcome,
+    set_logging_level,
+)
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from advanced_alchemy.base import UUIDAuditBase
 
@@ -179,7 +187,6 @@ class TestManagedService:
 
     async def test_managed_service_attributes(self, blackfish_client: Blackfish):
         """Test that ManagedService properly exposes Service attributes."""
-        from blackfish import ManagedService
         from blackfish.server.services.text_generation import TextGeneration
 
         # Create a dummy service
@@ -205,7 +212,6 @@ class TestManagedService:
 
     async def test_managed_service_methods_exist(self, blackfish_client: Blackfish):
         """Test that ManagedService has expected methods."""
-        from blackfish import ManagedService
         from blackfish.server.services.text_generation import TextGeneration
 
         # Create a dummy service
@@ -300,8 +306,6 @@ class TestWaitResult:
         """A ManagedService whose refreshes are driven by the test."""
         from unittest.mock import MagicMock
 
-        from blackfish import ManagedService
-
         service = MagicMock()
         service.status = status
         return ManagedService(service, MagicMock())
@@ -317,7 +321,6 @@ class TestWaitResult:
         return lambda: next(ticks)
 
     async def test_cached_healthy_returns_immediately(self):
-        from blackfish import ServiceStatus, WaitOutcome
 
         svc = self._managed(ServiceStatus.HEALTHY)
         result = await svc.async_wait(timeout=0)
@@ -327,7 +330,6 @@ class TestWaitResult:
         assert result  # WaitResult is truthy only when healthy
 
     async def test_cached_terminal_returns_failed(self):
-        from blackfish import ServiceStatus, WaitOutcome
 
         svc = self._managed(ServiceStatus.FAILED)
         result = await svc.async_wait(timeout=0)
@@ -343,8 +345,6 @@ class TestWaitResult:
         """
         from unittest.mock import AsyncMock, patch
 
-        from blackfish import ServiceStatus, WaitOutcome
-
         svc = self._managed(ServiceStatus.SUBMITTED)
         refresh = AsyncMock(return_value=ServiceStatus.HEALTHY)
         with (
@@ -359,8 +359,6 @@ class TestWaitResult:
 
     async def test_timeout_while_queued_is_tagged_pending(self):
         from unittest.mock import AsyncMock, patch
-
-        from blackfish import ServiceStatus, WaitOutcome
 
         svc = self._managed(ServiceStatus.SUBMITTED)
         refresh = AsyncMock(return_value=ServiceStatus.PENDING)
@@ -378,8 +376,6 @@ class TestWaitResult:
     async def test_timeout_while_starting_is_tagged_starting(self):
         from unittest.mock import AsyncMock, patch
 
-        from blackfish import ServiceStatus, WaitOutcome
-
         svc = self._managed(ServiceStatus.SUBMITTED)
         refresh = AsyncMock(return_value=ServiceStatus.STARTING)
         with (
@@ -394,8 +390,6 @@ class TestWaitResult:
 
     async def test_polls_until_healthy(self):
         from unittest.mock import AsyncMock, patch
-
-        from blackfish import ServiceStatus, WaitOutcome
 
         svc = self._managed(ServiceStatus.SUBMITTED)
         refresh = AsyncMock(
@@ -417,8 +411,6 @@ class TestWaitResult:
     async def test_terminal_state_during_polling_returns_failed(self):
         from unittest.mock import AsyncMock, patch
 
-        from blackfish import ServiceStatus, WaitOutcome
-
         svc = self._managed(ServiceStatus.SUBMITTED)
         refresh = AsyncMock(side_effect=[ServiceStatus.STARTING, ServiceStatus.TIMEOUT])
         with (
@@ -434,8 +426,6 @@ class TestWaitResult:
         """With timeout=None only HEALTHY and FAILED are reachable."""
         from unittest.mock import AsyncMock, patch
 
-        from blackfish import ServiceStatus, WaitOutcome
-
         svc = self._managed(ServiceStatus.SUBMITTED)
         refresh = AsyncMock(
             side_effect=[ServiceStatus.PENDING] * 5 + [ServiceStatus.HEALTHY]
@@ -450,7 +440,6 @@ class TestWaitResult:
         assert refresh.await_count == 6
 
     async def test_elapsed_is_recorded(self):
-        from blackfish import ServiceStatus
 
         svc = self._managed(ServiceStatus.HEALTHY)
         result = await svc.async_wait(timeout=0)
@@ -463,7 +452,6 @@ class TestWaitResult:
         Not an async test: `_async_to_sync` refuses to run from inside a
         running event loop, so this must call it from sync context.
         """
-        from blackfish import ServiceStatus, WaitOutcome
 
         svc = self._managed(ServiceStatus.HEALTHY)
         result = svc.wait(timeout=0)
@@ -474,8 +462,6 @@ class TestWaitResult:
     async def test_sleep_is_clamped_to_the_remaining_time(self):
         """The final sleep must not overshoot the caller's deadline."""
         from unittest.mock import AsyncMock, patch
-
-        from blackfish import ServiceStatus
 
         svc = self._managed(ServiceStatus.SUBMITTED)
         refresh = AsyncMock(return_value=ServiceStatus.PENDING)
@@ -498,17 +484,13 @@ class TestWaitResult:
         """A failing refresh is not swallowed by the spinner context."""
         from unittest.mock import AsyncMock, patch
 
-        import pytest as _pytest
-
-        from blackfish import ServiceStatus
-
         svc = self._managed(ServiceStatus.SUBMITTED)
         refresh = AsyncMock(side_effect=RuntimeError("boom"))
         with (
             patch.object(type(svc), "_refresh_status", refresh),
             patch("blackfish.service.asyncio.sleep", AsyncMock()),
         ):
-            with _pytest.raises(RuntimeError, match="boom"):
+            with pytest.raises(RuntimeError, match="boom"):
                 await svc.async_wait(timeout=30, poll_interval=0)
 
 
@@ -518,8 +500,6 @@ class TestServiceURL:
     def _managed(self, *, port, status=None, service_id="svc-1"):
         from unittest.mock import MagicMock
 
-        from blackfish import ManagedService
-
         service = MagicMock()
         service.port = port
         service.status = status
@@ -528,7 +508,6 @@ class TestServiceURL:
 
     def test_url_is_localhost_not_the_login_node(self):
         """Slurm services are reached through a tunnel, never via `host`."""
-        from blackfish import ServiceStatus
 
         svc = self._managed(port=8080, status=ServiceStatus.HEALTHY)
         svc._service.host = "della.princeton.edu"
@@ -537,20 +516,16 @@ class TestServiceURL:
         assert "della" not in svc.url
 
     def test_url_composes_with_a_client_base_url(self):
-        from blackfish import ServiceStatus
 
         svc = self._managed(port=9001, status=ServiceStatus.HEALTHY)
 
         assert f"{svc.url}/v1" == "http://localhost:9001/v1"
 
     def test_url_raises_when_there_is_no_port(self):
-        import pytest as _pytest
-
-        from blackfish import ServiceNotReachableError, ServiceStatus
 
         svc = self._managed(port=None, status=ServiceStatus.PENDING)
 
-        with _pytest.raises(ServiceNotReachableError) as exc:
+        with pytest.raises(ServiceNotReachableError) as exc:
             _ = svc.url
 
         # The message should name the service and say what to do about it.
@@ -559,13 +534,10 @@ class TestServiceURL:
         assert "wait" in str(exc.value).lower()
 
     def test_error_carries_the_service_id_and_status(self):
-        import pytest as _pytest
-
-        from blackfish import ServiceNotReachableError, ServiceStatus
 
         svc = self._managed(port=None, status=ServiceStatus.STOPPED)
 
-        with _pytest.raises(ServiceNotReachableError) as exc:
+        with pytest.raises(ServiceNotReachableError) as exc:
             _ = svc.url
 
         assert exc.value.service_id == "svc-1"
@@ -573,16 +545,32 @@ class TestServiceURL:
 
     def test_error_is_a_runtime_error(self):
         """Subclasses RuntimeError so existing handlers still catch it."""
-        from blackfish import ServiceNotReachableError
 
         assert issubclass(ServiceNotReachableError, RuntimeError)
 
-    def test_url_on_a_deleted_service_raises(self):
-        import pytest as _pytest
+    def test_error_without_a_status_omits_the_detail(self):
+        """A missing status must not render as "(status: None)"."""
 
-        from blackfish import ManagedService
+        svc = self._managed(port=None, status=None)
+
+        with pytest.raises(ServiceNotReachableError) as exc:
+            _ = svc.url
+
+        assert "status:" not in str(exc.value)
+        assert exc.value.status is None
+
+    def test_service_model_has_no_url_to_shadow(self):
+        """`url` is a property, so a `Service.url` column would break it.
+
+        `ManagedService.__getattr__` delegates to the wrapped `Service`, so
+        this guards against a future column silently taking precedence.
+        """
+
+        assert not hasattr(Service, "url")
+
+    def test_url_on_a_deleted_service_raises(self):
 
         svc = ManagedService(None, None)  # type: ignore[arg-type]
 
-        with _pytest.raises(RuntimeError, match="deleted"):
+        with pytest.raises(RuntimeError, match="deleted"):
             _ = svc.url

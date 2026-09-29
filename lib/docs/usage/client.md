@@ -158,13 +158,19 @@ library rather than a complete request path. Text generation runs vLLM's
 OpenAI-compatible server, hence the `/v1` suffix above.
 
 A service only has an address once its tunnel is open, which happens while the
-job starts. Requesting `url` before then — or after the service stops — raises
-`ServiceNotReachableError`, so wait for it to become healthy first:
+job starts. Requesting `url` before then, or after the tunnel has been closed,
+raises `ServiceNotReachableError`, so wait for the service to become healthy
+first:
 
 ```python
 if service.wait():
     client = OpenAI(base_url=f"{service.url}/v1", api_key="EMPTY")
 ```
+
+Note that a recorded port means a tunnel was opened, not that it is still up.
+`stop()` closes the tunnel and clears the port, but a job that dies on its own
+is only noticed on the next `refresh()`. Until then `url` returns the service's
+last known address, which may no longer connect.
 
 !!! note
 

@@ -3763,14 +3763,23 @@ runs vLLM's OpenAI-compatible server:</p>
 </span></code></pre></div>
 
 
+<details class="note" open>
+  <summary>Note</summary>
+  <p>A recorded port means a tunnel was opened, not that it is still
+up. <code>stop()</code> closes the tunnel and clears the port, but a job that
+dies on its own is only noticed on the next <code>refresh()</code>, so until
+then <code>url</code> can return an address that no longer connects. Treat it
+as the service's last known address.</p>
+</details>
+
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="ServiceNotReachableError (blackfish.service.ServiceNotReachableError)" href="./#blackfish.service.ServiceNotReachableError">ServiceNotReachableError</a></code>
             –
           <div class="doc-md-description">
-            <p>if the service has no port, i.e. it has
-not started yet or has stopped.</p>
+            <p>if the service has no port, i.e. its
+tunnel has never been opened or has been closed.</p>
           </div>
         </li>
     </ul>

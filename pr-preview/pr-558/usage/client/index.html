@@ -2019,11 +2019,16 @@ service.</p>
 library rather than a complete request path. Text generation runs vLLM's
 OpenAI-compatible server, hence the <code>/v1</code> suffix above.</p>
 <p>A service only has an address once its tunnel is open, which happens while the
-job starts. Requesting <code>url</code> before then — or after the service stops — raises
-<code>ServiceNotReachableError</code>, so wait for it to become healthy first:</p>
+job starts. Requesting <code>url</code> before then, or after the tunnel has been closed,
+raises <code>ServiceNotReachableError</code>, so wait for the service to become healthy
+first:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">if</span> <span class="n">service</span><span class="o">.</span><span class="n">wait</span><span class="p">():</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">service</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2">/v1"</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s2">"EMPTY"</span><span class="p">)</span>
 </span></code></pre></div>
+<p>Note that a recorded port means a tunnel was opened, not that it is still up.
+<code>stop()</code> closes the tunnel and clears the port, but a job that dies on its own
+is only noticed on the next <code>refresh()</code>. Until then <code>url</code> returns the service's
+last known address, which may no longer connect.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The status of a service should be understood as the most recently observed status of that service. The current status of a service is only known to the external system running the service, e.g., Slurm. To update the status of a service, use <code>service.refresh()</code>.</p>

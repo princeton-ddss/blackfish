@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import TYPE_CHECKING, Any, Self
+from dataclasses import dataclass
+from enum import StrEnum, auto
+from typing import TYPE_CHECKING, Any, Optional, Self
 
 from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
@@ -17,6 +19,48 @@ if TYPE_CHECKING:
     from blackfish.client import Blackfish
 
 
+class WaitOutcome(StrEnum):
+    """Why `ManagedService.wait` stopped waiting.
+
+    HEALTHY and FAILED describe the service. The TIMEOUT_* outcomes describe
+    the *caller* giving up, tagged by the phase the service was in, and are
+    only reachable when `wait` is given a maximum waiting time.
+    """
+
+    HEALTHY = auto()
+    """The service became healthy."""
+
+    FAILED = auto()
+    """The service reached a terminal state (FAILED, TIMEOUT or STOPPED)."""
+
+    TIMEOUT_PENDING = auto()
+    """Gave up while the job was still queued; the scheduler had not run it."""
+
+    TIMEOUT_STARTING = auto()
+    """Gave up after the job started but before the service answered a ping."""
+
+
+@dataclass(frozen=True)
+class WaitResult:
+    """The outcome of a `ManagedService.wait` call.
+
+    `wait` reports what happened and leaves the response to the caller. In
+    particular a timeout does not imply that a restart is warranted: the
+    service may be healthy and merely slow to schedule.
+    """
+
+    outcome: WaitOutcome
+    status: Optional[ServiceStatus]
+    """The service's status when waiting stopped."""
+
+    elapsed: float
+    """Seconds spent waiting."""
+
+    def __bool__(self) -> bool:
+        """True only when the service became healthy."""
+        return self.outcome is WaitOutcome.HEALTHY
+
+
 class ManagedService:
     """Wrapper around Service that provides convenient access to service methods.
 
@@ -24,6 +68,17 @@ class ManagedService:
     require passing session and state objects. All operations are delegated to the
     parent Blackfish client.
     """
+
+    TERMINAL_STATUSES = (
+        ServiceStatus.FAILED,
+        ServiceStatus.TIMEOUT,
+        ServiceStatus.STOPPED,
+    )
+
+    PENDING_STATUSES = (
+        ServiceStatus.SUBMITTED,
+        ServiceStatus.PENDING,
+    )
 
     def __init__(self, service: Service, client: Blackfish):
         """Initialize a managed service.
@@ -170,115 +225,112 @@ class ManagedService:
         """
         return _async_to_sync(self.async_delete)()
 
+    async def _refresh_status(self) -> Optional[ServiceStatus]:
+        """Refresh the underlying service and return its current status."""
+        async with self._client._session() as session:
+            self._service = await session.merge(self._service)
+            if self._service is None:
+                raise RuntimeError("self._service is None")
+            await self._service.refresh(session, self._client._ensure_http_client())
+            # Access the attribute before the session closes.
+            return self._service.status
+
     async def async_wait(
         self,
-        timeout: float = 300,
+        timeout: Optional[float] = 300,
         poll_interval: float = 10,
-    ) -> Self:
-        """Wait for the service to be healthy.
+    ) -> WaitResult:
+        """Wait for the service to become healthy.
 
         Args:
-            timeout: Maximum time to wait in seconds (default: 300)
+            timeout: Maximum time to wait in seconds, or None to wait
+                indefinitely (default: 300)
             poll_interval: Time between status checks in seconds (default: 10)
 
         Returns:
-            Self (for method chaining), or None if service not found
+            WaitResult: what happened, the service's final status, and how long
+            waiting took. The result is falsy unless the service became
+            healthy, so it can be tested directly.
+
+        Note:
+            A TIMEOUT_* outcome means the caller ran out of patience, not that
+            the service is broken; a queued job may simply not have been
+            scheduled yet. Deciding what to do about it is the caller's.
 
         Examples:
             ```pycon
             >>> service = await bf.async_launch_service(...)
-            >>> service = await service.async_wait()
-            >>> if service and service.status == ServiceStatus.HEALTHY:
+            >>> result = await service.async_wait()
+            >>> if result:
             ...     print(f"Service ready on port {service.port}")
+            ... elif result.outcome is WaitOutcome.TIMEOUT_PENDING:
+            ...     print("Still queued; waiting longer")
             ```
         """
-
-        target_status = ServiceStatus.HEALTHY
 
         if self._service is None:
             raise RuntimeError("self._service is None")
 
+        start_time = time.time()
+
+        def _result(
+            outcome: WaitOutcome, status: Optional[ServiceStatus]
+        ) -> WaitResult:
+            return WaitResult(
+                outcome=outcome, status=status, elapsed=time.time() - start_time
+            )
+
+        def _timed_out(status: Optional[ServiceStatus]) -> WaitResult:
+            """Tag a timeout by the phase the service was in when we gave up."""
+            outcome = (
+                WaitOutcome.TIMEOUT_PENDING
+                if status in self.PENDING_STATUSES
+                else WaitOutcome.TIMEOUT_STARTING
+            )
+            return _result(outcome, status)
+
         with yaspin(text="Waiting for service to be healthy...") as spinner:
-            # Check current status first without refreshing - might already be healthy or terminal
-            current_status = self._service.status
+            # The cached status is only a snapshot of the last observation, so
+            # it is trusted only when already conclusive. Anything else is
+            # re-checked against the service before sleeping, so a service that
+            # became healthy moments ago is not missed for a whole interval.
+            status = self._service.status
+            if status not in (ServiceStatus.HEALTHY, *self.TERMINAL_STATUSES):
+                status = await self._refresh_status()
 
-            if current_status == target_status:
-                spinner.text = "Service is ready!"
-                spinner.ok(f"{LogSymbols.SUCCESS.value}")
-                return self
-
-            if current_status in [
-                ServiceStatus.FAILED,
-                ServiceStatus.TIMEOUT,
-                ServiceStatus.STOPPED,
-            ]:
-                spinner.text = (
-                    f"Service failed with terminal state: {current_status.value}"
-                )
-                spinner.fail(f"{LogSymbols.ERROR.value}")
-                return self
-
-            # Start polling
-            start_time = time.time()
-            while time.time() - start_time < timeout:
-                await asyncio.sleep(poll_interval)
-
-                # Refresh the underlying service
-                async with self._client._session() as session:
-                    self._service = await session.merge(self._service)
-                    if self._service is not None:
-                        await self._service.refresh(
-                            session, self._client._ensure_http_client()
-                        )
-                        # Access attributes to ensure they're loaded before session closes
-                        current_status = self._service.status
-                    else:
-                        raise RuntimeError("self._service is None")
-
-                if current_status == target_status:
+            while True:
+                if status == ServiceStatus.HEALTHY:
                     spinner.text = "Service is ready!"
                     spinner.ok(f"{LogSymbols.SUCCESS.value}")
-                    return self
+                    return _result(WaitOutcome.HEALTHY, status)
 
-                if current_status in [
-                    ServiceStatus.FAILED,
-                    ServiceStatus.TIMEOUT,
-                    ServiceStatus.STOPPED,
-                ]:
+                if status in self.TERMINAL_STATUSES:
                     spinner.text = (
-                        f"Service failed with terminal state: {current_status.value}"
+                        "Service failed with terminal state:"
+                        f" {status.value if status else 'unknown'}"
                     )
                     spinner.fail(f"{LogSymbols.ERROR.value}")
-                    return self
+                    return _result(WaitOutcome.FAILED, status)
 
-            # Timeout - do final check
-            async with self._client._session() as session:
-                self._service = await session.merge(self._service)
-                if self._service is not None:
-                    await self._service.refresh(
-                        session, self._client._ensure_http_client()
+                if timeout is not None and time.time() - start_time >= timeout:
+                    spinner.text = (
+                        "Timeout reached. Current status:"
+                        f" {status.value if status else 'unknown'}"
                     )
-                else:
-                    raise RuntimeError("self._service is None")
-                final_status = self._service.status
+                    spinner.fail(f"{LogSymbols.WARNING.value}")
+                    return _timed_out(status)
 
-            spinner.text = f"Timeout reached. Current status: {final_status.value if final_status else 'unknown'}"
-            spinner.fail(f"{LogSymbols.WARNING.value}")
-            return self
+                await asyncio.sleep(poll_interval)
+                status = await self._refresh_status()
 
     def wait(
         self,
-        timeout: float = 300,
+        timeout: Optional[float] = 300,
         poll_interval: float = 10,
-    ) -> Self:
-        """Wait for the service to be healthy (sync).
+    ) -> WaitResult:
+        """Wait for the service to become healthy (sync).
 
-        Args:
-            timeout: Maximum time to wait in seconds (default: 300)
-            poll_interval: Time between status checks in seconds (default: 10)
-
-        Returns:
-            Self (for method chaining), or None if service not found
+        See async_wait for details.
         """
 
         return _async_to_sync(self.async_wait)(

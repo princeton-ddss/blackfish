@@ -665,7 +665,7 @@ class Blackfish:
         service_id: str,
         target_status: ServiceStatus = ServiceStatus.HEALTHY,
         timeout: float = 300,
-        poll_interval: float = 5,
+        poll_interval: float = 10,
     ) -> Optional[ManagedService]:
         """Wait for a service to reach a target status (async).
 
@@ -673,7 +673,7 @@ class Blackfish:
             service_id: UUID of the service
             target_status: Status to wait for (default: HEALTHY)
             timeout: Maximum time to wait in seconds (default: 300)
-            poll_interval: Time between status checks in seconds (default: 5)
+            poll_interval: Time between status checks in seconds (default: 10)
 
         Returns:
             ManagedService instance if target status reached, None if timeout or service failed
@@ -718,7 +718,7 @@ class Blackfish:
         service_id: str,
         target_status: ServiceStatus = ServiceStatus.HEALTHY,
         timeout: float = 300,
-        poll_interval: float = 5,
+        poll_interval: float = 10,
     ) -> Optional[ManagedService]:
         """Wait for a service to reach a target status (sync wrapper).
 

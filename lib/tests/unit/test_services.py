@@ -376,3 +376,181 @@ class TestGracePeriodAnchor:
         )
         status = await self._refresh_with(service, job)
         assert status == ServiceStatus.UNHEALTHY
+
+
+class TestRefreshPingsBeforeJobCheck:
+    """Regression tests for the refresh fast path (#457).
+
+    A successful ping is conclusive evidence of HEALTHY, so `refresh` attempts
+    it before `get_job`. That matters because `get_job` shells out to `sacct`
+    over SSH for Slurm services and dominates the cost of a refresh. An
+    unsuccessful ping is ambiguous, so it must still fall through to the job
+    check.
+    """
+
+    def _service(self, *, port=8080, status=None):
+        from uuid import UUID
+
+        from blackfish.server.job import JobScheduler
+        from blackfish.server.services.base import ServiceStatus
+        from blackfish.server.services.text_generation import TextGeneration
+
+        return TextGeneration(
+            id=UUID("2a7a8e62-40cc-4240-a825-463e5b11a81f"),
+            name="test-service",
+            model="meta-llama/Llama-3.1-8B-Instruct",
+            profile="default",
+            host="localhost",
+            user="alice",
+            home_dir="/home/alice/.blackfish",
+            cache_dir="/scratch/cache",
+            scheduler=JobScheduler.Slurm,
+            grace_period=180,
+            job_id="1",
+            port=port,
+            status=status or ServiceStatus.STARTING,
+        )
+
+    def _ok(self):
+        res = MagicMock()
+        res.is_success = True
+        return res
+
+    async def test_successful_ping_skips_the_job_check(self):
+        from blackfish.server.services.base import ServiceStatus
+
+        service = self._service()
+        with (
+            patch.object(service, "get_job") as get_job,
+            patch.object(service, "ping", return_value=self._ok()),
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.HEALTHY
+        assert service.status == ServiceStatus.HEALTHY
+        get_job.assert_not_called()
+
+    async def test_unhealthy_service_recovers_without_a_job_check(self):
+        """An UNHEALTHY service that answers again is HEALTHY (no SSH needed)."""
+        from blackfish.server.services.base import ServiceStatus
+
+        service = self._service(status=ServiceStatus.UNHEALTHY)
+        with (
+            patch.object(service, "get_job") as get_job,
+            patch.object(service, "ping", return_value=self._ok()),
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.HEALTHY
+        get_job.assert_not_called()
+
+    async def test_failed_ping_falls_through_to_the_job_check(self):
+        from blackfish.server.job import JobState, SlurmJob
+        from blackfish.server.services.base import ServiceStatus
+
+        service = self._service()
+        job = SlurmJob(
+            job_id=1,
+            user="alice",
+            host="localhost",
+            data_dir="/tmp",
+            state=JobState.PENDING,
+        )
+        with (
+            patch.object(service, "get_job", return_value=job) as get_job,
+            patch.object(service, "ping", return_value=None),
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.PENDING
+        get_job.assert_called_once()
+
+    async def test_failed_ping_is_not_repeated_on_the_job_path(self):
+        """The fast path's failed result is reused, not re-pinged.
+
+        A wedged service costs the full HEALTH_CHECK_TIMEOUT per ping, so
+        pinging twice would double the worst-case refresh latency.
+        """
+        from datetime import datetime, timedelta, timezone
+
+        from blackfish.server.job import JobState, SlurmJob
+        from blackfish.server.services.base import ServiceStatus
+
+        service = self._service()
+        job = SlurmJob(
+            job_id=1,
+            user="alice",
+            host="localhost",
+            data_dir="/tmp",
+            state=JobState.RUNNING,
+        )
+        service.created_at = datetime.now(timezone.utc) - timedelta(seconds=30)
+        with (
+            patch.object(service, "get_job", return_value=job),
+            patch.object(service, "ping", return_value=None) as ping,
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.STARTING
+        ping.assert_called_once()
+
+    async def test_tunnel_reopen_forces_a_fresh_ping(self):
+        """A port assigned by open_tunnel invalidates any earlier result."""
+        from blackfish.server.job import JobState, SlurmJob
+        from blackfish.server.services.base import ServiceStatus
+
+        service = self._service(port=None)
+        job = SlurmJob(
+            job_id=1,
+            user="alice",
+            host="localhost",
+            data_dir="/tmp",
+            state=JobState.RUNNING,
+        )
+        with (
+            patch.object(service, "get_job", return_value=job),
+            patch.object(service, "open_tunnel", return_value=None),
+            patch.object(service, "ping", return_value=self._ok()) as ping,
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.HEALTHY
+        ping.assert_called_once()
+
+    async def test_service_without_a_port_goes_straight_to_the_job_check(self):
+        """A service with no tunnel cannot be pinged, so don't try."""
+        from blackfish.server.job import JobState, SlurmJob
+        from blackfish.server.services.base import ServiceStatus
+
+        service = self._service(port=None)
+        job = SlurmJob(
+            job_id=1,
+            user="alice",
+            host="localhost",
+            data_dir="/tmp",
+            state=JobState.PENDING,
+        )
+        with (
+            patch.object(service, "get_job", return_value=job) as get_job,
+            patch.object(service, "ping") as ping,
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.PENDING
+        ping.assert_not_called()
+        get_job.assert_called_once()
+
+    async def test_terminal_service_is_not_pinged(self):
+        """Terminal services short-circuit before any network call."""
+        from blackfish.server.services.base import ServiceStatus
+
+        service = self._service(status=ServiceStatus.STOPPED)
+        with (
+            patch.object(service, "get_job") as get_job,
+            patch.object(service, "ping") as ping,
+        ):
+            status = await service.refresh(session=MagicMock(), http_client=MagicMock())
+
+        assert status == ServiceStatus.STOPPED
+        ping.assert_not_called()
+        get_job.assert_not_called()

@@ -306,6 +306,16 @@ class TestWaitResult:
         service.status = status
         return ManagedService(service, MagicMock())
 
+    def _clock(self, step=10.0):
+        """A monotonic clock that advances `step` seconds per reading.
+
+        Keeps timeout tests deterministic instead of racing real wall-clock.
+        """
+        from itertools import count
+
+        ticks = count(0.0, step)
+        return lambda: next(ticks)
+
     async def test_cached_healthy_returns_immediately(self):
         from blackfish import ServiceStatus, WaitOutcome
 
@@ -357,8 +367,9 @@ class TestWaitResult:
         with (
             patch.object(type(svc), "_refresh_status", refresh),
             patch("blackfish.service.asyncio.sleep", AsyncMock()),
+            patch("blackfish.service.time.monotonic", self._clock()),
         ):
-            result = await svc.async_wait(timeout=0.01, poll_interval=0)
+            result = await svc.async_wait(timeout=30, poll_interval=10)
 
         assert result.outcome is WaitOutcome.TIMEOUT_PENDING
         assert result.status == ServiceStatus.PENDING
@@ -374,8 +385,9 @@ class TestWaitResult:
         with (
             patch.object(type(svc), "_refresh_status", refresh),
             patch("blackfish.service.asyncio.sleep", AsyncMock()),
+            patch("blackfish.service.time.monotonic", self._clock()),
         ):
-            result = await svc.async_wait(timeout=0.01, poll_interval=0)
+            result = await svc.async_wait(timeout=30, poll_interval=10)
 
         assert result.outcome is WaitOutcome.TIMEOUT_STARTING
         assert result.status == ServiceStatus.STARTING
@@ -444,3 +456,57 @@ class TestWaitResult:
         result = await svc.async_wait(timeout=0)
 
         assert result.elapsed >= 0
+
+    def test_sync_wrapper_returns_the_result(self):
+        """The sync wait() forwards the WaitResult from async_wait.
+
+        Not an async test: `_async_to_sync` refuses to run from inside a
+        running event loop, so this must call it from sync context.
+        """
+        from blackfish import ServiceStatus, WaitOutcome
+
+        svc = self._managed(ServiceStatus.HEALTHY)
+        result = svc.wait(timeout=0)
+
+        assert result.outcome is WaitOutcome.HEALTHY
+        assert result
+
+    async def test_sleep_is_clamped_to_the_remaining_time(self):
+        """The final sleep must not overshoot the caller's deadline."""
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import ServiceStatus
+
+        svc = self._managed(ServiceStatus.SUBMITTED)
+        refresh = AsyncMock(return_value=ServiceStatus.PENDING)
+        sleep = AsyncMock()
+        # A clock that has already consumed 7s of a 10s budget by the time the
+        # loop reaches its sleep, leaving 3s: an unclamped 10s sleep would
+        # overshoot the deadline by 7s.
+        with (
+            patch.object(type(svc), "_refresh_status", refresh),
+            patch("blackfish.service.asyncio.sleep", sleep),
+            patch("blackfish.service.time.monotonic", self._clock(step=7.0)),
+        ):
+            await svc.async_wait(timeout=10, poll_interval=10)
+
+        assert sleep.await_args_list, "expected at least one sleep"
+        first = sleep.await_args_list[0].args[0]
+        assert first < 10, f"sleep was not clamped to the remaining budget: {first}"
+
+    async def test_refresh_errors_propagate(self):
+        """A failing refresh is not swallowed by the spinner context."""
+        from unittest.mock import AsyncMock, patch
+
+        import pytest as _pytest
+
+        from blackfish import ServiceStatus
+
+        svc = self._managed(ServiceStatus.SUBMITTED)
+        refresh = AsyncMock(side_effect=RuntimeError("boom"))
+        with (
+            patch.object(type(svc), "_refresh_status", refresh),
+            patch("blackfish.service.asyncio.sleep", AsyncMock()),
+        ):
+            with _pytest.raises(RuntimeError, match="boom"):
+                await svc.async_wait(timeout=30, poll_interval=0)

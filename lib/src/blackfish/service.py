@@ -11,6 +11,7 @@ from uuid import UUID
 
 from log_symbols.symbols import LogSymbols
 
+from blackfish.server.logger import logger
 from blackfish.server.services.base import ServiceStatus
 from blackfish.utils import _async_to_sync, _spinner
 
@@ -35,6 +36,42 @@ class ServiceNotReachableError(RuntimeError):
             f"Service {service_id} has no port and cannot be reached{detail}."
             " Wait for it to become healthy before requesting its url,"
             " e.g. `if service.wait(): ...`."
+        )
+
+
+@dataclass(frozen=True)
+class LaunchSpec:
+    """The arguments a service was launched with, so it can be relaunched.
+
+    `restart()` replays these rather than asking the caller to keep a launch
+    dict in sync by hand.
+    """
+
+    name: str
+    image: str
+    model: str
+    profile_name: Optional[str] = None
+    container_config: Optional[dict[str, Any]] = None
+    job_config: Optional[dict[str, Any]] = None
+    mount: Optional[str] = None
+    grace_period: int = 0
+    image_ref: Optional[str] = None
+
+
+class RestartLimitExceeded(RuntimeError):
+    """Raised when `ensure_healthy` has used up its restart budget.
+
+    Distinguishes "gave up relaunching" from any other failure, so a caller can
+    tell a broken model from a transient problem.
+    """
+
+    def __init__(self, service_id: Any, max_restarts: int):
+        self.service_id = service_id
+        self.max_restarts = max_restarts
+        super().__init__(
+            f"Service {service_id} could not be brought back after"
+            f" {max_restarts} restart(s). The model or its configuration is"
+            " likely at fault; check the job logs."
         )
 
 
@@ -99,15 +136,24 @@ class ManagedService:
         ServiceStatus.PENDING,
     )
 
-    def __init__(self, service: Service, client: Blackfish):
+    def __init__(
+        self,
+        service: Service,
+        client: Blackfish,
+        launch_spec: Optional[LaunchSpec] = None,
+    ):
         """Initialize a managed service.
 
         Args:
             service: The underlying Service object
             client: The Blackfish client managing this service
+            launch_spec: The arguments this service was launched with. Set by
+                `launch_service`; required for `restart()` and
+                `ensure_healthy()`, which replay it.
         """
         self._service: Service | None = service
         self._client = client
+        self._launch_spec = launch_spec
 
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying service."""
@@ -410,4 +456,143 @@ class ManagedService:
 
         return _async_to_sync(self.async_wait)(
             timeout=timeout, poll_interval=poll_interval
+        )
+
+    async def async_restart(self) -> Self:
+        """Stop this service and launch a replacement (async).
+
+        The replacement is launched from the spec this service was created
+        with, so the caller does not have to keep those arguments around. This
+        object is repointed at the new service.
+
+        Raises:
+            RuntimeError: if the service was not created by `launch_service`
+                and so has no spec to replay.
+        """
+        spec = self._launch_spec
+        if spec is None:
+            raise RuntimeError(
+                "This service has no launch spec and cannot be restarted."
+                " Only services created by `launch_service` can be restarted."
+            )
+
+        if self._service is not None:
+            try:
+                await self.async_stop()
+            except Exception as e:
+                # The old job may already be gone; that is not a reason to
+                # refuse to launch its replacement.
+                logger.debug(f"Ignoring error while stopping before restart: {e}")
+            try:
+                await self.async_delete()
+            except Exception as e:
+                logger.debug(f"Ignoring error while deleting before restart: {e}")
+
+        replacement = await self._client.async_launch_service(
+            name=spec.name,
+            image=spec.image,  # type: ignore[arg-type]
+            model=spec.model,
+            profile_name=spec.profile_name,
+            container_config=spec.container_config,
+            job_config=spec.job_config,
+            mount=spec.mount,
+            grace_period=spec.grace_period,
+            image_ref=spec.image_ref,
+        )
+
+        # Adopt the replacement so the caller keeps using the same object.
+        self._service = replacement._service
+        return self
+
+    def restart(self) -> Self:
+        """Stop this service and launch a replacement (sync).
+
+        See async_restart for details.
+        """
+        return _async_to_sync(self.async_restart)()
+
+    async def async_ensure_healthy(
+        self,
+        max_restarts: int = 3,
+        timeout: Optional[float] = 300,
+        poll_interval: float = 10,
+    ) -> Self:
+        """Make sure the service is answering, relaunching it if it is not.
+
+        This is the primitive a long-running script needs: the script outlives
+        the scheduler allocation, so it must notice when the service goes away
+        and bring it back.
+
+        `refresh()` is the check. It pings first and only falls back to the
+        scheduler on failure, so the healthy case is cheap, and it re-opens a
+        dropped tunnel — which a bare ping cannot do.
+
+        A queued service is waited on rather than restarted: cancelling and
+        resubmitting would only return it to the back of the queue, so
+        TIMEOUT_PENDING does not consume the restart budget.
+
+        Args:
+            max_restarts: How many relaunches to attempt before giving up
+                (default: 3). Bounds the damage from a model that never loads.
+            timeout: Passed to `wait` after each relaunch.
+            poll_interval: Passed to `wait` after each relaunch.
+
+        Returns:
+            Self, once the service is healthy.
+
+        Raises:
+            RestartLimitExceeded: if the budget is used up.
+
+        Examples:
+            ```pycon
+            >>> for chunk in work:
+            ...     await service.async_ensure_healthy()
+            ...     requests.post(f"{service.url}/v1/completions", ...)
+            ```
+        """
+        restarts = 0
+
+        while True:
+            await self.async_refresh()
+            if self._service is not None and self._service.status == (
+                ServiceStatus.HEALTHY
+            ):
+                return self
+
+            result = await self.async_wait(timeout=timeout, poll_interval=poll_interval)
+            if result.outcome is WaitOutcome.HEALTHY:
+                return self
+
+            if result.outcome is WaitOutcome.TIMEOUT_PENDING:
+                # Still queued. Nothing is wrong, so keep waiting rather than
+                # spending a restart and losing our place in the queue.
+                logger.debug(
+                    "Service is still queued after"
+                    f" {result.elapsed:.0f}s; continuing to wait."
+                )
+                continue
+
+            if restarts >= max_restarts:
+                service_id = self._service.id if self._service is not None else None
+                raise RestartLimitExceeded(service_id, max_restarts)
+
+            restarts += 1
+            logger.warning(
+                f"Service is {result.outcome}; relaunching"
+                f" (attempt {restarts} of {max_restarts})."
+            )
+            await self.async_restart()
+
+    def ensure_healthy(
+        self,
+        max_restarts: int = 3,
+        timeout: Optional[float] = 300,
+        poll_interval: float = 10,
+    ) -> Self:
+        """Make sure the service is answering, relaunching it if not (sync).
+
+        See async_ensure_healthy for details.
+        """
+        return _async_to_sync(self.async_ensure_healthy)(
+            max_restarts=max_restarts, timeout=timeout, poll_interval=poll_interval
         )

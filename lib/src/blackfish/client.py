@@ -54,7 +54,7 @@ from blackfish.server.utils import (
     get_model_dir,
 )
 
-from blackfish.service import ManagedService
+from blackfish.service import LaunchSpec, ManagedService
 from blackfish.server.logger import logger
 from blackfish.utils import _async_to_sync, _spinner
 
@@ -566,7 +566,20 @@ class Blackfish:
             spinner.text = f"Started service: {service.id}"
             spinner.ok(f"{LogSymbols.SUCCESS.value}")
 
-        managed_service = ManagedService(service, self)
+        # Record what this service was launched with so it can relaunch itself.
+        launch_spec = LaunchSpec(
+            name=name,
+            image=image,
+            model=model,
+            profile_name=profile_name,
+            container_config=dict(container_options),
+            job_config=dict(job_options),
+            mount=mount,
+            grace_period=grace_period,
+            image_ref=image_ref,
+        )
+
+        managed_service = ManagedService(service, self, launch_spec=launch_spec)
 
         # Track service for auto-cleanup if enabled
         if auto_cleanup:

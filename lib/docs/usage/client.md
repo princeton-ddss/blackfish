@@ -231,6 +231,63 @@ True
 RuntimeError: This service has been deleted and can no longer be accessed.
 ```
 
+## Supervising a Service
+
+A script that runs longer than its scheduler allocation cannot simply start a
+service and use it: the allocation expires partway through. Asking for an
+allocation long enough to cover the whole script usually means it is never
+scheduled at all.
+
+`ensure_healthy()` is the primitive for this. Call it before each unit of work
+and it brings the service back if it has gone away:
+
+```python
+from openai import OpenAI
+
+service = bf.launch_service(
+    name="llm",
+    image="text_generation",
+    model="meta-llama/Llama-3.3-70B-Instruct",
+    job_config={"time": "04:00:00", "mem": 64, "gres": 1},
+)
+
+for chunk in workload:
+    service.ensure_healthy()
+    client = OpenAI(base_url=f"{service.url}/v1", api_key="EMPTY")
+    process(chunk, client)
+```
+
+The check is cheap when the service is fine: `refresh()` pings the service
+first and only asks the scheduler if the ping fails, so the common case costs
+one local HTTP request. A failed ping falls through to the scheduler, which is
+also what re-opens a tunnel that has dropped.
+
+A service that is merely **queued** is waited on, not restarted. Cancelling and
+resubmitting a pending job would only send it to the back of the queue, so
+waiting is the correct response and does not consume the restart budget.
+
+`max_restarts` bounds how many relaunches are attempted (default 3) so a model
+that never loads cannot burn allocations indefinitely. Exhausting it raises
+`RestartLimitExceeded`:
+
+```python
+from blackfish import RestartLimitExceeded
+
+try:
+    service.ensure_healthy(max_restarts=5)
+except RestartLimitExceeded as e:
+    print(f"Giving up after {e.max_restarts} attempts; check the job logs.")
+```
+
+Restarts replay the arguments the service was launched with, so you do not have
+to keep them in sync yourself. `restart()` is also available directly.
+
+!!! note
+
+    Only services created by `launch_service` can restart themselves. One
+    retrieved with `get_service()` or `list_services()` has no launch spec, so
+    `restart()` and `ensure_healthy()` raise on it.
+
 ## Waiting for a Service
 
 `wait()` blocks until a service becomes healthy and returns a `WaitResult`

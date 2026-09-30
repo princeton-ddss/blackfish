@@ -866,3 +866,173 @@ class TestAutoCleanup:
         err = capsys.readouterr().err
         assert "svc-healthy" in err
         assert "blackfish service stop svc-healthy" in err
+
+
+class TestEnsureHealthy:
+    """Tests for ensure_healthy / restart (#456).
+
+    ensure_healthy is the primitive a long-running script needs: the script
+    outlives the scheduler allocation, so it must notice when the service goes
+    away and bring it back.
+    """
+
+    def _spec(self):
+        from blackfish import LaunchSpec
+
+        return LaunchSpec(
+            name="svc",
+            image="text_generation",
+            model="meta-llama/Llama-3.1-8B-Instruct",
+            job_config={"time": "01:00:00"},
+        )
+
+    def _managed(self, status, *, spec=True):
+        from unittest.mock import MagicMock
+
+        from blackfish import ManagedService
+
+        service = MagicMock()
+        service.status = status
+        service.id = "svc-1"
+        client = MagicMock()
+        client.progress = False
+        return ManagedService(
+            service, client, launch_spec=self._spec() if spec else None
+        )
+
+    async def test_healthy_service_returns_without_restarting(self):
+        """The happy path must not touch the scheduler."""
+        from unittest.mock import AsyncMock, patch
+
+        svc = self._managed(ServiceStatus.HEALTHY)
+        with (
+            patch.object(type(svc), "async_refresh", AsyncMock(return_value=svc)),
+            patch.object(type(svc), "async_restart", AsyncMock()) as restart,
+            patch.object(type(svc), "async_wait", AsyncMock()) as wait,
+        ):
+            result = await svc.async_ensure_healthy()
+
+        assert result is svc
+        restart.assert_not_awaited()
+        wait.assert_not_awaited()
+
+    async def test_pending_service_waits_without_spending_a_restart(self):
+        """A queued job must not be cancelled and resubmitted.
+
+        Restarting would only return it to the back of the queue.
+        """
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import WaitOutcome, WaitResult
+
+        svc = self._managed(ServiceStatus.PENDING)
+        pending = WaitResult(WaitOutcome.TIMEOUT_PENDING, ServiceStatus.PENDING, 30.0)
+        healthy = WaitResult(WaitOutcome.HEALTHY, ServiceStatus.HEALTHY, 60.0)
+
+        with (
+            patch.object(type(svc), "async_refresh", AsyncMock()),
+            patch.object(type(svc), "async_restart", AsyncMock()) as restart,
+            patch.object(
+                type(svc), "async_wait", AsyncMock(side_effect=[pending, healthy])
+            ) as wait,
+        ):
+            await svc.async_ensure_healthy(max_restarts=1)
+
+        restart.assert_not_awaited()
+        assert wait.await_count == 2
+
+    async def test_failed_service_is_restarted(self):
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import WaitOutcome, WaitResult
+
+        svc = self._managed(ServiceStatus.FAILED)
+        failed = WaitResult(WaitOutcome.FAILED, ServiceStatus.FAILED, 5.0)
+        healthy = WaitResult(WaitOutcome.HEALTHY, ServiceStatus.HEALTHY, 60.0)
+
+        with (
+            patch.object(type(svc), "async_refresh", AsyncMock()),
+            patch.object(type(svc), "async_restart", AsyncMock()) as restart,
+            patch.object(
+                type(svc), "async_wait", AsyncMock(side_effect=[failed, healthy])
+            ),
+        ):
+            await svc.async_ensure_healthy(max_restarts=2)
+
+        restart.assert_awaited_once()
+
+    async def test_restart_budget_is_enforced(self):
+        from unittest.mock import AsyncMock, patch
+
+        from blackfish import RestartLimitExceeded, WaitOutcome, WaitResult
+
+        svc = self._managed(ServiceStatus.FAILED)
+        failed = WaitResult(WaitOutcome.FAILED, ServiceStatus.FAILED, 5.0)
+
+        with (
+            patch.object(type(svc), "async_refresh", AsyncMock()),
+            patch.object(type(svc), "async_restart", AsyncMock()) as restart,
+            patch.object(type(svc), "async_wait", AsyncMock(return_value=failed)),
+        ):
+            with pytest.raises(RestartLimitExceeded) as exc:
+                await svc.async_ensure_healthy(max_restarts=2)
+
+        assert restart.await_count == 2
+        assert exc.value.max_restarts == 2
+        assert "svc-1" in str(exc.value)
+
+    async def test_restart_without_a_spec_raises(self):
+        """Only services created by launch_service can relaunch themselves."""
+        svc = self._managed(ServiceStatus.FAILED, spec=False)
+
+        with pytest.raises(RuntimeError, match="no launch spec"):
+            await svc.async_restart()
+
+    async def test_restart_replays_the_stored_spec(self):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        svc = self._managed(ServiceStatus.FAILED)
+        replacement = MagicMock()
+        replacement._service = MagicMock()
+        svc._client.async_launch_service = AsyncMock(return_value=replacement)
+
+        with (
+            patch.object(type(svc), "async_stop", AsyncMock()),
+            patch.object(type(svc), "async_delete", AsyncMock()),
+        ):
+            await svc.async_restart()
+
+        kwargs = svc._client.async_launch_service.await_args.kwargs
+        assert kwargs["name"] == "svc"
+        assert kwargs["model"] == "meta-llama/Llama-3.1-8B-Instruct"
+        assert kwargs["job_config"] == {"time": "01:00:00"}
+        # The object is repointed at the replacement.
+        assert svc._service is replacement._service
+
+    async def test_restart_survives_a_failing_stop(self):
+        """The old job may already be gone; launch the replacement anyway."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        svc = self._managed(ServiceStatus.FAILED)
+        replacement = MagicMock()
+        replacement._service = MagicMock()
+        svc._client.async_launch_service = AsyncMock(return_value=replacement)
+
+        with (
+            patch.object(
+                type(svc), "async_stop", AsyncMock(side_effect=RuntimeError("gone"))
+            ),
+            patch.object(type(svc), "async_delete", AsyncMock()),
+        ):
+            await svc.async_restart()
+
+        svc._client.async_launch_service.assert_awaited_once()
+
+    def test_launch_spec_is_frozen(self):
+        """The spec must not drift after launch."""
+        import dataclasses
+
+        spec = self._spec()
+
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            spec.name = "other"  # type: ignore[misc]

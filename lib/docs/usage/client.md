@@ -15,7 +15,7 @@ We provide synchronous and asynchronous APIs.
 The synchronous API is the simplest way to use Blackfish in Python scripts:
 
 ```python
-from blackfish import Blackfish, ManagedService
+from blackfish import Blackfish, ServiceStatus
 
 # Initialize the client
 bf = Blackfish(debug=True)
@@ -47,7 +47,7 @@ for svc in services:
 
 # Refresh service status
 service.refresh()
-if service.status == "healthy":
+if service.status == ServiceStatus.HEALTHY:
     print("All good!")
 else:
     print("Peanuts.")
@@ -400,7 +400,7 @@ set_logging_level("debug")
 service = bf.get_service(service_id)
 print(f"Status: {service.status}")
 
-job = service._service.get_job(verbose=True)
+job = service.get_job(verbose=True)
 if job:
     print(f"Job state: {job.state}")
 ```
@@ -415,4 +415,4 @@ blackfish init
 
 And verify that the home directory `~/.blackfish` exists.
 
-[^1]: If `auto_cleanup=False`. Otherwise, Blackfish automatically deletes services on shutdown.
+[^1]: On a clean exit, `auto_cleanup=True` (the default) stops and deletes tracked services. A service survives if `auto_cleanup=False`, or if the script exits on an unhandled exception and the service is healthy — see [Cleanup after a crash](#cleanup-after-a-crash).

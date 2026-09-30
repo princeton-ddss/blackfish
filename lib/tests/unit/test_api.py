@@ -277,21 +277,24 @@ class TestLoggingControl:
         with pytest.raises(ValueError, match="Invalid logging level"):
             set_logging_level("trace")
 
-    def test_blackfish_sets_warning_by_default(self):
-        """Test that creating a Blackfish client sets logging to WARNING."""
+    def test_blackfish_leaves_logging_alone(self):
+        """Constructing a client must not reconfigure global logging (#459).
+
+        The client used to call set_logging_level("WARNING") in __init__,
+        silently overriding whatever level the caller had chosen for their
+        own application.
+        """
         from blackfish.server.logger import logger
 
-        # Reset to INFO first
         set_logging_level("INFO")
         for handler in logger.handlers:
             assert handler.level == logging.INFO
 
-        # Create a new client (don't need database for this test)
         _ = Blackfish(home_dir=str(Path(__file__).parent.parent / "tests"))
 
-        # Should now be at WARNING
+        # Still INFO: the caller's choice survives.
         for handler in logger.handlers:
-            assert handler.level == logging.WARNING
+            assert handler.level == logging.INFO
 
 
 class TestWaitResult:
@@ -574,3 +577,87 @@ class TestServiceURL:
 
         with pytest.raises(RuntimeError, match="deleted"):
             _ = svc.url
+
+
+class TestProgressOptIn:
+    """Tests for the progress flag (#459).
+
+    The programmatic interface is silent by default: its primary use is a
+    long-running script under `sbatch`, where a refresh loop would otherwise
+    write thousands of spinner lines into the job's output file.
+    """
+
+    def test_progress_defaults_to_off(self):
+        bf = Blackfish(home_dir=str(Path(__file__).parent.parent / "tests"))
+
+        assert bf.progress is False
+
+    def test_progress_can_be_enabled(self):
+        bf = Blackfish(
+            home_dir=str(Path(__file__).parent.parent / "tests"), progress=True
+        )
+
+        assert bf.progress is True
+
+    def test_spinner_is_a_noop_when_disabled(self):
+        from blackfish.utils import _NullSpinner, _spinner
+
+        with _spinner(False, "working...") as spinner:
+            spinner.text = "still working"
+            spinner.ok("done")
+            spinner.fail("nope")
+
+        assert isinstance(spinner, _NullSpinner)
+
+    def test_spinner_is_a_yaspin_when_enabled(self):
+        from blackfish.utils import _NullSpinner, _spinner
+
+        spinner = _spinner(True, "working...")
+
+        assert not isinstance(spinner, _NullSpinner)
+        assert hasattr(spinner, "ok") and hasattr(spinner, "fail")
+
+    def test_null_spinner_accepts_the_yaspin_calls(self):
+        """The shim must tolerate every call the real spinner sites make."""
+        from blackfish.utils import _NullSpinner
+
+        spinner = _NullSpinner()
+        with spinner as s:
+            s.text = "anything"
+            assert s.ok() is None
+            assert s.ok("with text") is None
+            assert s.fail() is None
+            assert s.fail("with text") is None
+
+    async def test_silent_wait_prints_nothing(self, capsys):
+        """A real wait() on a silent client writes no stdout.
+
+        This is the behaviour the issue is about: a supervision loop polling
+        for hours must not fill a Slurm .out file with progress lines.
+        """
+        from unittest.mock import MagicMock
+
+        service = MagicMock()
+        service.status = ServiceStatus.HEALTHY
+        client = MagicMock()
+        client.progress = False
+        svc = ManagedService(service, client)
+
+        result = await svc.async_wait(timeout=0)
+
+        assert result.outcome is WaitOutcome.HEALTHY
+        assert capsys.readouterr().out == ""
+
+    async def test_enabled_wait_reports_progress(self, capsys):
+        """With progress on, the same call does emit spinner output."""
+        from unittest.mock import MagicMock
+
+        service = MagicMock()
+        service.status = ServiceStatus.HEALTHY
+        client = MagicMock()
+        client.progress = True
+        svc = ManagedService(service, client)
+
+        await svc.async_wait(timeout=0)
+
+        assert capsys.readouterr().out != ""

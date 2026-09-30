@@ -9,11 +9,10 @@ from enum import StrEnum, auto
 from typing import TYPE_CHECKING, Any, Optional, Self
 from uuid import UUID
 
-from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
 from blackfish.server.services.base import ServiceStatus
-from blackfish.utils import _async_to_sync
+from blackfish.utils import _async_to_sync, _spinner
 
 if TYPE_CHECKING:
     from blackfish.server.services.base import Service
@@ -164,7 +163,7 @@ class ManagedService:
         Returns:
             Self for method chaining
         """
-        with yaspin(text="Refreshing service status...") as spinner:
+        with _spinner(self._client.progress, "Refreshing service status...") as spinner:
             async with self._client._session() as session:
                 # Merge the detached service into this session
                 self._service = await session.merge(self._service)
@@ -198,7 +197,7 @@ class ManagedService:
         Returns:
             Self for method chaining
         """
-        with yaspin(text="Stopping service...") as spinner:
+        with _spinner(self._client.progress, "Stopping service...") as spinner:
             async with self._client._session() as session:
                 self._service = await session.merge(self._service)
                 if self._service is not None:
@@ -230,7 +229,7 @@ class ManagedService:
         Returns:
             Self for method chaining
         """
-        with yaspin(text="Closing SSH tunnel...") as spinner:
+        with _spinner(self._client.progress, "Closing SSH tunnel...") as spinner:
             async with self._client._session() as session:
                 self._service = await session.merge(self._service)
                 if self._service is not None:
@@ -261,7 +260,7 @@ class ManagedService:
         if self._service is None:
             raise RuntimeError("self._service is None")
 
-        with yaspin(text="Deleting service...") as spinner:
+        with _spinner(self._client.progress, "Deleting service...") as spinner:
             result = await self._client.async_delete_service(str(self._service.id))
             if result:
                 spinner.text = f"Service deleted: {self._service.id}"
@@ -352,7 +351,9 @@ class ManagedService:
             )
             return _result(outcome, status)
 
-        with yaspin(text="Waiting for service to be healthy...") as spinner:
+        with _spinner(
+            self._client.progress, "Waiting for service to be healthy..."
+        ) as spinner:
             # The cached status is only a snapshot of the last observation, so
             # it is trusted only when already conclusive. Anything else is
             # re-checked against the service before sleeping, so a service that

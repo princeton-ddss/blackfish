@@ -13,7 +13,8 @@ import os
 import time
 from uuid import UUID
 from pathlib import Path
-from typing import Optional, Any, Self, AsyncGenerator
+from dataclasses import asdict
+from typing import Literal, Optional, Any, Self, AsyncGenerator
 from contextlib import asynccontextmanager
 
 import httpx
@@ -56,6 +57,38 @@ from blackfish.server.utils import (
 from blackfish.service import ManagedService
 from blackfish.server.logger import logger
 from blackfish.utils import _async_to_sync, _spinner
+
+
+ServiceImage = Literal["text_generation", "speech_recognition"]
+"""The service images `launch_service` accepts."""
+
+ContainerConfigLike = TextGenerationConfig | SpeechRecognitionConfig | dict[str, Any]
+JobConfigLike = SlurmJobConfig | LocalJobConfig | dict[str, Any]
+
+
+def _as_uuid(service_id: str | UUID) -> UUID:
+    """Accept either spelling of a service id.
+
+    `Service.id` is a UUID, so `bf.stop_service(service.id)` is the natural
+    thing to write; it used to fail inside `UUID()`.
+    """
+    return service_id if isinstance(service_id, UUID) else UUID(service_id)
+
+
+def _as_config_dict(
+    value: Optional[ContainerConfigLike | JobConfigLike],
+) -> dict[str, Any]:
+    """Normalize a config argument to a plain dict.
+
+    Callers may pass a typed config object (whose field names are checked) or
+    a dict (which is not). Both are accepted; the typed objects are simply
+    unpacked here so the rest of the function has one shape to work with.
+    """
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return dict(value)
+    return asdict(value)
 
 
 class Blackfish:
@@ -284,16 +317,16 @@ class Blackfish:
     async def async_launch_service(
         self,
         name: str,
-        image: str,
+        image: ServiceImage,
         model: str,
         profile_name: Optional[str] = None,
-        container_config: Optional[dict[str, Any]] = None,
-        job_config: Optional[dict[str, Any]] = None,
+        container_config: Optional[ContainerConfigLike] = None,
+        job_config: Optional[JobConfigLike] = None,
         mount: Optional[str] = None,
         grace_period: int = config.GRACE_PERIOD,
         image_ref: Optional[str] = None,
         auto_cleanup: bool = True,
-        **kwargs: dict[str, Any],  # BlackfishConfig
+        **kwargs: Any,
     ) -> ManagedService:
         """Create and start a new service (async).
 
@@ -303,10 +336,13 @@ class Blackfish:
             model: Model repository ID (e.g., "meta-llama/Llama-3.3-70B-Instruct")
             profile_name: Name of the profile to use. If None, the configured
                 default profile is used.
-            container_config: Container configuration options. If 'model_dir' and 'revision'
+            container_config: Container configuration, either a typed config
+                (TextGenerationConfig or SpeechRecognitionConfig, whose field
+                names are checked) or a dict. If 'model_dir' and 'revision'
                 are not provided, they will be automatically determined by searching for
                 the model in the profile's cache directories and selecting the latest revision.
-            job_config: Job configuration options (Slurm settings, etc.)
+            job_config: Job configuration, either a typed config (SlurmJobConfig
+                or LocalJobConfig) or a dict of Slurm settings.
             mount: Optional directory to mount
             grace_period: Time in seconds to wait before marking unhealthy
             image_ref: Pin the container image as "repo:tag" (e.g.
@@ -314,7 +350,8 @@ class Blackfish:
                 which is then recorded on the service so restarts reuse it.
             auto_cleanup: If True, automatically stop and delete this service when the
                 Python script exits (default: True)
-            **kwargs: Additional service-specific parameters
+            **kwargs: Additional Service column values. An unknown name raises
+                TypeError rather than being silently ignored.
 
         Returns:
             ManagedService: The created service instance wrapped for easy access
@@ -357,6 +394,18 @@ class Blackfish:
             **kwargs,
         }
 
+        # kwargs flow into the Service constructor, where an unknown key would
+        # be silently dropped: `grace_periodd=600` would raise nothing and have
+        # no effect. Reject typos instead.
+        if kwargs:
+            valid = {c.name for c in Service.__table__.columns}
+            unknown = sorted(set(kwargs) - valid)
+            if unknown:
+                raise TypeError(
+                    f"Unknown service parameter(s): {', '.join(unknown)}."
+                    f" Valid parameters are: {', '.join(sorted(valid))}."
+                )
+
         if isinstance(profile, LocalProfile):
             service_params["host"] = "localhost"
             service_params["provider"] = self.config.CONTAINER_PROVIDER
@@ -369,21 +418,20 @@ class Blackfish:
         service = ServiceClass(**service_params)
 
         # Prepare configs
-        if container_config is None:
-            container_config = {}
-        if job_config is None:
-            job_config = {}
+        # Accept typed config objects as well as dicts; normalize to one shape.
+        container_options = _as_config_dict(container_config)
+        job_options = _as_config_dict(job_config)
 
         # Auto-assign port if not provided
-        if "port" not in container_config or container_config.get("port") is None:
-            container_config["port"] = find_port()
+        if "port" not in container_options or container_options.get("port") is None:
+            container_options["port"] = find_port()
 
         # Auto-populate model_dir and revision if not provided
         needs_model_info = (
-            "model_dir" not in container_config
-            or container_config.get("model_dir") in (None, "")
-            or "revision" not in container_config
-            or container_config.get("revision") in (None, "")
+            "model_dir" not in container_options
+            or container_options.get("model_dir") in (None, "")
+            or "revision" not in container_options
+            or container_options.get("revision") in (None, "")
         )
 
         if needs_model_info:
@@ -397,7 +445,7 @@ class Blackfish:
                 )
 
             # Get or select revision
-            if container_config.get("revision") in (None, ""):
+            if container_options.get("revision") in (None, ""):
                 available_revisions = get_revisions(model, profile)
                 if not available_revisions:
                     raise ValueError(
@@ -406,15 +454,15 @@ class Blackfish:
                         " `blackfish model add`."
                     )
                 revision = get_latest_commit(model, available_revisions)
-                container_config["revision"] = revision
+                container_options["revision"] = revision
                 logger.warning(
                     f"No revision provided. Using latest available commit: {revision}."
                 )
             else:
-                revision = container_config["revision"]
+                revision = container_options["revision"]
 
             # Get model directory
-            if container_config.get("model_dir") in (None, ""):
+            if container_options.get("model_dir") in (None, ""):
                 model_dir = get_model_dir(model, revision, profile)
                 if model_dir is None:
                     raise ValueError(
@@ -423,22 +471,22 @@ class Blackfish:
                         " been moved or there may be a permissions issue. You can"
                         " try re-adding the model using `blackfish model add`."
                     )
-                container_config["model_dir"] = model_dir
+                container_options["model_dir"] = model_dir
 
         # Map image type to config class
         container_cfg: TextGenerationConfig | SpeechRecognitionConfig
         if image == "text_generation":
-            container_cfg = TextGenerationConfig(**container_config)
+            container_cfg = TextGenerationConfig(**container_options)
         elif image == "speech_recognition":
-            container_cfg = SpeechRecognitionConfig(**container_config)
+            container_cfg = SpeechRecognitionConfig(**container_options)
         else:
             raise ValueError(f"Unknown image type: {image}")
 
         job_cfg: JobConfig
         if isinstance(profile, SlurmProfile):
-            job_cfg = SlurmJobConfig(**job_config)
+            job_cfg = SlurmJobConfig(**job_options)
         else:
-            job_cfg = LocalJobConfig(**job_config)
+            job_cfg = LocalJobConfig(**job_options)
 
         # Start the service
         with _spinner(self.progress, "Starting service...") as spinner:
@@ -459,16 +507,16 @@ class Blackfish:
     async def launch_service(
         self,
         name: str,
-        image: str,
+        image: ServiceImage,
         model: str,
         profile_name: Optional[str] = None,
-        container_config: Optional[dict[str, Any]] = None,
-        job_config: Optional[dict[str, Any]] = None,
+        container_config: Optional[ContainerConfigLike] = None,
+        job_config: Optional[JobConfigLike] = None,
         mount: Optional[str] = None,
         grace_period: int = config.GRACE_PERIOD,
         image_ref: Optional[str] = None,
         auto_cleanup: bool = True,
-        **kwargs: dict[str, Any],  # BlackfishConfig
+        **kwargs: Any,
     ) -> ManagedService:
         """Create and start a new service (sync wrapper).
 
@@ -490,7 +538,9 @@ class Blackfish:
             **kwargs,
         )
 
-    async def async_get_service(self, service_id: str) -> Optional[ManagedService]:
+    async def async_get_service(
+        self, service_id: str | UUID
+    ) -> Optional[ManagedService]:
         """Get a service by ID (async).
 
         Args:
@@ -500,7 +550,7 @@ class Blackfish:
             ManagedService instance or None if not found
         """
         async with self._session() as session:
-            query = sa.select(Service).where(Service.id == UUID(service_id))
+            query = sa.select(Service).where(Service.id == _as_uuid(service_id))
             result = await session.execute(query)
             service = result.scalar_one_or_none()
 
@@ -511,7 +561,7 @@ class Blackfish:
             return None
 
     @_async_to_sync
-    async def get_service(self, service_id: str) -> Optional[ManagedService]:
+    async def get_service(self, service_id: str | UUID) -> Optional[ManagedService]:
         """Get a service by ID (sync wrapper).
 
         See async_get_service for details.
@@ -582,7 +632,7 @@ class Blackfish:
 
     async def async_stop_service(
         self,
-        service_id: str,
+        service_id: str | UUID,
         timeout: bool = False,
         failed: bool = False,
     ) -> Optional[ManagedService]:
@@ -614,7 +664,7 @@ class Blackfish:
     @_async_to_sync
     async def stop_service(
         self,
-        service_id: str,
+        service_id: str | UUID,
         timeout: bool = False,
         failed: bool = False,
     ) -> Optional[ManagedService]:
@@ -624,7 +674,7 @@ class Blackfish:
         """
         return await self.async_stop_service(service_id, timeout, failed)
 
-    async def async_delete_service(self, service_id: str) -> bool:
+    async def async_delete_service(self, service_id: str | UUID) -> bool:
         """Delete a service from the database (async).
 
         Note: This only deletes the database record. The service should be
@@ -638,12 +688,12 @@ class Blackfish:
         """
 
         async with self._session() as session:
-            query = sa.delete(Service).where(Service.id == UUID(service_id))
+            query = sa.delete(Service).where(Service.id == _as_uuid(service_id))
             result = await session.execute(query)
             return bool(result.rowcount and result.rowcount > 0)  # type: ignore[attr-defined]
 
     @_async_to_sync
-    async def delete_service(self, service_id: str) -> bool:
+    async def delete_service(self, service_id: str | UUID) -> bool:
         """Delete a service from the database (sync wrapper).
 
         See async_delete_service for details.
@@ -652,7 +702,7 @@ class Blackfish:
 
     async def async_wait_for_service(
         self,
-        service_id: str,
+        service_id: str | UUID,
         target_status: ServiceStatus = ServiceStatus.HEALTHY,
         timeout: float = 300,
         poll_interval: float = 10,
@@ -705,7 +755,7 @@ class Blackfish:
     @_async_to_sync
     async def wait_for_service(
         self,
-        service_id: str,
+        service_id: str | UUID,
         target_status: ServiceStatus = ServiceStatus.HEALTHY,
         timeout: float = 300,
         poll_interval: float = 10,

@@ -2,6 +2,7 @@
 
 import pytest
 import logging
+import sys
 from pathlib import Path
 from collections.abc import AsyncGenerator
 from blackfish import (
@@ -746,3 +747,122 @@ class TestLaunchServiceTyping:
         assert "grace_period" in valid
         assert "grace_periodd" not in valid
         assert {"grace_periodd", "portt"} - valid == {"grace_periodd", "portt"}
+
+
+class TestAutoCleanup:
+    """Tests for auto_cleanup semantics (#460)."""
+
+    @pytest.fixture(autouse=True)
+    def _no_atexit_pollution(self):
+        """Clear tracked services after each test.
+
+        These tests attach mocks to a real client, whose atexit handler would
+        otherwise try to clean them up at interpreter exit and print to stderr.
+        """
+        self._clients: list = []
+        yield
+        for bf in self._clients:
+            bf._managed_services = []
+
+    def _client_with(self, *services):
+        bf = Blackfish(home_dir=str(Path(__file__).parent.parent / "tests"))
+        bf._managed_services = list(services)
+        self._clients.append(bf)
+        return bf
+
+    def _service(self, status, *, stop_fails=False):
+        from unittest.mock import AsyncMock, MagicMock
+
+        managed = MagicMock()
+        managed._service = MagicMock()
+        managed._service.status = status
+        managed._service.id = f"svc-{status}"
+        managed.async_stop = AsyncMock(
+            side_effect=RuntimeError("ssh failed") if stop_fails else None
+        )
+        managed.async_delete = AsyncMock()
+        return managed
+
+    async def test_clean_exit_stops_everything(self):
+        healthy = self._service(ServiceStatus.HEALTHY)
+        bf = self._client_with(healthy)
+
+        kept, stopped, failed = await bf._async_cleanup_services(skip_healthy=False)
+
+        assert stopped == 1
+        assert kept == [] and failed == []
+        healthy.async_stop.assert_awaited_once()
+        healthy.async_delete.assert_awaited_once()
+
+    async def test_crash_keeps_healthy_services(self):
+        """A healthy service survives a crash so the re-run can reuse it."""
+        healthy = self._service(ServiceStatus.HEALTHY)
+        bf = self._client_with(healthy)
+
+        kept, stopped, failed = await bf._async_cleanup_services(skip_healthy=True)
+
+        assert kept == [healthy]
+        assert stopped == 0
+        healthy.async_stop.assert_not_awaited()
+
+    async def test_crash_still_cleans_unhealthy_services(self):
+        """Only healthy services are worth keeping."""
+        unhealthy = self._service(ServiceStatus.UNHEALTHY)
+        bf = self._client_with(unhealthy)
+
+        kept, stopped, failed = await bf._async_cleanup_services(skip_healthy=True)
+
+        assert kept == []
+        assert stopped == 1
+        unhealthy.async_stop.assert_awaited_once()
+
+    async def test_one_failure_does_not_abandon_the_rest(self):
+        """The first failing stop must not skip every remaining service.
+
+        Stopping a Slurm service is an SSH call that can fail at shutdown; if
+        that aborted the loop, later services would leak their allocations.
+        """
+        broken = self._service(ServiceStatus.HEALTHY, stop_fails=True)
+        ok = self._service(ServiceStatus.UNHEALTHY)
+        bf = self._client_with(broken, ok)
+
+        kept, stopped, failed = await bf._async_cleanup_services(skip_healthy=False)
+
+        assert failed == [broken]
+        assert stopped == 1
+        ok.async_stop.assert_awaited_once()
+
+    async def test_deleted_services_are_skipped(self):
+        from unittest.mock import MagicMock
+
+        deleted = MagicMock()
+        deleted._service = None
+        bf = self._client_with(deleted)
+
+        kept, stopped, failed = await bf._async_cleanup_services()
+
+        assert (kept, stopped, failed) == ([], 0, [])
+
+    def test_clean_exit_is_not_detected_as_a_crash(self):
+        bf = self._client_with()
+
+        assert bf._interpreter_is_crashing() is False
+
+    def test_crash_is_detected_from_sys_last_exc(self):
+        from unittest.mock import patch
+
+        bf = self._client_with()
+
+        with patch.object(sys, "last_exc", ValueError("boom"), create=True):
+            assert bf._interpreter_is_crashing() is True
+
+    def test_orphan_report_names_the_stop_command(self, capsys):
+        """A leaked service must be actionable, not just counted."""
+        svc = self._service(ServiceStatus.HEALTHY)
+        bf = self._client_with(svc)
+
+        bf._report_orphans([svc])
+
+        err = capsys.readouterr().err
+        assert "svc-healthy" in err
+        assert "blackfish service stop svc-healthy" in err

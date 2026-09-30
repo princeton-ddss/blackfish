@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from blackfish.client import Blackfish
 from blackfish.service import (
+    LaunchSpec,
     ManagedService,
+    RestartLimitExceeded,
     ServiceNotReachableError,
     WaitOutcome,
     WaitResult,
@@ -14,7 +16,9 @@ from blackfish.server.services.base import Service, ServiceStatus
 
 __all__ = [
     "Blackfish",
+    "LaunchSpec",
     "ManagedService",
+    "RestartLimitExceeded",
     "ServiceNotReachableError",
     "WaitOutcome",
     "WaitResult",

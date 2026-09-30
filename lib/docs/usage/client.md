@@ -124,6 +124,30 @@ In some cases, however, you may want services to outlive your script. To accompl
 bf.launch_service(..., auto_cleanup=False)
 ```
 
+#### Cleanup after a crash
+
+Cleanup distinguishes a clean exit from a crash. If your script exits normally,
+every tracked service is stopped and deleted. If it exits because of an
+unhandled exception, **healthy** services are left running and their ids are
+printed to stderr.
+
+The reasoning is that a script which crashes is likely to be re-run, and a
+healthy service is an asset: destroying it means queueing again for something
+that was working seconds earlier. Services that are not healthy are cleaned up
+either way.
+
+Services left behind this way are yours to manage. The message names each one
+with the command to stop it:
+
+```
+⚠ Blackfish left 1 healthy service(s) running because the script is exiting on an error.
+  - 20054b7c-7600-4c4e-9dde-d893333ca8b1 (still running): blackfish service stop 20054b7c-7600-4c4e-9dde-d893333ca8b1
+```
+
+If a service cannot be stopped — an SSH failure during shutdown, for instance —
+the remaining services are still cleaned up, and the failures are reported the
+same way rather than silently leaving an allocation running.
+
 ### Client
 
 Use context managers for automatic cleanup of the Blackfish client:

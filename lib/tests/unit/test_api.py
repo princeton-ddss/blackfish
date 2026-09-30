@@ -661,3 +661,88 @@ class TestProgressOptIn:
         await svc.async_wait(timeout=0)
 
         assert capsys.readouterr().out != ""
+
+
+class TestLaunchServiceTyping:
+    """Tests for launch_service's argument typing (#474)."""
+
+    def test_config_dict_passes_through(self):
+        from blackfish.client import _as_config_dict
+
+        assert _as_config_dict({"port": 8080}) == {"port": 8080}
+
+    def test_config_none_becomes_empty_dict(self):
+        from blackfish.client import _as_config_dict
+
+        assert _as_config_dict(None) == {}
+
+    def test_typed_container_config_is_accepted(self):
+        """A typed config gets field-name checking the dict form lacks."""
+        from blackfish.client import _as_config_dict
+        from blackfish.server.services.text_generation import TextGenerationConfig
+
+        cfg = TextGenerationConfig(port=8080)
+        result = _as_config_dict(cfg)
+
+        assert result["port"] == 8080
+
+    def test_typed_job_config_is_accepted(self):
+        from blackfish.client import _as_config_dict
+        from blackfish.server.job import SlurmJobConfig
+
+        cfg = SlurmJobConfig(name="my-service", time="01:00:00")
+        result = _as_config_dict(cfg)
+
+        assert result["time"] == "01:00:00"
+
+    def test_config_dict_is_copied_not_mutated(self):
+        """launch_service fills in model_dir/revision; that must not leak back."""
+        from blackfish.client import _as_config_dict
+
+        original = {"port": 8080}
+        result = _as_config_dict(original)
+        result["revision"] = "abc123"
+
+        assert "revision" not in original
+
+    def test_service_id_accepts_a_uuid(self):
+        """`bf.stop_service(service.id)` is the natural thing to write."""
+        from uuid import uuid4
+
+        from blackfish.client import _as_uuid
+
+        sid = uuid4()
+
+        assert _as_uuid(sid) == sid
+
+    def test_service_id_accepts_a_string(self):
+        from uuid import uuid4
+
+        from blackfish.client import _as_uuid
+
+        sid = uuid4()
+
+        assert _as_uuid(str(sid)) == sid
+
+    def test_service_image_literal_lists_the_known_images(self):
+        from typing import get_args
+
+        from blackfish.client import ServiceImage
+
+        assert set(get_args(ServiceImage)) == {
+            "text_generation",
+            "speech_recognition",
+        }
+
+    def test_unknown_kwarg_names_are_rejectable(self):
+        """A misspelled parameter must be detectable, not silently dropped.
+
+        launch_service validates kwargs against Service's columns; this pins
+        the column set it checks against, since a typo like `grace_periodd`
+        previously flowed into the constructor and vanished.
+        """
+        valid = {c.name for c in Service.__table__.columns}
+
+        assert "grace_period" in valid
+        assert "grace_periodd" not in valid
+        assert {"grace_periodd", "portt"} - valid == {"grace_periodd", "portt"}

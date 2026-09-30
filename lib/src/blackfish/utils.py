@@ -62,3 +62,40 @@ def _async_to_sync(async_func: Callable[P, Any]) -> Callable[P, T]:
             return cast(T, asyncio.run(async_func(*args, **kwargs)))
 
     return wrapper
+
+
+class _NullSpinner:
+    """A no-op stand-in for a yaspin spinner.
+
+    Accepts the same calls so progress-reporting code paths do not need to
+    branch on whether progress is enabled.
+    """
+
+    text: str = ""
+
+    def __enter__(self) -> "_NullSpinner":
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        return None
+
+    def ok(self, text: str = "") -> None:
+        return None
+
+    def fail(self, text: str = "") -> None:
+        return None
+
+
+def _spinner(enabled: bool, text: str) -> Any:
+    """Return a yaspin spinner when progress is enabled, else a no-op.
+
+    The programmatic interface is silent by default: its primary use is
+    scripts running non-interactively (e.g. under `sbatch`), where spinner
+    output is noise. Interactive callers opt in with `Blackfish(progress=True)`.
+    """
+    if not enabled:
+        return _NullSpinner()
+
+    from yaspin import yaspin
+
+    return yaspin(text=text)

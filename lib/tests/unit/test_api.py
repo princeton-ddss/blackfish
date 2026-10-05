@@ -277,21 +277,24 @@ class TestLoggingControl:
         with pytest.raises(ValueError, match="Invalid logging level"):
             set_logging_level("trace")
 
-    def test_blackfish_sets_warning_by_default(self):
-        """Test that creating a Blackfish client sets logging to WARNING."""
+    def test_blackfish_leaves_logging_alone(self):
+        """Constructing a client must not reconfigure global logging (#459).
+
+        The client used to call set_logging_level("WARNING") in __init__,
+        silently overriding whatever level the caller had chosen for their
+        own application.
+        """
         from blackfish.server.logger import logger
 
-        # Reset to INFO first
         set_logging_level("INFO")
         for handler in logger.handlers:
             assert handler.level == logging.INFO
 
-        # Create a new client (don't need database for this test)
         _ = Blackfish(home_dir=str(Path(__file__).parent.parent / "tests"))
 
-        # Should now be at WARNING
+        # Still INFO: the caller's choice survives.
         for handler in logger.handlers:
-            assert handler.level == logging.WARNING
+            assert handler.level == logging.INFO
 
 
 class TestWaitResult:
@@ -574,3 +577,217 @@ class TestServiceURL:
 
         with pytest.raises(RuntimeError, match="deleted"):
             _ = svc.url
+
+
+class TestProgressOptIn:
+    """Tests for the progress flag (#459).
+
+    The programmatic interface is silent by default: its primary use is a
+    long-running script under `sbatch`, where a refresh loop would otherwise
+    write thousands of spinner lines into the job's output file.
+    """
+
+    def test_progress_defaults_to_off(self):
+        bf = Blackfish(home_dir=str(Path(__file__).parent.parent / "tests"))
+
+        assert bf.progress is False
+
+    def test_progress_can_be_enabled(self):
+        bf = Blackfish(
+            home_dir=str(Path(__file__).parent.parent / "tests"), progress=True
+        )
+
+        assert bf.progress is True
+
+    def test_spinner_is_a_noop_when_disabled(self):
+        from blackfish.utils import _NullSpinner, _spinner
+
+        with _spinner(False, "working...") as spinner:
+            spinner.text = "still working"
+            spinner.ok("done")
+            spinner.fail("nope")
+
+        assert isinstance(spinner, _NullSpinner)
+
+    def test_spinner_is_a_yaspin_when_enabled(self):
+        from blackfish.utils import _NullSpinner, _spinner
+
+        spinner = _spinner(True, "working...")
+
+        assert not isinstance(spinner, _NullSpinner)
+        assert hasattr(spinner, "ok") and hasattr(spinner, "fail")
+
+    def test_null_spinner_accepts_the_yaspin_calls(self):
+        """The shim must tolerate every call the real spinner sites make."""
+        from blackfish.utils import _NullSpinner
+
+        spinner = _NullSpinner()
+        with spinner as s:
+            s.text = "anything"
+            assert s.ok() is None
+            assert s.ok("with text") is None
+            assert s.fail() is None
+            assert s.fail("with text") is None
+
+    def test_managed_service_reads_progress_from_its_client(self):
+        """A ManagedService holding a real client sees that client's setting.
+
+        The other tests use a mock client, so this pins the actual wiring.
+        """
+        from unittest.mock import MagicMock
+
+        bf = Blackfish(
+            home_dir=str(Path(__file__).parent.parent / "tests"), progress=True
+        )
+        svc = ManagedService(MagicMock(), bf)
+
+        assert svc._client.progress is True
+
+        bf.progress = False
+        assert svc._client.progress is False
+
+    async def test_silent_wait_prints_nothing(self, capsys):
+        """A real wait() on a silent client writes no stdout.
+
+        This is the behaviour the issue is about: a supervision loop polling
+        for hours must not fill a Slurm .out file with progress lines.
+        """
+        from unittest.mock import MagicMock
+
+        service = MagicMock()
+        service.status = ServiceStatus.HEALTHY
+        client = MagicMock()
+        client.progress = False
+        svc = ManagedService(service, client)
+
+        result = await svc.async_wait(timeout=0)
+
+        assert result.outcome is WaitOutcome.HEALTHY
+        assert capsys.readouterr().out == ""
+
+    async def test_enabled_wait_asks_for_a_real_spinner(self):
+        """With progress on, the call path requests a real spinner.
+
+        Asserting on captured stdout instead would depend on yaspin's
+        non-TTY output behaviour, which is not ours to rely on.
+        """
+        from unittest.mock import MagicMock, patch
+
+        service = MagicMock()
+        service.status = ServiceStatus.HEALTHY
+        client = MagicMock()
+        client.progress = True
+        svc = ManagedService(service, client)
+
+        with patch("blackfish.service._spinner") as spinner:
+            spinner.return_value.__enter__ = MagicMock(return_value=MagicMock())
+            spinner.return_value.__exit__ = MagicMock(return_value=None)
+            await svc.async_wait(timeout=0)
+
+        assert spinner.call_args.args[0] is True
+
+
+class TestLaunchServiceTyping:
+    """Tests for launch_service's argument typing (#474)."""
+
+    def test_config_dict_passes_through(self):
+        from blackfish.client import _as_config_dict
+
+        assert _as_config_dict({"port": 8080}) == {"port": 8080}
+
+    def test_config_none_becomes_empty_dict(self):
+        from blackfish.client import _as_config_dict
+
+        assert _as_config_dict(None) == {}
+
+    def test_typed_container_config_is_accepted(self):
+        """A typed config gets field-name checking the dict form lacks."""
+        from blackfish.client import _as_config_dict
+        from blackfish.server.services.text_generation import TextGenerationConfig
+
+        cfg = TextGenerationConfig(port=8080)
+        result = _as_config_dict(cfg)
+
+        assert result["port"] == 8080
+
+    def test_typed_job_config_is_accepted(self):
+        from blackfish.client import _as_config_dict
+        from blackfish.server.job import SlurmJobConfig
+
+        cfg = SlurmJobConfig(name="my-service", time="01:00:00")
+        result = _as_config_dict(cfg)
+
+        assert result["time"] == "01:00:00"
+
+    def test_config_dict_is_copied_not_mutated(self):
+        """launch_service fills in model_dir/revision; that must not leak back."""
+        from blackfish.client import _as_config_dict
+
+        original = {"port": 8080}
+        result = _as_config_dict(original)
+        result["revision"] = "abc123"
+
+        assert "revision" not in original
+
+    def test_service_id_accepts_a_uuid(self):
+        """`bf.stop_service(service.id)` is the natural thing to write."""
+        from uuid import uuid4
+
+        from blackfish.client import _as_uuid
+
+        sid = uuid4()
+
+        assert _as_uuid(sid) == sid
+
+    def test_service_id_accepts_a_string(self):
+        from uuid import uuid4
+
+        from blackfish.client import _as_uuid
+
+        sid = uuid4()
+
+        assert _as_uuid(str(sid)) == sid
+
+    def test_launch_kwargs_survives_both_config_forms(self):
+        """Image-specific server flags reach the job script unchanged.
+
+        launch_kwargs is the escape hatch for options Blackfish does not model
+        (e.g. vLLM flags), so normalization must not drop or mangle it.
+        """
+        from blackfish.client import _as_config_dict
+        from blackfish.server.services.text_generation import TextGenerationConfig
+
+        flags = "--max-model-len 8192 --enable-prefix-caching"
+
+        assert _as_config_dict({"launch_kwargs": flags})["launch_kwargs"] == flags
+
+        typed = TextGenerationConfig(port=8080, launch_kwargs=flags)
+        assert _as_config_dict(typed)["launch_kwargs"] == flags
+
+    def test_service_image_literal_lists_the_known_images(self):
+        from typing import get_args
+
+        from blackfish.client import ServiceImage
+
+        assert set(get_args(ServiceImage)) == {
+            "text_generation",
+            "speech_recognition",
+        }
+
+    def test_unknown_kwargs_raise_from_the_orm(self):
+        """A misspelled parameter raises, and SQLAlchemy is what raises it.
+
+        No validation of our own: the declarative constructor already rejects
+        any name that is not a mapped attribute, and it knows the real rule
+        (mapped attributes, which are not always the column names).
+        """
+        from blackfish.server.services.text_generation import TextGeneration
+
+        base = dict(name="x", model="m", profile="p", host="h")
+
+        with pytest.raises(TypeError, match="grace_periodd"):
+            TextGeneration(**base, grace_periodd=600)
+
+        # Service-specific values that *are* mapped go through fine.
+        svc = TextGeneration(**base, mem=32, gres=1, time="01:00:00")
+        assert (svc.mem, svc.gres, svc.time) == (32, 1, "01:00:00")

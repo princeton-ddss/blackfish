@@ -127,6 +127,12 @@ bf = Blackfish()
 bf.close()
 ```
 
+!!! tip
+
+    The client is silent by default, since its main use is scripts running
+    non-interactively. Pass `Blackfish(progress=True)` to show spinners and
+    progress messages in a notebook or REPL.
+
 ## Service Objects
 
 The `ManagedService` type wraps a `Service` that should always point to a service that is tracked by the Blackfish database. This means that Blackfish will not lose track of your service even if your Python session crashes[^1]. You can access the internal service's attributes exactly as if you were working with the underlying `Service`:
@@ -185,6 +191,56 @@ True
 >>> service.id
 RuntimeError: This service has been deleted and can no longer be accessed.
 ```
+
+## Image-Specific Options
+
+`container_config` carries options for the container itself, as opposed to
+`job_config`, which carries scheduler resources. Its fields depend on the
+image, so it takes that image's config object:
+
+```python
+from blackfish import Blackfish
+from blackfish.server.services.text_generation import TextGenerationConfig
+
+service = bf.launch_service(
+    name="llm",
+    image="text_generation",
+    model="meta-llama/Llama-3.3-70B-Instruct",
+    container_config=TextGenerationConfig(revision="abc123"),
+)
+```
+
+A plain dict works too; the config object is preferable because its field
+names are checked.
+
+### Passing flags straight to the server
+
+Blackfish does not wrap every option of every inference server. To set one it
+does not model, put it in `launch_kwargs`, which is appended verbatim to the
+server's command line in the job script:
+
+```python
+container_config=TextGenerationConfig(
+    launch_kwargs="--max-model-len 8192 --enable-prefix-caching",
+)
+```
+
+Text generation runs vLLM, so these are
+[vLLM server flags](https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html).
+This is the programmatic equivalent of passing extra arguments to
+`blackfish run text-generation`, which collects them into the same field.
+
+!!! warning
+
+    `launch_kwargs` is passed through unvalidated, so a flag the server does
+    not recognize will fail when the job starts rather than when you call
+    `launch_service`. Check the job's logs if a service never becomes healthy
+    after adding one.
+
+!!! note
+
+    Set an API key with the `api_key` field rather than through
+    `launch_kwargs`, so Blackfish can attach it when proxying requests.
 
 ## Waiting for a Service
 

@@ -275,11 +275,12 @@ class Blackfish:
         _async_to_sync(self._async_close)()
 
     def _cleanup_services(self) -> None:
-        """Clean up all tracked services on script exit.
+        """Stop and delete tracked services on interpreter exit.
 
-        This method is registered with atexit. It stops and deletes all services that were created during the session.
-
-        Errors are silently ignored to prevent issues during interpreter shutdown.
+        Registered with atexit. Services hold expensive external resources, so
+        tying their lifetime to the script prevents forgotten GPU allocations.
+        Use `auto_cleanup=False` at launch for a service that should outlive
+        the script.
         """
         if not self._managed_services:
             return
@@ -290,29 +291,120 @@ class Blackfish:
         )
 
         try:
-            # Create a new event loop in case default is closed during shutdown
+            # A new event loop, in case the default one is already closed.
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                loop.run_until_complete(self._async_cleanup_services())
-                print(
-                    f"{LogSymbols.SUCCESS.value} Blackfish cleanup completed!",
-                    file=sys.stderr,
+                stopped, undeleted, failed = loop.run_until_complete(
+                    self._async_cleanup_services()
                 )
             finally:
                 loop.close()
         except Exception as e:
+            # Last resort: cleanup could not run at all, so nothing was stopped.
             print(
                 f"{LogSymbols.ERROR.value} Blackfish cleanup failed: {e}",
                 file=sys.stderr,
             )
+            self._report_orphans(
+                [(m, None) for m in self._managed_services],
+                reason="may still be running",
+                command="stop",
+            )
+            return
 
-    async def _async_cleanup_services(self) -> None:
-        """Async implementation of cleanup for all tracked services."""
-        for service in self._managed_services:
-            if service._service is not None:
-                await service.async_stop()
-                await service.async_delete()
+        if stopped:
+            print(
+                f"{LogSymbols.SUCCESS.value} Blackfish stopped {stopped} service(s).",
+                file=sys.stderr,
+            )
+        if undeleted:
+            # The job was cancelled, so no allocation is leaking; only the
+            # database record remains.
+            print(
+                f"{LogSymbols.WARNING.value} Blackfish stopped"
+                f" {len(undeleted)} service(s) but could not remove their records.",
+                file=sys.stderr,
+            )
+            self._report_orphans(
+                undeleted, reason="stopped; record remains", command="rm"
+            )
+        if failed:
+            print(
+                f"{LogSymbols.ERROR.value} Blackfish could not stop"
+                f" {len(failed)} service(s).",
+                file=sys.stderr,
+            )
+            self._report_orphans(failed, reason="may still be running", command="stop")
+
+    @staticmethod
+    def _report_orphans(
+        services: list[tuple[ManagedService, Optional[BaseException]]],
+        reason: str,
+        command: str,
+    ) -> None:
+        """Name services the caller has to deal with, and how."""
+        for managed, error in services:
+            service = managed._service
+            if service is None:
+                continue
+            detail = f" [{type(error).__name__}: {error}]" if error is not None else ""
+            print(
+                f"  - {service.id} ({reason}):"
+                f" blackfish {command} {service.id}{detail}",
+                file=sys.stderr,
+            )
+
+    async def _async_cleanup_services(
+        self,
+    ) -> tuple[
+        int,
+        list[tuple[ManagedService, Optional[BaseException]]],
+        list[tuple[ManagedService, Optional[BaseException]]],
+    ]:
+        """Stop and delete each tracked service.
+
+        Each service is handled independently: stopping a Slurm service means
+        SSH to the login node, which can fail during shutdown (a dropped
+        network, an expired Kerberos ticket). One failure must not abandon the
+        rest, or a `scancel` that never ran leaves an allocation burning
+        GPU-hours until it hits its own time limit.
+
+        Stopping and deleting are tracked separately because they fail
+        differently: a failed stop may leave an allocation running, while a
+        failed delete only leaves a database record behind.
+
+        Returns:
+            How many services were fully cleaned up; the ones stopped but not
+            deleted; and the ones that could not be stopped, each paired with
+            the error that stopped us.
+        """
+        stopped = 0
+        undeleted: list[tuple[ManagedService, Optional[BaseException]]] = []
+        failed: list[tuple[ManagedService, Optional[BaseException]]] = []
+
+        for managed in self._managed_services:
+            service = managed._service
+            if service is None:
+                continue
+
+            try:
+                await managed.async_stop()
+            except Exception as e:
+                logger.debug(f"Failed to stop service {service.id}: {e}")
+                failed.append((managed, e))
+                continue
+
+            try:
+                await managed.async_delete()
+            except Exception as e:
+                logger.debug(f"Failed to delete service {service.id}: {e}")
+                undeleted.append((managed, e))
+                continue
+
+            stopped += 1
+
+        return stopped, undeleted, failed
 
     async def async_launch_service(
         self,

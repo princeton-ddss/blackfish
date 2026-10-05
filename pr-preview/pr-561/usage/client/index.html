@@ -2074,9 +2074,8 @@ parameter and return type, see the generated
 <p>Every tracked service is stopped and deleted on exit, including when the script
 exits because of an error. Use <code>auto_cleanup=False</code> for a service that should
 outlive the script.</p>
-<p>Each service is handled independently, so one failure does not abandon the
-rest — a dropped network or an expired Kerberos ticket at shutdown would
-otherwise leave later services' allocations running. Anything that could not be
+<p>Stopping a service can fail, and each one is handled independently so that a
+single failure does not leave the rest running. Anything that could not be
 cleaned up is named on stderr with the command to deal with it:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>🧹 Blackfish cleaning up 2 service(s)...
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>✖ Blackfish could not stop 1 service(s).

@@ -791,3 +791,143 @@ class TestLaunchServiceTyping:
         # Service-specific values that *are* mapped go through fine.
         svc = TextGeneration(**base, mem=32, gres=1, time="01:00:00")
         assert (svc.mem, svc.gres, svc.time) == (32, 1, "01:00:00")
+
+
+class TestAutoCleanup:
+    """Tests for atexit cleanup of tracked services (#460)."""
+
+    @pytest.fixture(autouse=True)
+    def _no_atexit_pollution(self):
+        """Clear tracked services after each test.
+
+        These tests attach mocks to a real client, whose atexit handler would
+        otherwise try to clean them up at interpreter exit and print to stderr.
+        """
+        self._clients: list = []
+        yield
+        for bf in self._clients:
+            bf._managed_services = []
+
+    def _client_with(self, *services):
+        bf = Blackfish(home_dir=str(Path(__file__).parent.parent / "tests"))
+        bf._managed_services = list(services)
+        self._clients.append(bf)
+        return bf
+
+    def _service(self, service_id="svc-1", *, stop_fails=False, delete_fails=False):
+        from unittest.mock import AsyncMock, MagicMock
+
+        managed = MagicMock()
+        managed._service = MagicMock()
+        managed._service.id = service_id
+        managed.async_stop = AsyncMock(
+            side_effect=RuntimeError("ssh failed") if stop_fails else None
+        )
+        managed.async_delete = AsyncMock(
+            side_effect=RuntimeError("db locked") if delete_fails else None
+        )
+        return managed
+
+    async def test_services_are_stopped_and_deleted(self):
+        svc = self._service()
+        bf = self._client_with(svc)
+
+        stopped, undeleted, failed = await bf._async_cleanup_services()
+
+        assert (stopped, undeleted, failed) == (1, [], [])
+        svc.async_stop.assert_awaited_once()
+        svc.async_delete.assert_awaited_once()
+
+    async def test_one_failure_does_not_abandon_the_rest(self):
+        """The first failing stop must not skip every remaining service.
+
+        Stopping a Slurm service is an SSH call that can fail at shutdown; if
+        that aborted the loop, later services would leak their allocations.
+        """
+        broken = self._service("svc-broken", stop_fails=True)
+        ok = self._service("svc-ok")
+        bf = self._client_with(broken, ok)
+
+        stopped, undeleted, failed = await bf._async_cleanup_services()
+
+        assert stopped == 1
+        assert [m for m, _ in failed] == [broken]
+        ok.async_stop.assert_awaited_once()
+
+    async def test_a_failed_delete_is_not_reported_as_still_running(self):
+        """A stopped-but-undeleted service released its allocation.
+
+        Telling the user to stop it again would be wrong; only its database
+        record remains.
+        """
+        svc = self._service(delete_fails=True)
+        bf = self._client_with(svc)
+
+        stopped, undeleted, failed = await bf._async_cleanup_services()
+
+        assert stopped == 0
+        assert failed == []
+        assert [m for m, _ in undeleted] == [svc]
+        svc.async_stop.assert_awaited_once()
+
+    async def test_the_failure_reason_is_captured(self):
+        """The exception is the actionable detail, so it must not be swallowed."""
+        svc = self._service(stop_fails=True)
+        bf = self._client_with(svc)
+
+        _, _, failed = await bf._async_cleanup_services()
+
+        assert isinstance(failed[0][1], RuntimeError)
+        assert "ssh failed" in str(failed[0][1])
+
+    async def test_deleted_services_are_skipped(self):
+        from unittest.mock import MagicMock
+
+        deleted = MagicMock()
+        deleted._service = None
+        bf = self._client_with(deleted)
+
+        assert await bf._async_cleanup_services() == (0, [], [])
+
+    def test_cleanup_runs_the_loop_and_reports(self, capsys):
+        """The atexit entry point wires through to the async implementation.
+
+        Not an async test: _cleanup_services creates its own event loop with
+        run_until_complete, which raises inside a running one.
+        """
+        svc = self._service()
+        bf = self._client_with(svc)
+
+        bf._cleanup_services()
+
+        err = capsys.readouterr().err
+        assert "cleaning up 1 service(s)" in err
+        assert "stopped 1 service(s)" in err
+        svc.async_stop.assert_awaited_once()
+        svc.async_delete.assert_awaited_once()
+
+    def test_report_names_a_real_command_per_outcome(self, capsys):
+        """An orphan report is only useful if the command it prints exists.
+
+        `blackfish stop` releases the allocation; `blackfish rm` removes the
+        record. There is no `blackfish service stop`.
+        """
+        cannot_stop = self._service("svc-stuck", stop_fails=True)
+        cannot_delete = self._service("svc-undeleted", delete_fails=True)
+        bf = self._client_with(cannot_stop, cannot_delete)
+
+        bf._cleanup_services()
+
+        err = capsys.readouterr().err
+        assert "blackfish stop svc-stuck" in err
+        assert "blackfish rm svc-undeleted" in err
+        assert "blackfish service stop" not in err
+        # The failure reason reaches the user rather than only the debug log.
+        assert "ssh failed" in err
+
+    def test_nothing_is_printed_when_there_is_nothing_to_clean(self, capsys):
+        bf = self._client_with()
+
+        bf._cleanup_services()
+
+        assert capsys.readouterr().err == ""

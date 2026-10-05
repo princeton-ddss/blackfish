@@ -103,6 +103,29 @@ In some cases, however, you may want services to outlive your script. To accompl
 bf.launch_service(..., auto_cleanup=False)
 ```
 
+#### When cleanup cannot finish
+
+Every tracked service is stopped and deleted on exit, including when the script
+exits because of an error. Use `auto_cleanup=False` for a service that should
+outlive the script.
+
+Stopping a service can fail, and each one is handled independently so that a
+single failure does not leave the rest running. Anything that could not be
+cleaned up is named on stderr with the command to deal with it:
+
+```
+🧹 Blackfish cleaning up 2 service(s)...
+✖ Blackfish could not stop 1 service(s).
+  - 20054b7c-… (may still be running): blackfish stop 20054b7c-… [SSHError: connection closed]
+⚠ Blackfish stopped 1 service(s) but could not remove their records.
+  - 5f2c91ab-… (stopped; record remains): blackfish rm 5f2c91ab-…
+```
+
+The two are different problems. A service that could not be **stopped** may
+still be holding an allocation, so `blackfish stop` is the fix. A service that
+was stopped but not **deleted** has already released its allocation; only its
+database record is left, which `blackfish rm` removes.
+
 ### Client
 
 Use context managers for automatic cleanup of the Blackfish client:

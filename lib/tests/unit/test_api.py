@@ -748,6 +748,22 @@ class TestLaunchServiceTyping:
 
         assert _as_uuid(str(sid)) == sid
 
+    def test_launch_kwargs_survives_both_config_forms(self):
+        """Image-specific server flags reach the job script unchanged.
+
+        launch_kwargs is the escape hatch for options Blackfish does not model
+        (e.g. vLLM flags), so normalization must not drop or mangle it.
+        """
+        from blackfish.client import _as_config_dict
+        from blackfish.server.services.text_generation import TextGenerationConfig
+
+        flags = "--max-model-len 8192 --enable-prefix-caching"
+
+        assert _as_config_dict({"launch_kwargs": flags})["launch_kwargs"] == flags
+
+        typed = TextGenerationConfig(port=8080, launch_kwargs=flags)
+        assert _as_config_dict(typed)["launch_kwargs"] == flags
+
     def test_service_image_literal_lists_the_known_images(self):
         from typing import get_args
 

@@ -1316,17 +1316,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#blackfish.client.ServiceImage" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        ServiceImage
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#blackfish.client.Blackfish" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1568,6 +1557,17 @@
   
     <nav class="md-nav" aria-label="service">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#blackfish.service.ServiceImage" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ServiceImage
+      </span>
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#blackfish.service.LaunchSpec" class="md-nav__link">
@@ -2105,17 +2105,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#blackfish.client.ServiceImage" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        ServiceImage
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#blackfish.client.Blackfish" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2357,6 +2346,17 @@
   
     <nav class="md-nav" aria-label="service">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#blackfish.service.ServiceImage" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        ServiceImage
+      </span>
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#blackfish.service.LaunchSpec" class="md-nav__link">
@@ -2895,28 +2895,6 @@
 
 
 
-<div class="doc doc-object doc-attribute">
-
-
-
-<h3 id="blackfish.client.ServiceImage" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">ServiceImage</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">'text_generation'</span><span class="p">,</span> <span class="s1">'speech_recognition'</span><span class="p">]</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-</h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>The service images <code>launch_service</code> accepts.</p>
-
-    </div>
-
-</div>
-
 
 
 <div class="doc doc-object doc-class">
@@ -3332,7 +3310,7 @@ stopped first using stop_service().</p>
 
   
       module-attribute
-   (blackfish.client.ServiceImage)" href="./#blackfish.client.ServiceImage">ServiceImage</a></code>)
+   (blackfish.service.ServiceImage)" href="./#blackfish.service.ServiceImage">ServiceImage</a></code>)
           –
           <div class="doc-md-description">
             <p>Service image type (e.g., "text_generation", "speech_recognition")</p>
@@ -3914,6 +3892,28 @@ or model files cannot be located.</p>
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="blackfish.service.ServiceImage" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">ServiceImage</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">'text_generation'</span><span class="p">,</span> <span class="s1">'speech_recognition'</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The service images <code>launch_service</code> accepts.</p>
+
+    </div>
+
+</div>
+
 
 
 <div class="doc doc-object doc-class">
@@ -4248,7 +4248,10 @@ scheduler on failure, so the healthy case is cheap, and it re-opens a
 dropped tunnel — which a bare ping cannot do.</p>
 <p>A queued service is waited on rather than restarted: cancelling and
 resubmitting would only return it to the back of the queue, so
-TIMEOUT_PENDING does not consume the restart budget.</p>
+TIMEOUT_PENDING does not consume the restart budget. Note that this
+means a job which never leaves the queue is waited on indefinitely —
+<code>timeout</code> bounds each individual wait, not the call as a whole. Any
+other non-healthy outcome counts against <code>max_restarts</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4375,6 +4378,10 @@ TIMEOUT_PENDING does not consume the restart budget.</p>
 <p>The replacement is launched from the spec this service was created
 with, so the caller does not have to keep those arguments around. This
 object is repointed at the new service.</p>
+<p>The old service is stopped first but its record is removed only once the
+replacement is running: if the launch fails, the failed job's record and
+logs are still there to inspect, and this object remains usable so the
+caller can retry.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

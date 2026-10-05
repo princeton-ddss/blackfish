@@ -2240,7 +2240,9 @@ one local HTTP request. A failed ping falls through to the scheduler, which is
 also what re-opens a tunnel that has dropped.</p>
 <p>A service that is merely <strong>queued</strong> is waited on, not restarted. Cancelling and
 resubmitting a pending job would only send it to the back of the queue, so
-waiting is the correct response and does not consume the restart budget.</p>
+waiting is the correct response and does not consume the restart budget. This
+means a job that never leaves the queue is waited on indefinitely: <code>timeout</code>
+bounds each individual check, not the <code>ensure_healthy()</code> call as a whole.</p>
 <p><code>max_restarts</code> bounds how many relaunches are attempted (default 3) so a model
 that never loads cannot burn allocations indefinitely. Exhausting it raises
 <code>RestartLimitExceeded</code>:</p>

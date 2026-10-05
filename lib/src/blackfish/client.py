@@ -25,7 +25,6 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 from litestar.datastructures import State
-from yaspin import yaspin
 from log_symbols.symbols import LogSymbols
 
 from blackfish.server.config import DEFAULT_DEBUG, BlackfishConfig, config
@@ -55,7 +54,8 @@ from blackfish.server.utils import (
 )
 
 from blackfish.service import ManagedService
-from blackfish.utils import _async_to_sync, set_logging_level
+from blackfish.server.logger import logger
+from blackfish.utils import _async_to_sync, _spinner
 
 
 class Blackfish:
@@ -101,6 +101,7 @@ class Blackfish:
         debug: Optional[bool] = None,
         auth_token: Optional[str] = None,
         config: Optional[BlackfishConfig] = None,
+        progress: bool = False,
     ):
         """Initialize the Blackfish client.
 
@@ -117,6 +118,10 @@ class Blackfish:
             auth_token: Authentication token (optional)
             config: Optional BlackfishConfig instance for advanced configuration.
                    Individual parameters will override config values if provided.
+            progress: Print spinners and progress messages (default: False).
+                Useful in a notebook or REPL; leave off for scripts, where the
+                output is noise. Read at call time, so assigning to
+                `bf.progress` later affects services already created.
 
         Examples:
             Simple usage:
@@ -178,8 +183,7 @@ class Blackfish:
         self._managed_services: list[ManagedService] = []
         atexit.register(self._cleanup_services)
 
-        # Set logging level to WARNING by default for cleaner programmatic interface
-        set_logging_level("WARNING")
+        self.progress = progress
 
     @property
     def home_dir(self) -> str:
@@ -386,11 +390,6 @@ class Blackfish:
             # Check if model is available
             available_models = get_models(profile)
             if model not in available_models:
-                error_msg = (
-                    f"{LogSymbols.ERROR.value} Model {model} is unavailable for profile "
-                    f"'{profile_name}'. You can try adding it using `blackfish model add`."
-                )
-                print(error_msg)
                 raise ValueError(
                     f"Model '{model}' is not available for profile '{profile_name}'. "
                     f"Available models: {', '.join(available_models) if available_models else 'none'}. "
@@ -401,19 +400,15 @@ class Blackfish:
             if container_config.get("revision") in (None, ""):
                 available_revisions = get_revisions(model, profile)
                 if not available_revisions:
-                    error_msg = (
-                        f"{LogSymbols.ERROR.value} No revisions found for model '{model}' "
-                        f"in profile '{profile_name}'."
-                    )
-                    print(error_msg)
                     raise ValueError(
-                        f"No revisions found for model '{model}' in profile '{profile_name}'."
+                        f"No revisions found for model '{model}' in profile"
+                        f" '{profile_name}'. You can try adding it using"
+                        " `blackfish model add`."
                     )
                 revision = get_latest_commit(model, available_revisions)
                 container_config["revision"] = revision
-                print(
-                    f"{LogSymbols.WARNING.value} No revision provided. Using latest "
-                    f"available commit: {revision}."
+                logger.warning(
+                    f"No revision provided. Using latest available commit: {revision}."
                 )
             else:
                 revision = container_config["revision"]
@@ -422,16 +417,11 @@ class Blackfish:
             if container_config.get("model_dir") in (None, ""):
                 model_dir = get_model_dir(model, revision, profile)
                 if model_dir is None:
-                    error_msg = (
-                        f"{LogSymbols.ERROR.value} The model directory for repo {model}[{revision}] "
-                        f"could not be found for profile '{profile_name}'. These files may have been "
-                        "moved or there may be an issue with permissions. You can try adding the model "
-                        "using `blackfish model add`."
-                    )
-                    print(error_msg)
                     raise ValueError(
-                        f"Could not find model directory for '{model}' [{revision}] in profile '{profile_name}'. "
-                        "The model files may have been moved or there may be a permissions issue."
+                        f"Could not find model directory for '{model}' [{revision}]"
+                        f" in profile '{profile_name}'. The model files may have"
+                        " been moved or there may be a permissions issue. You can"
+                        " try re-adding the model using `blackfish model add`."
                     )
                 container_config["model_dir"] = model_dir
 
@@ -451,7 +441,7 @@ class Blackfish:
             job_cfg = LocalJobConfig(**job_config)
 
         # Start the service
-        with yaspin(text="Starting service...") as spinner:
+        with _spinner(self.progress, "Starting service...") as spinner:
             async with self._session() as session:
                 await service.start(session, self._state, container_cfg, job_cfg)
             spinner.text = f"Started service: {service.id}"

@@ -127,6 +127,12 @@ bf = Blackfish()
 bf.close()
 ```
 
+!!! tip
+
+    The client is silent by default, since its main use is scripts running
+    non-interactively. Pass `Blackfish(progress=True)` to show spinners and
+    progress messages in a notebook or REPL.
+
 ## Service Objects
 
 The `ManagedService` type wraps a `Service` that should always point to a service that is tracked by the Blackfish database. This means that Blackfish will not lose track of your service even if your Python session crashes[^1]. You can access the internal service's attributes exactly as if you were working with the underlying `Service`:

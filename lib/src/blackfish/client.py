@@ -120,7 +120,8 @@ class Blackfish:
                    Individual parameters will override config values if provided.
             progress: Print spinners and progress messages (default: False).
                 Useful in a notebook or REPL; leave off for scripts, where the
-                output is noise.
+                output is noise. Read at call time, so assigning to
+                `bf.progress` later affects services already created.
 
         Examples:
             Simple usage:
@@ -400,7 +401,9 @@ class Blackfish:
                 available_revisions = get_revisions(model, profile)
                 if not available_revisions:
                     raise ValueError(
-                        f"No revisions found for model '{model}' in profile '{profile_name}'."
+                        f"No revisions found for model '{model}' in profile"
+                        f" '{profile_name}'. You can try adding it using"
+                        " `blackfish model add`."
                     )
                 revision = get_latest_commit(model, available_revisions)
                 container_config["revision"] = revision
@@ -415,8 +418,10 @@ class Blackfish:
                 model_dir = get_model_dir(model, revision, profile)
                 if model_dir is None:
                     raise ValueError(
-                        f"Could not find model directory for '{model}' [{revision}] in profile '{profile_name}'. "
-                        "The model files may have been moved or there may be a permissions issue."
+                        f"Could not find model directory for '{model}' [{revision}]"
+                        f" in profile '{profile_name}'. The model files may have"
+                        " been moved or there may be a permissions issue. You can"
+                        " try re-adding the model using `blackfish model add`."
                     )
                 container_config["model_dir"] = model_dir
 

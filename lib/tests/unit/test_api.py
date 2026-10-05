@@ -629,6 +629,23 @@ class TestProgressOptIn:
             assert s.fail() is None
             assert s.fail("with text") is None
 
+    def test_managed_service_reads_progress_from_its_client(self):
+        """A ManagedService holding a real client sees that client's setting.
+
+        The other tests use a mock client, so this pins the actual wiring.
+        """
+        from unittest.mock import MagicMock
+
+        bf = Blackfish(
+            home_dir=str(Path(__file__).parent.parent / "tests"), progress=True
+        )
+        svc = ManagedService(MagicMock(), bf)
+
+        assert svc._client.progress is True
+
+        bf.progress = False
+        assert svc._client.progress is False
+
     async def test_silent_wait_prints_nothing(self, capsys):
         """A real wait() on a silent client writes no stdout.
 
@@ -648,9 +665,13 @@ class TestProgressOptIn:
         assert result.outcome is WaitOutcome.HEALTHY
         assert capsys.readouterr().out == ""
 
-    async def test_enabled_wait_reports_progress(self, capsys):
-        """With progress on, the same call does emit spinner output."""
-        from unittest.mock import MagicMock
+    async def test_enabled_wait_asks_for_a_real_spinner(self):
+        """With progress on, the call path requests a real spinner.
+
+        Asserting on captured stdout instead would depend on yaspin's
+        non-TTY output behaviour, which is not ours to rely on.
+        """
+        from unittest.mock import MagicMock, patch
 
         service = MagicMock()
         service.status = ServiceStatus.HEALTHY
@@ -658,6 +679,9 @@ class TestProgressOptIn:
         client.progress = True
         svc = ManagedService(service, client)
 
-        await svc.async_wait(timeout=0)
+        with patch("blackfish.service._spinner") as spinner:
+            spinner.return_value.__enter__ = MagicMock(return_value=MagicMock())
+            spinner.return_value.__exit__ = MagicMock(return_value=None)
+            await svc.async_wait(timeout=0)
 
-        assert capsys.readouterr().out != ""
+        assert spinner.call_args.args[0] is True

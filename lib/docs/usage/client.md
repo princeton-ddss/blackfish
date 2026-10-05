@@ -91,27 +91,6 @@ async def main():
 asyncio.run(main())
 ```
 
-## Progress Output
-
-The Python API is silent by default. Its primary use is a long-running script
-that supervises its own service, often under `sbatch`, where a polling loop
-would otherwise write thousands of progress lines into the job's output file.
-
-In a notebook or REPL, where watching a service start is useful, opt in:
-
-```python
-bf = Blackfish(progress=True)
-```
-
-Every service created by that client reports progress for `launch_service`,
-`wait`, `refresh`, `stop`, `close_tunnel` and `delete`.
-
-!!! note
-
-    Creating a client does not change your logging configuration. Use
-    `set_logging_level()` to control Blackfish's log output, independently of
-    the `progress` setting.
-
 ## Resource Management
 
 ### Services
@@ -147,6 +126,12 @@ bf = Blackfish()
 # ... do work ...
 bf.close()
 ```
+
+!!! tip
+
+    The client is silent by default, since its main use is scripts running
+    non-interactively. Pass `Blackfish(progress=True)` to show spinners and
+    progress messages in a notebook or REPL.
 
 ## Service Objects
 

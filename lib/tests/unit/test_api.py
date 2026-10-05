@@ -758,15 +758,20 @@ class TestLaunchServiceTyping:
             "speech_recognition",
         }
 
-    def test_unknown_kwarg_names_are_rejectable(self):
-        """A misspelled parameter must be detectable, not silently dropped.
+    def test_unknown_kwargs_raise_from_the_orm(self):
+        """A misspelled parameter raises, and SQLAlchemy is what raises it.
 
-        launch_service validates kwargs against Service's columns; this pins
-        the column set it checks against, since a typo like `grace_periodd`
-        previously flowed into the constructor and vanished.
+        No validation of our own: the declarative constructor already rejects
+        any name that is not a mapped attribute, and it knows the real rule
+        (mapped attributes, which are not always the column names).
         """
-        valid = {c.name for c in Service.__table__.columns}
+        from blackfish.server.services.text_generation import TextGeneration
 
-        assert "grace_period" in valid
-        assert "grace_periodd" not in valid
-        assert {"grace_periodd", "portt"} - valid == {"grace_periodd", "portt"}
+        base = dict(name="x", model="m", profile="p", host="h")
+
+        with pytest.raises(TypeError, match="grace_periodd"):
+            TextGeneration(**base, grace_periodd=600)
+
+        # Service-specific values that *are* mapped go through fine.
+        svc = TextGeneration(**base, mem=32, gres=1, time="01:00:00")
+        assert (svc.mem, svc.gres, svc.time) == (32, 1, "01:00:00")

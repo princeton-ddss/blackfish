@@ -350,8 +350,9 @@ class Blackfish:
                 which is then recorded on the service so restarts reuse it.
             auto_cleanup: If True, automatically stop and delete this service when the
                 Python script exits (default: True)
-            **kwargs: Additional Service column values. An unknown name raises
-                TypeError rather than being silently ignored.
+            **kwargs: Additional values passed to the Service constructor,
+                which raises TypeError for any name that is not a mapped
+                attribute.
 
         Returns:
             ManagedService: The created service instance wrapped for easy access
@@ -393,18 +394,6 @@ class Blackfish:
             "image_ref": image_ref,
             **kwargs,
         }
-
-        # kwargs flow into the Service constructor, where an unknown key would
-        # be silently dropped: `grace_periodd=600` would raise nothing and have
-        # no effect. Reject typos instead.
-        if kwargs:
-            valid = {c.name for c in Service.__table__.columns}
-            unknown = sorted(set(kwargs) - valid)
-            if unknown:
-                raise TypeError(
-                    f"Unknown service parameter(s): {', '.join(unknown)}."
-                    f" Valid parameters are: {', '.join(sorted(valid))}."
-                )
 
         if isinstance(profile, LocalProfile):
             service_params["host"] = "localhost"

@@ -15,7 +15,7 @@ We provide synchronous and asynchronous APIs.
 The synchronous API is the simplest way to use Blackfish in Python scripts:
 
 ```python
-from blackfish import Blackfish, ManagedService
+from blackfish import Blackfish, ServiceStatus
 
 # Initialize the client
 bf = Blackfish(debug=True)
@@ -47,7 +47,7 @@ for svc in services:
 
 # Refresh service status
 service.refresh()
-if service.status == "healthy":
+if service.status == ServiceStatus.HEALTHY:
     print("All good!")
 else:
     print("Peanuts.")
@@ -428,6 +428,8 @@ asyncio.run(create_multiple_services())
 Enable debug logging and check the service status:
 
 ```python
+import asyncio
+
 from blackfish import set_logging_level
 
 set_logging_level("debug")
@@ -435,8 +437,11 @@ set_logging_level("debug")
 service = bf.get_service(service_id)
 print(f"Status: {service.status}")
 
-job = service._service.get_job(verbose=True)
-if job:
+# get_job is async and has no sync wrapper, so it must be awaited. Calling it
+# without awaiting returns a coroutine, which is truthy — `if job:` would pass
+# and `job.state` would then raise AttributeError.
+job = asyncio.run(service.get_job(verbose=True))
+if job is not None:
     print(f"Job state: {job.state}")
 ```
 
@@ -450,4 +455,4 @@ blackfish init
 
 And verify that the home directory `~/.blackfish` exists.
 
-[^1]: If `auto_cleanup=False`. Otherwise, Blackfish automatically deletes services on shutdown.
+[^1]: `auto_cleanup=True` (the default) stops and deletes tracked services when the script exits. A service survives only if it was launched with `auto_cleanup=False`.

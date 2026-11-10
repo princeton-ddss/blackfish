@@ -29,10 +29,10 @@ jobs:
         working-directory: lib
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python 3.x
+      - name: Set up Python 3.13
         uses: actions/setup-python@v7
         with:
-          python-version: "3.x"
+          python-version: "3.13"
       - name: Install uv (latest)
         uses: astral-sh/setup-uv@v7
       - name: Install Blackfish

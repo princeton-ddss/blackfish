@@ -10,8 +10,39 @@ from blackfish.server.jobs.client import TigerFlowVersions
 pytestmark = pytest.mark.anyio
 
 
+@pytest.fixture(autouse=True)
+def no_external_commands():
+    """Job API tests must mock execution instead of reaching Docker or SSH."""
+    with (
+        patch(
+            "asyncio.create_subprocess_exec",
+            side_effect=AssertionError("Unexpected subprocess in a job API test"),
+        ) as exec_command,
+        patch(
+            "asyncio.create_subprocess_shell",
+            side_effect=AssertionError("Unexpected shell command in a job API test"),
+        ) as shell_command,
+    ):
+        yield
+        # Routes catch execution errors, so raising alone could be swallowed.
+        exec_command.assert_not_called()
+        shell_command.assert_not_called()
+
+
 class TestDeleteBatchJobsAPI:
     """Test cases for the DELETE /api/jobs endpoint."""
+
+    @pytest.fixture(autouse=True)
+    def mock_refresh(self):
+        # These tests exercise deletion against known job states. Status
+        # observation itself is covered in tests/unit/test_jobs.py.
+        with patch.object(
+            BatchJob,
+            "refresh",
+            autospec=True,
+            side_effect=lambda job, client: job.status,
+        ) as refresh:
+            yield refresh
 
     async def test_delete_jobs_no_matches(self, client: AsyncTestClient):
         """Test deleting batch jobs when no jobs match the query."""
@@ -35,15 +66,15 @@ class TestDeleteBatchJobsAPI:
         assert "Invalid query statement" in response.json()["detail"]
 
     async def test_delete_jobs_running_job_error(
-        self, client: AsyncTestClient, session: AsyncSession
+        self, client: AsyncTestClient, session: AsyncSession, mock_refresh
     ):
         """Test that running jobs cannot be deleted."""
         # Set one job to running status
         running_job_id = "391769fc-5a40-43db-bbfa-cec80a8c3710"
         job = await session.get(BatchJob, UUID(running_job_id))
-        if job:
-            job.status = BatchJobStatus.RUNNING
-            await session.commit()
+        assert job is not None
+        job.status = BatchJobStatus.RUNNING
+        await session.commit()
 
         response = await client.delete("/api/jobs", params={"id": running_job_id})
 
@@ -54,6 +85,9 @@ class TestDeleteBatchJobsAPI:
         assert result[0]["status"] == "error"
         assert result[0]["message"] == "Batch job is still running"
         assert result[0]["job_id"] == running_job_id.replace("-", "")
+        mock_refresh.assert_awaited_once()
+        await session.refresh(job)
+        assert job.status == BatchJobStatus.RUNNING
 
     @pytest.mark.parametrize(
         "job_status",
@@ -189,15 +223,28 @@ class TestDeleteBatchJobsAPI:
 class TestGetBatchJobsAPI:
     """Test cases for the GET /api/jobs endpoint."""
 
-    async def test_fetch_all_jobs(self, client: AsyncTestClient):
+    @pytest.fixture(autouse=True)
+    def mock_poll(self):
+        # Filtering/serialization tests retain their fixture states; polling
+        # and restart behavior have separate unit coverage.
+        with patch.object(
+            BatchJob,
+            "poll",
+            autospec=True,
+            side_effect=lambda job, client, app_config: job.status,
+        ) as poll:
+            yield poll
+
+    async def test_fetch_all_jobs(self, client: AsyncTestClient, mock_poll):
         """Test fetching all batch jobs without filters."""
         response = await client.get("/api/jobs")
 
         assert response.status_code == 200
         result = response.json()
         assert len(result) == 3  # Test fixtures have 3 jobs
+        assert mock_poll.await_count == 3
 
-    async def test_fetch_jobs_by_id(self, client: AsyncTestClient):
+    async def test_fetch_jobs_by_id(self, client: AsyncTestClient, mock_poll):
         """Test fetching jobs by specific ID."""
         job_id = "2a7a8e62-40cc-4240-a825-463e5b11a81f"
 
@@ -207,6 +254,7 @@ class TestGetBatchJobsAPI:
         result = response.json()
         assert len(result) == 1
         assert result[0]["id"] == job_id
+        mock_poll.assert_awaited_once()
 
     async def test_fetch_jobs_by_task(self, client: AsyncTestClient):
         """Test fetching jobs by task."""

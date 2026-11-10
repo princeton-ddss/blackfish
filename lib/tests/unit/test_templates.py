@@ -1,5 +1,6 @@
-"""Smoke tests for the service Jinja templates."""
+"""Render tests for service and batch-job launch scripts."""
 
+import re
 import shlex
 from types import SimpleNamespace
 
@@ -38,7 +39,14 @@ def _ctx(provider: str, image_key: str) -> dict:
             api_key=None,
         ),
         "job_config": SimpleNamespace(
-            gres=1, ntasks=1, partition="gpu", time="01:00:00"
+            nodes=1,
+            ntasks_per_node=1,
+            mem=8,
+            gres=1,
+            partition="gpu",
+            time="01:00:00",
+            constraint=None,
+            account=None,
         ),
         "mount": "/mnt/audio",
         "image": DEFAULT_IMAGES[image_key],
@@ -56,12 +64,52 @@ def _ctx(provider: str, image_key: str) -> dict:
         ("speech_recognition_slurm.sh", "speech_recognition", "apptainer", "sif"),
     ],
 )
-def test_template_renders_resolved_image(template, image_key, provider, expected):
-    rendered = _render(template, **_ctx(provider, image_key))
+@pytest.mark.parametrize("gres", [0, 2], ids=["cpu", "gpu"])
+def test_service_launch_flags_and_mounts(template, image_key, provider, expected, gres):
+    ctx = _ctx(provider, image_key)
+    ctx["job_config"].gres = gres
+    rendered = _render(template, **ctx)
     spec = DEFAULT_IMAGES[image_key]
 
     expected_value = spec.docker_ref if expected == "docker_ref" else spec.sif
     assert expected_value in rendered
+
+    if template.endswith("_slurm.sh"):
+        gpu_directives = re.findall(
+            r"^#SBATCH[ \t]+--gres[= \t]+(\S+)", rendered, re.MULTILINE
+        )
+        assert gpu_directives == ([f"gpu:{gres}"] if gres > 0 else [])
+
+    # Parse only the container invocation, excluding Slurm's shell prelude.
+    invocation = re.search(
+        r"^[ \t]*(?:docker run|apptainer (?:instance )?run)\b", rendered, re.MULTILINE
+    )
+    assert invocation is not None, "No container launch command found"
+    command = rendered[invocation.start() :]
+    args = shlex.split((command + "\n").replace("\\\n", " "), comments=True)
+    if provider == "docker":
+        assert ("--gpus" in args) == (gres > 0)
+        if gres > 0:
+            assert args[args.index("--gpus") + 1] == "all"
+            assert args[args.index("--runtime") + 1] == "nvidia"
+        else:
+            assert "--runtime" not in args
+        mount_flag = "-v"
+    else:
+        assert ("--nv" in args) == (gres > 0)
+        assert ("--env", "PYTHONNOUSERSITE=1") in zip(args, args[1:])
+        # Only text-generation templates currently export this setting.
+        # It precedes the invocation, so check the full script.
+        if image_key == "text_generation":
+            assert "export SINGULARITY_NO_EVAL=1" in rendered
+        mount_flag = "--bind"
+
+    mounts = [args[i + 1] for i, arg in enumerate(args[:-1]) if arg == mount_flag]
+    if image_key == "text_generation":
+        assert "/models:/data" in mounts
+    else:
+        assert "/models:/data/models" in mounts
+        assert "/mnt/audio:/data/audio" in mounts
 
 
 # ---------------------------------------------------------------------------

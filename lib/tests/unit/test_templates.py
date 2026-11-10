@@ -1,5 +1,6 @@
 """Render tests for service and batch-job launch scripts."""
 
+import re
 import shlex
 from types import SimpleNamespace
 
@@ -73,8 +74,18 @@ def test_service_launch_flags_and_mounts(template, image_key, provider, expected
     expected_value = spec.docker_ref if expected == "docker_ref" else spec.sif
     assert expected_value in rendered
 
+    if template.endswith("_slurm.sh"):
+        gpu_directives = re.findall(
+            r"^#SBATCH[ \t]+--gres[= \t]+(\S+)", rendered, re.MULTILINE
+        )
+        assert gpu_directives == ([f"gpu:{gres}"] if gres > 0 else [])
+
     # Parse only the container invocation, excluding Slurm's shell prelude.
-    command = rendered[rendered.index(f"{provider} ") :]
+    invocation = re.search(
+        r"^[ \t]*(?:docker run|apptainer (?:instance )?run)\b", rendered, re.MULTILINE
+    )
+    assert invocation is not None, "No container launch command found"
+    command = rendered[invocation.start() :]
     args = shlex.split((command + "\n").replace("\\\n", " "), comments=True)
     if provider == "docker":
         assert ("--gpus" in args) == (gres > 0)
@@ -87,7 +98,8 @@ def test_service_launch_flags_and_mounts(template, image_key, provider, expected
     else:
         assert ("--nv" in args) == (gres > 0)
         assert ("--env", "PYTHONNOUSERSITE=1") in zip(args, args[1:])
-        # The text-generation templates also disable shell evaluation.
+        # Only text-generation templates currently export this setting.
+        # It precedes the invocation, so check the full script.
         if image_key == "text_generation":
             assert "export SINGULARITY_NO_EVAL=1" in rendered
         mount_flag = "--bind"

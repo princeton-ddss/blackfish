@@ -43,13 +43,12 @@ describe("ProfileProvider", () => {
   });
 
   it("renders children", () => {
-    const {baseElement, getByText} = render(
+    const {getByRole} = render(
       <ProfileProvider>
         <h1>Hello, world!</h1>
       </ProfileProvider>
     );
-    expect(getByText("Hello, world!")).toBeInTheDocument();
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("heading", { name: "Hello, world!" })).toBeInTheDocument();
   });
 
   it("resolves profile from storage by name", () => {
@@ -62,7 +61,7 @@ describe("ProfileProvider", () => {
       return <h1>Hello, world!</h1>;
     };
 
-    const {baseElement} = render(
+    const {getByRole} = render(
       <ProfileProvider>
         <ProfileContext.Consumer>
           {(value) => {
@@ -76,7 +75,7 @@ describe("ProfileProvider", () => {
     expect(contextValue.profile).toEqual(
       defaultProfiles.find((p) => p.name === "test-profile")
     );
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("heading", { name: "Hello, world!" })).toBeInTheDocument();
   });
 
   it("resolves to null when the stored name is not in /api/profiles", () => {
@@ -319,44 +318,45 @@ describe("ProfileSelect", () => {
   });
 
   it("renders with standard options", () => {
-    const {baseElement} = render(
+    const {getByRole} = render(
       <ProfileSelect
-        selectedProfile={{name: "test-profile", host: "example.com"}}
+        selectedProfile={{name: "test-profile", user: "testuser", host: "example.com"}}
         setSelectedProfile={() => vi.fn()}
       />
     );
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("button")).toHaveTextContent("testuser@example.com");
   });
 
   it("displays localhost if no host is passed", () => {
-    const {baseElement} = render(
+    const {getByRole} = render(
       <ProfileSelect
         selectedProfile={{name: "test-profile"}}
         setSelectedProfile={() => vi.fn()}
       />
     );
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("button")).toHaveTextContent("localhost");
   });
 
-  it("displays empty string if no name is passed", () => {
-    const {baseElement} = render(
+  it("displays the host and missing-profile warning if no name is passed", () => {
+    const {getByRole} = render(
       <ProfileSelect
-        selectedProfile={{host: "example.com"}}
+        selectedProfile={{user: "testuser", host: "example.com"}}
         setSelectedProfile={() => vi.fn()}
       />
     );
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("button")).toHaveTextContent("testuser@example.com");
+    expect(document.body).toHaveTextContent("Profile is missing.");
   });
 
   it("displays profile missing message", () => {
-    const {baseElement, getByText} = render(
+    const {getByRole, getByText} = render(
       <ProfileSelect
-        selectedProfile={{name: "not-listed", host: "example.com"}}
+        selectedProfile={{name: "not-listed", user: "testuser", host: "example.com"}}
         setSelectedProfile={() => vi.fn()}
       />
     );
     expect(getByText("Profile is missing.")).toBeInTheDocument();
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("button")).toHaveTextContent("testuser@example.com");
   });
 
   it("displays no profile selected state", () => {
@@ -368,7 +368,6 @@ describe("ProfileSelect", () => {
     expect(getByText("Profile")).toBeInTheDocument();
     expect(getByRole("button")).toBeInTheDocument();
     expect(baseElement.querySelector('svg[aria-hidden="true"].text-yellow-400')).toBeInTheDocument();
-    expect(baseElement).toMatchSnapshot();
   });
 
   it("calls setSelectedProfile when profile is selected", () => {
@@ -393,12 +392,12 @@ describe("ProfileSelect", () => {
       error: false
     });
 
-    const {baseElement} = render(
+    const {getByRole} = render(
       <ProfileSelect
         selectedProfile={{name: "no-host-profile"}}
         setSelectedProfile={() => vi.fn()}
       />
     );
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("button")).toHaveTextContent("localhost");
   });
 });

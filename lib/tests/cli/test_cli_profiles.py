@@ -2,7 +2,7 @@ import pytest
 import tempfile
 import os
 import requests
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, AsyncMock
 from click.testing import CliRunner
 from blackfish.cli.__main__ import main
 from blackfish.server.models.profile import validate_profile_name
@@ -320,10 +320,15 @@ class TestProfileUpdate:
     """Test profile update command."""
 
     @patch("blackfish.cli.profile.input")
-    @patch("blackfish.cli.profile.asyncio.run")
+    @patch("blackfish.cli.profile.ProfileManager.check_cache", new_callable=AsyncMock)
+    @patch(
+        "blackfish.cli.profile.ProfileManager.create_directories",
+        new_callable=AsyncMock,
+    )
     def test_update_local_profile_success(
         self,
-        mock_asyncio_run,
+        mock_create_directories,
+        mock_check_cache,
         mock_input,
         cli_runner,
         temp_home_dir,
@@ -349,6 +354,8 @@ class TestProfileUpdate:
 
             assert result.exit_code == 0
             assert "Updated profile default" in result.output
+            mock_create_directories.assert_awaited_once()
+            mock_check_cache.assert_awaited_once()
 
     def test_update_profile_not_found(
         self, cli_runner, temp_home_dir, mock_profiles_config
@@ -634,9 +641,18 @@ class TestProfileUpdatePreservesDefault:
     """`blackfish profile update` should preserve the `default` flag."""
 
     @patch("blackfish.cli.profile.input")
-    @patch("blackfish.cli.profile.asyncio.run")
+    @patch("blackfish.cli.profile.ProfileManager.check_cache", new_callable=AsyncMock)
+    @patch(
+        "blackfish.cli.profile.ProfileManager.create_directories",
+        new_callable=AsyncMock,
+    )
     def test_update_preserves_default_flag(
-        self, mock_asyncio_run, mock_input, cli_runner, temp_home_dir
+        self,
+        mock_create_directories,
+        mock_check_cache,
+        mock_input,
+        cli_runner,
+        temp_home_dir,
     ):
         # Existing config: 'default' section flagged default=true.
         config = (
@@ -664,6 +680,8 @@ class TestProfileUpdatePreservesDefault:
             parsed = configparser.ConfigParser()
             parsed.read(profiles_path)
             assert parsed["default"]["default"] == "true"
+            mock_create_directories.assert_awaited_once()
+            mock_check_cache.assert_awaited_once()
 
 
 class TestProfileRename:

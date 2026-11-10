@@ -1,6 +1,6 @@
 /* eslint react/prop-types: 0 */
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import ServiceModal from "@/components/ServiceModal";
@@ -103,7 +103,7 @@ describe("ServiceModal", () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     mockMutateServices.mockResolvedValue([]);
 
@@ -143,46 +143,52 @@ describe("ServiceModal", () => {
     fetchProfileResources.mockResolvedValue({ partitions: [], time: { default: 30, max: 180 } });
   });
 
-  const renderServiceModal = (props = {}) => {
-    return render(
-      <ServiceContext.Provider value={mockServiceContext}>
-        <ServiceModal {...defaultProps} {...props} />
-      </ServiceContext.Provider>
-    );
+  const renderServiceModal = async (props = {}) => {
+    let result;
+    await act(async () => {
+      result = render(
+        <ServiceContext.Provider value={mockServiceContext}>
+          <ServiceModal {...defaultProps} {...props} />
+        </ServiceContext.Provider>
+      );
+    });
+    return result;
   };
 
   describe("Rendering", () => {
-    it("renders modal when open is true", () => {
-      const { baseElement } = renderServiceModal();
-      expect(baseElement).toMatchSnapshot();
+    it("renders modal when open is true", async () => {
+      await renderServiceModal();
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Launch" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled();
     });
 
-    it("does not render modal when open is false", () => {
-      const { baseElement } = renderServiceModal({ open: false });
-      expect(baseElement).toMatchSnapshot();
+    it("does not render modal when open is false", async () => {
+      await renderServiceModal({ open: false });
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
-    it("renders children correctly", () => {
-      const {getByTestId} = renderServiceModal();
+    it("renders children correctly", async () => {
+      const {getByTestId} = await renderServiceModal();
       expect(getByTestId("modal-children")).toBeInTheDocument();
     });
 
-    it("renders ServiceModalForm component", () => {
-      const {getByTestId} = renderServiceModal();
+    it("renders ServiceModalForm component", async () => {
+      const {getByTestId} = await renderServiceModal();
       expect(getByTestId("service-modal-form")).toBeInTheDocument();
     });
   });
 
   describe("Initial State", () => {
-    it("sets initial model when models are available", () => {
-      renderServiceModal();
+    it("sets initial model when models are available", async () => {
+      await renderServiceModal();
       // Model is set internally, verified by the form receiving it
       expect(screen.getByTestId("service-modal-form")).toBeInTheDocument();
     });
 
-    it("handles empty models array", () => {
+    it("handles empty models array", async () => {
       useModels.mockReturnValue({ models: [] });
-      renderServiceModal();
+      await renderServiceModal();
       // Should still render the form even without models
       expect(screen.getByTestId("service-modal-form")).toBeInTheDocument();
     });
@@ -190,8 +196,8 @@ describe("ServiceModal", () => {
 
 
   describe("Reset on Open", () => {
-    it("resets state when modal opens", () => {
-      const { rerender } = renderServiceModal({ open: false });
+    it("resets state when modal opens", async () => {
+      const { rerender } = await renderServiceModal({ open: false });
       rerender(
         <ServiceContext.Provider value={mockServiceContext}>
           <ServiceModal {...defaultProps} open={true} />
@@ -210,39 +216,39 @@ describe("ServiceModal", () => {
   });
 
   describe("Loading State", () => {
-    it("shows loading state on button when isLaunching is true", () => {
-      const {getByText} = renderServiceModal({ isLaunching: true });
+    it("shows loading state on button when isLaunching is true", async () => {
+      const {getByText} = await renderServiceModal({ isLaunching: true });
       expect(getByText("Launching")).toBeInTheDocument();
     });
 
-    it("shows Launch text when isLaunching is false", () => {
-      const {getByText} = renderServiceModal({ isLaunching: false });
+    it("shows Launch text when isLaunching is false", async () => {
+      const {getByText} = await renderServiceModal({ isLaunching: false });
       expect(getByText("Launch")).toBeInTheDocument();
     });
 
-    it("disables Launch button when isLaunching is true", () => {
-      const {getByText} = renderServiceModal({ isLaunching: true });
+    it("disables Launch button when isLaunching is true", async () => {
+      const {getByText} = await renderServiceModal({ isLaunching: true });
       expect(getByText("Launching").closest("button")).toBeDisabled();
     });
 
-    it("disables Launch button while no model is selected", () => {
+    it("disables Launch button while no model is selected", async () => {
       useModels.mockReturnValue({ models: [], isLoading: true });
-      const {getByText} = renderServiceModal();
+      const {getByText} = await renderServiceModal();
       expect(getByText("Launch")).toBeDisabled();
     });
 
     it("enables Launch button once a model is selected", async () => {
       const user = userEvent.setup();
-      const {getByText, getByTestId} = renderServiceModal();
+      const {getByText, getByTestId} = await renderServiceModal();
       await user.click(getByTestId("set-model-button"));
       expect(getByText("Launch")).not.toBeDisabled();
     });
   });
 
   describe("Launch Error State", () => {
-    it("displays launch error when present", () => {
+    it("displays launch error when present", async () => {
       const error = new Error("Launch failed");
-      const {getByTestId, getByText} = renderServiceModal({ launchError: error });
+      const {getByTestId, getByText} = await renderServiceModal({ launchError: error });
       expect(getByTestId("service-launch-error-alert")).toBeInTheDocument();
       expect(getByText("Error: Launch failed")).toBeInTheDocument();
     });
@@ -250,14 +256,14 @@ describe("ServiceModal", () => {
     it("dismisses launch error when dismiss button is clicked", async () => {
       const user = userEvent.setup();
       const error = new Error("Launch failed");
-      const {getByTestId} = renderServiceModal({ launchError: error });
+      const {getByTestId} = await renderServiceModal({ launchError: error });
       await user.click(getByTestId("dismiss-error-button"));
       expect(mockSetLaunchError).toHaveBeenCalledWith(null);
     });
 
-    it("disables Launch button when validation errors exist", () => {
+    it("disables Launch button when validation errors exist", async () => {
       isDeepEmpty.mockReturnValue(false);
-      const {getByText} = renderServiceModal({
+      const {getByText} = await renderServiceModal({
         validationErrors: { name: "Required" }
       });
       expect(getByText("Launch")).toBeDisabled();
@@ -265,14 +271,14 @@ describe("ServiceModal", () => {
   });
 
   describe("Launch Success State", () => {
-    it("auto-closes modal when launchSuccess is true", () => {
-      renderServiceModal({ launchSuccess: true });
+    it("auto-closes modal when launchSuccess is true", async () => {
+      await renderServiceModal({ launchSuccess: true });
       expect(mockSetOpen).toHaveBeenCalledWith(false);
     });
 
     it("closes modal when Cancel button is clicked", async () => {
       const user = userEvent.setup();
-      const {getByText} = renderServiceModal();
+      const {getByText} = await renderServiceModal();
       await user.click(getByText("Cancel"));
       expect(mockSetOpen).toHaveBeenCalledWith(false);
     });
@@ -288,7 +294,7 @@ describe("ServiceModal", () => {
 
     it("calls runService with correct parameters on form submit", async () => {
       const user = userEvent.setup();
-      const {getByText} = renderServiceModal();
+      const {getByText} = await renderServiceModal();
       await user.click(getByText("Launch"));
       expect(mockSetIsLaunching).toHaveBeenCalledWith(true);
       expect(mockSetLaunchError).toHaveBeenCalledWith(null);
@@ -312,7 +318,7 @@ describe("ServiceModal", () => {
       mockMutateServices.mockResolvedValue([
         { id: "new-service-id", name: "new-service" }
       ]);
-      const {getByText} = renderServiceModal();
+      const {getByText} = await renderServiceModal();
       await user.click(getByText("Launch"));
       await waitFor(() => {
         expect(mockSetSelectedServiceId).toHaveBeenCalledWith("new-service-id");
@@ -328,7 +334,7 @@ describe("ServiceModal", () => {
         text: vi.fn().mockResolvedValue("API Error")
       });
 
-      renderServiceModal();
+      await renderServiceModal();
       await user.click(screen.getByText("Launch"));
 
       await waitFor(() => {
@@ -341,7 +347,7 @@ describe("ServiceModal", () => {
       const user = userEvent.setup();
       mockMutateServices.mockResolvedValue([]);
 
-      renderServiceModal();
+      await renderServiceModal();
       await user.click(screen.getByText("Launch"));
 
       await waitFor(() => {
@@ -351,7 +357,7 @@ describe("ServiceModal", () => {
             message: expect.stringContaining("Maximum wait time")
           })
         );
-      }, { timeout: 20000 });
+      });
     });
 
     it("retries finding service up to maxAttempts", async () => {
@@ -361,7 +367,7 @@ describe("ServiceModal", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ id: "new-service-id", name: "new-service" }]);
 
-      renderServiceModal();
+      await renderServiceModal();
       await user.click(screen.getByText("Launch"));
 
       await waitFor(() => {
@@ -372,16 +378,16 @@ describe("ServiceModal", () => {
   });
 
   describe("Profile Types", () => {
-    it("uses correct default job options for slurm profile", () => {
-      renderServiceModal({
+    it("uses correct default job options for slurm profile", async () => {
+      await renderServiceModal({
         profile: { schema: "slurm", host: "test-host", user: "testuser" },
       });
       // Slurm profiles should have time field and null resource fields (set by tier selection)
       expect(screen.getByTestId("service-modal-form")).toBeInTheDocument();
     });
 
-    it("uses correct default job options for local profile", () => {
-      renderServiceModal({
+    it("uses correct default job options for local profile", async () => {
+      await renderServiceModal({
         profile: { schema: "local" },
       });
       // Local profiles should work without slurm-specific fields
@@ -390,10 +396,10 @@ describe("ServiceModal", () => {
   });
 
   describe("API key generation", () => {
-    it("generates a different key each time the modal opens", () => {
+    it("generates a different key each time the modal opens", async () => {
       // Memoizing the key would reuse one value across every service the
       // user launches from this page.
-      const { rerender } = renderServiceModal({ open: false });
+      const { rerender } = await renderServiceModal({ open: false });
       const openModal = () =>
         rerender(
           <ServiceContext.Provider value={mockServiceContext}>

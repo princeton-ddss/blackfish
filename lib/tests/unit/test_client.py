@@ -170,9 +170,8 @@ class TestSSHRunner:
             mock_proc.wait = mock.AsyncMock()
             mock_exec.return_value = mock_proc
 
-            with mock.patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
-                with pytest.raises(TigerFlowError) as exc_info:
-                    await runner.run("sleep 1000")
+            with pytest.raises(TigerFlowError) as exc_info:
+                await runner.run("sleep 1000")
 
             assert exc_info.value.error_type == "timeout"
             assert exc_info.value.host == "slow-host"

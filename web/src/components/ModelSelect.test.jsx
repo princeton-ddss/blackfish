@@ -39,7 +39,7 @@ describe("ModelSelect", () => {
   });
 
   it("renders model select with first model selected by default", () => {
-    const {baseElement, getByText} = render(
+    const {getByRole, getByText} = render(
       <ModelSelect
         models={mockModels}
         setRepoId={mockSetRepoId}
@@ -48,7 +48,8 @@ describe("ModelSelect", () => {
     );
     expect(getByText("Model")).toBeInTheDocument();
     expect(getByText("model-1")).toBeInTheDocument();
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("button")).toHaveTextContent("model-1");
+    expect(getByRole("button")).toBeEnabled();
   });
 
   it("calls setRepoId with first model repo_id on mount", async () => {
@@ -117,15 +118,16 @@ describe("ModelSelect", () => {
     expect(document.querySelector("button")).toBeDisabled();
   });
 
-  it("applies disabled styling when disabled prop is true", () => {
-    const {baseElement} = render(
+  it("disables selection when disabled prop is true", () => {
+    const {getByRole} = render(
       <ModelSelect
         models={mockModels}
         setRepoId={mockSetRepoId}
         disabled={true}
       />
     );
-    expect(baseElement).toMatchSnapshot();
+    expect(getByRole("button")).toBeDisabled();
+    expect(getByRole("button")).toHaveTextContent("model-1");
   });
 
   it("updates selection when models prop changes", async () => {

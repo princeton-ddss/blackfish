@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { beforeEach } from 'vitest';
 
 // Mock window.__BLACKFISH_CONFIG__ for tests
 Object.defineProperty(window, '__BLACKFISH_CONFIG__', {
@@ -10,29 +10,18 @@ Object.defineProperty(window, '__BLACKFISH_CONFIG__', {
   writable: true,
 });
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-Object.defineProperty(window, 'sessionStorage', {
-  value: sessionStorageMock,
-});
-
-// Mock localStorage with an in-memory store so get/set/clear round-trip works.
+// Use independent in-memory stores so get/set/clear round-trip works.
 // happy-dom's default localStorage doesn't reliably expose `clear` as a
 // callable method across versions, so we install a simple Map-backed replacement.
 const createStorageMock = () => {
   const store = new Map();
   return {
-    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    getItem: (key) => (store.has(String(key)) ? store.get(String(key)) : null),
     setItem: (key, value) => {
-      store.set(key, String(value));
+      store.set(String(key), String(value));
     },
     removeItem: (key) => {
-      store.delete(key);
+      store.delete(String(key));
     },
     clear: () => {
       store.clear();
@@ -43,7 +32,15 @@ const createStorageMock = () => {
     },
   };
 };
-Object.defineProperty(window, 'localStorage', {
-  value: createStorageMock(),
-  writable: true,
+for (const area of ['localStorage', 'sessionStorage']) {
+  Object.defineProperty(window, area, {
+    value: createStorageMock(),
+    writable: true,
+    configurable: true,
+  });
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  sessionStorage.clear();
 });

@@ -3,25 +3,21 @@ import { describe, it, expect, vi } from "vitest";
 import RevisionSelect from "@/components/RevisionSelect";
 
 describe("RevisionSelect", () => {
-  it("Standard", () => {
-    const {baseElement} = render(
+  it("selects the matching repository revision", () => {
+    const setModel = vi.fn();
+    render(
       <RevisionSelect
         models={[
-          {
-            repo_id: "169d4a4341b33bc18d8881c4b69c2e104e1cc0af",
-            revision: "169d4a4341b33bc18d8881c4b69c2e104e1cc0af"
-          },
-          {
-            repo_id: "7b5c7132e6f7b1126bf02b18d888c780180a0cf3",
-            revision: "7b5c7132e6f7b1126bf02b18d888c780180a0cf3"
-          },
+          { repo_id: "repo", revision: "rev-a" },
+          { repo_id: "other-repo", revision: "rev-b" },
         ]}
-        repoId="169d4a4341b33bc18d8881c4b69c2e104e1cc0af"
-        setModel={(e) => e}
+        repoId="repo"
+        setModel={setModel}
         disabled={false}
       />
     );
-    expect(baseElement).toMatchSnapshot();
+    expect(screen.getByRole("button")).toHaveTextContent("rev-a");
+    expect(setModel).toHaveBeenCalledWith({ repo_id: "repo", revision: "rev-a" });
   });
 
   it("stays enabled when the repo has multiple revisions", () => {
@@ -57,25 +53,20 @@ describe("RevisionSelect", () => {
     expect(setModel).toHaveBeenCalledWith({ repo_id: "repo", revision: "rev-only" });
   });
 
-  it("Disabled", () => {
-    const {baseElement} = render(
+  it("disables selection when disabled even with multiple revisions", () => {
+    render(
       <RevisionSelect
         models={[
-          {
-            repo_id: "169d4a4341b33bc18d8881c4b69c2e104e1cc0af",
-            revision: "169d4a4341b33bc18d8881c4b69c2e104e1cc0af"
-          },
-          {
-            repo_id: "7b5c7132e6f7b1126bf02b18d888c780180a0cf3",
-            revision: "7b5c7132e6f7b1126bf02b18d888c780180a0cf3"
-          },
+          { repo_id: "repo", revision: "rev-a" },
+          { repo_id: "repo", revision: "rev-b" },
         ]}
-        repoId="169d4a4341b33bc18d8881c4b69c2e104e1cc0af"
-        setModel={(e) => e}
+        repoId="repo"
+        setModel={vi.fn()}
         disabled={true}
       />
     );
-    expect(baseElement).toMatchSnapshot();
+    expect(screen.getByRole("button")).toBeDisabled();
+    expect(screen.getByRole("button")).toHaveTextContent("rev-a");
   });
 
   it("Loading", () => {

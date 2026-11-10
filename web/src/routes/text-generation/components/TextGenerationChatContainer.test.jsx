@@ -2,7 +2,7 @@
 
 import { render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import TextGenerationChatContainer from "./TextGenerationChatContainer";
 import { ServiceContext } from "@/providers/ServiceProvider";
 import { ProfileContext } from "@/components/ProfileSelect";
@@ -131,16 +131,19 @@ const MockProviders = ({ children, selectedService = mockSelectedService, profil
 describe("TextGenerationChatContainer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    streamChatCompletionInference.mockReset();
     sessionStorage.clear();
     mockClipboard.writeText.mockClear();
-    console.log = vi.fn();
-    console.error = vi.fn();
-    console.debug = vi.fn();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "debug").mockImplementation(() => {});
   });
+
+  afterEach(() => vi.restoreAllMocks());
 
   describe("Component rendering", () => {
     it("renders the main container with chat label and user message input", () => {
-      const {baseElement, getByText, getByPlaceholderText} = render(
+      const {getByText, getByPlaceholderText, getByRole} = render(
         <MockProviders>
           <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />
         </MockProviders>
@@ -148,7 +151,7 @@ describe("TextGenerationChatContainer", () => {
       expect(getByText("Chat")).toBeInTheDocument();
       expect(getByPlaceholderText("Why are orcas so awesome?"))
         .toBeInTheDocument();
-      expect(baseElement).toMatchSnapshot();
+      expect(getByRole("button", { name: "Submit" })).toBeDisabled();
     });
 
     it("renders empty message list initially", () => {
@@ -612,10 +615,7 @@ describe("TextGenerationChatContainer", () => {
         { role: "user", content: "Test message", _displayText: "Test message" },
         { role: "assistant", content: "Original response" },
       ]);
-      sessionStorage.getItem.mockImplementation((key) => {
-        if (key === STORAGE_KEYS.TG_CHAT_MESSAGES) return storedMessages;
-        return null;
-      });
+      sessionStorage.setItem(STORAGE_KEYS.TG_CHAT_MESSAGES, storedMessages);
       const {getByRole, getByText} = render(
         <MockProviders selectedService={selectedService}>
           <TextGenerationChatContainer parameters={{}} systemMessage={{ role: "system", content: "" }} />

@@ -161,22 +161,33 @@ class TestSSHRunner:
     async def test_run_raises_timeout_error_when_command_hangs(self) -> None:
         """Run should raise TigerFlowError with timeout type when command exceeds timeout."""
         runner = SSHRunner("user", "slow-host", timeout=0.1)
+        cancelled = asyncio.Event()
+
+        async def hang_until_cancelled():
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cancelled.set()
+                raise
 
         with mock.patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_proc = mock.AsyncMock()
-            # Simulate a hanging command
-            mock_proc.communicate.side_effect = asyncio.TimeoutError()
+            mock_proc.communicate.side_effect = hang_until_cancelled
             mock_proc.kill = mock.Mock()
             mock_proc.wait = mock.AsyncMock()
             mock_exec.return_value = mock_proc
 
-            with mock.patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
+            # Bound a regression that removes the runner's own deadline.
+            async with asyncio.timeout(2):
                 with pytest.raises(TigerFlowError) as exc_info:
                     await runner.run("sleep 1000")
 
             assert exc_info.value.error_type == "timeout"
             assert exc_info.value.host == "slow-host"
+            assert cancelled.is_set()
+            mock_proc.communicate.assert_awaited_once()
             mock_proc.kill.assert_called_once()
+            mock_proc.wait.assert_awaited_once()
 
     async def test_run_uses_default_timeout_of_120_seconds(self) -> None:
         """Run should use 120 second timeout by default."""

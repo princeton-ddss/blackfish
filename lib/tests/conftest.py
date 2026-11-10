@@ -3,6 +3,7 @@
 import blackfish.server.db  # noqa: F401
 
 from pathlib import Path
+import bcrypt
 from dotenv import load_dotenv
 import pytest
 
@@ -71,11 +72,19 @@ def _patch_config(monkeypatch: MonkeyPatch) -> None:
     )
 
 
-@pytest.fixture(name="app")
-def app_fixture() -> Litestar:
-    from blackfish.server.asgi import app
+@pytest.fixture(scope="session")
+def test_auth_hash() -> bytes:
+    # Exercise real authentication without paying the production work factor
+    # on every API request. Production hashing is unchanged.
+    return bcrypt.hashpw(b"sealsaretasty", bcrypt.gensalt(rounds=4))
 
-    return app
+
+@pytest.fixture(name="app")
+def app_fixture(monkeypatch: MonkeyPatch, test_auth_hash: bytes) -> Litestar:
+    from blackfish.server import asgi
+
+    monkeypatch.setattr(asgi, "AUTH_TOKEN", test_auth_hash)
+    return asgi.app
 
 
 @pytest.fixture(name="engine")

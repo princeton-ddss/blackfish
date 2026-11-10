@@ -58,6 +58,10 @@ class _LazyFileHandler(logging.FileHandler):
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
+            # Open here so we handle failures before newer FileHandler.emit
+            # implementations catch them and report a logging error.
+            if self.stream is None:
+                self.stream = self._open()
             super().emit(record)
         except OSError:
             # Left attached but inert: re-raising here would surface as

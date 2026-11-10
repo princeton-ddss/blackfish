@@ -1,30 +1,7 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import { STORAGE_KEYS, migrateStorageKeys } from "@/lib/storage";
 
-// Map-backed storage so get/set/remove round-trip in tests (the global
-// sessionStorage mock from setup.js is a no-op).
-const createStorageMock = () => {
-  const store = new Map();
-  return {
-    getItem: (key) => (store.has(key) ? store.get(key) : null),
-    setItem: (key, value) => store.set(key, String(value)),
-    removeItem: (key) => store.delete(key),
-    clear: () => store.clear(),
-  };
-};
-
 describe("migrateStorageKeys", () => {
-  beforeEach(() => {
-    Object.defineProperty(window, "localStorage", {
-      value: createStorageMock(),
-      writable: true,
-    });
-    Object.defineProperty(window, "sessionStorage", {
-      value: createStorageMock(),
-      writable: true,
-    });
-  });
-
   it("moves legacy localStorage keys to the bf: scheme", () => {
     localStorage.setItem("profileName", "my-profile");
     localStorage.setItem("theme", "dark");

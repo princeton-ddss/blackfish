@@ -1,7 +1,7 @@
-import pytest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, call, patch
 
+import pytest
 
 from blackfish.server.config import ContainerProvider
 from blackfish.server.jobs.client import TigerFlowError, TigerFlowVersions
@@ -48,23 +48,25 @@ CACHE_EXISTS = (0, b"exists\n", b"")
 
 
 @pytest.fixture
-def manager():
+def progress():
+    return Mock()
+
+
+@pytest.fixture
+def manager(progress):
     runner = SimpleNamespace(host="cluster.example", run=AsyncMock())
-    progress = Mock()
     return ProfileManager(runner, HOME_DIR, CACHE_DIR, on_progress=progress)
 
 
 @pytest.mark.anyio
 class TestProfileManagerCommands:
-    async def test_creates_home_and_model_image_directories(self, manager):
+    async def test_creates_home_and_model_image_directories(self, manager, progress):
         manager.runner.run.side_effect = [SUCCESS, SUCCESS]
 
         await manager.create_directories()
 
         assert manager.runner.run.await_args_list == DIRECTORY_COMMANDS
-        manager._on_progress.assert_called_once_with(
-            "Setting up directories on cluster.example..."
-        )
+        progress.assert_called_once_with("Setting up directories on cluster.example...")
 
     @pytest.mark.parametrize(
         ("failed_step", "message"),
@@ -107,13 +109,13 @@ class TestProfileManagerCommands:
             manager.runner.run.await_args_list == DIRECTORY_COMMANDS[: failed_step + 1]
         )
 
-    async def test_existing_cache_succeeds(self, manager):
+    async def test_existing_cache_succeeds(self, manager, progress):
         manager.runner.run.return_value = CACHE_EXISTS
 
         await manager.check_cache()
 
         manager.runner.run.assert_awaited_once_with(*CACHE_COMMAND.args)
-        manager._on_progress.assert_called_once_with(
+        progress.assert_called_once_with(
             "Checking cache directory on cluster.example..."
         )
 
@@ -143,6 +145,7 @@ class TestProfileManagerCommands:
 @pytest.fixture
 def repair_dependencies():
     # Mock only the execution boundaries: repair uses the real ProfileManager.
+    # setup.py imports these classes lazily when repair_slurm_profile is called.
     with (
         patch("blackfish.server.jobs.client.LocalRunner", autospec=True) as local,
         patch("blackfish.server.jobs.client.SSHRunner", autospec=True) as ssh,
@@ -173,9 +176,13 @@ async def repair(dependencies, host="cluster.example", force=False):
 class TestRepairSlurmProfile:
     @pytest.mark.parametrize("host", ["localhost", "cluster.example"])
     async def test_healthy_image_skips_setup_and_uses_apptainer(
-        self, repair_dependencies, host
+        self, repair_dependencies, host, monkeypatch
     ):
         deps = repair_dependencies
+        # Resolve config after the autouse fixture replaces it for this test.
+        from blackfish.server.config import config
+
+        monkeypatch.setattr(config, "CONTAINER_PROVIDER", ContainerProvider.Docker)
 
         result = await repair(deps, host=host)
 
@@ -194,11 +201,8 @@ class TestRepairSlurmProfile:
             deps.ssh.assert_called_once_with(user="testuser", host=host)
             deps.local.assert_not_called()
             runner = deps.ssh.return_value
-        # The Blackfish host uses Docker in the test configuration, but Slurm
+        # The Blackfish host uses Docker, but Slurm
         # execution must use Apptainer on both remote clusters and localhost.
-        from blackfish.server.config import config
-
-        assert config.CONTAINER_PROVIDER == ContainerProvider.Docker
         deps.client.assert_called_once_with(
             runner=runner,
             home_dir=HOME_DIR,

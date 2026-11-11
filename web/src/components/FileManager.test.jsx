@@ -46,3 +46,15 @@ describe.each([
     }
   });
 });
+
+test("disabled status keeps the upload button visible but disabled", () => {
+  render(
+    <FileManager
+      root="/home/test"
+      status={{ disabled: true }}
+      enableUpload={true}
+    />,
+  );
+
+  expect(screen.getByRole("button", { name: "Upload file" })).toBeDisabled();
+});

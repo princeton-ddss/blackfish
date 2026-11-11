@@ -36,11 +36,20 @@ async function typeQuery(query) {
 }
 
 describe("JobsTable query integration", () => {
-  test.each(Object.values(BatchJobStatus))("Status dropdown selects exactly %s", async (status) => {
+  test.each([
+    [BatchJobStatus.SUBMITTED, "Submitted"],
+    [BatchJobStatus.RESUBMITTED, "Resubmitted"],
+    [BatchJobStatus.PENDING, "Pending"],
+    [BatchJobStatus.RUNNING, "Running"],
+    [BatchJobStatus.STOPPED, "Stopped"],
+    [BatchJobStatus.BROKEN, "Broken"],
+    [BatchJobStatus.STALLED, "Stalled"],
+    [BatchJobStatus.EXHAUSTED, "Exhausted"],
+  ])("Status dropdown selects exactly %s", async (status, label) => {
     render(table(Object.values(BatchJobStatus).map((value) => job(value, { status: value }))));
 
     await click("Status");
-    await click(status.charAt(0).toUpperCase() + status.slice(1), false);
+    await click(label, false);
 
     expect(screen.getByRole("textbox", { name: "Search" })).toHaveValue(`status:${status}`);
     expect(names()).toEqual([`Job ${status}`]);

@@ -3,11 +3,11 @@ name: blackfish-new-service
 description: Add a Blackfish service across backend, CLI, frontend, and tests when implementing a new service type.
 ---
 
-Paths and commands below are relative to the repository root unless a working directory is specified. Use arguments from the user’s request wherever `<task arguments>` appears.
+Paths and commands below are relative to the repository root unless a working directory is specified.
 
 Help me create a new service for the Blackfish platform.
 
-The service name is: <task arguments>
+Use the service name supplied in the request. Clarify it before creating files if it is missing.
 
 Guide me through creating:
 1. Service class in `lib/src/blackfish/server/services/` following the existing `Service` subclasses

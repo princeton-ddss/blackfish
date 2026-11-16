@@ -1,17 +1,17 @@
 ---
 name: blackfish-project-setup
-description: Configure local GitHub Project tracking for Blackfish when connecting or updating a project board.
+description: Configure local Blackfish project tracking when the user asks to connect or update a GitHub project board.
 ---
 
-Paths and commands below are relative to the repository root unless a working directory is specified. Use arguments from the user’s request wherever `<task arguments>` appears.
+Paths and commands below are relative to the repository root unless a working directory is specified.
 
 Set up GitHub Project integration for agent workflow tracking.
 
-<task arguments>: [owner] [project-number]
+Use the owner and project number supplied in the request or already established in the conversation. Creating an issue or PR alone does not request project configuration changes.
 
 ## Step 1: Get project details
 
-If arguments not provided, ask the user:
+If these details are not available, ask the user:
 - Owner: organization name (e.g., "princeton-ddss") or "@me" for personal projects
 - Project number: the project number (visible in project URL)
 
@@ -68,11 +68,11 @@ gh api graphql -f query='
 The project MUST have these status options (names can vary slightly):
 - Backlog (or "Todo", "New")
 - Ready (or "Ready to Start")
-- In Progress (or "Active", "Working")
-- In Review (or "Review", "Pending Review")
+- In progress (or "Active", "Working")
+- In review (or "Review", "Pending Review")
 - Done (or "Closed", "Complete")
 
-If any are missing, warn the user and ask if they want to proceed anyway.
+Compare status names case-insensitively when identifying their roles, but preserve the exact names and IDs returned by GitHub in the configuration. If any are missing, warn the user and ask if they want to proceed anyway.
 
 ## Step 4: Write configuration file
 

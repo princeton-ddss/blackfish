@@ -3,7 +3,7 @@ name: blackfish-lint
 description: Run Blackfish backend and frontend lint checks when checking monorepo code quality.
 ---
 
-Paths and commands below are relative to the repository root unless a working directory is specified. Use arguments from the user’s request wherever `<task arguments>` appears.
+Paths and commands below are relative to the repository root unless a working directory is specified.
 
 Run linting for the entire monorepo.
 

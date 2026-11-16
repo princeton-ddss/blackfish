@@ -3,7 +3,7 @@ name: blackfish-pr-checklist
 description: Review the Blackfish pre-PR checklist when asked for readiness checks without creating a pull request.
 ---
 
-Paths and commands below are relative to the repository root unless a working directory is specified. Use arguments from the user’s request wherever `<task arguments>` appears.
+Paths and commands below are relative to the repository root unless a working directory is specified.
 
 Output the PR checklist for the contributor to review before creating a pull request.
 
@@ -37,4 +37,4 @@ Before creating a pull request, ensure you have completed the following:
 - [ ] Branch is up to date with main
 - [ ] PR title and description are clear
 
-Use `/pr` to create the pull request after completing this checklist.
+When the user asks to open the PR, follow the [blackfish-pr skill](../blackfish-pr/SKILL.md) (Claude: `/pr`). Reviewing this checklist alone does not request PR creation.

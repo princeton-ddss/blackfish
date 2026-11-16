@@ -3,7 +3,7 @@ name: blackfish-build
 description: Build the Blackfish frontend and verify its Python package integration when a full application build is requested.
 ---
 
-Paths and commands below are relative to the repository root unless a working directory is specified. Use arguments from the user’s request wherever `<task arguments>` appears.
+Paths and commands below are relative to the repository root unless a working directory is specified.
 
 Build the full application (frontend + backend integration).
 

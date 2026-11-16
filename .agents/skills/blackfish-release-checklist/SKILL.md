@@ -3,7 +3,7 @@ name: blackfish-release-checklist
 description: Present the Blackfish release checklist when preparing or reviewing a release; this does not itself publish a release.
 ---
 
-Paths and commands below are relative to the repository root unless a working directory is specified. Use arguments from the user’s request wherever `<task arguments>` appears.
+Paths and commands below are relative to the repository root unless a working directory is specified.
 
 Output the release checklist for preparing a new version release.
 

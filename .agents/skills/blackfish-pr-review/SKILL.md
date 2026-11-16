@@ -3,7 +3,7 @@ name: blackfish-pr-review
 description: Inspect Blackfish branch changes and draft PR content when asked to review or describe a branch without publishing it.
 ---
 
-Paths and commands below are relative to the repository root unless a working directory is specified. Use arguments from the user’s request wherever `<task arguments>` appears.
+Paths and commands below are relative to the repository root unless a working directory is specified.
 
 Review the current branch changes and suggest PR content.
 

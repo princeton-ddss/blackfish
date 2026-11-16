@@ -1,13 +1,11 @@
 ---
 name: blackfish-pr
-description: Create a Blackfish pull request, run required checks, update linked project status, and triage the bot review when opening a PR.
+description: Validate and open a Blackfish PR, update project status, and triage bot feedback when the user asks to open a PR.
 ---
 
-Paths and commands below are relative to the repository root unless a working directory is specified. Use arguments from the user’s request wherever `<task arguments>` appears.
+Paths and commands below are relative to the repository root unless a working directory is specified.
 
-Create a pull request for the current branch.
-
-<task arguments>
+Create a pull request for the current branch when requested by the user. A request to review changes or draft PR text alone does not request a push or PR creation.
 
 ## Step 1: Validate branch state
 
@@ -58,7 +56,7 @@ Use this PR body format:
 - ## Summary (2-3 bullet points)
 - ## Test plan (verification steps)
 
-Do not add a Claude Code attribution footer.
+Do not add agent attribution footers.
 
 If there's a linked issue, include "Closes #N" in the PR body.
 
@@ -72,17 +70,16 @@ If the branch name starts with an issue number (e.g., `123-feature-name`) or the
    ```bash
    gh project item-list <project_number> --owner <owner> --format json | jq -r '.items[] | select(.content.number == <issue-number>) | .id'
    ```
-4. Move the issue to "In review" status using IDs from the config:
+4. Resolve the review status from the configured option names, matching case-insensitively (`In review`, `Review`, or `Pending review`). Use its stored option ID; do not index the config with an assumed spelling. Move the issue using that ID:
    ```bash
-   gh project item-edit --id "<item-id>" --project-id "<project_id>" --field-id "<fields.status.id>" --single-select-option-id "<fields.status.options['In review']>"
+   gh project item-edit --id "<item-id>" --project-id "<project_id>" --field-id "<fields.status.id>" --single-select-option-id "<review-status-option-id>"
    ```
 
 If the issue is not in any project, no linked issue exists, or no projects config exists, skip this step.
 
-## Step 6: Wait for and triage Claude bot review
+## Step 6: Wait for and triage the automated review
 
-A Claude bot runs an automated code review on every PR opened. It posts its
-review as a PR comment from the `claude` user. It takes a few minutes, so poll
+The repository’s automated reviewer posts a PR comment from the `claude` GitHub account. This reviewer is independent of which agent opens the PR. It takes a few minutes, so poll
 for that comment rather than checking once (poll every ~60s, up to ~10
 minutes). If no bot review appears, say so and stop.
 

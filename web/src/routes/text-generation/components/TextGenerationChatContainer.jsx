@@ -834,6 +834,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
       const data = await stream.next();
       setIsWaitingForResponse(false);
+      if (data.done) return;
       console.debug("data:", data);
       let response = data.value
         .map((x) => x.choices[0].delta.content)
@@ -901,6 +902,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
     setIsWaitingForResponse(true);
     setIsStreaming(true);
 
+    let responseStarted = false;
     try {
       abortRef.current = new AbortController();
       const stream = streamChatCompletionInference(
@@ -916,11 +918,16 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
 
       const data = await stream.next();
       setIsWaitingForResponse(false);
+      if (data.done) {
+        setMessages(savedMessages.slice(0, index + 1));
+        return;
+      }
       console.debug("data:", data);
       let response = data.value
         .map((x) => x.choices[0].delta.content)
         .join("")
         .trimStart();
+      responseStarted = response.length > 0;
       setMessages((messages) => [
         ...messages.slice(0, messages.length),
         {
@@ -933,6 +940,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
         console.debug("data:", data);
         const text = data.map((x) => x.choices[0].delta.content).join("");
         response += text;
+        responseStarted = response.length > 0;
         console.debug("response: ", response);
         setMessages((messages) => [
           ...messages.slice(0, messages.length - 1),
@@ -947,7 +955,7 @@ export default function TextGenerationChatContainer({ parameters, systemMessage,
       // assistant turn in place; skip rollback and error reporting.
       if (error.name === "AbortError") return;
       console.error("Chat resubmit error:", error);
-      setMessages(savedMessages.slice(0, index + 1));
+      if (!responseStarted) setMessages(savedMessages.slice(0, index + 1));
       setApiError(classifyApiError(error));
     } finally {
       setIsWaitingForResponse(false);

@@ -9,6 +9,7 @@ function eventData(event) {
     .join("\n");
 }
 
+/** Parse JSON event data, preserving the message and status of service errors. */
 function parseEvent(data) {
   let parsed;
   try {
@@ -28,6 +29,11 @@ function parseEvent(data) {
  * Read complete SSE events independently of network read boundaries.
  * Malformed JSON and unterminated events at EOF are errors: neither should
  * silently turn damaged inference output into a successful response.
+ * @param {string} url - Direct service or backend proxy URL.
+ * @param {string} body - JSON-encoded inference request.
+ * @param {AbortSignal} [signal] - Cancels the request and any pending read.
+ * @yields {Array<object>} Parsed events in server order.
+ * @throws {Error} On HTTP, service, transport, or event framing/parsing errors.
  */
 async function* streamInference(url, body, signal) {
   signal?.throwIfAborted();
@@ -44,7 +50,8 @@ async function* streamInference(url, body, signal) {
   const decoder = new TextDecoder();
   let buffer = "";
   let ended = false;
-  // Cancel a pending read as well as the fetch, including for controlled streams.
+  // Cancel a pending read as well as the fetch. Repeating cancel in finally is
+  // harmless: the stream invokes its underlying cancel operation only once.
   const abort = () => { reader.cancel().catch(() => {}); };
   signal?.addEventListener("abort", abort, { once: true });
   try {
@@ -83,7 +90,15 @@ async function* streamInference(url, body, signal) {
   }
 }
 
-/** Stream OpenAI-compatible completion events, directly or through the proxy. */
+/**
+ * Call a completion service using streaming inference.
+ * @param {object} service - The service to call, including its port.
+ * @param {string} prompt - The prompt to send.
+ * @param {object} params - Inference options, including the stream flag.
+ * @param {boolean} [use_proxy=false] - Use the backend proxy instead of localhost.
+ * @returns {AsyncGenerator<Array<object>>} Arrays of parsed completion events.
+ * @throws {Error} On HTTP, service, transport, malformed, or truncated responses.
+ */
 export async function* streamCompletionInference(service, prompt, params, use_proxy = false) {
   const body = JSON.stringify({ prompt, ...params, do_sample: true });
   const url = use_proxy
@@ -92,7 +107,17 @@ export async function* streamCompletionInference(service, prompt, params, use_pr
   yield* streamInference(url, body);
 }
 
-/** Stream OpenAI-compatible chat events, preserving the caller's abort signal. */
+/**
+ * Call a chat service using streaming inference.
+ * @param {object} service - The service to call, including its port.
+ * @param {Array<object>} messages - Conversation messages to send.
+ * @param {object} params - Inference options, including the stream flag.
+ * @param {boolean} [use_proxy=false] - Use the backend proxy instead of localhost.
+ * @param {AbortSignal} [signal] - Cancels the request and any pending read.
+ * @returns {AsyncGenerator<Array<object>>} Arrays of parsed chat events.
+ * @throws {Error} On HTTP, service, transport, malformed, or truncated responses.
+ * An aborted signal propagates its abort reason.
+ */
 export async function* streamChatCompletionInference(service, messages, params, use_proxy = false, signal = undefined) {
   const body = JSON.stringify({ messages, ...params });
   const url = use_proxy

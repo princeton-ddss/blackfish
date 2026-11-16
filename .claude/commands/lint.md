@@ -1,13 +1,3 @@
-Run linting for the entire monorepo.
+Follow the shared [Blackfish lint workflow](../../.agents/skills/blackfish-lint/SKILL.md).
 
-For the Python backend:
-```bash
-cd lib && uv run pre-commit run --all-files
-```
-
-For the frontend:
-```bash
-cd web && npm run lint
-```
-
-Report any issues found and suggest fixes.
+Task arguments: $ARGUMENTS

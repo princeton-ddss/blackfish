@@ -1,7 +1,3 @@
-Run the Python backend tests.
+Follow the shared [Blackfish test-lib workflow](../../.agents/skills/blackfish-test-lib/SKILL.md).
 
-```bash
-cd lib && uv run pytest --verbose $ARGUMENTS
-```
-
-If tests fail, analyze the failures and suggest fixes. If all tests pass, report the summary.
+Task arguments: $ARGUMENTS

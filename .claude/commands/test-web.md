@@ -1,7 +1,3 @@
-Run the Next.js frontend tests.
+Follow the shared [Blackfish test-web workflow](../../.agents/skills/blackfish-test-web/SKILL.md).
 
-```bash
-cd web && npm test -- $ARGUMENTS
-```
-
-If tests fail, analyze the failures and suggest fixes. If all tests pass, report the summary.
+Task arguments: $ARGUMENTS

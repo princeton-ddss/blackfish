@@ -30,7 +30,7 @@ def anyio_backend():
 pytestmark = pytest.mark.anyio
 
 pytest_plugins = [
-    "tests.data_fixtures",
+    "tests.fixtures",
 ]
 
 load_dotenv(".env.test", override=True)

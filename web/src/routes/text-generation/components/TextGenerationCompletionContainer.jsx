@@ -240,6 +240,7 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
     sessionStorage.getItem(STORAGE_KEYS.TG_COMPLETION_OUTPUT) || ""
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
   // File attachment state and handlers
   const {
@@ -262,30 +263,39 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
     const textInput = promptWithFileContext === "" ? "Write me a haiku about orcas." : promptWithFileContext;
 
     setIsLoading(true);
+    setApiError(null);
     setResponse("");
     sessionStorage.setItem(STORAGE_KEYS.TG_COMPLETION_OUTPUT, "");
 
-    const stream = streamCompletionInference(
-      selectedService,
-      textInput,
-      {
-        ...parameters,
-        stream: true,
-      },
-      true
-    );
+    try {
+      const stream = streamCompletionInference(
+        selectedService,
+        textInput,
+        {
+          ...parameters,
+          stream: true,
+        },
+        true
+      );
 
-    const data = await stream.next();
-    setIsLoading(false);
-    const text = data.value
-      .map((x) => x.choices[0].text)
-      .join("")
-      .trimStart();
-    setResponse((prevResponse) => prevResponse + text);
+      const data = await stream.next();
+      setIsLoading(false);
+      if (data.done) return;
+      const text = data.value
+        .map((x) => x.choices[0].text)
+        .join("")
+        .trimStart();
+      setResponse((prevResponse) => prevResponse + text);
 
-    for await (const data of stream) {
-      const text = data.map((x) => x.choices[0].text).join("");
-      setResponse((prevOutput) => prevOutput + text);
+      for await (const data of stream) {
+        const text = data.map((x) => x.choices[0].text).join("");
+        setResponse((prevOutput) => prevOutput + text);
+      }
+    } catch (error) {
+      // Leave any completed text visible when a later stream event fails.
+      setApiError(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -324,11 +334,11 @@ function TextGenerationCompletionContainer({ parameters, toolbar }) {
       />
 
       <Notification
-        show={!!fileError}
+        show={!!(apiError || fileError)}
         variant="error"
-        message="Failed to attach file"
-        detail={fileError ? `${fileError.fileName}: ${fileError.message}` : ""}
-        onDismiss={() => setFileError(null)}
+        message={apiError ? "Completion failed" : "Failed to attach file"}
+        detail={apiError ? apiError.message : fileError ? `${fileError.fileName}: ${fileError.message}` : ""}
+        onDismiss={() => { setApiError(null); setFileError(null); }}
       />
     </div>
   );

@@ -8,6 +8,8 @@ test:
   uv run pytest --cache-clear --verbose --cov=blackfish
 
 coverage:
+  #!/usr/bin/env bash
+  set -euo pipefail
   uv run coverage xml -o - | uv run genbadge coverage --local -i - -o docs/assets/img/coverage.svg
 
 docs:

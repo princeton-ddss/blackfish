@@ -8,7 +8,7 @@ test:
   uv run pytest --cache-clear --verbose --cov=blackfish
 
 coverage:
-  uv run coverage-badge -o docs/assets/img/coverage.svg -f
+  uv run coverage xml -o - | uv run genbadge coverage --local -i - -o docs/assets/img/coverage.svg
 
 docs:
   uv run zensical build

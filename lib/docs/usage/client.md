@@ -428,22 +428,28 @@ asyncio.run(create_multiple_services())
 Enable debug logging and check the service status:
 
 ```python
-import asyncio
-
 from blackfish import set_logging_level
 
 set_logging_level("debug")
 
 service = bf.get_service(service_id)
+service.refresh()
 print(f"Status: {service.status}")
-
-# get_job is async and has no sync wrapper, so it must be awaited. Calling it
-# without awaiting returns a coroutine, which is truthy — `if job:` would pass
-# and `job.state` would then raise AttributeError.
-job = asyncio.run(service.get_job(verbose=True))
-if job is not None:
-    print(f"Job state: {job.state}")
+print(f"Slurm job: {service.job_id}")
 ```
+
+`refresh()` pings the service and, if that fails, asks the scheduler — so the
+status it reports reflects both. Debug logging shows which of the two answered.
+
+For anything the status does not explain, inspect the job itself on the
+cluster. `service.job_id` is the Slurm job id:
+
+```bash
+ssh della "sacct -j <job_id> --format=JobID,State,Elapsed,ExitCode"
+```
+
+The job's output is under `<home_dir>/jobs/<service id without dashes>/`, which
+is where a model that failed to load will have written its traceback.
 
 ### Database connection issues
 
